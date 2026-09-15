@@ -1,0 +1,50 @@
+---
+description: Hebrew, RTL and localization rules for UNLOCK
+alwaysApply: true
+---
+
+# UNLOCK RTL and i18n Rules
+
+UNLOCK is Hebrew-first and RTL-first.
+
+Default product language:
+Hebrew
+
+Default direction:
+RTL
+
+Default locale:
+he-IL
+
+Technical identifiers remain in English.
+
+This includes:
+- variables
+- functions
+- database fields
+- API names
+- logs
+- technical documentation
+
+User-facing copy should be stored through a messages/translation layer where practical.
+
+Do not scatter hard-coded Hebrew UI strings throughout components.
+
+The architecture must remain i18n-ready.
+
+RTL must be tested for:
+- navigation
+- forms
+- cards
+- quiz answers
+- modals
+- tables
+- charts
+- icons
+- directional controls
+- mixed Hebrew/English text
+- numbers
+- percentages
+- dates
+
+Use locale-aware formatting.

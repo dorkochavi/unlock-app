@@ -1,0 +1,59 @@
+---
+description: Architecture constraints for UNLOCK
+alwaysApply: true
+---
+
+# UNLOCK Architecture Rules
+
+UNLOCK should start as a modular monolith.
+
+Do not introduce microservices without explicit approval.
+
+Primary stack:
+- Next.js
+- TypeScript
+- Tailwind CSS
+- PostgreSQL / Supabase
+- Vercel
+- GitHub
+- Cursor
+
+Keep domain logic separate from UI logic.
+
+Prefer structure such as:
+
+src/
+  app/
+  components/
+  features/
+  lib/
+  services/
+  types/
+  messages/
+
+Do not create infrastructure before there is a concrete product need.
+
+Prefer:
+1. deterministic logic
+2. SQL/statistics
+3. cached/precomputed logic
+4. optional AI
+
+A Brain is a conceptual capability boundary, not necessarily a code module or service.
+
+Institution must remain optional in V1.
+
+Course must be able to exist without an Institution.
+
+Architecture-ready does not mean feature-mandatory.
+
+Do not add:
+- microservices
+- message queues
+- vector databases
+- background workers
+- extra databases
+unless a documented feature actually requires them.
+
+The Master Spec is the high-level source of truth:
+`docs/MASTER_SPEC.md`

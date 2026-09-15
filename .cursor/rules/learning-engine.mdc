@@ -1,0 +1,44 @@
+---
+description: Learning Engine rules for UNLOCK
+alwaysApply: true
+---
+
+# UNLOCK Learning Engine Rules
+
+The Learning Engine is core product logic.
+
+Do not redesign, replace, or simplify validated learning behavior without explicit approval.
+
+Core learner-state signals include:
+- mastery_level
+- next_review_date
+- misconception_hits
+- confidence_level
+- average_time_seconds
+
+Raw Attempts must be preserved.
+
+Learner state is derived from attempt history and must not replace it.
+
+The Learning Engine must be:
+- deterministic where possible
+- versioned
+- testable
+- reproducible
+- observable
+
+The engine should answer:
+
+What is the most valuable next learning action for this learner?
+
+Today must consume a prepared session plan.
+
+Quiz must not independently select questions when operating in Today mode.
+
+Do not use an LLM to decide question priority or Today composition.
+
+Do not introduce a new learning algorithm without:
+1. documenting the change
+2. versioning the engine
+3. adding tests
+4. defining expected behavior

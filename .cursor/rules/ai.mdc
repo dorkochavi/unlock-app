@@ -1,0 +1,44 @@
+---
+description: AI usage rules for UNLOCK
+alwaysApply: true
+---
+
+# UNLOCK AI Rules
+
+AI is an enabling layer, not the core decision-maker.
+
+Prefer:
+1. deterministic logic
+2. SQL/statistics
+3. cached/precomputed results
+4. AI only when justified
+
+Do not call an LLM for every answer, quiz step, or Today decision.
+
+AI-generated questions require a dual-pass workflow:
+
+1. Generation pass
+2. Independent verification pass
+
+The verification pass must check:
+- source support
+- correct answer validity
+- distractor ambiguity
+- explanation support
+- citation relevance
+
+Generated questions must preserve source provenance.
+
+AI outputs must use structured schemas and validation.
+
+Do not trust free-form model output directly.
+
+AI-generated questions must not become learner-facing until they pass the required verification gate.
+
+AI provider logic must be abstracted from product/business logic.
+
+Do not hard-code the application to one AI provider.
+
+AI-powered capabilities should be feature-flagged where practical.
+
+Track AI usage and cost when AI is enabled.

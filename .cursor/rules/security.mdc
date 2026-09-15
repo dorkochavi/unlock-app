@@ -1,0 +1,33 @@
+---
+description: Security and data rules for UNLOCK
+alwaysApply: true
+---
+
+# UNLOCK Security Rules
+
+Never commit secrets to Git.
+
+API keys, service-role keys, tokens, and provider credentials must remain server-side.
+
+Never expose privileged Supabase credentials to the browser.
+
+Use environment variables for secrets.
+
+Provide `.env.example` without real secrets.
+
+If Supabase is used:
+- enable Row Level Security
+- test RLS policies
+- restrict users to authorized data
+- keep institution-level access isolated
+- keep user progress private
+
+Do not perform destructive database migrations without explicit approval.
+
+Do not delete user data fields merely because they appear unused.
+
+Respect data ownership and provenance.
+
+Do not share uploaded course material across unrelated users without explicit permission.
+
+Collect only data with a defined product, learning, operational, or research purpose.

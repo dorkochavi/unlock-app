@@ -1,0 +1,50 @@
+---
+description: Coding standards for UNLOCK
+alwaysApply: true
+---
+
+# UNLOCK Coding Standards
+
+Use TypeScript.
+
+Prefer explicit types for domain logic.
+
+Avoid `any` unless there is a documented reason.
+
+Keep components small and focused.
+
+Keep business logic out of React components where possible.
+
+Prefer domain functions and services for learning logic.
+
+Do not duplicate logic.
+
+Do not introduce dependencies without a clear reason.
+
+Before adding a package, ask:
+Why does UNLOCK need this?
+
+Prefer existing platform capabilities over unnecessary libraries.
+
+Use clear English names for:
+- files
+- functions
+- variables
+- types
+- database fields
+
+Write code for readability first.
+
+Do not refactor unrelated code during a feature task.
+
+Do not change behavior during a refactor unless explicitly requested.
+
+Add tests for core learning logic.
+
+High-impact changes should explain:
+- what changes
+- why
+- affected files
+- data impact
+- risks
+- rollback path
