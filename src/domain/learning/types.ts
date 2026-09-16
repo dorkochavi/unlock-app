@@ -5,6 +5,8 @@
  * spaced-repetition library (for example, ts-fsrs).
  */
 
+import type { SchedulerMemoryState } from "./scheduler";
+
 export const CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
 export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number];
 
@@ -108,19 +110,6 @@ export interface Attempt {
 }
 
 /**
- * Scheduler-owned memory state.
- *
- * UNLOCK intentionally keeps these generic so the domain is not coupled
- * to one specific FSRS implementation/version.
- */
-export interface MemoryState {
-  stability: number | null;
-  difficulty: number | null;
-  scheduledReviewAt: Date | null;
-  retrievabilityEstimate: number | null;
-}
-
-/**
  * Current derived learner-specific state for a Question.
  *
  * This is not historical truth. It is reconstructable derived state whose
@@ -137,7 +126,14 @@ export interface UserQuestionProgress {
   lastCorrectAt: Date | null;
   lastIncorrectAt: Date | null;
 
-  memory: MemoryState;
+  /**
+   * Scheduler-owned memory state, or null when no ratable evidence has been
+   * applied yet. This carries the full `SchedulerMemoryState`, including
+   * `implementationState`, so the same scheduler adapter (e.g. ts-fsrs) can
+   * faithfully reconstruct its state on the next review rather than
+   * reinitializing.
+   */
+  memory: SchedulerMemoryState | null;
 
   successfulSpacedRetrievals: number;
   lapseCount: number;
