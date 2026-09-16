@@ -139,7 +139,12 @@ export interface UserQuestionProgress {
   lapseCount: number;
 
   misconceptionState: MisconceptionState;
+  /** Bounded diagnostic score, not a probability. See src/domain/learning/misconception.ts. */
   misconceptionScore: number;
+  /**
+   * Timestamp of the most recent misconception-relevant evidence observed
+   * (not the last state transition). See src/domain/learning/misconception.ts.
+   */
   misconceptionLastSeenAt: Date | null;
 
   timedAttemptCount: number;
