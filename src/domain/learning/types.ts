@@ -135,6 +135,18 @@ export interface UserQuestionProgress {
    */
   memory: SchedulerMemoryState | null;
 
+  /**
+   * Baseline timestamp the next retrieval is compared against by
+   * retrieval-qualification.ts. Set by the first-ever clean FULL_EVIDENCE
+   * correct retrieval (which does NOT itself count as a spaced retrieval —
+   * there is nothing prior to be spaced from) and moved forward by any
+   * later retrieval that DOES qualify. Deliberately not named
+   * "lastQualifyingRetrievalAt": that first retrieval that sets it did not
+   * qualify, so a name implying every value here came from a qualifying
+   * event would be misleading. See src/domain/learning/retrieval-qualification.ts.
+   */
+  retrievalBaselineAt: Date | null;
+
   successfulSpacedRetrievals: number;
   lapseCount: number;
 

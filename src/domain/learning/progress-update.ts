@@ -6,17 +6,27 @@
  *
  * Rules this file deliberately follows:
  * - pure domain logic only: no DB, no network, no ts-fsrs, no Date.now(),
- *   no Math.random(). All time/versioning/scheduler dependencies are
- *   injected via `ProgressUpdateContext`;
+ *   no Math.random(). All time/versioning/scheduler/policy dependencies
+ *   are injected via `ProgressUpdateContext`;
  * - the Attempt itself is never mutated or rewritten (see ADR-005);
- * - this function does NOT decide mastery thresholds, misconception
- *   activation/recovery, evidence-strength thresholds, spacing thresholds,
+ * - retrieval qualification (successfulSpacedRetrievals /
+ *   retrievalBaselineAt) is now applied here, via the injected
+ *   `RetrievalQualificationPolicy` and `isSameLearningSession` context —
+ *   see retrieval-qualification.ts. This function still does NOT decide
+ *   the spacing threshold value itself, nor mastery thresholds,
+ *   misconception activation/recovery, evidence-strength thresholds,
  *   desired retention, or exam behavior. Those remain unresolved policy
  *   (docs/OPEN_QUESTIONS.md) and are preserved unchanged here so the real
  *   policies can be plugged in later without rewriting this function.
  */
 
 import { classifyAttemptEvidence } from "./evidence";
+import {
+  qualifyRetrieval,
+  type RetrievalQualificationPolicy,
+  type RetrievalQualificationReason,
+  type RetrievalQualificationResult,
+} from "./retrieval-qualification";
 import {
   mapEvidenceToSchedulerRating,
   type SchedulerRatingDecision,
@@ -37,17 +47,34 @@ export interface ProgressUpdateContext {
   now: Date;
   engineVersion: string;
   memoryScheduler: MemoryScheduler;
+
+  /**
+   * Threshold policy for retrieval-qualification.ts. No production default
+   * is chosen here — see docs/OPEN_QUESTIONS.md #12.
+   */
+  retrievalQualificationPolicy: RetrievalQualificationPolicy;
+
+  /**
+   * Whether the current Attempt is in the same learning session/occasion
+   * as the previous qualifying retrieval, or null when unknown. This file
+   * never infers session identity from timestamps or todaySessionId —
+   * the caller must supply it explicitly (docs/OPEN_QUESTIONS.md #3 is
+   * still open).
+   */
+  isSameLearningSession: boolean | null;
 }
 
 export interface ProgressUpdateResult {
   progress: UserQuestionProgress;
   evidence: ClassifiedEvidence;
   schedulerRatingDecision: SchedulerRatingDecision;
+  retrievalQualification: RetrievalQualificationResult;
   /**
    * The single most relevant, unambiguous reason for this update, or null
    * when no reason from `STATE_UPDATE_REASONS` unambiguously applies yet
-   * (for example, an unremarkable non-first correct answer, before a
-   * spacing/mastery policy is available to classify it further).
+   * (for example, an unremarkable non-first correct answer that isn't a
+   * qualifying spaced retrieval, before a mastery/misconception policy is
+   * available to classify it further).
    */
   reason: StateUpdateReason | null;
 }
@@ -80,11 +107,31 @@ export function applyAttemptToProgress(
     context.memoryScheduler,
   );
 
+  const retrievalQualification = qualifyRetrieval(
+    {
+      currentAttemptAt: attempt.answeredAt,
+      isCorrect: attempt.isCorrect,
+      currentEvidenceQuality: evidence.quality,
+      previousRetrievalBaselineAt: previousProgress?.retrievalBaselineAt ?? null,
+      isSameLearningSession: context.isSameLearningSession,
+    },
+    context.retrievalQualificationPolicy,
+  );
+
+  const { retrievalBaselineAt, successfulSpacedRetrievals } =
+    nextRetrievalBaseline(
+      previousProgress?.retrievalBaselineAt ?? null,
+      previousProgress?.successfulSpacedRetrievals ?? 0,
+      attempt,
+      retrievalQualification,
+    );
+
   const reason = deriveStateUpdateReason({
     isFirstAttempt: previousProgress === null,
     attempt,
     evidenceQuality: evidence.quality,
     isLapse,
+    retrievalQualificationReason: retrievalQualification.reason,
   });
 
   const previousTimedAttemptCount = previousProgress?.timedAttemptCount ?? 0;
@@ -107,9 +154,9 @@ export function applyAttemptToProgress(
 
     memory,
 
-    // Spacing has not been determined by any explicit policy yet
-    // (docs/OPEN_QUESTIONS.md #12). Preserve, do not invent.
-    successfulSpacedRetrievals: previousProgress?.successfulSpacedRetrievals ?? 0,
+    retrievalBaselineAt,
+    successfulSpacedRetrievals,
+
     // Unlike successfulSpacedRetrievals, LAPSE is an already-unambiguous
     // signal (requirement 11): a previously established scheduler state
     // received AGAIN. Safe to increment directly.
@@ -142,7 +189,58 @@ export function applyAttemptToProgress(
     updatedAt: context.now,
   };
 
-  return { progress, evidence, schedulerRatingDecision, reason };
+  return {
+    progress,
+    evidence,
+    schedulerRatingDecision,
+    retrievalQualification,
+    reason,
+  };
+}
+
+/**
+ * Baseline-tracking rule (see the `retrievalBaselineAt` doc comment in
+ * types.ts): the baseline is set or moved in exactly two cases, both
+ * identified directly by retrieval-qualification.ts's own reason —
+ *
+ * - "NO_PRIOR_RETRIEVAL": this is the first-ever clean FULL_EVIDENCE
+ *   correct retrieval. It does not itself count as spaced (nothing prior
+ *   to be spaced from), but it establishes the baseline future retrievals
+ *   are compared against.
+ * - "QUALIFYING_SPACED_RETRIEVAL": this retrieval qualifies. Increment
+ *   the count and move the baseline forward to this Attempt's timestamp,
+ *   so the NEXT retrieval is compared against this one, not the original.
+ *
+ * Every other reason (NOT_FULL_EVIDENCE, INCORRECT, SAME_SESSION,
+ * SESSION_UNKNOWN, GAP_TOO_SHORT) must leave both values untouched —
+ * including same-session/gap-too-short/session-unknown rejections of an
+ * otherwise-clean correct retrieval, which must not silently move the
+ * baseline just because the evidence itself was clean.
+ */
+function nextRetrievalBaseline(
+  previousBaselineAt: Date | null,
+  previousSuccessfulSpacedRetrievals: number,
+  attempt: Attempt,
+  qualification: RetrievalQualificationResult,
+): { retrievalBaselineAt: Date | null; successfulSpacedRetrievals: number } {
+  if (qualification.reason === "NO_PRIOR_RETRIEVAL") {
+    return {
+      retrievalBaselineAt: attempt.answeredAt,
+      successfulSpacedRetrievals: previousSuccessfulSpacedRetrievals,
+    };
+  }
+
+  if (qualification.reason === "QUALIFYING_SPACED_RETRIEVAL") {
+    return {
+      retrievalBaselineAt: attempt.answeredAt,
+      successfulSpacedRetrievals: previousSuccessfulSpacedRetrievals + 1,
+    };
+  }
+
+  return {
+    retrievalBaselineAt: previousBaselineAt,
+    successfulSpacedRetrievals: previousSuccessfulSpacedRetrievals,
+  };
 }
 
 function nextSchedulerMemory(
@@ -180,23 +278,46 @@ function nextSchedulerMemory(
 /**
  * Reason precedence (highest first): CONFIDENT_ERROR and LAPSE are
  * behavioral signals about this specific Attempt and take priority over
- * the structural INITIAL_ATTEMPT label. ASSISTED_SUCCESS is reported when
- * relevant even on a technically-first attempt. SPACED_RETRIEVAL_SUCCESS /
- * SAME_SESSION_SUCCESS / MISCONCEPTION_RECOVERY are intentionally never
- * returned here: no spacing, session, or recovery policy is available yet.
+ * the structural INITIAL_ATTEMPT label. SPACED_RETRIEVAL_SUCCESS and
+ * ASSISTED_SUCCESS are reported when relevant even on a technically-first
+ * attempt. SAME_SESSION_SUCCESS / MISCONCEPTION_RECOVERY are intentionally
+ * never returned here: no session or recovery policy is available yet.
  *
  * CONFIDENT_ERROR additionally requires FULL_EVIDENCE. Assisted,
  * second-attempt, revealed-answer, or otherwise low-quality evidence is not
  * clean enough to support this diagnostic signal yet, even when confidence
  * was reported as high.
+ *
+ * SPACED_RETRIEVAL_SUCCESS mutual-exclusivity proof (so this list order
+ * never actually has to arbitrate a real conflict — verify this still
+ * holds if any of these gates change):
+ * - CONFIDENT_ERROR and LAPSE both require `!attempt.isCorrect`;
+ *   SPACED_RETRIEVAL_SUCCESS requires `isCorrect` (qualifyRetrieval's
+ *   INCORRECT gate would otherwise have already returned false);
+ * - ASSISTED_SUCCESS requires evidenceQuality === "ASSISTED_EVIDENCE";
+ *   SPACED_RETRIEVAL_SUCCESS requires "FULL_EVIDENCE" (qualifyRetrieval's
+ *   NOT_FULL_EVIDENCE gate would otherwise have already returned false) —
+ *   evidence.ts returns exactly one quality, so these can't both hold;
+ * - INITIAL_ATTEMPT requires `previousProgress === null`;
+ *   SPACED_RETRIEVAL_SUCCESS requires a non-null retrievalBaselineAt on
+ *   previousProgress, which requires previousProgress to already exist.
+ * Given this, `reason` can safely stay a single value instead of an array
+ * — no signal is ever silently dropped by this precedence order today.
  */
 function deriveStateUpdateReason(input: {
   isFirstAttempt: boolean;
   attempt: Attempt;
   evidenceQuality: EvidenceQuality;
   isLapse: boolean;
+  retrievalQualificationReason: RetrievalQualificationReason;
 }): StateUpdateReason | null {
-  const { isFirstAttempt, attempt, evidenceQuality, isLapse } = input;
+  const {
+    isFirstAttempt,
+    attempt,
+    evidenceQuality,
+    isLapse,
+    retrievalQualificationReason,
+  } = input;
 
   if (
     !attempt.isCorrect &&
@@ -208,6 +329,10 @@ function deriveStateUpdateReason(input: {
 
   if (isLapse) {
     return "LAPSE";
+  }
+
+  if (retrievalQualificationReason === "QUALIFYING_SPACED_RETRIEVAL") {
+    return "SPACED_RETRIEVAL_SUCCESS";
   }
 
   if (evidenceQuality === "ASSISTED_EVIDENCE" && attempt.isCorrect) {

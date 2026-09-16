@@ -19,7 +19,7 @@ function makeInput(
     currentAttemptAt: new Date("2026-01-10T00:00:00.000Z"),
     isCorrect: true,
     currentEvidenceQuality: "FULL_EVIDENCE",
-    previousQualifyingRetrievalAt: null,
+    previousRetrievalBaselineAt: null,
     isSameLearningSession: false,
     ...overrides,
   };
@@ -28,7 +28,7 @@ function makeInput(
 describe("qualifyRetrieval", () => {
   it("A. does not qualify a first clean correct retrieval with no prior qualifying retrieval", () => {
     const result = qualifyRetrieval(
-      makeInput({ previousQualifyingRetrievalAt: null }),
+      makeInput({ previousRetrievalBaselineAt: null }),
       TEST_POLICY,
     );
 
@@ -40,7 +40,7 @@ describe("qualifyRetrieval", () => {
   it("B. does not qualify a second clean correct retrieval in the same session, even with a large gap", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-02-01T00:00:00.000Z"),
         isSameLearningSession: true,
       }),
@@ -55,7 +55,7 @@ describe("qualifyRetrieval", () => {
   it("C. does not qualify a second clean correct retrieval in a different session with too short a gap", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-01-01T12:00:00.000Z"),
         isSameLearningSession: false,
       }),
@@ -70,7 +70,7 @@ describe("qualifyRetrieval", () => {
   it("D. qualifies a second clean correct retrieval in a different session with a sufficient gap", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-01-03T00:00:00.000Z"),
         isSameLearningSession: false,
       }),
@@ -85,7 +85,7 @@ describe("qualifyRetrieval", () => {
   it("E. does not qualify an assisted correct answer", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-01-05T00:00:00.000Z"),
         isSameLearningSession: false,
         currentEvidenceQuality: "ASSISTED_EVIDENCE",
@@ -101,7 +101,7 @@ describe("qualifyRetrieval", () => {
   it("F. does not qualify second-attempt/low-quality evidence", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-01-05T00:00:00.000Z"),
         isSameLearningSession: false,
         currentEvidenceQuality: "LOW_QUALITY_EVIDENCE",
@@ -117,7 +117,7 @@ describe("qualifyRetrieval", () => {
   it("G. does not qualify a clean incorrect attempt", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-01-05T00:00:00.000Z"),
         isSameLearningSession: false,
         isCorrect: false,
@@ -133,7 +133,7 @@ describe("qualifyRetrieval", () => {
   it("H. does not qualify when session identity is unknown, under the conservative policy", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-01-05T00:00:00.000Z"),
         isSameLearningSession: null,
       }),
@@ -148,7 +148,7 @@ describe("qualifyRetrieval", () => {
   it("I. qualifies at exactly the threshold gap (policy uses >=)", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date(
           new Date("2026-01-01T00:00:00.000Z").getTime() +
             TEST_POLICY.minGapMsForSpacedRetrieval,
@@ -175,7 +175,7 @@ describe("qualifyRetrieval", () => {
 
   it("K. is deterministic for identical input", () => {
     const input = makeInput({
-      previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+      previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
       currentAttemptAt: new Date("2026-01-03T00:00:00.000Z"),
       isSameLearningSession: false,
     });
@@ -189,7 +189,7 @@ describe("qualifyRetrieval", () => {
   it("L. reports an explicit and correct gapMs when a prior qualifying retrieval exists", () => {
     const result = qualifyRetrieval(
       makeInput({
-        previousQualifyingRetrievalAt: new Date("2026-01-01T00:00:00.000Z"),
+        previousRetrievalBaselineAt: new Date("2026-01-01T00:00:00.000Z"),
         currentAttemptAt: new Date("2026-01-04T06:00:00.000Z"),
         isSameLearningSession: false,
       }),
@@ -199,11 +199,11 @@ describe("qualifyRetrieval", () => {
     expect(result.gapMs).toBe(3 * DAY_MS + 6 * HOUR_MS);
   });
 
-  it("M. fails fast rather than silently computing a negative gap when currentAttemptAt is earlier than previousQualifyingRetrievalAt", () => {
+  it("M. fails fast rather than silently computing a negative gap when currentAttemptAt is earlier than previousRetrievalBaselineAt", () => {
     expect(() =>
       qualifyRetrieval(
         makeInput({
-          previousQualifyingRetrievalAt: new Date("2026-01-10T00:00:00.000Z"),
+          previousRetrievalBaselineAt: new Date("2026-01-10T00:00:00.000Z"),
           currentAttemptAt: new Date("2026-01-01T00:00:00.000Z"),
           isSameLearningSession: false,
         }),

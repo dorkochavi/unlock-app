@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyAttemptToProgress } from "../progress-update";
+import type { RetrievalQualificationPolicy } from "../retrieval-qualification";
 import type {
   InitialReviewInput,
   MemoryScheduler,
@@ -8,6 +9,12 @@ import type {
   SchedulerMemoryState,
 } from "../scheduler";
 import type { Attempt, UserQuestionProgress } from "../types";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const TEST_RETRIEVAL_QUALIFICATION_POLICY: RetrievalQualificationPolicy = {
+  minGapMsForSpacedRetrieval: 1 * DAY_MS,
+};
 
 /**
  * Deterministic, fully controllable fake. Real ts-fsrs behavior is already
@@ -86,11 +93,16 @@ function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
   };
 }
 
-function makeContext(scheduler: MemoryScheduler = new FakeMemoryScheduler()) {
+function makeContext(
+  scheduler: MemoryScheduler = new FakeMemoryScheduler(),
+  isSameLearningSession: boolean | null = false,
+) {
   return {
     now: new Date("2026-01-01T00:05:00.000Z"),
     engineVersion: "learning_engine_v1.0",
     memoryScheduler: scheduler,
+    retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
+    isSameLearningSession,
   };
 }
 
@@ -355,5 +367,281 @@ describe("applyAttemptToProgress", () => {
     expect(resultA.schedulerRatingDecision).toEqual(
       resultB.schedulerRatingDecision,
     );
+  });
+});
+
+describe("applyAttemptToProgress — retrieval qualification integration", () => {
+  it("A. sets the retrieval baseline on a first clean correct retrieval without counting it as spaced", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.retrievalQualification.reason).toBe("NO_PRIOR_RETRIEVAL");
+    expect(result.progress.retrievalBaselineAt).toEqual(attempt.answeredAt);
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+    expect(result.progress.memory?.reviewCount).toBe(1);
+  });
+
+  it("B. counts a second clean correct retrieval in a different session with a sufficient gap as qualifying", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(second.progress.successfulSpacedRetrievals).toBe(1);
+    expect(second.progress.retrievalBaselineAt).toEqual(
+      new Date("2026-01-03T00:00:00.000Z"),
+    );
+    expect(second.reason).toBe("SPACED_RETRIEVAL_SUCCESS");
+  });
+
+  it("C. does not increment or move the baseline for a same-session correct retrieval, even with a large gap", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-10T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, true),
+    );
+
+    expect(second.retrievalQualification.reason).toBe("SAME_SESSION");
+    expect(second.progress.successfulSpacedRetrievals).toBe(0);
+    expect(second.progress.retrievalBaselineAt).toEqual(
+      first.progress.retrievalBaselineAt,
+    );
+  });
+
+  it("D. does not increment or move the baseline when the gap is too short, even in a different session", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T12:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.retrievalQualification.reason).toBe("GAP_TOO_SHORT");
+    expect(second.progress.successfulSpacedRetrievals).toBe(0);
+    expect(second.progress.retrievalBaselineAt).toEqual(
+      first.progress.retrievalBaselineAt,
+    );
+  });
+
+  it("E. does not set or move the baseline for an assisted correct answer", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      assistanceUsed: "FIFTY_FIFTY",
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.retrievalQualification.reason).toBe("NOT_FULL_EVIDENCE");
+    expect(result.progress.retrievalBaselineAt).toBeNull();
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+  });
+
+  it("F. does not set or move the baseline for a second-attempt correct answer", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      attemptNumberForPresentedItem: 2,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.retrievalQualification.reason).toBe("NOT_FULL_EVIDENCE");
+    expect(result.progress.retrievalBaselineAt).toBeNull();
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+  });
+
+  it("G. does not set or move the baseline for an incorrect attempt", () => {
+    const attempt = makeAttempt({
+      isCorrect: false,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.retrievalQualification.reason).toBe("INCORRECT");
+    expect(result.progress.retrievalBaselineAt).toBeNull();
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+  });
+
+  it("H. does not increment or move the baseline when session identity is unknown", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, null),
+    );
+
+    expect(second.retrievalQualification.reason).toBe("SESSION_UNKNOWN");
+    expect(second.progress.successfulSpacedRetrievals).toBe(0);
+    expect(second.progress.retrievalBaselineAt).toEqual(
+      first.progress.retrievalBaselineAt,
+    );
+  });
+
+  it("I. compares the next retrieval against the latest baseline, not the original one", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(second.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(second.progress.retrievalBaselineAt).toEqual(
+      new Date("2026-01-03T00:00:00.000Z"),
+    );
+
+    // A gap that would have qualified against the ORIGINAL baseline
+    // (2026-01-01, >1 day away) but not against the NEW baseline
+    // (2026-01-03) must be rejected as too short.
+    const third = applyAttemptToProgress(
+      second.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T12:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(third.retrievalQualification.reason).toBe("GAP_TOO_SHORT");
+    expect(third.retrievalQualification.gapMs).toBe(12 * 60 * 60 * 1000);
+    expect(third.progress.successfulSpacedRetrievals).toBe(1);
+  });
+
+  it("J. increments successfulSpacedRetrievals from its existing value rather than resetting it", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(second.progress.successfulSpacedRetrievals).toBe(1);
+
+    const third = applyAttemptToProgress(
+      second.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-06T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(third.progress.successfulSpacedRetrievals).toBe(2);
+  });
+
+  it("K. is deterministic for identical inputs including retrieval qualification", () => {
+    const previous = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(new FakeMemoryScheduler(), false),
+    ).progress;
+
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+    });
+
+    const resultA = applyAttemptToProgress(
+      previous,
+      attempt,
+      makeContext(new FakeMemoryScheduler(), false),
+    );
+    const resultB = applyAttemptToProgress(
+      previous,
+      attempt,
+      makeContext(new FakeMemoryScheduler(), false),
+    );
+
+    expect(resultA.progress).toEqual(resultB.progress);
+    expect(resultA.retrievalQualification).toEqual(
+      resultB.retrievalQualification,
+    );
+    expect(resultA.reason).toEqual(resultB.reason);
   });
 });

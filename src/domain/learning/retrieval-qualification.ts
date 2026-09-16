@@ -34,7 +34,7 @@
  *   qualifies — there is no prior qualifying retrieval to be spaced
  *   from. It may still be meaningful evidence elsewhere (evidence.ts,
  *   evidence-strength.ts), just not a *spaced* retrieval;
- * - `currentAttemptAt` earlier than `previousQualifyingRetrievalAt` is
+ * - `currentAttemptAt` earlier than `previousRetrievalBaselineAt` is
  *   rejected by throwing, rather than silently computing a negative gap;
  * - this module never mutates UserQuestionProgress — it only returns a
  *   qualification decision for a caller to apply.
@@ -75,7 +75,7 @@ export interface RetrievalQualificationInput {
    * for this Question (not merely the most recent correct answer), or
    * null when none exists yet.
    */
-  previousQualifyingRetrievalAt: Date | null;
+  previousRetrievalBaselineAt: Date | null;
 
   /**
    * true: caller has confirmed the current Attempt is in the same
@@ -99,7 +99,7 @@ export interface RetrievalQualificationPolicy {
 export interface RetrievalQualificationResult {
   qualifies: boolean;
   /**
-   * Milliseconds elapsed since `previousQualifyingRetrievalAt`, computed
+   * Milliseconds elapsed since `previousRetrievalBaselineAt`, computed
    * whenever a prior qualifying retrieval exists and the current evidence
    * passed the quality/correctness gates — regardless of whether this
    * particular retrieval ultimately qualifies. Null when no gap could be
@@ -149,23 +149,23 @@ export function qualifyRetrieval(
     return { qualifies: false, gapMs: null, reason: "INCORRECT" };
   }
 
-  if (input.previousQualifyingRetrievalAt === null) {
+  if (input.previousRetrievalBaselineAt === null) {
     return { qualifies: false, gapMs: null, reason: "NO_PRIOR_RETRIEVAL" };
   }
 
   if (
     input.currentAttemptAt.getTime() <
-    input.previousQualifyingRetrievalAt.getTime()
+    input.previousRetrievalBaselineAt.getTime()
   ) {
     throw new Error(
       "qualifyRetrieval: currentAttemptAt must not be earlier than " +
-        "previousQualifyingRetrievalAt; refusing to compute a negative gap.",
+        "previousRetrievalBaselineAt; refusing to compute a negative gap.",
     );
   }
 
   const gapMs =
     input.currentAttemptAt.getTime() -
-    input.previousQualifyingRetrievalAt.getTime();
+    input.previousRetrievalBaselineAt.getTime();
 
   if (input.isSameLearningSession === true) {
     return { qualifies: false, gapMs, reason: "SAME_SESSION" };
