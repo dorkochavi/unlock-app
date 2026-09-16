@@ -6,13 +6,18 @@ The product builds a learner model over time and uses it to decide the next best
 
 ## Core V1
 
-- Learner State
-- Next Best Action
-- Today
-- Quiz
-- Attempts
+- User
+- Course
+- Material
+- Question
+- Attempt
 - UserQuestionProgress
 - Exam Date
+- Learner State
+- Next Best Action
+- Today Session
+- Today Session Items
+- Quiz
 - Basic Progress
 
 ## Tech Stack
@@ -27,7 +32,16 @@ The product builds a learner model over time and uses it to decide the next best
 
 ## Local Development
 
-Install dependencies:
-
 ```bash
 npm install
+npm run dev
+```
+
+Other scripts:
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```

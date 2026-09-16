@@ -37,6 +37,22 @@ Quiz must not independently select questions when operating in Today mode.
 
 Do not use an LLM to decide question priority or Today composition.
 
+Prototype recovery is focused and just-in-time. Do not block foundation work or the first V1 learning loop on a full-system prototype inventory.
+
+Before implementing a learning behavior, audit only that behavior. For V1, the required subset is how the prototype calculates or updates:
+- mastery_level
+- next_review_date
+- misconception_hits
+
+Capture only the inputs those rules actually use.
+
+Unknown or non-essential behavior should be documented as:
+- UNKNOWN
+- NOT REQUIRED FOR V1
+- DEFERRED FOR LATER AUDIT
+
+Do not invent a replacement formula because the current one is not fully documented.
+
 Do not introduce a new learning algorithm without:
 1. documenting the change
 2. versioning the engine

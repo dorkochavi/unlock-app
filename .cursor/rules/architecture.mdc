@@ -41,9 +41,11 @@ Prefer:
 
 A Brain is a conceptual capability boundary, not necessarily a code module or service.
 
-Institution must remain optional in V1.
+Institution is optional and is not a V1 blocker.
 
 Course must be able to exist without an Institution.
+
+Assignments are architecture-ready. Do not implement them in V1 unless a later documented need requires them.
 
 Architecture-ready does not mean feature-mandatory.
 
@@ -57,3 +59,5 @@ unless a documented feature actually requires them.
 
 The Master Spec is the high-level source of truth:
 `docs/MASTER_SPEC.md`
+
+For V1 scope, follow the V1 Core Activation Plan and Immediate next steps in that document (§102 and §103) when they are more specific than earlier checklists.

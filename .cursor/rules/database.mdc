@@ -1,0 +1,71 @@
+---
+description: Database principles for UNLOCK
+alwaysApply: true
+---
+
+# UNLOCK Database Rules
+
+These are principles only. Do not design or migrate a schema until a dedicated V1 data-model task.
+
+Do not turn conceptual entity lists into migrations without a database design review.
+
+## V1 data scope
+
+When schema work begins, design only what the V1 loop needs:
+
+- User
+- Course
+- Material
+- Question
+- Attempt
+- UserQuestionProgress
+- Exam Date
+- Today Session
+- Today Session Items
+
+The schema should stay extensible for Institution, Instructor, Assignments, knowledge graphs, and intelligence modules without requiring those features now.
+
+## Domain constraints already decided
+
+Institution is optional. Course must be valid without a required `institution_id`.
+
+Question and UserQuestionProgress are separate concerns. The same question can be strong for one learner and weak for another.
+
+Raw Attempts are immutable learning evidence. Derived mastery or progress must not replace attempt history.
+
+Today requires persistent session records when it is implemented. The same daily learning period must resume the same session rather than silently regenerating a different plan.
+
+Exam date precedence:
+
+1. personal exam date override
+2. otherwise group/course exam date
+3. otherwise no exam date — do not invent exam urgency
+
+Answer-option storage (normalized table vs structured JSON) remains TBD until database design.
+
+Assignments, Institution administration, and intelligence-finding tables are architecture-ready. Do not create them in V1 unless a concrete use requires them.
+
+## Security and ownership
+
+If Supabase is used:
+
+- Row Level Security is required, not optional cleanup
+- RLS policies must be tested
+- users may access only authorized data
+- learner progress stays private
+- institution-level access stays isolated
+- service-role keys must never reach the browser
+
+Preserve ownership and provenance for materials, questions, generated content, and learner progress.
+
+Do not share uploaded course material across unrelated users without explicit permission.
+
+Collect only data with a defined product, learning, operational, or research purpose.
+
+## Migrations
+
+Schema changes must use a documented migration process when that process exists.
+
+No coding agent may perform destructive database changes without explicit approval.
+
+Do not delete user data fields merely because they appear unused.

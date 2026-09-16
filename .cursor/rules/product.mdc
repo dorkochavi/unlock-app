@@ -12,11 +12,13 @@ The primary product experience is Today.
 The core product loop is:
 
 User
+-> Course
+-> Material / Questions
 -> Today
 -> Quiz
 -> Attempt
--> Learner State Update
--> Next Best Action
+-> Learner State update
+-> Next Today
 
 The product should optimize for repeat learning behavior, especially Today completion and return frequency.
 
@@ -32,14 +34,26 @@ Prefer the smallest implementation that supports the validated V1 learning loop.
 
 Brains are conceptual capability boundaries only. They do not imply separate services, agents, processes, models, databases, or deployment units.
 
-V1 MUST prioritize:
-- Learner State
-- Next Best Action
-- Today
-- Quiz
-- Attempts
+V1 MUST prioritize (Master Spec §102):
+
+- User
+- Course
+- Material
+- Question
+- Attempt
 - UserQuestionProgress
 - Exam Date
+- Learner State
+- Next Best Action
+- Today Session
+- Today Session Items
+- Quiz
 - Basic Progress
+
+Institution is architecture-ready and is not a V1 blocker. A Course must be valid without an Institution.
+
+Exam Date (including personal override precedence) is V1. Assignments are architecture-ready and must not block V1 unless a later documented need requires them.
+
+Where the Master Spec's recommended V1 checklist (for example §77) conflicts with the V1 Core Activation Plan (§102) and Immediate next steps (§103), follow §102 and §103.
 
 Do not allow deferred features to delay the V1 learning loop.
