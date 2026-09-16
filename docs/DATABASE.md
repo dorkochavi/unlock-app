@@ -219,9 +219,9 @@ Possible strategies:
 
 This decision must be resolved before production schema implementation.
 
-Status: OPEN
+Status: DECIDED for V1 — see `docs/DECISIONS/009-question-versioning.md`.
 
-See `docs/OPEN_QUESTIONS.md`.
+Question is the stable logical identity (`course_id`, `current_version_id` pointer, lifecycle metadata). QuestionVersion is a fully immutable content snapshot (prompt, options, correct answer, explanation). Editing content means inserting a new QuestionVersion and repointing `current_version_id` — an existing QuestionVersion any Attempt references is never mutated. `Attempt.question_version_id` always points at the exact version the learner saw.
 
 ---
 
@@ -317,6 +317,8 @@ Possible protections may include:
 
 Exact implementation should be chosen with the Quiz/Today flow.
 
+V1 mechanism (see `docs/DECISIONS/010-answer-submission-transaction-model.md`): a database-level `UNIQUE (user_id, submission_id)` constraint — scoped per user, not global — is the canonical idempotency boundary, not an application-only check. The `submitAnswer` transaction inserts with `ON CONFLICT (user_id, submission_id) DO NOTHING`; when nothing is inserted, it validates the existing Attempt against the full canonical command-identity field list — every client-supplied immutable Attempt fact, not only the fields that affect Learning Engine output: `courseId`, `questionId`, `questionVersionId`, `selectedAnswer`, `confidenceLevel`, `responseTimeSeconds`, `todaySessionId`, `todaySessionItemId`, `assistanceUsed`, `attemptNumberForPresentedItem`, `answerWasRevealedBeforeResponse`, `answeredAt` (exact null-aware equality) — before returning it as a safe retry. Excluded: server-generated metadata (`id`, `engineVersion`, and `suspiciousTiming` — verified server/application-derived from an anomaly rule, not client-supplied) and derived fields (`isCorrect`, recomputed from already-compared fields). Any mismatch is rejected as an idempotency-key conflict, not silently returned. `submitAnswer` also acquires a transaction-scoped advisory lock keyed by `(user_id, question_id)` before this insert, to correctly serialize the very first concurrent Attempts on a pair — see ADR-010 for the full field-by-field rationale.
+
 ---
 
 ## 13. UserQuestionProgress
@@ -331,19 +333,13 @@ Known V1 signals include:
 - `confidence_level`;
 - `average_time_seconds`.
 
-Potential identifying key:
+Identifying key (decided for V1):
 
 ```text
 user_id + question_id
 ```
 
-or:
-
-```text
-user_id + current question version context
-```
-
-depending on Question versioning decisions.
+Not `user_id + course_id + question_id`: a Question belongs to exactly one Course (§7), so `course_id` is already transitively determined via `question_id`. Not keyed by question version: progress is about the learner's relationship to the Question's logical identity, not to one immutable content snapshot of it.
 
 This record is derived state.
 
@@ -410,11 +406,9 @@ Possible reasons not to persist every ranking result:
 - stale rankings;
 - complexity.
 
-Likely V1 direction:
+V1 direction (decided — see `docs/DECISIONS/010-answer-submission-transaction-model.md`):
 
-Persist the selected decision inside Today Session Items rather than storing every possible ranking candidate.
-
-Final decision remains open.
+Persist only the selected decision inside Today Session Items rather than storing every possible ranking candidate. No separate table stores NBA candidates or full ranking results; they are ephemeral computation (`src/domain/learning/next-best-action.ts`, `next-best-action-ranking.ts`).
 
 ---
 
@@ -445,6 +439,8 @@ Potential statuses may include:
 
 Exact status model belongs in the Today feature contract.
 
+Uniqueness (see `docs/DECISIONS/010-answer-submission-transaction-model.md`): the exact physical key is **not yet decided** — it depends on whether Today is Course-specific, which remains OPEN (`docs/OPEN_QUESTIONS.md` #34). Candidate shapes: `(user_id, course_id, planned_for_date)` if Today is course-scoped, or `(user_id, planned_for_date)` if Today is global per learner. What is decided regardless of which key is chosen: `getOrCreateTodaySession` is an `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT`, never a check-then-insert race — this is the mechanism that makes "the same session resumes" reliable. `planned_for_date` is a caller-supplied date; no timezone/day-boundary logic exists in the domain or persistence layer (`docs/OPEN_QUESTIONS.md` #3 remains open).
+
 ---
 
 ## 18. Today Session Item
@@ -468,6 +464,10 @@ This record helps preserve:
 > What did UNLOCK decide the learner should study?
 
 even if ranking logic changes later.
+
+Frozen fields (decided for V1 — see `docs/DECISIONS/010-answer-submission-transaction-model.md`): `position`, `action_type`, `tier`, `other_applicable_types`, `reasons` are copied verbatim from the domain plan at generation time and never recomputed afterward. `question_version_id` is resolved and frozen by the application layer at generation/persistence time (not by the domain Today Planner, which has no version concept) so Quiz always executes the exact content the learner was shown, per `Attempt.question_version_id` (`docs/DECISIONS/009-question-versioning.md`).
+
+Uniqueness: `(today_session_id, position)` and `(today_session_id, question_id)` — no duplicate position, and a Question appears at most once per session.
 
 ---
 
@@ -779,6 +779,8 @@ Exact transaction mechanics may use:
 - carefully designed idempotent sequence.
 
 Choose the simplest reliable approach supported by the final stack.
+
+V1 decision (see `docs/DECISIONS/010-answer-submission-transaction-model.md`): `submitAnswer` runs as one database transaction covering, in order: (1) acquire a transaction-scoped Postgres advisory lock keyed by `(user_id, question_id)` — this closes the race where no UserQuestionProgress row exists yet, which row-level locking alone cannot; (2) idempotent Attempt insert (`ON CONFLICT (user_id, submission_id) DO NOTHING`); (3) on conflict, validate the existing Attempt against the full canonical command-identity field list (see §12) before returning it as a safe retry, otherwise reject as an idempotency-key conflict; (4) on a genuine new insert, `SELECT` (optionally `FOR UPDATE` as defense-in-depth) the UserQuestionProgress row for `(user_id, question_id)`; (5) the pure `applyAttemptToProgress` call; (6) the UserQuestionProgress upsert; (7) the TodaySessionItem/TodaySession completion update when the Attempt carries a `today_session_item_id`. The advisory lock (not row locking alone, optimistic concurrency, or full `SERIALIZABLE`) is the chosen concurrency strategy, because it is the only one of these that correctly serializes the very first Attempts on a learner-question pair before any progress row exists.
 
 ---
 
@@ -1133,16 +1135,16 @@ Agent infrastructure
 Before writing the real V1 schema, resolve at minimum:
 
 ```text
-1. User ↔ Course relationship
-2. V1 exam-date hierarchy
-3. Question editing/version strategy
-4. Course structure depth
-5. Today scope: one Course or multiple Courses
-6. Today session boundary/timezone behavior
-7. aggregate Learner State persistence
-8. selected Next Best Action persistence strategy
-9. data deletion / Question retirement semantics
-10. final Supabase confirmation
+1. User ↔ Course relationship — OPEN
+2. V1 exam-date hierarchy — OPEN
+3. Question editing/version strategy — DECIDED, see docs/DECISIONS/009-question-versioning.md
+4. Course structure depth — OPEN
+5. Today scope: one Course or multiple Courses — OPEN. TodaySession's physical uniqueness key intentionally is NOT decided until this is resolved (see docs/DECISIONS/010-answer-submission-transaction-model.md) — do not add a course_id-bearing unique constraint before this question is answered
+6. Today session boundary/timezone behavior — OPEN (domain/persistence layer accepts an already-resolved logical date regardless)
+7. aggregate Learner State persistence — OPEN
+8. selected Next Best Action persistence strategy (persist only the chosen decision, not every candidate) — DECIDED, see docs/DECISIONS/010-answer-submission-transaction-model.md
+9. data deletion / Question retirement semantics — OPEN
+10. final Supabase confirmation — OPEN
 ```
 
 Do not let the migration code become the place where these product decisions are accidentally made.

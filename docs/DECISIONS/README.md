@@ -94,6 +94,14 @@ Prefer deterministic logic and existing infrastructure before adding recurring e
 
 UNLOCK V1 uses an FSRS-family scheduler behind the internal `MemoryScheduler` interface. FSRS owns memory scheduling only; it is not the Learning Engine.
 
+### ADR-009 — Question Versioning
+
+Question is a stable logical identity; QuestionVersion is an immutable content snapshot. Editing a Question creates a new QuestionVersion rather than mutating one an Attempt may reference.
+
+### ADR-010 — Answer Submission Transaction Model
+
+`submitAnswer` runs as one database transaction (Attempt insert, progress update, Today session item update). A transaction-scoped advisory lock keyed by `(user_id, question_id)` serializes concurrent writers — including the very first Attempt on a pair, before any UserQuestionProgress row exists. `Attempt` idempotency is scoped `UNIQUE (user_id, submission_id)`, with explicit conflict-validation against the full canonical command-identity field list (including `selectedAnswer`, `confidenceLevel`, and every evidence-classification-gating field, not just Question/version/session-item) before treating a reused key as a safe retry. TodaySessionItem freezes its selected action/tier/reasons at generation time; TodaySession's own physical uniqueness key is left unresolved pending the still-open Today Course-scope decision.
+
 ---
 
 ## Decision Rule
