@@ -1,0 +1,67 @@
+---
+description: UNLOCK day-to-day development workflow
+alwaysApply: true
+---
+
+# UNLOCK Workflow
+
+Use this rule as a concise execution checklist.
+
+Detailed product and engineering behavior belongs in `docs/`, not here.
+
+## Before Coding
+
+1. Read `docs/CONTEXT_MAP.md`.
+2. Read only the documents relevant to the task.
+3. Check `docs/OPEN_QUESTIONS.md`.
+4. If the task changes meaningful feature behavior, create or update the relevant contract under `docs/FEATURES/`.
+5. Do not invent unresolved product, learning, data, or security behavior.
+
+## Scope
+
+- Implement the smallest approved change that solves the task.
+- Do not add deferred or architecture-ready features unless explicitly required.
+- Do not introduce new infrastructure, dependencies, services, agents, queues, vector databases, or background systems without demonstrated need.
+- Preserve the modular-monolith architecture.
+
+## Core Invariants
+
+- `docs/MASTER_SPEC.md` remains the product constitution.
+- Today is the primary recurring learning experience.
+- Today planning selects learning items; Quiz executes the prepared plan.
+- Attempts are historical evidence and must not be rewritten as current progress changes.
+- AI is not the Learning Engine.
+- A Course must work without an Institution.
+- Hebrew / RTL / `he-IL` are defaults.
+- Prefer cost-efficient deterministic solutions before external providers or AI.
+
+## While Coding
+
+- Keep learning/domain logic outside React presentation code.
+- Use explicit TypeScript contracts.
+- Validate important runtime boundaries.
+- Preserve data ownership and authorization boundaries.
+- Reuse the messages layer for learner-facing copy.
+- Add tests for meaningful rules and regressions.
+- Keep changes focused; do not perform unrelated refactors.
+
+## Before Finishing
+
+Run the relevant checks:
+
+```text
+npm run lint
+npm run typecheck
+npm test
+npm run build   # when runtime/build behavior may be affected
+```
+
+Then:
+
+- review `git diff`;
+- review `git status`;
+- confirm no accidental files were changed;
+- update docs/ADRs when behavior or durable decisions changed;
+- report checks actually run, known limitations, and unresolved questions.
+
+Do not commit, push, merge, rebase, reset, or delete branches unless explicitly instructed.
