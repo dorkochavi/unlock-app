@@ -645,3 +645,354 @@ describe("applyAttemptToProgress — retrieval qualification integration", () =>
     expect(resultA.reason).toEqual(resultB.reason);
   });
 });
+
+describe("applyAttemptToProgress — evidence summary counters", () => {
+  it("A. increments meaningfulAttemptCount on a first FULL_EVIDENCE attempt", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.evidence.quality).toBe("FULL_EVIDENCE");
+    expect(result.progress.meaningfulAttemptCount).toBe(1);
+  });
+
+  it("B. increments meaningfulAttemptCount again on a later FULL_EVIDENCE attempt", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: false,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.evidence.quality).toBe("FULL_EVIDENCE");
+    expect(second.progress.meaningfulAttemptCount).toBe(2);
+  });
+
+  it("C. increments assistedAttemptCount but not meaningfulAttemptCount for ASSISTED_EVIDENCE", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      assistanceUsed: "FIFTY_FIFTY",
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.evidence.quality).toBe("ASSISTED_EVIDENCE");
+    expect(result.progress.assistedAttemptCount).toBe(1);
+    expect(result.progress.meaningfulAttemptCount).toBe(0);
+  });
+
+  it("D. increments lowQualityAttemptCount but not meaningfulAttemptCount for LOW_QUALITY_EVIDENCE", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      attemptNumberForPresentedItem: 2,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.evidence.quality).toBe("LOW_QUALITY_EVIDENCE");
+    expect(result.progress.lowQualityAttemptCount).toBe(1);
+    expect(result.progress.meaningfulAttemptCount).toBe(0);
+  });
+
+  it("E. increments invalidForMasteryAttemptCount but no other evidence counter for INVALID_FOR_MASTERY", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      assistanceUsed: "ANSWER_REVEALED",
+      answerWasRevealedBeforeResponse: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.evidence.quality).toBe("INVALID_FOR_MASTERY");
+    expect(result.progress.invalidForMasteryAttemptCount).toBe(1);
+    expect(result.progress.meaningfulAttemptCount).toBe(0);
+    expect(result.progress.assistedAttemptCount).toBe(0);
+    expect(result.progress.lowQualityAttemptCount).toBe(0);
+  });
+
+  it("F. sets firstMeaningfulEvidenceAt once and preserves it across later meaningful attempts", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(first.progress.firstMeaningfulEvidenceAt).toEqual(
+      new Date("2026-01-01T00:00:00.000Z"),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.progress.firstMeaningfulEvidenceAt).toEqual(
+      new Date("2026-01-01T00:00:00.000Z"),
+    );
+  });
+
+  it("G. advances lastMeaningfulEvidenceAt only on meaningful evidence", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(first.progress.lastMeaningfulEvidenceAt).toEqual(
+      new Date("2026-01-01T00:00:00.000Z"),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: false,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.evidence.quality).toBe("FULL_EVIDENCE");
+    expect(second.progress.lastMeaningfulEvidenceAt).toEqual(
+      new Date("2026-01-05T00:00:00.000Z"),
+    );
+  });
+
+  it("H. does not move firstMeaningfulEvidenceAt or lastMeaningfulEvidenceAt for assisted/low-quality/invalid attempts", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const assisted = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "FIFTY_FIFTY",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(assisted.progress.firstMeaningfulEvidenceAt).toEqual(
+      first.progress.firstMeaningfulEvidenceAt,
+    );
+    expect(assisted.progress.lastMeaningfulEvidenceAt).toEqual(
+      first.progress.lastMeaningfulEvidenceAt,
+    );
+
+    const lowQuality = applyAttemptToProgress(
+      assisted.progress,
+      makeAttempt({
+        isCorrect: true,
+        attemptNumberForPresentedItem: 2,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(lowQuality.progress.firstMeaningfulEvidenceAt).toEqual(
+      first.progress.firstMeaningfulEvidenceAt,
+    );
+    expect(lowQuality.progress.lastMeaningfulEvidenceAt).toEqual(
+      first.progress.lastMeaningfulEvidenceAt,
+    );
+
+    const invalid = applyAttemptToProgress(
+      lowQuality.progress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "ANSWER_REVEALED",
+        answerWasRevealedBeforeResponse: true,
+        answeredAt: new Date("2026-01-04T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(invalid.progress.firstMeaningfulEvidenceAt).toEqual(
+      first.progress.firstMeaningfulEvidenceAt,
+    );
+    expect(invalid.progress.lastMeaningfulEvidenceAt).toEqual(
+      first.progress.lastMeaningfulEvidenceAt,
+    );
+  });
+
+  it("H2. keeps firstMeaningfulEvidenceAt/lastMeaningfulEvidenceAt correct under out-of-order processing", () => {
+    // Regression test: nothing guarantees Attempts are applied in
+    // answeredAt order (replay/backfill/import can reorder them). These
+    // fields must reflect chronological evidence time regardless.
+    //
+    // Uses FULL_EVIDENCE INCORRECT Attempts deliberately: they are still
+    // meaningful evidence for evidence-summary counters/timestamps, but
+    // retrieval-qualification rejects incorrect Attempts (its INCORRECT
+    // gate) before ever establishing/comparing retrievalBaselineAt. That
+    // keeps this test purely about evidence-summary chronology, without
+    // touching or working around retrieval-qualification's own, separate,
+    // intentionally strict backwards-time guard (see
+    // retrieval-qualification.test.ts test M) — no fixture mutation needed.
+    const scheduler = new FakeMemoryScheduler();
+    const laterAnsweredAt = new Date("2026-01-10T00:00:00.000Z");
+    const earlierAnsweredAt = new Date("2026-01-01T00:00:00.000Z");
+
+    const processedLaterFirst = applyAttemptToProgress(
+      null,
+      makeAttempt({ isCorrect: false, answeredAt: laterAnsweredAt }),
+      makeContext(scheduler, false),
+    );
+    expect(processedLaterFirst.evidence.quality).toBe("FULL_EVIDENCE");
+    expect(processedLaterFirst.retrievalQualification.reason).toBe(
+      "INCORRECT",
+    );
+    expect(processedLaterFirst.progress.retrievalBaselineAt).toBeNull();
+    expect(processedLaterFirst.progress.meaningfulAttemptCount).toBe(1);
+    expect(processedLaterFirst.progress.firstMeaningfulEvidenceAt).toEqual(
+      laterAnsweredAt,
+    );
+    expect(processedLaterFirst.progress.lastMeaningfulEvidenceAt).toEqual(
+      laterAnsweredAt,
+    );
+
+    const thenProcessedEarlier = applyAttemptToProgress(
+      processedLaterFirst.progress,
+      makeAttempt({ isCorrect: false, answeredAt: earlierAnsweredAt }),
+      makeContext(scheduler, false),
+    );
+
+    expect(thenProcessedEarlier.evidence.quality).toBe("FULL_EVIDENCE");
+    expect(thenProcessedEarlier.retrievalQualification.reason).toBe(
+      "INCORRECT",
+    );
+    expect(thenProcessedEarlier.progress.retrievalBaselineAt).toBeNull();
+    expect(thenProcessedEarlier.progress.meaningfulAttemptCount).toBe(2);
+    expect(thenProcessedEarlier.progress.firstMeaningfulEvidenceAt).toEqual(
+      earlierAnsweredAt,
+    );
+    expect(thenProcessedEarlier.progress.lastMeaningfulEvidenceAt).toEqual(
+      laterAnsweredAt,
+    );
+  });
+
+  it("I. preserves and increments existing counters rather than resetting them", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "FIFTY_FIFTY",
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(first.progress.assistedAttemptCount).toBe(1);
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "HINT",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.progress.assistedAttemptCount).toBe(2);
+  });
+
+  it("J. is deterministic for identical inputs including evidence summary counters", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const resultA = applyAttemptToProgress(null, attempt, makeContext());
+    const resultB = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(resultA.progress).toEqual(resultB.progress);
+  });
+
+  it("K. keeps evidence-category counters internally coherent with attemptCount", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "FIFTY_FIFTY",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        attemptNumberForPresentedItem: 2,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "ANSWER_REVEALED",
+        answerWasRevealedBeforeResponse: true,
+        answeredAt: new Date("2026-01-04T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: false,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const { progress } = result;
+    expect(progress.attemptCount).toBe(5);
+    expect(
+      progress.meaningfulAttemptCount +
+        progress.assistedAttemptCount +
+        progress.lowQualityAttemptCount +
+        progress.invalidForMasteryAttemptCount,
+    ).toBe(progress.attemptCount);
+  });
+});

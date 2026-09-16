@@ -87,6 +87,21 @@ export interface ProgressUpdateResult {
  * This function assumes it is called exactly once for an accepted Attempt.
  * Duplicate-submission protection is an application/transaction-layer
  * concern, not a domain concern (see docs/DATABASE.md §12).
+ *
+ * Contract: this is the incremental ONLINE update path — one new Attempt
+ * applied to the current UserQuestionProgress as it happens. Evidence-
+ * summary fields (meaningfulAttemptCount, firstMeaningfulEvidenceAt,
+ * lastMeaningfulEvidenceAt) tolerate out-of-order answeredAt values
+ * because they take min/max against chronological evidence time rather
+ * than assuming arrival order. Retrieval/spacing semantics
+ * (retrievalBaselineAt, successfulSpacedRetrievals — see
+ * retrieval-qualification.ts) do NOT: they require Attempts to be applied
+ * in nondecreasing answeredAt order, and retrieval-qualification.ts fails
+ * fast rather than silently computing a negative gap when that's
+ * violated. A future rebuild/replay of UserQuestionProgress from
+ * immutable Attempt history (not implemented here) must therefore feed
+ * Attempts through this function in nondecreasing answeredAt order — it
+ * must not feed arbitrary historical order into retrieval qualification.
  */
 export function applyAttemptToProgress(
   previousProgress: UserQuestionProgress | null,
@@ -178,6 +193,8 @@ export function applyAttemptToProgress(
       attempt.responseTimeSeconds,
     ),
 
+    ...nextEvidenceSummary(previousProgress, attempt, evidence.quality),
+
     // Evidence-strength/mastery-category thresholds are unresolved
     // (see src/domain/learning/mastery.ts). Preserve, do not invent;
     // deriveMasteryCategory can be plugged in by a caller once a
@@ -241,6 +258,79 @@ function nextRetrievalBaseline(
     retrievalBaselineAt: previousBaselineAt,
     successfulSpacedRetrievals: previousSuccessfulSpacedRetrievals,
   };
+}
+
+/**
+ * Evidence-category counters and meaningful-evidence timestamps (see the
+ * doc comment on these fields in types.ts). Exactly one of the four
+ * counters increments per call, matching classifyAttemptEvidence()'s
+ * exactly-one-quality-per-Attempt guarantee — never derived by
+ * subtraction.
+ *
+ * firstMeaningfulEvidenceAt/lastMeaningfulEvidenceAt reflect chronological
+ * evidence time (attempt.answeredAt), not processing/ingestion order.
+ * Nothing in this codebase or docs/ guarantees Attempts are applied in
+ * answeredAt order (docs/DATABASE.md and docs/TESTING.md only discuss
+ * replay/backfill as things to guard against, never as an ordering
+ * guarantee) — so these fields must stay correct under replay, backfill,
+ * import, or otherwise out-of-order application. Each call therefore
+ * takes the min/max against attempt.answeredAt rather than assuming this
+ * call is chronologically the latest.
+ */
+function nextEvidenceSummary(
+  previousProgress: UserQuestionProgress | null,
+  attempt: Attempt,
+  quality: EvidenceQuality,
+): {
+  meaningfulAttemptCount: number;
+  assistedAttemptCount: number;
+  lowQualityAttemptCount: number;
+  invalidForMasteryAttemptCount: number;
+  firstMeaningfulEvidenceAt: Date | null;
+  lastMeaningfulEvidenceAt: Date | null;
+} {
+  const isMeaningful = quality === "FULL_EVIDENCE";
+
+  return {
+    meaningfulAttemptCount:
+      (previousProgress?.meaningfulAttemptCount ?? 0) + (isMeaningful ? 1 : 0),
+    assistedAttemptCount:
+      (previousProgress?.assistedAttemptCount ?? 0) +
+      (quality === "ASSISTED_EVIDENCE" ? 1 : 0),
+    lowQualityAttemptCount:
+      (previousProgress?.lowQualityAttemptCount ?? 0) +
+      (quality === "LOW_QUALITY_EVIDENCE" ? 1 : 0),
+    invalidForMasteryAttemptCount:
+      (previousProgress?.invalidForMasteryAttemptCount ?? 0) +
+      (quality === "INVALID_FOR_MASTERY" ? 1 : 0),
+
+    firstMeaningfulEvidenceAt: isMeaningful
+      ? earlierDate(
+          previousProgress?.firstMeaningfulEvidenceAt ?? null,
+          attempt.answeredAt,
+        )
+      : (previousProgress?.firstMeaningfulEvidenceAt ?? null),
+    lastMeaningfulEvidenceAt: isMeaningful
+      ? laterDate(
+          previousProgress?.lastMeaningfulEvidenceAt ?? null,
+          attempt.answeredAt,
+        )
+      : (previousProgress?.lastMeaningfulEvidenceAt ?? null),
+  };
+}
+
+function earlierDate(previous: Date | null, current: Date): Date {
+  if (previous === null) {
+    return current;
+  }
+  return previous.getTime() <= current.getTime() ? previous : current;
+}
+
+function laterDate(previous: Date | null, current: Date): Date {
+  if (previous === null) {
+    return current;
+  }
+  return previous.getTime() >= current.getTime() ? previous : current;
 }
 
 function nextSchedulerMemory(

@@ -162,6 +162,53 @@ export interface UserQuestionProgress {
   timedAttemptCount: number;
   averageResponseTimeSeconds: number | null;
 
+  /**
+   * Evidence-category counters and timestamps, tracked so a future caller
+   * of deriveEvidenceStrength()/deriveMasteryCategory() (mastery.ts,
+   * evidence-strength.ts) does not need to rescan Attempt history.
+   *
+   * EvidenceQuality (evidence.ts) is mutually exclusive and exhaustive by
+   * construction: classifyAttemptEvidence() is a strict if/else-return
+   * chain, so every Attempt is classified into exactly one of
+   * FULL_EVIDENCE / ASSISTED_EVIDENCE / LOW_QUALITY_EVIDENCE /
+   * INVALID_FOR_MASTERY. Given that, these four counters always satisfy:
+   *
+   *   attemptCount === meaningfulAttemptCount + assistedAttemptCount
+   *     + lowQualityAttemptCount + invalidForMasteryAttemptCount
+   *
+   * None of them is ever derived from the others by subtraction — each is
+   * incremented directly from classifyAttemptEvidence()'s own result, so
+   * this invariant stays true even if the EvidenceQuality model changes
+   * later (a change would show up as a failing test here, not a silent
+   * miscount).
+   */
+
+  /** Count of FULL_EVIDENCE attempts only — see evidence.ts. */
+  meaningfulAttemptCount: number;
+  /** Count of ASSISTED_EVIDENCE attempts. */
+  assistedAttemptCount: number;
+  /** Count of LOW_QUALITY_EVIDENCE attempts. */
+  lowQualityAttemptCount: number;
+  /** Count of INVALID_FOR_MASTERY attempts. */
+  invalidForMasteryAttemptCount: number;
+
+  /**
+   * Earliest FULL_EVIDENCE attempt.answeredAt observed for this Question
+   * (chronological evidence time, not processing/ingestion order — see
+   * progress-update.ts's nextEvidenceSummary for why). Assisted/low-quality/
+   * invalid attempts never move it.
+   */
+  firstMeaningfulEvidenceAt: Date | null;
+  /**
+   * Latest FULL_EVIDENCE attempt.answeredAt observed for this Question
+   * (chronological evidence time, not processing/ingestion order — see
+   * progress-update.ts's nextEvidenceSummary for why). Assisted/low-quality/
+   * invalid attempts never move it. A future caller derives observation
+   * span from firstMeaningfulEvidenceAt/lastMeaningfulEvidenceAt at
+   * decision time rather than reading a stored duration.
+   */
+  lastMeaningfulEvidenceAt: Date | null;
+
   evidenceStrength: EvidenceStrength;
   masteryCategory: MasteryCategory;
 
