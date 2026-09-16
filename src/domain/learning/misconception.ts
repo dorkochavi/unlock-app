@@ -20,8 +20,10 @@
  *   `isQualifyingRecoveryEvidence`, an explicit caller-provided flag. This
  *   file does not derive spacing/session rules (docs/OPEN_QUESTIONS.md
  *   #12/#13) — a caller decides what "qualifies" as recovery evidence;
- * - this file does NOT modify masteryCategory or evidenceStrength, and is
- *   not wired into progress-update.ts yet.
+ * - this file does NOT modify masteryCategory or evidenceStrength. It is
+ *   wired into progress-update.ts, which reuses baseReasons.includes(
+ *   "CONFIDENT_ERROR"/"SPACED_RETRIEVAL_SUCCESS") as the two signal inputs
+ *   below rather than re-deriving them.
  *
  * lastSeenAt semantics (see requirement 12): `lastSeenAt` means "the
  * timestamp of the most recent misconception-relevant evidence observed"
