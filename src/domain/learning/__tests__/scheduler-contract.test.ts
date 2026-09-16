@@ -26,6 +26,11 @@ class FakeMemoryScheduler implements MemoryScheduler {
         lastReviewAt: input.reviewedAt,
         reviewCount: 1,
         lapseCount: input.rating === "AGAIN" ? 1 : 0,
+        implementationState: {
+          implementation: "fake",
+          schemaVersion: 1,
+          state: {},
+        },
       },
     };
   }
@@ -48,10 +53,7 @@ class FakeMemoryScheduler implements MemoryScheduler {
     };
   }
 
-  estimateRetrievability(
-    _state: SchedulerMemoryState,
-    _at: Date,
-  ): number {
+  estimateRetrievability(): number {
     return 0.9;
   }
 }
@@ -82,6 +84,11 @@ describe("MemoryScheduler contract", () => {
       lastReviewAt: new Date("2026-09-16T18:00:00.000Z"),
       reviewCount: 1,
       lapseCount: 0,
+      implementationState: {
+        implementation: "fake",
+        schemaVersion: 1,
+        state: {},
+      },
     };
 
     const result = scheduler.review(state, {
@@ -104,6 +111,11 @@ describe("MemoryScheduler contract", () => {
       lastReviewAt: new Date("2026-09-16T18:00:00.000Z"),
       reviewCount: 1,
       lapseCount: 0,
+      implementationState: {
+        implementation: "fake",
+        schemaVersion: 1,
+        state: {},
+      },
     };
 
     expect(

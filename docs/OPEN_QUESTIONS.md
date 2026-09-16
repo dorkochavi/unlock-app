@@ -321,23 +321,21 @@ Target phase: Prototype Learning Audit / Learning Engine
 
 ## 12. Review Scheduling Rule
 
-Question:
+Decided:
 
-What is the exact V1 rule for `next_review_date`?
+UNLOCK V1 uses an FSRS-family scheduler as the memory-scheduling implementation for `next_review_date`, behind the internal `MemoryScheduler` interface. See `docs/DECISIONS/008-fsrs-memory-scheduler.md` and `docs/LEARNING_ENGINE.md` §12–§15. The scheduler-family choice itself is no longer open.
 
-Need to recover or decide:
+Still open:
 
-- intervals;
-- effect of correct/incorrect answers;
-- effect of mastery;
-- effect of confidence;
-- effect of repeated Attempts;
-- minimum/maximum interval;
-- overdue handling.
+- the exact mapping from UNLOCK evidence (correctness, confidence, response time, assistance) to FSRS ratings;
+- desired retention configuration;
+- whether/how desired retention changes near an exam date.
 
-Status: OPEN pending prototype audit
+Response time and confidence must not be automatically mapped to FSRS Hard/Easy ratings without a separate, explicitly documented and tested decision.
 
-Target phase: Prototype Learning Audit / Learning Engine
+Status: OPEN — scheduler family DECIDED (ADR-008); evidence→rating mapping and retention configuration remain open
+
+Target phase: Learning Engine V1 (MemoryScheduler adapter)
 
 ---
 

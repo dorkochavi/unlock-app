@@ -90,6 +90,10 @@ A Course must be valid independently of an Institution in V1.
 
 Prefer deterministic logic and existing infrastructure before adding recurring external or AI cost.
 
+### ADR-008 — FSRS Memory Scheduler
+
+UNLOCK V1 uses an FSRS-family scheduler behind the internal `MemoryScheduler` interface. FSRS owns memory scheduling only; it is not the Learning Engine.
+
 ---
 
 ## Decision Rule
