@@ -12,15 +12,30 @@
  * - retrieval qualification (successfulSpacedRetrievals /
  *   retrievalBaselineAt) is now applied here, via the injected
  *   `RetrievalQualificationPolicy` and `isSameLearningSession` context —
- *   see retrieval-qualification.ts. This function still does NOT decide
- *   the spacing threshold value itself, nor mastery thresholds,
- *   misconception activation/recovery, evidence-strength thresholds,
- *   desired retention, or exam behavior. Those remain unresolved policy
- *   (docs/OPEN_QUESTIONS.md) and are preserved unchanged here so the real
- *   policies can be plugged in later without rewriting this function.
+ *   see retrieval-qualification.ts;
+ * - evidenceStrength is now derived here too, via the injected
+ *   `EvidenceStrengthPolicy`, AFTER the current Attempt's evidence-summary
+ *   counters/timestamps and spaced-retrieval update, so the current
+ *   Attempt contributes to the freshly-derived strength rather than
+ *   lagging one Attempt behind. `hasOnlySameSessionEvidence` is derived
+ *   from `successfulSpacedRetrievals >= 1` — never invented from
+ *   timestamps or todaySessionId — see the design note above
+ *   `nextEvidenceSummary`/the evidenceStrengthResult computation for the
+ *   proof of why that's a sound (never falsely-positive) derivation;
+ * - this function still does NOT decide the spacing/evidence-strength
+ *   threshold values themselves, nor mastery thresholds, misconception
+ *   activation/recovery, desired retention, or exam behavior. Those
+ *   remain unresolved policy (docs/OPEN_QUESTIONS.md) and are preserved
+ *   unchanged here so the real policies can be plugged in later without
+ *   rewriting this function.
  */
 
 import { classifyAttemptEvidence } from "./evidence";
+import {
+  deriveEvidenceStrength,
+  type EvidenceStrengthPolicy,
+  type EvidenceStrengthResult,
+} from "./evidence-strength";
 import {
   qualifyRetrieval,
   type RetrievalQualificationPolicy,
@@ -62,6 +77,12 @@ export interface ProgressUpdateContext {
    * still open).
    */
   isSameLearningSession: boolean | null;
+
+  /**
+   * Threshold policy for evidence-strength.ts. No production default is
+   * chosen here — see docs/OPEN_QUESTIONS.md.
+   */
+  evidenceStrengthPolicy: EvidenceStrengthPolicy;
 }
 
 export interface ProgressUpdateResult {
@@ -69,6 +90,7 @@ export interface ProgressUpdateResult {
   evidence: ClassifiedEvidence;
   schedulerRatingDecision: SchedulerRatingDecision;
   retrievalQualification: RetrievalQualificationResult;
+  evidenceStrengthResult: EvidenceStrengthResult;
   /**
    * The single most relevant, unambiguous reason for this update, or null
    * when no reason from `STATE_UPDATE_REASONS` unambiguously applies yet
@@ -151,6 +173,44 @@ export function applyAttemptToProgress(
 
   const previousTimedAttemptCount = previousProgress?.timedAttemptCount ?? 0;
 
+  const evidenceSummary = nextEvidenceSummary(
+    previousProgress,
+    attempt,
+    evidence.quality,
+  );
+
+  // Derived AFTER the current Attempt's evidence classification,
+  // evidence-summary counters/timestamps, and spaced-retrieval update, so
+  // the current Attempt contributes to the newly-derived strength rather
+  // than the strength lagging one Attempt behind.
+  const observationSpanMs =
+    evidenceSummary.firstMeaningfulEvidenceAt !== null &&
+    evidenceSummary.lastMeaningfulEvidenceAt !== null
+      ? evidenceSummary.lastMeaningfulEvidenceAt.getTime() -
+        evidenceSummary.firstMeaningfulEvidenceAt.getTime()
+      : null;
+
+  // See the module-level design note above nextEvidenceSummary/this
+  // function for the proof: successfulSpacedRetrievals >= 1 can only be
+  // true when qualifyRetrieval has returned QUALIFYING_SPACED_RETRIEVAL,
+  // which requires an explicit isSameLearningSession === false
+  // confirmation. This is never optimistically claimed as "true" (no
+  // signal here can prove ALL evidence is single-occasion).
+  const hasOnlySameSessionEvidence =
+    successfulSpacedRetrievals >= 1 ? false : null;
+
+  const evidenceStrengthResult = deriveEvidenceStrength(
+    {
+      meaningfulAttemptCount: evidenceSummary.meaningfulAttemptCount,
+      successfulSpacedRetrievals,
+      observationSpanMs,
+      assistedAttemptCount: evidenceSummary.assistedAttemptCount,
+      lowQualityAttemptCount: evidenceSummary.lowQualityAttemptCount,
+      hasOnlySameSessionEvidence,
+    },
+    context.evidenceStrengthPolicy,
+  );
+
   const progress: UserQuestionProgress = {
     userId: attempt.userId,
     questionId: attempt.questionId,
@@ -193,13 +253,13 @@ export function applyAttemptToProgress(
       attempt.responseTimeSeconds,
     ),
 
-    ...nextEvidenceSummary(previousProgress, attempt, evidence.quality),
+    ...evidenceSummary,
 
-    // Evidence-strength/mastery-category thresholds are unresolved
-    // (see src/domain/learning/mastery.ts). Preserve, do not invent;
-    // deriveMasteryCategory can be plugged in by a caller once a
-    // MasteryPolicy is available.
-    evidenceStrength: previousProgress?.evidenceStrength ?? "insufficient",
+    evidenceStrength: evidenceStrengthResult.strength,
+
+    // Mastery thresholds are unresolved (see src/domain/learning/mastery.ts).
+    // Preserve, do not invent; deriveMasteryCategory can be plugged in by a
+    // caller once a MasteryPolicy is available.
     masteryCategory: previousProgress?.masteryCategory ?? "not_started",
 
     engineVersion: context.engineVersion,
@@ -211,6 +271,7 @@ export function applyAttemptToProgress(
     evidence,
     schedulerRatingDecision,
     retrievalQualification,
+    evidenceStrengthResult,
     reason,
   };
 }

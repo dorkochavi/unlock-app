@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { EvidenceStrengthPolicy } from "../evidence-strength";
 import { applyAttemptToProgress } from "../progress-update";
 import type { RetrievalQualificationPolicy } from "../retrieval-qualification";
 import type {
@@ -14,6 +15,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const TEST_RETRIEVAL_QUALIFICATION_POLICY: RetrievalQualificationPolicy = {
   minGapMsForSpacedRetrieval: 1 * DAY_MS,
+};
+
+const TEST_EVIDENCE_STRENGTH_POLICY: EvidenceStrengthPolicy = {
+  minMeaningfulAttemptsForEarly: 1,
+  minMeaningfulAttemptsForModerate: 3,
+  minMeaningfulAttemptsForStrong: 5,
+  minSpacedRetrievalsForModerate: 1,
+  minSpacedRetrievalsForStrong: 3,
+  minObservationSpanMsForStrong: 3 * DAY_MS,
 };
 
 /**
@@ -103,6 +113,7 @@ function makeContext(
     memoryScheduler: scheduler,
     retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
     isSameLearningSession,
+    evidenceStrengthPolicy: TEST_EVIDENCE_STRENGTH_POLICY,
   };
 }
 
@@ -994,5 +1005,388 @@ describe("applyAttemptToProgress — evidence summary counters", () => {
         progress.lowQualityAttemptCount +
         progress.invalidForMasteryAttemptCount,
     ).toBe(progress.attemptCount);
+  });
+});
+
+describe("applyAttemptToProgress — evidence strength integration", () => {
+  it("A. moves evidenceStrength from insufficient to early on a first meaningful attempt", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.progress.evidenceStrength).toBe("early");
+    expect(result.evidenceStrengthResult.reasons).toEqual(["EARLY_EVIDENCE"]);
+  });
+
+  it("B. does not let an assisted-only history become moderate/strong", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "FIFTY_FIFTY",
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    for (let day = 2; day <= 6; day += 1) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          assistanceUsed: "HINT",
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+
+    expect(result.progress.meaningfulAttemptCount).toBe(0);
+    expect(result.progress.evidenceStrength).toBe("insufficient");
+    expect(result.evidenceStrengthResult.reasons).toEqual([
+      "ASSISTANCE_HEAVY",
+    ]);
+  });
+
+  it("C. does not let a low-quality-only history become moderate/strong", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        attemptNumberForPresentedItem: 2,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    for (let day = 2; day <= 6; day += 1) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          attemptNumberForPresentedItem: 2,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+
+    expect(result.progress.meaningfulAttemptCount).toBe(0);
+    expect(result.progress.evidenceStrength).toBe("insufficient");
+    expect(result.evidenceStrengthResult.reasons).toEqual([
+      "ASSISTANCE_HEAVY",
+    ]);
+  });
+
+  it("D. lets a qualifying spaced retrieval move evidenceStrength upward", () => {
+    const scheduler = new FakeMemoryScheduler();
+
+    // attempt1: baseline set, meaningful=1 -> early
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(result.progress.evidenceStrength).toBe("early");
+
+    // attempt2: different session, 2-day gap -> qualifies; spaced=1,
+    // meaningful=2 (still below moderate's 3-attempt gate) -> stays early.
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(result.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(result.progress.evidenceStrength).toBe("early");
+
+    // attempt3: different session, 2-day gap -> qualifies; spaced=2,
+    // meaningful=3 crosses moderate's attempt AND spacing gates together.
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(result.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(result.progress.successfulSpacedRetrievals).toBe(2);
+    expect(result.progress.meaningfulAttemptCount).toBe(3);
+    expect(result.progress.evidenceStrength).toBe("moderate");
+  });
+
+  it("E. lets a long-enough observation span contribute when policy requires it", () => {
+    // Bespoke policy isolating span: attempt/spacing gates are trivially
+    // met at 1 meaningful attempt / 0 spaced retrievals, so only span and
+    // session diversity can still block "strong".
+    const spanTestPolicy: EvidenceStrengthPolicy = {
+      minMeaningfulAttemptsForEarly: 1,
+      minMeaningfulAttemptsForModerate: 1,
+      minMeaningfulAttemptsForStrong: 1,
+      minSpacedRetrievalsForModerate: 0,
+      minSpacedRetrievalsForStrong: 0,
+      minObservationSpanMsForStrong: 3 * DAY_MS,
+    };
+    const contextWith = (scheduler: MemoryScheduler) => ({
+      now: new Date("2026-01-01T00:05:00.000Z"),
+      engineVersion: "learning_engine_v1.0",
+      memoryScheduler: scheduler,
+      retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
+      isSameLearningSession: false,
+      evidenceStrengthPolicy: spanTestPolicy,
+    });
+
+    const scheduler = new FakeMemoryScheduler();
+
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      contextWith(scheduler),
+    );
+    // Only 1 meaningful attempt so far: span is 0ms (first === last),
+    // below the 3-day threshold -> capped at moderate.
+    expect(first.progress.evidenceStrength).toBe("moderate");
+    expect(first.evidenceStrengthResult.reasons).toContain(
+      "INSUFFICIENT_OBSERVATION_SPAN",
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      contextWith(scheduler),
+    );
+    // 4-day gap: qualifies as spaced (confirms cross-session diversity)
+    // AND pushes observationSpanMs to 4 days, above the 3-day threshold.
+    expect(second.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(second.progress.evidenceStrength).toBe("strong");
+    expect(second.evidenceStrengthResult.reasons).toEqual([
+      "STRONG_EVIDENCE",
+    ]);
+  });
+
+  it("F. does not let same-session-only evidence become strong", () => {
+    // Bespoke policy: spacing/span thresholds trivially met, so only the
+    // session-diversity gate can still block "strong".
+    const sessionTestPolicy: EvidenceStrengthPolicy = {
+      minMeaningfulAttemptsForEarly: 1,
+      minMeaningfulAttemptsForModerate: 3,
+      minMeaningfulAttemptsForStrong: 5,
+      minSpacedRetrievalsForModerate: 0,
+      minSpacedRetrievalsForStrong: 0,
+      minObservationSpanMsForStrong: null,
+    };
+    const contextWith = (scheduler: MemoryScheduler) => ({
+      now: new Date("2026-01-01T00:05:00.000Z"),
+      engineVersion: "learning_engine_v1.0",
+      memoryScheduler: scheduler,
+      retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
+      isSameLearningSession: true,
+      evidenceStrengthPolicy: sessionTestPolicy,
+    });
+
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      contextWith(scheduler),
+    );
+    for (let day = 2; day <= 5; day += 1) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        contextWith(scheduler),
+      );
+    }
+
+    expect(result.progress.meaningfulAttemptCount).toBe(5);
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+    expect(result.progress.evidenceStrength).toBe("moderate");
+    expect(result.progress.evidenceStrength).not.toBe("strong");
+  });
+
+  it("G. does not let unknown session diversity optimistically become strong", () => {
+    const sessionTestPolicy: EvidenceStrengthPolicy = {
+      minMeaningfulAttemptsForEarly: 1,
+      minMeaningfulAttemptsForModerate: 3,
+      minMeaningfulAttemptsForStrong: 5,
+      minSpacedRetrievalsForModerate: 0,
+      minSpacedRetrievalsForStrong: 0,
+      minObservationSpanMsForStrong: null,
+    };
+    const contextWith = (scheduler: MemoryScheduler) => ({
+      now: new Date("2026-01-01T00:05:00.000Z"),
+      engineVersion: "learning_engine_v1.0",
+      memoryScheduler: scheduler,
+      retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
+      isSameLearningSession: null,
+      evidenceStrengthPolicy: sessionTestPolicy,
+    });
+
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      contextWith(scheduler),
+    );
+    for (let day = 2; day <= 5; day += 1) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        contextWith(scheduler),
+      );
+    }
+
+    expect(result.retrievalQualification.reason).toBe("SESSION_UNKNOWN");
+    expect(result.progress.meaningfulAttemptCount).toBe(5);
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+    expect(result.progress.evidenceStrength).toBe("moderate");
+    expect(result.evidenceStrengthResult.reasons).toContain(
+      "SESSION_DIVERSITY_UNKNOWN",
+    );
+  });
+
+  it("H. lets the current Attempt affect the newly-derived evidenceStrength immediately", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(result.progress.meaningfulAttemptCount).toBe(2);
+    expect(result.progress.evidenceStrength).toBe("early");
+
+    // The 3rd meaningful attempt, processed in this single call, must be
+    // reflected in THIS SAME result — not lagging one call behind.
+    const third = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(third.progress.meaningfulAttemptCount).toBe(3);
+    expect(third.progress.evidenceStrength).toBe("moderate");
+  });
+
+  it("I. is deterministic for identical inputs including evidenceStrength", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const resultA = applyAttemptToProgress(null, attempt, makeContext());
+    const resultB = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(resultA.progress.evidenceStrength).toEqual(
+      resultB.progress.evidenceStrength,
+    );
+    expect(resultA.evidenceStrengthResult).toEqual(
+      resultB.evidenceStrengthResult,
+    );
+  });
+
+  it("J. recomputes evidenceStrength from current derived state rather than blindly preserving it", () => {
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(),
+    );
+    expect(first.progress.evidenceStrength).toBe("early");
+
+    // Simulate stale/corrupted persisted state: evidenceStrength claims
+    // "strong" even though the underlying counters do not support it.
+    const staleProgress: UserQuestionProgress = {
+      ...first.progress,
+      evidenceStrength: "strong",
+    };
+
+    // A non-meaningful attempt that does not change any counter driving
+    // evidence strength.
+    const result = applyAttemptToProgress(
+      staleProgress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "FIFTY_FIFTY",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(),
+    );
+
+    expect(result.progress.evidenceStrength).toBe("early");
+    expect(result.progress.evidenceStrength).not.toBe("strong");
+  });
+
+  it("K. leaves masteryCategory unchanged", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(result.progress.masteryCategory).toBe("not_started");
+
+    result = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    // evidenceStrength may have changed; masteryCategory must not have.
+    expect(result.progress.masteryCategory).toBe("not_started");
   });
 });
