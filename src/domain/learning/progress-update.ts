@@ -33,9 +33,12 @@
  *     timestamp already stamped on `updatedAt`), not `attempt.answeredAt`
  *     (which would be near-tautological immediately after that same
  *     Attempt just set the scheduler's `due`/`last_review` to it);
- *   - hasUnresolvedLapse: derived from the new `lastLapseAt` field
- *     (timestamp of the most recent Attempt with `isLapse === true`)
- *     compared against the EXISTING `retrievalBaselineAt`. Conservative
+ *   - hasUnresolvedLapse: `lapse.ts`'s `deriveHasUnresolvedLapse`, given
+ *     the new `lastLapseAt` field (timestamp of the most recent Attempt
+ *     with `isLapse === true`) compared against the EXISTING
+ *     `retrievalBaselineAt` — a small dedicated module rather than
+ *     inlined here, since next-best-action.ts's RELEARN_LAPSE candidate
+ *     needs the exact same rule and must not re-derive it. Conservative
  *     V1 rule: `retrievalBaselineAt` only moves on the first baseline-
  *     setting retrieval or a later QUALIFYING_SPACED_RETRIEVAL, so a
  *     lapse stays "unresolved" until genuine longitudinal (qualifying/
@@ -71,6 +74,7 @@ import {
   type EvidenceStrengthPolicy,
   type EvidenceStrengthResult,
 } from "./evidence-strength";
+import { deriveHasUnresolvedLapse } from "./lapse";
 import {
   deriveMasteryCategory,
   type MasteryDecisionInput,
@@ -383,10 +387,10 @@ export function applyAttemptToProgress(
   // cases (see nextRetrievalBaseline). Only genuine longitudinal
   // (qualifying/spaced) evidence resolves a lapse — never derived from
   // lapseCount > 0 or raw lastCorrectAt.
-  const hasUnresolvedLapse =
-    lastLapseAt !== null &&
-    (retrievalBaselineAt === null ||
-      lastLapseAt.getTime() > retrievalBaselineAt.getTime());
+  const hasUnresolvedLapse = deriveHasUnresolvedLapse(
+    lastLapseAt,
+    retrievalBaselineAt,
+  );
 
   const masteryDecisionInput: MasteryDecisionInput = {
     meaningfulAttemptCount: evidenceSummary.meaningfulAttemptCount,
