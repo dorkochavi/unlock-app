@@ -149,6 +149,17 @@ export interface UserQuestionProgress {
 
   successfulSpacedRetrievals: number;
   lapseCount: number;
+  /**
+   * Timestamp of the most recent Attempt that produced a LAPSE
+   * (StateUpdateReason), or null if none has occurred yet. Chronological
+   * evidence time (attempt.answeredAt), not processing order — same
+   * min/max treatment as firstMeaningfulEvidenceAt/lastMeaningfulEvidenceAt
+   * (see progress-update.ts). Unlike lapseCount (a pure historical count),
+   * this exists so a caller can determine whether a lapse is still
+   * "unresolved" (no clean successful retrieval — see retrievalBaselineAt —
+   * has occurred since), without treating every past lapse as permanent.
+   */
+  lastLapseAt: Date | null;
 
   misconceptionState: MisconceptionState;
   /** Bounded diagnostic score, not a probability. See src/domain/learning/misconception.ts. */

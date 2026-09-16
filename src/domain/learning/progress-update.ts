@@ -22,8 +22,30 @@
  *   timestamps or todaySessionId — see the design note above
  *   `nextEvidenceSummary`/the evidenceStrengthResult computation for the
  *   proof of why that's a sound (never falsely-positive) derivation;
- * - this function still does NOT decide the spacing/evidence-strength
- *   threshold values themselves, nor mastery thresholds, misconception
+ * - masteryCategory is now derived here too, via the injected
+ *   `MasteryPolicy`, AFTER scheduler memory, retrieval qualification,
+ *   evidence summary, and evidenceStrength are all updated, so the
+ *   current Attempt affects mastery immediately rather than lagging one
+ *   Attempt behind. Two inputs mastery.ts needs are computed fresh here,
+ *   never persisted as static state (both are time/history-dependent):
+ *   - retrievabilityEstimate: `context.memoryScheduler.estimateRetrievability
+ *     (memory, context.now)` — evaluated at `context.now` (the same "as of"
+ *     timestamp already stamped on `updatedAt`), not `attempt.answeredAt`
+ *     (which would be near-tautological immediately after that same
+ *     Attempt just set the scheduler's `due`/`last_review` to it);
+ *   - hasUnresolvedLapse: derived from the new `lastLapseAt` field
+ *     (timestamp of the most recent Attempt with `isLapse === true`)
+ *     compared against the EXISTING `retrievalBaselineAt`. Conservative
+ *     V1 rule: `retrievalBaselineAt` only moves on the first baseline-
+ *     setting retrieval or a later QUALIFYING_SPACED_RETRIEVAL, so a
+ *     lapse stays "unresolved" until genuine longitudinal (qualifying/
+ *     spaced) evidence occurs — a same-session or gap-too-short correct
+ *     answer does NOT resolve it, even though it is otherwise clean. NOT
+ *     derived from `lapseCount > 0` (would make every lapse permanent),
+ *     and NOT from raw `lastCorrectAt` (would let an assisted "correct"
+ *     answer silently resolve a lapse and indirectly unlock mastery);
+ * - this function still does NOT decide the spacing/evidence-strength/
+ *   mastery threshold values themselves, nor misconception
  *   activation/recovery, desired retention, or exam behavior. Those
  *   remain unresolved policy (docs/OPEN_QUESTIONS.md) and are preserved
  *   unchanged here so the real policies can be plugged in later without
@@ -36,6 +58,11 @@ import {
   type EvidenceStrengthPolicy,
   type EvidenceStrengthResult,
 } from "./evidence-strength";
+import {
+  deriveMasteryCategory,
+  type MasteryDecisionInput,
+  type MasteryPolicy,
+} from "./mastery";
 import {
   qualifyRetrieval,
   type RetrievalQualificationPolicy,
@@ -83,6 +110,12 @@ export interface ProgressUpdateContext {
    * chosen here — see docs/OPEN_QUESTIONS.md.
    */
   evidenceStrengthPolicy: EvidenceStrengthPolicy;
+
+  /**
+   * Threshold policy for mastery.ts. No production default is chosen
+   * here — see docs/OPEN_QUESTIONS.md.
+   */
+  masteryPolicy: MasteryPolicy;
 }
 
 export interface ProgressUpdateResult {
@@ -92,13 +125,25 @@ export interface ProgressUpdateResult {
   retrievalQualification: RetrievalQualificationResult;
   evidenceStrengthResult: EvidenceStrengthResult;
   /**
-   * The single most relevant, unambiguous reason for this update, or null
-   * when no reason from `STATE_UPDATE_REASONS` unambiguously applies yet
-   * (for example, an unremarkable non-first correct answer that isn't a
+   * The exact input assembled for deriveMasteryCategory() this call,
+   * exposed for explainability (mirrors `evidence`/`retrievalQualification`
+   * — reuses mastery.ts's own type rather than inventing a new one).
+   */
+  masteryDecisionInput: MasteryDecisionInput;
+  /**
+   * Every unambiguous StateUpdateReason signal this Attempt truthfully
+   * produced, in a fixed deterministic order (see
+   * deriveStateUpdateReasons's doc comment) — NOT a single "winning"
+   * reason. More than one can legitimately apply at once (for example a
+   * FULL_EVIDENCE, high-confidence, incorrect Attempt against already-
+   * established scheduler memory is simultaneously CONFIDENT_ERROR and
+   * LAPSE), and this array must contain all of them rather than picking
+   * one. Empty when no defined reason unambiguously applies yet (for
+   * example, an unremarkable non-first correct answer that isn't a
    * qualifying spaced retrieval, before a mastery/misconception policy is
    * available to classify it further).
    */
-  reason: StateUpdateReason | null;
+  reasons: StateUpdateReason[];
 }
 
 /**
@@ -163,13 +208,30 @@ export function applyAttemptToProgress(
       retrievalQualification,
     );
 
-  const reason = deriveStateUpdateReason({
+  const reasons = deriveStateUpdateReasons({
     isFirstAttempt: previousProgress === null,
     attempt,
     evidenceQuality: evidence.quality,
     isLapse,
     retrievalQualificationReason: retrievalQualification.reason,
   });
+
+  // Driven directly by `isLapse` (the actual scheduler-level lapse event
+  // computed above), NOT by `reasons.includes("LAPSE")` or any
+  // presentation-precedence outcome. A FULL_EVIDENCE, high-confidence,
+  // incorrect Attempt against established scheduler memory is
+  // simultaneously CONFIDENT_ERROR and a genuine lapse — lapseCount and
+  // lastLapseAt must record the lapse regardless of what else is also
+  // true about this Attempt.
+  const lapseCount = (previousProgress?.lapseCount ?? 0) + (isLapse ? 1 : 0);
+
+  // Chronological evidence time, same min/max treatment as
+  // firstMeaningfulEvidenceAt/lastMeaningfulEvidenceAt — see
+  // nextEvidenceSummary's design note. Only moved when THIS Attempt is
+  // itself the lapse (per `isLapse`); otherwise preserved unchanged.
+  const lastLapseAt = isLapse
+    ? laterDate(previousProgress?.lastLapseAt ?? null, attempt.answeredAt)
+    : (previousProgress?.lastLapseAt ?? null);
 
   const previousTimedAttemptCount = previousProgress?.timedAttemptCount ?? 0;
 
@@ -211,6 +273,43 @@ export function applyAttemptToProgress(
     context.evidenceStrengthPolicy,
   );
 
+  // Time-dependent — recomputed here, never persisted. Evaluated at
+  // context.now (see the module-level design note for why, not
+  // attempt.answeredAt).
+  const retrievabilityEstimate =
+    memory !== null
+      ? context.memoryScheduler.estimateRetrievability(memory, context.now)
+      : null;
+
+  // See the module-level design note: unresolved means a lapse has
+  // occurred and retrievalBaselineAt has not moved past it since — i.e.
+  // no subsequent QUALIFYING_SPACED_RETRIEVAL (or the very first
+  // baseline-setting retrieval) has occurred after the lapse. This is
+  // deliberately conservative: a same-session or gap-too-short correct
+  // answer, though clean (FULL_EVIDENCE + correct), does NOT resolve a
+  // lapse, because retrievalBaselineAt does not move for either of those
+  // cases (see nextRetrievalBaseline). Only genuine longitudinal
+  // (qualifying/spaced) evidence resolves a lapse — never derived from
+  // lapseCount > 0 or raw lastCorrectAt.
+  const hasUnresolvedLapse =
+    lastLapseAt !== null &&
+    (retrievalBaselineAt === null ||
+      lastLapseAt.getTime() > retrievalBaselineAt.getTime());
+
+  const masteryDecisionInput: MasteryDecisionInput = {
+    meaningfulAttemptCount: evidenceSummary.meaningfulAttemptCount,
+    successfulSpacedRetrievals,
+    lapseCount,
+    evidenceStrength: evidenceStrengthResult.strength,
+    retrievabilityEstimate,
+    hasUnresolvedLapse,
+  };
+
+  const masteryCategory = deriveMasteryCategory(
+    masteryDecisionInput,
+    context.masteryPolicy,
+  );
+
   const progress: UserQuestionProgress = {
     userId: attempt.userId,
     questionId: attempt.questionId,
@@ -231,12 +330,8 @@ export function applyAttemptToProgress(
 
     retrievalBaselineAt,
     successfulSpacedRetrievals,
-
-    // Unlike successfulSpacedRetrievals, LAPSE is an already-unambiguous
-    // signal (requirement 11): a previously established scheduler state
-    // received AGAIN. Safe to increment directly.
-    lapseCount:
-      (previousProgress?.lapseCount ?? 0) + (reason === "LAPSE" ? 1 : 0),
+    lapseCount,
+    lastLapseAt,
 
     // Misconception activation/recovery thresholds are unresolved
     // (docs/OPEN_QUESTIONS.md #13). Preserve, do not invent. The
@@ -256,11 +351,7 @@ export function applyAttemptToProgress(
     ...evidenceSummary,
 
     evidenceStrength: evidenceStrengthResult.strength,
-
-    // Mastery thresholds are unresolved (see src/domain/learning/mastery.ts).
-    // Preserve, do not invent; deriveMasteryCategory can be plugged in by a
-    // caller once a MasteryPolicy is available.
-    masteryCategory: previousProgress?.masteryCategory ?? "not_started",
+    masteryCategory,
 
     engineVersion: context.engineVersion,
     updatedAt: context.now,
@@ -272,7 +363,8 @@ export function applyAttemptToProgress(
     schedulerRatingDecision,
     retrievalQualification,
     evidenceStrengthResult,
-    reason,
+    masteryDecisionInput,
+    reasons,
   };
 }
 
@@ -427,41 +519,61 @@ function nextSchedulerMemory(
 }
 
 /**
- * Reason precedence (highest first): CONFIDENT_ERROR and LAPSE are
- * behavioral signals about this specific Attempt and take priority over
- * the structural INITIAL_ATTEMPT label. SPACED_RETRIEVAL_SUCCESS and
- * ASSISTED_SUCCESS are reported when relevant even on a technically-first
- * attempt. SAME_SESSION_SUCCESS / MISCONCEPTION_RECOVERY are intentionally
- * never returned here: no session or recovery policy is available yet.
+ * Collects EVERY unambiguous StateUpdateReason signal this Attempt
+ * truthfully produced. This is NOT a "pick the winner" precedence chain —
+ * multiple signals can be simultaneously true and must all be returned.
+ *
+ * Corrected history: an earlier version of this function returned only
+ * the first matching reason (a single `StateUpdateReason | null`), on the
+ * documented but INCORRECT assumption that CONFIDENT_ERROR and LAPSE were
+ * mutually exclusive. They are not: both require `!attempt.isCorrect`,
+ * and a FULL_EVIDENCE, high-confidence, incorrect Attempt against
+ * already-established scheduler memory (`isLapse`) satisfies both
+ * conditions at once. Under the old single-winner model, CONFIDENT_ERROR
+ * was checked first and LAPSE was silently dropped — and because
+ * `lapseCount`/`lastLapseAt` were driven by `reason === "LAPSE"`, a
+ * genuine lapse could fail to be recorded at all. `lapseCount`/
+ * `lastLapseAt` are now driven directly by the `isLapse` boolean instead
+ * (see where they're computed above), independent of this function and
+ * of any ordering choice made here.
+ *
+ * Deterministic ordering (diagnostic/behavioral signals before the
+ * structural label, most specific first): CONFIDENT_ERROR, LAPSE,
+ * SPACED_RETRIEVAL_SUCCESS, ASSISTED_SUCCESS, INITIAL_ATTEMPT. This
+ * mirrors the old precedence order, just collecting matches instead of
+ * returning the first one. INITIAL_ATTEMPT is a true structural fact
+ * about this Attempt whenever it applies, so it is included alongside
+ * any behavioral signals rather than suppressed by them (for example, a
+ * first-ever high-confidence wrong answer is both CONFIDENT_ERROR and
+ * INITIAL_ATTEMPT).
  *
  * CONFIDENT_ERROR additionally requires FULL_EVIDENCE. Assisted,
- * second-attempt, revealed-answer, or otherwise low-quality evidence is not
- * clean enough to support this diagnostic signal yet, even when confidence
- * was reported as high.
+ * second-attempt, revealed-answer, or otherwise low-quality evidence is
+ * not clean enough to support this diagnostic signal, even when
+ * confidence was reported as high.
  *
- * SPACED_RETRIEVAL_SUCCESS mutual-exclusivity proof (so this list order
- * never actually has to arbitrate a real conflict — verify this still
- * holds if any of these gates change):
- * - CONFIDENT_ERROR and LAPSE both require `!attempt.isCorrect`;
- *   SPACED_RETRIEVAL_SUCCESS requires `isCorrect` (qualifyRetrieval's
- *   INCORRECT gate would otherwise have already returned false);
- * - ASSISTED_SUCCESS requires evidenceQuality === "ASSISTED_EVIDENCE";
- *   SPACED_RETRIEVAL_SUCCESS requires "FULL_EVIDENCE" (qualifyRetrieval's
- *   NOT_FULL_EVIDENCE gate would otherwise have already returned false) —
- *   evidence.ts returns exactly one quality, so these can't both hold;
- * - INITIAL_ATTEMPT requires `previousProgress === null`;
- *   SPACED_RETRIEVAL_SUCCESS requires a non-null retrievalBaselineAt on
- *   previousProgress, which requires previousProgress to already exist.
- * Given this, `reason` can safely stay a single value instead of an array
- * — no signal is ever silently dropped by this precedence order today.
+ * Known exclusivity that still holds (documented, not assumed): LAPSE
+ * requires `previousMemory !== null`, which requires `previousProgress
+ * !== null`, so LAPSE and INITIAL_ATTEMPT cannot co-occur. SPACED_
+ * RETRIEVAL_SUCCESS requires `isCorrect` (excludes CONFIDENT_ERROR/
+ * LAPSE), FULL_EVIDENCE (excludes ASSISTED_SUCCESS), and an existing
+ * `previousProgress`/baseline (excludes INITIAL_ATTEMPT) — so it never
+ * co-occurs with any other reason. ASSISTED_SUCCESS requires `isCorrect`
+ * (excludes CONFIDENT_ERROR/LAPSE) and ASSISTED_EVIDENCE (excludes
+ * SPACED_RETRIEVAL_SUCCESS/CONFIDENT_ERROR), but CAN co-occur with
+ * INITIAL_ATTEMPT (a first-ever assisted correct answer).
+ *
+ * SAME_SESSION_SUCCESS / MISCONCEPTION_RECOVERY are intentionally never
+ * returned here: no session-success or misconception-recovery policy is
+ * available yet.
  */
-function deriveStateUpdateReason(input: {
+function deriveStateUpdateReasons(input: {
   isFirstAttempt: boolean;
   attempt: Attempt;
   evidenceQuality: EvidenceQuality;
   isLapse: boolean;
   retrievalQualificationReason: RetrievalQualificationReason;
-}): StateUpdateReason | null {
+}): StateUpdateReason[] {
   const {
     isFirstAttempt,
     attempt,
@@ -470,31 +582,33 @@ function deriveStateUpdateReason(input: {
     retrievalQualificationReason,
   } = input;
 
+  const reasons: StateUpdateReason[] = [];
+
   if (
     !attempt.isCorrect &&
     attempt.confidenceLevel === "high" &&
     evidenceQuality === "FULL_EVIDENCE"
   ) {
-    return "CONFIDENT_ERROR";
+    reasons.push("CONFIDENT_ERROR");
   }
 
   if (isLapse) {
-    return "LAPSE";
+    reasons.push("LAPSE");
   }
 
   if (retrievalQualificationReason === "QUALIFYING_SPACED_RETRIEVAL") {
-    return "SPACED_RETRIEVAL_SUCCESS";
+    reasons.push("SPACED_RETRIEVAL_SUCCESS");
   }
 
   if (evidenceQuality === "ASSISTED_EVIDENCE" && attempt.isCorrect) {
-    return "ASSISTED_SUCCESS";
+    reasons.push("ASSISTED_SUCCESS");
   }
 
   if (isFirstAttempt) {
-    return "INITIAL_ATTEMPT";
+    reasons.push("INITIAL_ATTEMPT");
   }
 
-  return null;
+  return reasons;
 }
 
 /**

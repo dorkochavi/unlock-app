@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EvidenceStrengthPolicy } from "../evidence-strength";
+import type { MasteryPolicy } from "../mastery";
 import { applyAttemptToProgress } from "../progress-update";
 import type { RetrievalQualificationPolicy } from "../retrieval-qualification";
 import type {
@@ -24,6 +25,13 @@ const TEST_EVIDENCE_STRENGTH_POLICY: EvidenceStrengthPolicy = {
   minSpacedRetrievalsForModerate: 1,
   minSpacedRetrievalsForStrong: 3,
   minObservationSpanMsForStrong: 3 * DAY_MS,
+};
+
+const TEST_MASTERY_POLICY: MasteryPolicy = {
+  minSpacedRetrievalsForStrengthening: 1,
+  minSpacedRetrievalsForMastered: 3,
+  minEvidenceStrengthForMastered: "strong",
+  minRetrievabilityForMastered: 0.8,
 };
 
 /**
@@ -75,6 +83,30 @@ class FakeMemoryScheduler implements MemoryScheduler {
   }
 }
 
+/**
+ * Same review/initialize behavior as FakeMemoryScheduler, but a
+ * deliberately low estimateRetrievability, to isolate the retrievability
+ * gate from the spacing/evidence-strength gates in mastery tests.
+ */
+class LowRetrievabilityMemoryScheduler implements MemoryScheduler {
+  private readonly inner = new FakeMemoryScheduler();
+
+  initialize(input: InitialReviewInput): MemoryReviewResult {
+    return this.inner.initialize(input);
+  }
+
+  review(
+    state: SchedulerMemoryState,
+    input: ReviewEvidence,
+  ): MemoryReviewResult {
+    return this.inner.review(state, input);
+  }
+
+  estimateRetrievability(): number {
+    return 0.5;
+  }
+}
+
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
@@ -114,6 +146,7 @@ function makeContext(
     retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
     isSameLearningSession,
     evidenceStrengthPolicy: TEST_EVIDENCE_STRENGTH_POLICY,
+    masteryPolicy: TEST_MASTERY_POLICY,
   };
 }
 
@@ -133,7 +166,7 @@ describe("applyAttemptToProgress", () => {
     expect(result.progress.lastIncorrectAt).toBeNull();
     expect(result.progress.memory).not.toBeNull();
     expect(result.progress.memory?.reviewCount).toBe(1);
-    expect(result.reason).toBe("INITIAL_ATTEMPT");
+    expect(result.reasons).toEqual(["INITIAL_ATTEMPT"]);
     expect(result.progress.engineVersion).toBe("learning_engine_v1.0");
     expect(result.progress.updatedAt).toEqual(context.now);
   });
@@ -184,7 +217,7 @@ describe("applyAttemptToProgress", () => {
       rating: "AGAIN",
     });
     expect(second.progress.memory?.reviewCount).toBe(2);
-    expect(second.reason).toBe("LAPSE");
+    expect(second.reasons).toEqual(["LAPSE"]);
     expect(second.progress.lapseCount).toBe(
       (first.progress.lapseCount ?? 0) + 1,
     );
@@ -202,7 +235,10 @@ describe("applyAttemptToProgress", () => {
     const result = applyAttemptToProgress(previous, attempt, makeContext());
 
     expect(result.evidence.quality).toBe("FULL_EVIDENCE");
-    expect(result.reason).toBe("CONFIDENT_ERROR");
+    // Also truthfully INITIAL_ATTEMPT (previousProgress is null) — both
+    // are true structural/behavioral facts about this Attempt and both
+    // must be present, not suppressed in favor of one another.
+    expect(result.reasons).toEqual(["CONFIDENT_ERROR", "INITIAL_ATTEMPT"]);
     expect(result.progress.misconceptionState).toBe("none");
     expect(result.progress.misconceptionScore).toBe(0);
   });
@@ -217,7 +253,7 @@ describe("applyAttemptToProgress", () => {
     const result = applyAttemptToProgress(null, attempt, makeContext());
 
     expect(result.evidence.quality).toBe("ASSISTED_EVIDENCE");
-    expect(result.reason).not.toBe("CONFIDENT_ERROR");
+    expect(result.reasons).not.toContain("CONFIDENT_ERROR");
     expect(result.progress.misconceptionState).toBe("none");
     expect(result.progress.misconceptionScore).toBe(0);
   });
@@ -232,7 +268,7 @@ describe("applyAttemptToProgress", () => {
     const result = applyAttemptToProgress(null, attempt, makeContext());
 
     expect(result.evidence.quality).toBe("LOW_QUALITY_EVIDENCE");
-    expect(result.reason).not.toBe("CONFIDENT_ERROR");
+    expect(result.reasons).not.toContain("CONFIDENT_ERROR");
     expect(result.progress.misconceptionState).toBe("none");
     expect(result.progress.misconceptionScore).toBe(0);
   });
@@ -248,7 +284,7 @@ describe("applyAttemptToProgress", () => {
     const result = applyAttemptToProgress(null, attempt, makeContext());
 
     expect(result.evidence.quality).toBe("INVALID_FOR_MASTERY");
-    expect(result.reason).not.toBe("CONFIDENT_ERROR");
+    expect(result.reasons).not.toContain("CONFIDENT_ERROR");
     expect(result.progress.misconceptionState).toBe("none");
     expect(result.progress.misconceptionScore).toBe(0);
   });
@@ -277,7 +313,7 @@ describe("applyAttemptToProgress", () => {
     expect(second.progress.memory?.reviewCount).toBe(
       first.progress.memory?.reviewCount,
     );
-    expect(second.reason).toBe("ASSISTED_SUCCESS");
+    expect(second.reasons).toEqual(["ASSISTED_SUCCESS"]);
   });
 
   it("F. treats a second-attempt correct answer as updating history without advancing scheduler memory", () => {
@@ -374,7 +410,7 @@ describe("applyAttemptToProgress", () => {
     const resultB = applyAttemptToProgress(null, attempt, makeContext());
 
     expect(resultA.progress).toEqual(resultB.progress);
-    expect(resultA.reason).toEqual(resultB.reason);
+    expect(resultA.reasons).toEqual(resultB.reasons);
     expect(resultA.schedulerRatingDecision).toEqual(
       resultB.schedulerRatingDecision,
     );
@@ -423,7 +459,7 @@ describe("applyAttemptToProgress — retrieval qualification integration", () =>
     expect(second.progress.retrievalBaselineAt).toEqual(
       new Date("2026-01-03T00:00:00.000Z"),
     );
-    expect(second.reason).toBe("SPACED_RETRIEVAL_SUCCESS");
+    expect(second.reasons).toEqual(["SPACED_RETRIEVAL_SUCCESS"]);
   });
 
   it("C. does not increment or move the baseline for a same-session correct retrieval, even with a large gap", () => {
@@ -653,7 +689,7 @@ describe("applyAttemptToProgress — retrieval qualification integration", () =>
     expect(resultA.retrievalQualification).toEqual(
       resultB.retrievalQualification,
     );
-    expect(resultA.reason).toEqual(resultB.reason);
+    expect(resultA.reasons).toEqual(resultB.reasons);
   });
 });
 
@@ -1147,6 +1183,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
       isSameLearningSession: false,
       evidenceStrengthPolicy: spanTestPolicy,
+      masteryPolicy: TEST_MASTERY_POLICY,
     });
 
     const scheduler = new FakeMemoryScheduler();
@@ -1203,6 +1240,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
       isSameLearningSession: true,
       evidenceStrengthPolicy: sessionTestPolicy,
+      masteryPolicy: TEST_MASTERY_POLICY,
     });
 
     const scheduler = new FakeMemoryScheduler();
@@ -1247,6 +1285,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
       isSameLearningSession: null,
       evidenceStrengthPolicy: sessionTestPolicy,
+      masteryPolicy: TEST_MASTERY_POLICY,
     });
 
     const scheduler = new FakeMemoryScheduler();
@@ -1365,7 +1404,113 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
     expect(result.progress.evidenceStrength).not.toBe("strong");
   });
 
-  it("K. leaves masteryCategory unchanged", () => {
+  it("K. masteryCategory reflects real derived state once mastery is integrated (see the dedicated mastery integration suite below)", () => {
+    // At the time this test was written (evidence-strength integration
+    // only), masteryCategory was hardcoded to preserve
+    // `previousProgress?.masteryCategory ?? "not_started"`, so it never
+    // changed regardless of evidence. Mastery integration (a later,
+    // separate step) intentionally replaced that placeholder with a real
+    // deriveMasteryCategory() call — masteryCategory is now EXPECTED to
+    // move once meaningful evidence exists. This test now documents that
+    // expectation instead of the old frozen-placeholder behavior; full
+    // mastery-derivation coverage lives in the "mastery integration"
+    // describe block below.
+    const scheduler = new FakeMemoryScheduler();
+    const result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(result.progress.meaningfulAttemptCount).toBe(1);
+    expect(result.progress.masteryCategory).toBe("learning");
+  });
+});
+
+describe("applyAttemptToProgress — mastery integration", () => {
+  it("A. returns not_started when there is no meaningful evidence", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      assistanceUsed: "FIFTY_FIFTY",
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.progress.meaningfulAttemptCount).toBe(0);
+    expect(result.progress.masteryCategory).toBe("not_started");
+  });
+
+  it("B. reaches learning (not mastered) on a first clean correct attempt", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.progress.masteryCategory).toBe("learning");
+    expect(result.progress.masteryCategory).not.toBe("mastered");
+  });
+
+  it("C. does not reach mastered from multiple same-session successes without spaced retrievals", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, true),
+    );
+    for (let day = 2; day <= 5; day += 1) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, true),
+      );
+    }
+
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+    expect(result.progress.masteryCategory).toBe("learning");
+    expect(result.progress.masteryCategory).not.toBe("mastered");
+  });
+
+  it("D. lets a qualifying spaced retrieval move learning -> strengthening", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(first.progress.masteryCategory).toBe("learning");
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(second.progress.successfulSpacedRetrievals).toBe(1);
+    expect(second.progress.masteryCategory).toBe("strengthening");
+  });
+
+  it("E. reaches mastered with enough spaced retrievals, strong evidence, and sufficient retrievability", () => {
     const scheduler = new FakeMemoryScheduler();
     let result = applyAttemptToProgress(
       null,
@@ -1375,10 +1520,191 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       }),
       makeContext(scheduler, false),
     );
-    expect(result.progress.masteryCategory).toBe("not_started");
 
-    result = applyAttemptToProgress(
+    for (const day of [3, 5, 7, 9]) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+
+    expect(result.progress.meaningfulAttemptCount).toBe(5);
+    expect(result.progress.successfulSpacedRetrievals).toBe(4);
+    expect(result.progress.evidenceStrength).toBe("strong");
+    expect(result.progress.masteryCategory).toBe("mastered");
+  });
+
+  it("F. blocks mastered when evidenceStrength is too low, even with enough spaced retrievals", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    for (const day of [3, 5, 7]) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+
+    // 4 meaningful attempts, 3 spaced retrievals: meets mastered's spacing
+    // gate (>=3), but meaningfulAttemptCount(4) < minMeaningfulAttemptsFor
+    // Strong(5), so evidenceStrength is only "moderate", not "strong".
+    expect(result.progress.successfulSpacedRetrievals).toBe(3);
+    expect(result.progress.evidenceStrength).toBe("moderate");
+    expect(result.progress.masteryCategory).not.toBe("mastered");
+    expect(result.progress.masteryCategory).toBe("strengthening");
+  });
+
+  it("G. blocks mastered when retrievability is insufficient, per the injected policy", () => {
+    const scheduler = new LowRetrievabilityMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    for (const day of [3, 5, 7, 9]) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+
+    // Same shape as test E (spacing/evidence-strength gates satisfied),
+    // but the scheduler's retrievability estimate (0.5) is below
+    // TEST_MASTERY_POLICY.minRetrievabilityForMastered (0.8).
+    expect(result.progress.successfulSpacedRetrievals).toBe(4);
+    expect(result.progress.evidenceStrength).toBe("strong");
+    expect(result.progress.masteryCategory).not.toBe("mastered");
+    expect(result.progress.masteryCategory).toBe("strengthening");
+  });
+
+  it("H. lets a mastered item fall below mastered after a lapse leaves it unresolved", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    for (const day of [3, 5, 7, 9]) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+    expect(result.progress.masteryCategory).toBe("mastered");
+
+    const afterLapse = applyAttemptToProgress(
       result.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "medium",
+        answeredAt: new Date("2026-01-11T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(afterLapse.reasons).toEqual(["LAPSE"]);
+    expect(afterLapse.progress.lastLapseAt).toEqual(
+      new Date("2026-01-11T00:00:00.000Z"),
+    );
+    expect(afterLapse.masteryDecisionInput.hasUnresolvedLapse).toBe(true);
+    expect(afterLapse.progress.masteryCategory).not.toBe("mastered");
+    expect(afterLapse.progress.masteryCategory).toBe("strengthening");
+  });
+
+  it("I. lets the current Attempt affect mastery immediately, not one update later", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    for (const day of [3, 5, 7]) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+    expect(result.progress.masteryCategory).toBe("strengthening");
+
+    // The 5th meaningful/4th spaced attempt, processed in this single
+    // call, must be reflected in THIS SAME result.
+    const fifth = applyAttemptToProgress(
+      result.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-09T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(fifth.progress.successfulSpacedRetrievals).toBe(4);
+    expect(fifth.progress.masteryCategory).toBe("mastered");
+  });
+
+  it("J. is deterministic for identical inputs including masteryCategory", () => {
+    const attempt = makeAttempt({
+      isCorrect: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const resultA = applyAttemptToProgress(null, attempt, makeContext());
+    const resultB = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(resultA.progress.masteryCategory).toEqual(
+      resultB.progress.masteryCategory,
+    );
+    expect(resultA.masteryDecisionInput).toEqual(resultB.masteryDecisionInput);
+  });
+
+  it("K. lets mastery consume the newly-computed evidenceStrength in the same call", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    const second = applyAttemptToProgress(
+      first.progress,
       makeAttempt({
         isCorrect: true,
         answeredAt: new Date("2026-01-03T00:00:00.000Z"),
@@ -1386,7 +1712,190 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       makeContext(scheduler, false),
     );
 
-    // evidenceStrength may have changed; masteryCategory must not have.
-    expect(result.progress.masteryCategory).toBe("not_started");
+    // Third attempt crosses evidenceStrength into "moderate" for the
+    // first time; mastery must consume that same fresh value, not a
+    // stale/prior one, and correctly stay blocked (moderate < strong).
+    const third = applyAttemptToProgress(
+      second.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(third.progress.evidenceStrength).toBe("moderate");
+    expect(third.masteryDecisionInput.evidenceStrength).toBe("moderate");
+    expect(third.progress.masteryCategory).toBe("strengthening");
+  });
+
+  it("L. does not let assisted/low-quality success directly advance mastery", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(first.progress.masteryCategory).toBe("learning");
+
+    let result = first;
+    for (let day = 2; day <= 6; day += 1) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({
+          isCorrect: true,
+          assistanceUsed: "HINT",
+          answeredAt: new Date(`2026-01-0${day}T00:00:00.000Z`),
+        }),
+        makeContext(scheduler, false),
+      );
+    }
+
+    expect(result.progress.successfulSpacedRetrievals).toBe(0);
+    expect(result.progress.masteryCategory).toBe("learning");
+  });
+});
+
+describe("applyAttemptToProgress — state update reasons (multi-signal regression)", () => {
+  // Regression suite for the bug where CONFIDENT_ERROR and LAPSE were
+  // treated as mutually exclusive (a single-winner `reason` model, with
+  // CONFIDENT_ERROR checked first). Both conditions require
+  // `!attempt.isCorrect` and can be true at once, and lapseCount/
+  // lastLapseAt were driven by `reason === "LAPSE"` — so a genuine lapse
+  // could be silently dropped whenever CONFIDENT_ERROR also applied.
+
+  it("A. established memory + FULL_EVIDENCE high-confidence wrong: both CONFIDENT_ERROR and LAPSE are recorded, and mastery sees the lapse as unresolved", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const established = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(established.progress.memory).not.toBeNull();
+    expect(established.progress.lapseCount).toBe(0);
+
+    const result = applyAttemptToProgress(
+      established.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(result.schedulerRatingDecision).toMatchObject({
+      kind: "RATED",
+      rating: "AGAIN",
+    });
+    // The core bug fix: both signals present, neither silently dropped.
+    expect(result.reasons).toEqual(["CONFIDENT_ERROR", "LAPSE"]);
+    expect(result.progress.lapseCount).toBe(1);
+    expect(result.progress.lastLapseAt).toEqual(
+      new Date("2026-01-02T00:00:00.000Z"),
+    );
+    expect(result.masteryDecisionInput.hasUnresolvedLapse).toBe(true);
+  });
+
+  it("B. ordinary established-memory wrong (not high confidence): LAPSE present, CONFIDENT_ERROR absent", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const established = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const result = applyAttemptToProgress(
+      established.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "medium",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(result.reasons).toContain("LAPSE");
+    expect(result.reasons).not.toContain("CONFIDENT_ERROR");
+    expect(result.progress.lapseCount).toBe(1);
+  });
+
+  it("C. first-ever high-confidence wrong: CONFIDENT_ERROR coexists with INITIAL_ATTEMPT (both are truthful)", () => {
+    const attempt = makeAttempt({
+      isCorrect: false,
+      confidenceLevel: "high",
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    // No established scheduler memory yet, so this is NOT a lapse — but
+    // it IS truthfully both a confident error and the first-ever attempt,
+    // and both must be reported rather than one suppressing the other.
+    expect(result.reasons).toEqual(["CONFIDENT_ERROR", "INITIAL_ATTEMPT"]);
+    expect(result.progress.lapseCount).toBe(0);
+  });
+
+  it("D. qualifying spaced correct: SPACED_RETRIEVAL_SUCCESS present, no incompatible signals", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(second.reasons).toEqual(["SPACED_RETRIEVAL_SUCCESS"]);
+    expect(second.reasons).not.toContain("CONFIDENT_ERROR");
+    expect(second.reasons).not.toContain("LAPSE");
+    expect(second.reasons).not.toContain("ASSISTED_SUCCESS");
+    expect(second.reasons).not.toContain("INITIAL_ATTEMPT");
+  });
+
+  it("E. assisted correct: ASSISTED_SUCCESS present", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "HINT",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(second.reasons).toContain("ASSISTED_SUCCESS");
   });
 });
