@@ -939,7 +939,59 @@ Target phase: Pilot Planning
 
 ---
 
-## 40. Open Question Discipline
+## 40. Answer Option Storage Model
+
+Question:
+
+What is the V1 storage model for Question answer options?
+
+Possible directions:
+
+- normalized records (e.g. a dedicated options table);
+- structured JSON on the Question record.
+
+Decision criteria should include:
+
+- simplicity;
+- validation;
+- ordering;
+- edit/version behavior;
+- future question formats;
+- query needs.
+
+Status: OPEN
+
+Target phase: Database Design
+
+---
+
+## 41. Duplicate Attempt / Idempotency Protection
+
+Question:
+
+How should repeated submissions be prevented from creating duplicate learning evidence?
+
+Potential causes:
+
+- double-click;
+- refresh;
+- retry after slow response;
+- network replay.
+
+Possible protections may include:
+
+- idempotency token;
+- session-item completion constraint;
+- transaction-level guard;
+- application-level duplicate protection.
+
+Status: OPEN
+
+Target phase: Quiz / Today / Database Design
+
+---
+
+## 42. Open Question Discipline
 
 When implementation encounters missing behavior:
 

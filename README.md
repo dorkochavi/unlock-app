@@ -4,6 +4,8 @@ UNLOCK is a Hebrew-first, RTL-first adaptive learning application.
 
 The product builds a learner model over time and uses it to decide the next best learning action.
 
+Start at `docs/CONTEXT_MAP.md` for project documentation and navigation.
+
 ## Core V1
 
 - User

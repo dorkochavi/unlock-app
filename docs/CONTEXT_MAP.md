@@ -103,6 +103,8 @@ docs/FEATURES/TODAY.md
 .cursor/rules/learning-engine.mdc
 ```
 
+`docs/FEATURES/TODAY.md` does not exist yet. Read it once it has been created.
+
 Critical invariant:
 
 ```text
@@ -124,6 +126,8 @@ docs/DOMAIN_GLOSSARY.md
 docs/FEATURES/QUIZ.md
 docs/TESTING.md
 ```
+
+`docs/FEATURES/QUIZ.md` does not exist yet. Read it once it has been created.
 
 Also inspect Today contracts if Quiz is being used in Today mode.
 

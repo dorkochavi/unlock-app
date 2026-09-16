@@ -992,7 +992,7 @@ The exact weighting belongs in the Learning Engine specification.
 
 ---
 
-# 27. Daily Session persistence
+# 27. Today Session persistence
 
 A Today session must be persistent.
 
@@ -1007,11 +1007,11 @@ This requires persistent session entities.
 Likely model:
 
 ```text
-daily_sessions
-daily_session_items
+today_sessions
+today_session_items
 ```
 
-A Daily Session should likely include:
+A Today Session should likely include:
 
 ```text
 id
@@ -1026,10 +1026,10 @@ completed_at
 progress
 ```
 
-A Daily Session Item should likely include:
+A Today Session Item should likely include:
 
 ```text
-daily_session_id
+today_session_id
 question_id
 position
 status
@@ -1868,8 +1868,8 @@ user_question_progress
 exams
 assignments
 
-daily_sessions
-daily_session_items
+today_sessions
+today_session_items
 
 learning_sessions
 
@@ -1921,15 +1921,15 @@ Therefore Question and UserQuestionProgress must remain separate concerns.
 
 ---
 
-# 60. Daily Session entities
+# 60. Today Session entities
 
 The system requires a persistent Today model.
 
 Conceptually:
 
 ```text
-daily_sessions
-daily_session_items
+today_sessions
+today_session_items
 ```
 
 This is not optional if Today is the main product experience.
