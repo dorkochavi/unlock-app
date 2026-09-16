@@ -44,12 +44,25 @@
  *     derived from `lapseCount > 0` (would make every lapse permanent),
  *     and NOT from raw `lastCorrectAt` (would let an assisted "correct"
  *     answer silently resolve a lapse and indirectly unlock mastery);
+ * - misconceptionState/Score/LastSeenAt are now derived here too, via the
+ *   injected `MisconceptionPolicy`, independently of mastery (mastery.ts
+ *   consumes no misconception field). Both misconception.ts inputs are
+ *   REUSES of already-derived signals, never re-implemented:
+ *   isConfidentErrorSignal = `baseReasons.includes("CONFIDENT_ERROR")`
+ *   (identical condition to misconception.ts's own requirement), and
+ *   isQualifyingRecoveryEvidence = `baseReasons.includes(
+ *   "SPACED_RETRIEVAL_SUCCESS")` (structurally already excludes assisted,
+ *   low-quality, second-attempt, answer-revealed, and same-session
+ *   evidence — see qualifyRetrieval). `StateUpdateReason.MISCONCEPTION_
+ *   RECOVERY` is appended only when misconception.ts reports an actual
+ *   state transition in the recovery direction this Attempt
+ *   (MISCONCEPTION_RECOVERING or MISCONCEPTION_RESOLVED), not merely
+ *   RECOVERY_EVIDENCE_OBSERVED;
  * - this function still does NOT decide the spacing/evidence-strength/
- *   mastery threshold values themselves, nor misconception
- *   activation/recovery, desired retention, or exam behavior. Those
- *   remain unresolved policy (docs/OPEN_QUESTIONS.md) and are preserved
- *   unchanged here so the real policies can be plugged in later without
- *   rewriting this function.
+ *   mastery/misconception threshold values themselves, nor desired
+ *   retention or exam behavior. Those remain unresolved policy
+ *   (docs/OPEN_QUESTIONS.md) and are preserved unchanged here so the real
+ *   policies can be plugged in later without rewriting this function.
  */
 
 import { classifyAttemptEvidence } from "./evidence";
@@ -63,6 +76,12 @@ import {
   type MasteryDecisionInput,
   type MasteryPolicy,
 } from "./mastery";
+import {
+  applyMisconceptionSignal,
+  type MisconceptionPolicy,
+  type MisconceptionResult,
+  type MisconceptionSnapshot,
+} from "./misconception";
 import {
   qualifyRetrieval,
   type RetrievalQualificationPolicy,
@@ -116,6 +135,12 @@ export interface ProgressUpdateContext {
    * here — see docs/OPEN_QUESTIONS.md.
    */
   masteryPolicy: MasteryPolicy;
+
+  /**
+   * Threshold policy for misconception.ts. No production default is
+   * chosen here — see docs/OPEN_QUESTIONS.md #13.
+   */
+  misconceptionPolicy: MisconceptionPolicy;
 }
 
 export interface ProgressUpdateResult {
@@ -130,6 +155,12 @@ export interface ProgressUpdateResult {
    * — reuses mastery.ts's own type rather than inventing a new one).
    */
   masteryDecisionInput: MasteryDecisionInput;
+  /**
+   * The result of applying misconception.ts's policy to this Attempt
+   * (mirrors evidenceStrengthResult/masteryDecisionInput — reuses
+   * misconception.ts's own type rather than inventing a new one).
+   */
+  misconceptionResult: MisconceptionResult;
   /**
    * Every unambiguous StateUpdateReason signal this Attempt truthfully
    * produced, in a fixed deterministic order (see
@@ -208,13 +239,74 @@ export function applyAttemptToProgress(
       retrievalQualification,
     );
 
-  const reasons = deriveStateUpdateReasons({
+  const baseReasons = deriveStateUpdateReasons({
     isFirstAttempt: previousProgress === null,
     attempt,
     evidenceQuality: evidence.quality,
     isLapse,
     retrievalQualificationReason: retrievalQualification.reason,
   });
+
+  // Misconception derivation is independent of mastery (mastery.ts's
+  // MasteryDecisionInput consumes no misconception field) — computed here
+  // purely from already-derived signals, not gated on or feeding into the
+  // mastery computation below.
+  //
+  // Both flags are REUSES of already-derived signals, not re-implemented:
+  // - isConfidentErrorSignal: CONFIDENT_ERROR's condition (FULL_EVIDENCE +
+  //   incorrect + high confidence) is word-for-word what
+  //   misconception.ts's isConfidentErrorSignal requires;
+  // - isQualifyingRecoveryEvidence: SPACED_RETRIEVAL_SUCCESS structurally
+  //   requires FULL_EVIDENCE + correct + a confirmed different session +
+  //   a sufficient gap — i.e. it already excludes assisted, low-quality,
+  //   second-attempt, answer-revealed, and same-session evidence, which
+  //   is exactly what recovery evidence must exclude.
+  const isConfidentErrorSignal = baseReasons.includes("CONFIDENT_ERROR");
+  const isQualifyingRecoveryEvidence = baseReasons.includes(
+    "SPACED_RETRIEVAL_SUCCESS",
+  );
+
+  const previousMisconceptionSnapshot: MisconceptionSnapshot | null =
+    previousProgress === null
+      ? null
+      : {
+          state: previousProgress.misconceptionState,
+          score: previousProgress.misconceptionScore,
+          lastSeenAt: previousProgress.misconceptionLastSeenAt,
+        };
+
+  const misconceptionResult = applyMisconceptionSignal(
+    previousMisconceptionSnapshot,
+    {
+      isConfidentErrorSignal,
+      isQualifyingRecoveryEvidence,
+      observedAt: attempt.answeredAt,
+    },
+    context.misconceptionPolicy,
+  );
+
+  // MISCONCEPTION_RECOVERY is emitted only for an actual STATE TRANSITION
+  // in the recovery direction this Attempt — not merely "recovery
+  // evidence was observed" (misconception.ts's RECOVERY_EVIDENCE_OBSERVED
+  // covers, for example, "recovering" staying "recovering" with a lower
+  // score, or a no-op nudge on "none"/"resolved"). "Genuinely moves in
+  // the recovery direction" is interpreted as a visible movement in
+  // misconceptionState, matching how other StateUpdateReason values mark
+  // structurally significant events.
+  const misconceptionRecoveryOccurred =
+    misconceptionResult.reason === "MISCONCEPTION_RECOVERING" ||
+    misconceptionResult.reason === "MISCONCEPTION_RESOLVED";
+
+  // MISCONCEPTION_RECOVERY can only be true when isQualifyingRecoveryEvidence
+  // is true, which requires SPACED_RETRIEVAL_SUCCESS to already be in
+  // baseReasons — and SPACED_RETRIEVAL_SUCCESS is mutually exclusive with
+  // every other reason (see deriveStateUpdateReasons's doc comment), so
+  // whenever MISCONCEPTION_RECOVERY applies, baseReasons is always
+  // exactly ["SPACED_RETRIEVAL_SUCCESS"]. Appending keeps it immediately
+  // after SPACED_RETRIEVAL_SUCCESS without needing to search/splice.
+  const reasons: StateUpdateReason[] = misconceptionRecoveryOccurred
+    ? [...baseReasons, "MISCONCEPTION_RECOVERY"]
+    : baseReasons;
 
   // Driven directly by `isLapse` (the actual scheduler-level lapse event
   // computed above), NOT by `reasons.includes("LAPSE")` or any
@@ -333,12 +425,9 @@ export function applyAttemptToProgress(
     lapseCount,
     lastLapseAt,
 
-    // Misconception activation/recovery thresholds are unresolved
-    // (docs/OPEN_QUESTIONS.md #13). Preserve, do not invent. The
-    // CONFIDENT_ERROR reason below still surfaces the raw signal.
-    misconceptionState: previousProgress?.misconceptionState ?? "none",
-    misconceptionScore: previousProgress?.misconceptionScore ?? 0,
-    misconceptionLastSeenAt: previousProgress?.misconceptionLastSeenAt ?? null,
+    misconceptionState: misconceptionResult.state,
+    misconceptionScore: misconceptionResult.score,
+    misconceptionLastSeenAt: misconceptionResult.lastSeenAt,
 
     timedAttemptCount:
       previousTimedAttemptCount + (attempt.responseTimeSeconds !== null ? 1 : 0),
@@ -364,6 +453,7 @@ export function applyAttemptToProgress(
     retrievalQualification,
     evidenceStrengthResult,
     masteryDecisionInput,
+    misconceptionResult,
     reasons,
   };
 }
@@ -563,9 +653,13 @@ function nextSchedulerMemory(
  * SPACED_RETRIEVAL_SUCCESS/CONFIDENT_ERROR), but CAN co-occur with
  * INITIAL_ATTEMPT (a first-ever assisted correct answer).
  *
- * SAME_SESSION_SUCCESS / MISCONCEPTION_RECOVERY are intentionally never
- * returned here: no session-success or misconception-recovery policy is
- * available yet.
+ * SAME_SESSION_SUCCESS is intentionally never returned here: no
+ * session-success policy is available yet. MISCONCEPTION_RECOVERY is also
+ * never produced by this function — it depends on misconception.ts's
+ * result, which isn't available until after this function returns, so
+ * the caller (applyAttemptToProgress) appends it to this array afterward
+ * when a real recovery state transition occurred. See that call site for
+ * why appending is always correctly ordered.
  */
 function deriveStateUpdateReasons(input: {
   isFirstAttempt: boolean;

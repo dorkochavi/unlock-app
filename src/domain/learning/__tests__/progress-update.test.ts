@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EvidenceStrengthPolicy } from "../evidence-strength";
 import type { MasteryPolicy } from "../mastery";
+import type { MisconceptionPolicy } from "../misconception";
 import { applyAttemptToProgress } from "../progress-update";
 import type { RetrievalQualificationPolicy } from "../retrieval-qualification";
 import type {
@@ -32,6 +33,16 @@ const TEST_MASTERY_POLICY: MasteryPolicy = {
   minSpacedRetrievalsForMastered: 3,
   minEvidenceStrengthForMastered: "strong",
   minRetrievabilityForMastered: 0.8,
+};
+
+const TEST_MISCONCEPTION_POLICY: MisconceptionPolicy = {
+  confidentErrorScoreIncrement: 2,
+  recoveryScoreDecrement: 1,
+  minScore: 0,
+  maxScore: 10,
+  suspectedScoreThreshold: 2,
+  activeScoreThreshold: 4,
+  resolvedScoreThreshold: 0,
 };
 
 /**
@@ -147,6 +158,7 @@ function makeContext(
     isSameLearningSession,
     evidenceStrengthPolicy: TEST_EVIDENCE_STRENGTH_POLICY,
     masteryPolicy: TEST_MASTERY_POLICY,
+    misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
   };
 }
 
@@ -225,7 +237,15 @@ describe("applyAttemptToProgress", () => {
     expect(second.progress.correctCount).toBe(1);
   });
 
-  it("D. surfaces CONFIDENT_ERROR for a clean (FULL_EVIDENCE) high-confidence wrong answer without inventing a misconception transition", () => {
+  it("D. surfaces CONFIDENT_ERROR for a clean (FULL_EVIDENCE) high-confidence wrong answer, and correctly activates the misconception signal now that misconception.ts is integrated", () => {
+    // At the time this test was written (before misconception
+    // integration), misconceptionState/Score were hardcoded to preserve
+    // the previous value, so a clean high-confidence wrong answer never
+    // moved them. Misconception integration (a later, separate step)
+    // intentionally replaced that placeholder with a real
+    // applyMisconceptionSignal() call — the misconception signal is now
+    // EXPECTED to move on exactly this kind of Attempt. Full misconception
+    // coverage lives in the dedicated "misconception integration" suite.
     const attempt = makeAttempt({
       isCorrect: false,
       confidenceLevel: "high",
@@ -239,8 +259,8 @@ describe("applyAttemptToProgress", () => {
     // are true structural/behavioral facts about this Attempt and both
     // must be present, not suppressed in favor of one another.
     expect(result.reasons).toEqual(["CONFIDENT_ERROR", "INITIAL_ATTEMPT"]);
-    expect(result.progress.misconceptionState).toBe("none");
-    expect(result.progress.misconceptionScore).toBe(0);
+    expect(result.progress.misconceptionState).toBe("suspected");
+    expect(result.progress.misconceptionScore).toBe(2);
   });
 
   it("D2. does not surface CONFIDENT_ERROR for an assisted high-confidence wrong answer", () => {
@@ -1184,6 +1204,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       isSameLearningSession: false,
       evidenceStrengthPolicy: spanTestPolicy,
       masteryPolicy: TEST_MASTERY_POLICY,
+    misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
     });
 
     const scheduler = new FakeMemoryScheduler();
@@ -1241,6 +1262,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       isSameLearningSession: true,
       evidenceStrengthPolicy: sessionTestPolicy,
       masteryPolicy: TEST_MASTERY_POLICY,
+    misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
     });
 
     const scheduler = new FakeMemoryScheduler();
@@ -1286,6 +1308,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       isSameLearningSession: null,
       evidenceStrengthPolicy: sessionTestPolicy,
       masteryPolicy: TEST_MASTERY_POLICY,
+    misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
     });
 
     const scheduler = new FakeMemoryScheduler();
@@ -1897,5 +1920,401 @@ describe("applyAttemptToProgress — state update reasons (multi-signal regressi
     );
 
     expect(second.reasons).toContain("ASSISTED_SUCCESS");
+  });
+});
+
+describe("applyAttemptToProgress — misconception integration", () => {
+  /**
+   * Establishes scheduler memory (one correct attempt), then two
+   * high-confidence wrong FULL_EVIDENCE attempts against that established
+   * memory — each is simultaneously CONFIDENT_ERROR and LAPSE. Under
+   * TEST_MISCONCEPTION_POLICY (increment 2, activeScoreThreshold 4), this
+   * reaches misconceptionState "active" at score 4, with retrievalBaselineAt
+   * still at the first attempt's timestamp (2026-01-01) since incorrect
+   * attempts never move it.
+   */
+  function establishActiveMisconception(scheduler: MemoryScheduler) {
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    const third = applyAttemptToProgress(
+      second.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    return third;
+  }
+
+  it("A. activates then escalates the misconception signal on clean high-confidence incorrect Attempts", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(first.progress.misconceptionState).toBe("suspected");
+    expect(first.progress.misconceptionScore).toBe(2);
+
+    const second = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(second.progress.misconceptionState).toBe("active");
+    expect(second.progress.misconceptionScore).toBe(4);
+  });
+
+  it("B. does not activate misconception for an assisted high-confidence incorrect Attempt", () => {
+    const attempt = makeAttempt({
+      isCorrect: false,
+      confidenceLevel: "high",
+      assistanceUsed: "FIFTY_FIFTY",
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.evidence.quality).toBe("ASSISTED_EVIDENCE");
+    expect(result.progress.misconceptionState).toBe("none");
+    expect(result.progress.misconceptionScore).toBe(0);
+  });
+
+  it("C. does not activate misconception for a second-attempt high-confidence incorrect Attempt", () => {
+    const attempt = makeAttempt({
+      isCorrect: false,
+      confidenceLevel: "high",
+      attemptNumberForPresentedItem: 2,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.evidence.quality).toBe("LOW_QUALITY_EVIDENCE");
+    expect(result.progress.misconceptionState).toBe("none");
+    expect(result.progress.misconceptionScore).toBe(0);
+  });
+
+  it("D. does not activate misconception for answer-revealed/invalid evidence", () => {
+    const attempt = makeAttempt({
+      isCorrect: false,
+      confidenceLevel: "high",
+      assistanceUsed: "ANSWER_REVEALED",
+      answerWasRevealedBeforeResponse: true,
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(result.evidence.quality).toBe("INVALID_FOR_MASTERY");
+    expect(result.progress.misconceptionState).toBe("none");
+    expect(result.progress.misconceptionScore).toBe(0);
+  });
+
+  it("E. lets qualifying longitudinal clean correct evidence move active -> recovering", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const active = establishActiveMisconception(scheduler);
+    expect(active.progress.misconceptionState).toBe("active");
+    expect(active.progress.misconceptionScore).toBe(4);
+
+    const recovering = applyAttemptToProgress(
+      active.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-07T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(recovering.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(recovering.reasons).toContain("SPACED_RETRIEVAL_SUCCESS");
+    expect(recovering.reasons).toContain("MISCONCEPTION_RECOVERY");
+    expect(recovering.progress.misconceptionState).toBe("recovering");
+    expect(recovering.progress.misconceptionScore).toBe(3);
+  });
+
+  it("F. lets later qualifying recovery move recovering -> resolved under the injected test policy", () => {
+    const scheduler = new FakeMemoryScheduler();
+    let result = establishActiveMisconception(scheduler);
+    expect(result.progress.misconceptionState).toBe("active");
+
+    const recoveryDates = [
+      "2026-01-07T00:00:00.000Z",
+      "2026-01-09T00:00:00.000Z",
+      "2026-01-11T00:00:00.000Z",
+      "2026-01-13T00:00:00.000Z",
+    ];
+    for (const dateStr of recoveryDates) {
+      result = applyAttemptToProgress(
+        result.progress,
+        makeAttempt({ isCorrect: true, answeredAt: new Date(dateStr) }),
+        makeContext(scheduler, false),
+      );
+    }
+
+    expect(result.progress.misconceptionState).toBe("resolved");
+    expect(result.progress.misconceptionScore).toBe(0);
+    expect(result.reasons).toContain("MISCONCEPTION_RECOVERY");
+  });
+
+  it("G. does not recover misconception via a same-session correct answer", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const active = establishActiveMisconception(scheduler);
+
+    const result = applyAttemptToProgress(
+      active.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-10T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, true),
+    );
+
+    expect(result.retrievalQualification.reason).toBe("SAME_SESSION");
+    expect(result.progress.misconceptionState).toBe("active");
+    expect(result.progress.misconceptionScore).toBe(4);
+    expect(result.reasons).not.toContain("MISCONCEPTION_RECOVERY");
+  });
+
+  it("H. does not recover misconception via a gap-too-short correct answer", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const active = establishActiveMisconception(scheduler);
+
+    const result = applyAttemptToProgress(
+      active.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T12:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(result.retrievalQualification.reason).toBe("GAP_TOO_SHORT");
+    expect(result.progress.misconceptionState).toBe("active");
+    expect(result.reasons).not.toContain("MISCONCEPTION_RECOVERY");
+  });
+
+  it("I. does not recover misconception via an assisted correct answer", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const active = establishActiveMisconception(scheduler);
+
+    const result = applyAttemptToProgress(
+      active.progress,
+      makeAttempt({
+        isCorrect: true,
+        assistanceUsed: "HINT",
+        answeredAt: new Date("2026-01-10T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(result.evidence.quality).toBe("ASSISTED_EVIDENCE");
+    expect(result.progress.misconceptionState).toBe("active");
+    expect(result.reasons).not.toContain("MISCONCEPTION_RECOVERY");
+  });
+
+  it("J. preserves misconception state/score/lastSeenAt for an irrelevant attempt", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const active = establishActiveMisconception(scheduler);
+    const before = active.progress;
+
+    const result = applyAttemptToProgress(
+      before,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "low",
+        answeredAt: new Date("2026-01-10T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(result.progress.misconceptionState).toBe(before.misconceptionState);
+    expect(result.progress.misconceptionScore).toBe(before.misconceptionScore);
+    expect(result.progress.misconceptionLastSeenAt).toEqual(
+      before.misconceptionLastSeenAt,
+    );
+  });
+
+  it("K. moves misconceptionLastSeenAt on confident-error and recovery evidence, but not on irrelevant attempts", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(first.progress.misconceptionLastSeenAt).toBeNull();
+
+    const confidentError = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(confidentError.progress.misconceptionLastSeenAt).toEqual(
+      new Date("2026-01-02T00:00:00.000Z"),
+    );
+
+    const irrelevant = applyAttemptToProgress(
+      confidentError.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "low",
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(irrelevant.progress.misconceptionLastSeenAt).toEqual(
+      new Date("2026-01-02T00:00:00.000Z"),
+    );
+
+    const recovery = applyAttemptToProgress(
+      irrelevant.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-05T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(recovery.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(recovery.progress.misconceptionLastSeenAt).toEqual(
+      new Date("2026-01-05T00:00:00.000Z"),
+    );
+  });
+
+  it("L. emits MISCONCEPTION_RECOVERY only for an actual state transition, not every qualifying recovery signal", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const active = establishActiveMisconception(scheduler);
+
+    const firstRecovery = applyAttemptToProgress(
+      active.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-07T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(firstRecovery.progress.misconceptionState).toBe("recovering");
+    expect(firstRecovery.reasons).toContain("MISCONCEPTION_RECOVERY");
+
+    const secondRecovery = applyAttemptToProgress(
+      firstRecovery.progress,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-09T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    // Still recovering (no state transition this time), but the recovery
+    // signal itself was real — score did move.
+    expect(secondRecovery.progress.misconceptionState).toBe("recovering");
+    expect(secondRecovery.progress.misconceptionScore).toBe(2);
+    expect(secondRecovery.reasons).toContain("SPACED_RETRIEVAL_SUCCESS");
+    expect(secondRecovery.reasons).not.toContain("MISCONCEPTION_RECOVERY");
+  });
+
+  it("M. confident-error and lapse coexist, and misconception updates correctly in the same Attempt", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const first = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    const result = applyAttemptToProgress(
+      first.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    expect(result.reasons).toEqual(["CONFIDENT_ERROR", "LAPSE"]);
+    expect(result.progress.misconceptionState).toBe("suspected");
+    expect(result.progress.misconceptionScore).toBe(2);
+    expect(result.progress.lapseCount).toBe(1);
+  });
+
+  it("N. lets the current Attempt affect misconception state immediately", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const before = applyAttemptToProgress(
+      null,
+      makeAttempt({
+        isCorrect: true,
+        answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+    expect(before.progress.misconceptionState).toBe("none");
+
+    const after = applyAttemptToProgress(
+      before.progress,
+      makeAttempt({
+        isCorrect: false,
+        confidenceLevel: "high",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+      makeContext(scheduler, false),
+    );
+
+    // The signal produced by THIS SAME call is reflected immediately, not
+    // one update later.
+    expect(after.progress.misconceptionState).toBe("suspected");
+    expect(after.misconceptionResult.state).toBe("suspected");
+  });
+
+  it("O. is deterministic for identical inputs including misconception result", () => {
+    const attempt = makeAttempt({
+      isCorrect: false,
+      confidenceLevel: "high",
+      answeredAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const resultA = applyAttemptToProgress(null, attempt, makeContext());
+    const resultB = applyAttemptToProgress(null, attempt, makeContext());
+
+    expect(resultA.misconceptionResult).toEqual(resultB.misconceptionResult);
+    expect(resultA.progress.misconceptionState).toEqual(
+      resultB.progress.misconceptionState,
+    );
   });
 });
