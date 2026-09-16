@@ -23,8 +23,9 @@
  * globally. All 4 current candidate types point at the same single
  * Question — surfacing that Question twice in one ranked list (e.g. once
  * as RELEARN_LAPSE, again lower down as REPAIR_MISCONCEPTION) would be a
- * redundant, contradictory-looking recommendation for any downstream
- * consumer. The demoted candidate types for that Question are not
+ * redundant, contradictory-looking recommendation for today-planner.ts,
+ * this file's downstream consumer, which relies on exactly one primary
+ * candidate per questionId. The demoted candidate types for that Question are not
  * discarded silently — they're exposed via `otherApplicableTypes` for
  * explainability, but they do not influence the primary's own reasons.
  *
