@@ -71,6 +71,7 @@ function makeProgress(
     lastIncorrectAt: null,
     memory: null,
     retrievalBaselineAt: new Date("2026-01-05T00:00:00.000Z"),
+    retrievalBaselineLearningSessionId: null,
     successfulSpacedRetrievals: 0,
     lapseCount: 0,
     lastLapseAt: null,

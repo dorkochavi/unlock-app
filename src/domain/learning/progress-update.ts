@@ -235,13 +235,17 @@ export function applyAttemptToProgress(
     context.retrievalQualificationPolicy,
   );
 
-  const { retrievalBaselineAt, successfulSpacedRetrievals } =
-    nextRetrievalBaseline(
-      previousProgress?.retrievalBaselineAt ?? null,
-      previousProgress?.successfulSpacedRetrievals ?? 0,
-      attempt,
-      retrievalQualification,
-    );
+  const {
+    retrievalBaselineAt,
+    retrievalBaselineLearningSessionId,
+    successfulSpacedRetrievals,
+  } = nextRetrievalBaseline(
+    previousProgress?.retrievalBaselineAt ?? null,
+    previousProgress?.retrievalBaselineLearningSessionId ?? null,
+    previousProgress?.successfulSpacedRetrievals ?? 0,
+    attempt,
+    retrievalQualification,
+  );
 
   const baseReasons = deriveStateUpdateReasons({
     isFirstAttempt: previousProgress === null,
@@ -425,6 +429,7 @@ export function applyAttemptToProgress(
     memory,
 
     retrievalBaselineAt,
+    retrievalBaselineLearningSessionId,
     successfulSpacedRetrievals,
     lapseCount,
     lastLapseAt,
@@ -480,16 +485,29 @@ export function applyAttemptToProgress(
  * including same-session/gap-too-short/session-unknown rejections of an
  * otherwise-clean correct retrieval, which must not silently move the
  * baseline just because the evidence itself was clean.
+ *
+ * `retrievalBaselineLearningSessionId` moves in exact lockstep with
+ * `retrievalBaselineAt` — whenever the timestamp moves to this Attempt's
+ * `answeredAt`, the session-id reference moves to this Attempt's
+ * `learningSessionId` too, so `deriveIsSameLearningSession`
+ * (learning-session.ts) always has a truthful, reorder-safe reference to
+ * compare the next Attempt's `learningSessionId` against.
  */
 function nextRetrievalBaseline(
   previousBaselineAt: Date | null,
+  previousBaselineLearningSessionId: string | null,
   previousSuccessfulSpacedRetrievals: number,
   attempt: Attempt,
   qualification: RetrievalQualificationResult,
-): { retrievalBaselineAt: Date | null; successfulSpacedRetrievals: number } {
+): {
+  retrievalBaselineAt: Date | null;
+  retrievalBaselineLearningSessionId: string | null;
+  successfulSpacedRetrievals: number;
+} {
   if (qualification.reason === "NO_PRIOR_RETRIEVAL") {
     return {
       retrievalBaselineAt: attempt.answeredAt,
+      retrievalBaselineLearningSessionId: attempt.learningSessionId,
       successfulSpacedRetrievals: previousSuccessfulSpacedRetrievals,
     };
   }
@@ -497,12 +515,14 @@ function nextRetrievalBaseline(
   if (qualification.reason === "QUALIFYING_SPACED_RETRIEVAL") {
     return {
       retrievalBaselineAt: attempt.answeredAt,
+      retrievalBaselineLearningSessionId: attempt.learningSessionId,
       successfulSpacedRetrievals: previousSuccessfulSpacedRetrievals + 1,
     };
   }
 
   return {
     retrievalBaselineAt: previousBaselineAt,
+    retrievalBaselineLearningSessionId: previousBaselineLearningSessionId,
     successfulSpacedRetrievals: previousSuccessfulSpacedRetrievals,
   };
 }

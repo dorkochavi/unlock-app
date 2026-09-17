@@ -35,7 +35,8 @@
  *   from. It may still be meaningful evidence elsewhere (evidence.ts,
  *   evidence-strength.ts), just not a *spaced* retrieval;
  * - `currentAttemptAt` earlier than `previousRetrievalBaselineAt` is
- *   rejected by throwing, rather than silently computing a negative gap;
+ *   rejected by throwing a typed `OutOfOrderRetrievalError`, rather than
+ *   silently computing a negative gap;
  * - this module never mutates UserQuestionProgress — it only returns a
  *   qualification decision for a caller to apply.
  */
@@ -54,6 +55,30 @@ export const RETRIEVAL_QUALIFICATION_REASONS = [
 
 export type RetrievalQualificationReason =
   (typeof RETRIEVAL_QUALIFICATION_REASONS)[number];
+
+/**
+ * Thrown when `currentAttemptAt` is earlier than `previousRetrievalBaselineAt`
+ * — this module refuses to silently compute a negative gap. Exported as a
+ * typed class (rather than a plain `Error`) specifically so callers outside
+ * this module — the application layer's `submitAnswer` use case, and any
+ * future rebuild/replay tool — can catch this exact domain invariant
+ * violation by type instead of matching a message substring. This class
+ * represents ONLY the domain invariant (`currentAttemptAt` vs.
+ * `previousRetrievalBaselineAt`); it carries no knowledge of Attempts,
+ * submissions, transactions, or anything else application-layer.
+ */
+export class OutOfOrderRetrievalError extends Error {
+  constructor(
+    public readonly currentAttemptAt: Date,
+    public readonly previousRetrievalBaselineAt: Date,
+  ) {
+    super(
+      "qualifyRetrieval: currentAttemptAt must not be earlier than " +
+        "previousRetrievalBaselineAt; refusing to compute a negative gap.",
+    );
+    this.name = "OutOfOrderRetrievalError";
+  }
+}
 
 /**
  * Caller-assembled context for one current Attempt being evaluated
@@ -157,9 +182,9 @@ export function qualifyRetrieval(
     input.currentAttemptAt.getTime() <
     input.previousRetrievalBaselineAt.getTime()
   ) {
-    throw new Error(
-      "qualifyRetrieval: currentAttemptAt must not be earlier than " +
-        "previousRetrievalBaselineAt; refusing to compute a negative gap.",
+    throw new OutOfOrderRetrievalError(
+      input.currentAttemptAt,
+      input.previousRetrievalBaselineAt,
     );
   }
 

@@ -439,7 +439,7 @@ Potential statuses may include:
 
 Exact status model belongs in the Today feature contract.
 
-Uniqueness (see `docs/DECISIONS/010-answer-submission-transaction-model.md`): the exact physical key is **not yet decided** — it depends on whether Today is Course-specific, which remains OPEN (`docs/OPEN_QUESTIONS.md` #34). Candidate shapes: `(user_id, course_id, planned_for_date)` if Today is course-scoped, or `(user_id, planned_for_date)` if Today is global per learner. What is decided regardless of which key is chosen: `getOrCreateTodaySession` is an `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT`, never a check-then-insert race — this is the mechanism that makes "the same session resumes" reliable. `planned_for_date` is a caller-supplied date; no timezone/day-boundary logic exists in the domain or persistence layer (`docs/OPEN_QUESTIONS.md` #3 remains open).
+Uniqueness (DECIDED for V1 — see `docs/DECISIONS/011-today-is-course-scoped-v1.md`): `UNIQUE (user_id, course_id, planned_for_date)`. UNLOCK V1 Today is course-scoped — a learner with multiple active Courses may have multiple TodaySession rows for the same date, one per Course. Global cross-course Today is deferred beyond V1. `getOrCreateTodaySession` is an `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT`, never a check-then-insert race — this is the mechanism that makes "the same session resumes" reliable. `planned_for_date` is a caller-supplied date; no timezone/day-boundary logic exists in the domain or persistence layer (`docs/OPEN_QUESTIONS.md` #3 remains open).
 
 ---
 
@@ -1139,7 +1139,7 @@ Before writing the real V1 schema, resolve at minimum:
 2. V1 exam-date hierarchy — OPEN
 3. Question editing/version strategy — DECIDED, see docs/DECISIONS/009-question-versioning.md
 4. Course structure depth — OPEN
-5. Today scope: one Course or multiple Courses — OPEN. TodaySession's physical uniqueness key intentionally is NOT decided until this is resolved (see docs/DECISIONS/010-answer-submission-transaction-model.md) — do not add a course_id-bearing unique constraint before this question is answered
+5. Today scope: one Course or multiple Courses — DECIDED for V1 (course-scoped), see docs/DECISIONS/011-today-is-course-scoped-v1.md. Global cross-course Today deferred beyond V1
 6. Today session boundary/timezone behavior — OPEN (domain/persistence layer accepts an already-resolved logical date regardless)
 7. aggregate Learner State persistence — OPEN
 8. selected Next Best Action persistence strategy (persist only the chosen decision, not every candidate) — DECIDED, see docs/DECISIONS/010-answer-submission-transaction-model.md

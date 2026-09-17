@@ -821,7 +821,18 @@ This decision affects:
 - session model;
 - KPI interpretation.
 
-Status: OPEN
+Status: RESOLVED for V1 — see `docs/DECISIONS/011-today-is-course-scoped-v1.md`.
+
+V1 answer: generated separately per Course. `TodaySession` is keyed by
+`(user_id, course_id, planned_for_date)`; a learner with multiple active
+Courses may have multiple Today sessions on the same date. Global
+cross-course Today remains a possible future extension, not decided or
+built now.
+
+Still open, not addressed by ADR-011: UI treatment when a learner has
+multiple Courses (how multiple per-Course sessions are presented/switched
+between) and KPI interpretation across Courses — these belong to the Today
+Feature Contract when it exists.
 
 Target phase: Today Feature Contract
 

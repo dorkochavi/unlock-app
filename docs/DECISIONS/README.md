@@ -100,7 +100,15 @@ Question is a stable logical identity; QuestionVersion is an immutable content s
 
 ### ADR-010 — Answer Submission Transaction Model
 
-`submitAnswer` runs as one database transaction (Attempt insert, progress update, Today session item update). A transaction-scoped advisory lock keyed by `(user_id, question_id)` serializes concurrent writers — including the very first Attempt on a pair, before any UserQuestionProgress row exists. `Attempt` idempotency is scoped `UNIQUE (user_id, submission_id)`, with explicit conflict-validation against the full canonical command-identity field list (including `selectedAnswer`, `confidenceLevel`, and every evidence-classification-gating field, not just Question/version/session-item) before treating a reused key as a safe retry. TodaySessionItem freezes its selected action/tier/reasons at generation time; TodaySession's own physical uniqueness key is left unresolved pending the still-open Today Course-scope decision.
+`submitAnswer` runs as one database transaction (Attempt insert, progress update, Today session item update). A transaction-scoped advisory lock keyed by `(user_id, question_id)` serializes concurrent writers — including the very first Attempt on a pair, before any UserQuestionProgress row exists. `Attempt` idempotency is scoped `UNIQUE (user_id, submission_id)`, with explicit conflict-validation against the full canonical command-identity field list (including `selectedAnswer`, `confidenceLevel`, and every evidence-classification-gating field, not just Question/version/session-item) before treating a reused key as a safe retry. TodaySessionItem freezes its selected action/tier/reasons at generation time.
+
+### ADR-011 — Today Is Course-Scoped in V1
+
+UNLOCK V1 Today is course-scoped: `TodaySession` is uniquely keyed by `(user_id, course_id, planned_for_date)`. A learner with multiple active Courses may have multiple Today sessions on the same date. Global cross-course Today is deferred beyond V1.
+
+### ADR-012 — Attempt Replayability and Rebuild Semantics
+
+`Attempt` gains a stable `learningSessionId`; `UserQuestionProgress` gains a matching `retrievalBaselineLearningSessionId`. `isSameLearningSession` is always derived fresh from these two identities, never stored as a relational snapshot (the prior approach could not survive reordering). Rebuild always uses CURRENT engine/scheduler/policy logic, never historical, and uses one fixed rebuild-time `now` for every replay step (proven equivalent to per-step `answeredAt`). Out-of-order online Attempts are reconciled synchronously via a full canonical-order replay in the same transaction — no permanent stale-progress state, no queue. `learningSessionId` ownership is split by Attempt origin: application-derived from `TodaySessionItem.todaySessionId` for Today, client-owned only for manual practice — a client can never claim an unrelated `learningSessionId` for a Today-attached Attempt.
 
 ---
 

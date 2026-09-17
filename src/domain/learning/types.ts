@@ -91,6 +91,40 @@ export interface Attempt {
   todaySessionId: string | null;
   todaySessionItemId: string | null;
 
+  /**
+   * Stable identity of the continuous learning session/occasion this
+   * Attempt belongs to (e.g. a Today session id, or a client-generated
+   * token for manual practice), or null when genuinely unknown.
+   *
+   * This is an INTRINSIC, reorder-safe fact about the Attempt itself —
+   * deliberately NOT a snapshot of the relational "was this the same
+   * session as whatever the baseline retrieval happened to be at
+   * processing time" boolean that retrieval-qualification.ts's
+   * `isSameLearningSession` represents. That relational boolean cannot be
+   * persisted and replayed safely: which Attempt counts as "the baseline"
+   * can differ between original (arrival-order) processing and a later
+   * canonical-order replay/rebuild, so a stored true/false could silently
+   * misrepresent history after any reorder. `learningSessionId` has no
+   * such problem — it never depends on which Attempt happens to be
+   * baseline. `isSameLearningSession` is always DERIVED fresh (never
+   * stored) by comparing two learningSessionIds — see
+   * `deriveIsSameLearningSession` in learning-session.ts — using
+   * whichever Attempt is currently baseline, at derivation time, in
+   * whatever order Attempts are actually being processed.
+   *
+   * Ownership (a later audit, see `submit-answer.ts`'s module doc comment
+   * and ADR-012 §5): for a Today-attached Attempt, the APPLICATION derives
+   * this value from the persisted `TodaySessionItem.todaySessionId` —
+   * deliberately not a client-supplied value for that case, since an
+   * arbitrary client value here would directly corrupt
+   * `deriveIsSameLearningSession`'s retrieval-qualification outcome. Only
+   * for manual practice (no TodaySessionItem) does the client supply and
+   * own this identity directly. Either way, this field on the domain
+   * `Attempt` type always holds whichever value was actually authoritative
+   * at persistence time — this type itself does not encode who chose it.
+   */
+  learningSessionId: string | null;
+
   assistanceUsed: AssistanceType;
   attemptNumberForPresentedItem: number;
 
@@ -146,6 +180,19 @@ export interface UserQuestionProgress {
    * event would be misleading. See src/domain/learning/retrieval-qualification.ts.
    */
   retrievalBaselineAt: Date | null;
+
+  /**
+   * `learningSessionId` of whichever Attempt currently set/last-moved
+   * `retrievalBaselineAt` (tracked in exact lockstep with it — see
+   * `nextRetrievalBaseline` in progress-update.ts). Together with the
+   * CURRENT Attempt's own `learningSessionId`, this is what
+   * `deriveIsSameLearningSession` (learning-session.ts) compares to
+   * derive `isSameLearningSession` fresh, every time, for
+   * retrieval-qualification.ts — never a stored relational snapshot. Null
+   * whenever `retrievalBaselineAt` is null, or when the baseline-setting
+   * Attempt itself had no known session identity.
+   */
+  retrievalBaselineLearningSessionId: string | null;
 
   successfulSpacedRetrievals: number;
   lapseCount: number;

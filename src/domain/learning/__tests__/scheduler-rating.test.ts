@@ -18,6 +18,7 @@ function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
     responseTimeSeconds: 10,
     todaySessionId: "today-1",
     todaySessionItemId: "today-item-1",
+    learningSessionId: null,
     assistanceUsed: "NONE",
     attemptNumberForPresentedItem: 1,
     suspiciousTiming: false,

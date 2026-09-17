@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  OutOfOrderRetrievalError,
   qualifyRetrieval,
   type RetrievalQualificationInput,
   type RetrievalQualificationPolicy,
@@ -210,5 +211,31 @@ describe("qualifyRetrieval", () => {
         TEST_POLICY,
       ),
     ).toThrow(/earlier than/);
+  });
+
+  it("N. throws a typed OutOfOrderRetrievalError (not a plain Error) carrying both timestamps, so callers can catch it by type", () => {
+    const currentAttemptAt = new Date("2026-01-01T00:00:00.000Z");
+    const previousRetrievalBaselineAt = new Date("2026-01-10T00:00:00.000Z");
+
+    let caught: unknown;
+    try {
+      qualifyRetrieval(
+        makeInput({
+          previousRetrievalBaselineAt,
+          currentAttemptAt,
+          isSameLearningSession: false,
+        }),
+        TEST_POLICY,
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeInstanceOf(OutOfOrderRetrievalError);
+    const error = caught as OutOfOrderRetrievalError;
+    expect(error.currentAttemptAt).toEqual(currentAttemptAt);
+    expect(error.previousRetrievalBaselineAt).toEqual(
+      previousRetrievalBaselineAt,
+    );
   });
 });

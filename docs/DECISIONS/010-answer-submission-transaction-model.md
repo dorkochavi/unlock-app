@@ -103,12 +103,9 @@ Row locking alone (`SELECT ... FOR UPDATE` with no advisory lock) was the origin
 
 ### Today Session freeze model
 
-**Today's Course scope is intentionally left OPEN in this ADR, not decided.** `docs/OPEN_QUESTIONS.md` #34 (Today Scope Across Courses) has no product decision yet, and a `TodaySession` uniqueness key that includes `course_id` would silently commit V1 to course-scoped Today — a product decision this document is not the place to make. The physical `TodaySession` uniqueness constraint therefore remains **unresolved** pending that decision. Two candidate shapes exist, to be chosen once Today's scope is decided:
+**Today's Course scope is now DECIDED — see `docs/DECISIONS/011-today-is-course-scoped-v1.md`.** UNLOCK V1 Today is course-scoped: `TodaySession` is uniquely keyed by `UNIQUE (user_id, course_id, planned_for_date)`. A learner with multiple active Courses may have multiple `TodaySession` rows for the same date, one per Course. Global cross-course Today is deferred beyond V1. (This section previously left the key unresolved pending that product decision — it has since been made; the superseded "two candidate shapes" framing is preserved only in ADR-011's own Context section for the historical record.)
 
-- `UNIQUE (user_id, course_id, planned_for_date)` — if Today is decided to be course-scoped;
-- `UNIQUE (user_id, planned_for_date)` — if Today is decided to be global per learner across active Courses.
-
-What **is** decided, independent of which key is eventually chosen: `getOrCreateTodaySession` is implemented as `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT` — never a check-then-insert race. Whichever uniqueness key is adopted, this is the mechanism that makes "the same session resumes" reliable rather than a special case to remember.
+`getOrCreateTodaySession` is implemented as `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT` — never a check-then-insert race. This is the mechanism that makes "the same session resumes" reliable.
 
 `planned_for_date` is a caller-supplied `DATE` value. No day-boundary or timezone logic exists in the domain or persistence layer for computing it — that remains an open, application-layer decision (`docs/OPEN_QUESTIONS.md` #3).
 
@@ -118,13 +115,17 @@ Once generated, a `TodaySessionItem` freezes the following fields, copied verbat
 
 Selected-decision persistence confirms `docs/DATABASE.md` §16's "likely V1 direction": no separate table stores every NBA candidate or ranking result; only the chosen primary action per Question is persisted, on `TodaySessionItem`.
 
+### Client retry contract (made explicit)
+
+Everything above about idempotency and "a legitimate retry preserves the original values" depends on one client-side requirement, stated explicitly here rather than left implicit: **a client must generate `submissionId` exactly once per logical answer attempt, and must resend that same `submissionId` together with the exact original request payload (including `answeredAt` and `responseTimeSeconds`) on every retry of that same attempt** — after a network failure, an unclear response, or an application crash between commit and response. A client that instead generates a fresh `submissionId` per HTTP attempt gets no idempotency protection at all (each attempt becomes a genuinely new command); a client that resends the same `submissionId` with a regenerated `answeredAt`/`responseTimeSeconds` will have its retry correctly rejected as an idempotency-key conflict rather than silently accepted (see "Conflict validation" above). This requirement belongs on the client/API-contract side of the boundary this ADR sits at; it is recorded here because the entire idempotency model is meaningless without it.
+
 ## Consequences
 
 - a duplicate answer submission is always safe to retry — it returns the original result rather than corrupting counters or re-deriving state, and a same-user submission-id reused for a *different* logical command is rejected explicitly rather than silently misattributed;
 - concurrent submissions for the same learner-question pair, including the very first Attempt ever recorded for that pair, cannot silently lose an update;
 - `UserQuestionProgress` is never written by any path that skips the advisory lock — this must be documented and enforced as a standing discipline, not just true of `submitAnswer` today;
-- `TodaySession`'s physical uniqueness constraint is not yet implementable — writing a migration for it requires first resolving `docs/OPEN_QUESTIONS.md` #34, which this ADR deliberately does not do;
-- a resumed Today session at 20:00 shows exactly what was decided at 08:00, including which other actions applied and why, even if the learner's mastery/misconception state has since changed (this part does not depend on which uniqueness key Today ultimately gets);
+- `TodaySession`'s physical uniqueness constraint is now decided (`UNIQUE (user_id, course_id, planned_for_date)`, ADR-011) and implementable in a real migration;
+- a resumed Today session at 20:00 shows exactly what was decided at 08:00, including which other actions applied and why, even if the learner's mastery/misconception state has since changed;
 - `rebuildUserQuestionProgress` (future, deferred) remains possible because `UserQuestionProgress` is never written outside this transaction pattern and Attempts remain the sole source of truth it is rebuilt from, and no placeholder/zero-state rows are ever created that a rebuild would need to account for;
 - the advisory lock plus row lock adds a short-lived lock per answer submission; acceptable at V1 traffic scale and consistent with `docs/ARCHITECTURE.md` §33's cost-efficiency principle.
 
@@ -176,7 +177,7 @@ Considered (option B in the task that prompted this fix). Rejected for V1: it re
 
 ### Decide Today's Course scope now, for schema convenience
 
-Rejected. `docs/OPEN_QUESTIONS.md` #34 is a genuine open product question; deciding it only to make `TodaySession`'s uniqueness key clean would be exactly the kind of silent product decision `docs/OPEN_QUESTIONS.md` §42 (Open Question Discipline) warns against. The uniqueness key is left unresolved instead.
+Rejected **at the time this ADR was originally written**: `docs/OPEN_QUESTIONS.md` #34 was a genuine open product question, and deciding it only to make `TodaySession`'s uniqueness key clean would have been exactly the kind of silent product decision `docs/OPEN_QUESTIONS.md` §42 (Open Question Discipline) warns against — so the uniqueness key was left unresolved. **This has since been superseded**: Today's Course scope was later decided explicitly, on its own merits, as a real product/architecture decision — see `docs/DECISIONS/011-today-is-course-scoped-v1.md` — not adopted here for schema convenience after the fact.
 
 ### Persist every NBA ranking candidate, not just the selected one
 
