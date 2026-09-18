@@ -413,6 +413,29 @@ inferred or invented downstream:
   this ADR; tracked as a prerequisite in
   `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`.
 
+## Addendum (2026-09-21): persistence foundation implemented
+
+`supabase/migrations/20260921000000_daily_plan_v1.sql` adds `daily_plans`/
+`daily_plan_items` — purely additive, alongside the still-intact
+`today_sessions`/`today_session_items` (`docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md`
+§13's recommendation, followed exactly: no drop, no data migration, no
+column altered on any existing table). `src/domain/dailyPlan/types.ts`,
+`src/application/dailyPlan/ports.ts`, and
+`src/infrastructure/postgres/daily-plan-{repository,mapper}.ts` implement
+§19's single-use resolution rule at the repository layer (a conditional
+`UPDATE ... WHERE status = 'pending'`, returning a distinct
+`RESOLVED`/`ALREADY_RESOLVED`/`NOT_FOUND` outcome — never a silent
+overwrite).
+
+This is a **persistence foundation only**, not a change to this ADR's
+Context/Decision text above, which remains accurate as the historical
+record of what was decided and, separately, what was implemented as of
+2026-09-19. Still not implemented: any candidate-pool assembly, first-open
+generation orchestration, wiring to `submitAnswer`/`getOrCreateTodaySession`,
+Skip as a callable application use case, or Global/Course Today read views
+— see `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 5/6 for what
+remains before this foundation is used end-to-end.
+
 ## Alternatives Considered
 
 ### Leave ADR-011 as the sole, unamended model; decline Global Today

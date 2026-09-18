@@ -1,15 +1,18 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED** — four forward-only migrations exist,
+Status: **IMPLEMENTED** — five forward-only migrations exist,
 `supabase/migrations/20260917203000_initial_schema.sql` (the initial schema:
 PostgreSQL via Supabase, ADR-013),
 `supabase/migrations/20260918000000_question_answer_model_v1.sql` (adds
 `question_versions.question_type`, ADR-014),
 `supabase/migrations/20260919000000_course_membership_v1.sql` (adds
-`courses.join_policy` and `course_memberships`, ADR-015), and
+`courses.join_policy` and `course_memberships`, ADR-015),
 `supabase/migrations/20260920000000_user_timezone_v1.sql` (adds
-`users.timezone`, `docs/OPEN_QUESTIONS.md` #35). All four are verified
-against a real PostgreSQL engine
+`users.timezone`, `docs/OPEN_QUESTIONS.md` #35), and
+`supabase/migrations/20260921000000_daily_plan_v1.sql` (adds `daily_plans`/
+`daily_plan_items`, ADR-016 §1/§19 — persistence foundation only, additive
+alongside the still-intact `today_sessions`/`today_session_items`). All
+five are verified against a real PostgreSQL engine
 (`supabase/tests/schema.integration.test.ts`, `npm run test:schema`),
 applied in filename order; no later migration edits an earlier one. This
 document remains the design-contract companion to those migrations and to
@@ -17,6 +20,7 @@ document remains the design-contract companion to those migrations and to
 `docs/DECISIONS/009-question-versioning.md` / `010-answer-submission-transaction-model.md`
 / `012-attempt-replayability-and-rebuild-semantics.md` / `013-supabase-postgresql-as-v1-persistence-provider.md`
 / `014-question-answer-model-v1.md` / `015-user-course-membership-and-join-authorization-model.md`
+/ `016-global-daily-plan-and-today-view-semantics.md`
 (the durable decisions this schema implements). The composite-FK and
 CHECK-constraint choices below were produced by iterative adversarial
 review of this schema against the actual domain/application code; the
@@ -525,8 +529,10 @@ decided).
   `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
   (ACCEPTED): one DailyPlan/DailyPlanItem per user per local day, with
   Course Today and Global Today as filtered views of that same plan —
-  DECIDED, but no migration exists yet; `today_sessions`/
-  `today_session_items` remain the implemented tables until it does.
+  DECIDED, and a persistence FOUNDATION now exists (`daily_plans`/
+  `daily_plan_items` below), but no application code generates a real plan
+  into it yet; `today_sessions`/`today_session_items` remain the only
+  tables any application code actually writes to today.
 - `getOrCreateTodaySession` is implemented as `INSERT ... ON CONFLICT DO
   NOTHING RETURNING` against this key, with a fallback `SELECT` — race-free
   by Postgres's own unique-index insert semantics (verified by hand-tracing
@@ -609,6 +615,108 @@ The frozen plan, one row per planned Question within a session — ADR-010's
   none for `status`/`completed_at` (those mirror execution state that could
   in principle be rederived from `attempts`, but are stored directly for
   simple, fast reads).
+
+---
+
+## `daily_plans`
+
+**IMPLEMENTED (persistence foundation only) — ADR-016 §1.** Added by
+`supabase/migrations/20260921000000_daily_plan_v1.sql`. The accepted
+TARGET architecture superseding `today_sessions`' per-Course key: one row
+per `(user_id, planned_for_date)`, read by both Global Today and every
+Course Today view as a filtered read over the same `daily_plan_items`. No
+application code generates a real plan into this table yet — see
+`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 5/6 for what remains.
+`today_sessions`/`today_session_items` remain fully intact and unmodified
+(`docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md` §13's recommendation, followed
+exactly: additive only, no drop, no data migration).
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | uuid | no | PK |
+| `user_id` | uuid | no | FK → `users.id`, `ON DELETE RESTRICT` |
+| `planned_for_date` | date | no | caller-supplied logical date, same contract as `today_sessions.planned_for_date` |
+| `status` | text | no | state machine DEFERRED, same honesty as `today_sessions.status` |
+| `engine_version` | text | no | |
+| `generated_at` | timestamptz | no | default `now()` |
+| `started_at` | timestamptz | yes | |
+| `completed_at` | timestamptz | yes | |
+
+- **Unique constraints**: `UNIQUE (user_id, planned_for_date)` — the
+  schema-level enforcement of "exactly one DailyPlan per user per local
+  day" (ADR-016 §1), and what makes plan creation idempotent by
+  construction (`INSERT ... ON CONFLICT DO NOTHING`, mirroring
+  `today_sessions`' own pattern). `UNIQUE (id, user_id)` exists purely so
+  `daily_plan_items` can composite-FK against `(daily_plan_id, user_id)`.
+- **Mutable**: `status`, `started_at`, `completed_at`.
+- **Delete behavior**: not addressed; no code path deletes a DailyPlan in
+  normal V1 operation. `daily_plan_items` cascades from this table.
+- **Source of truth**: persisted decision, same category as `today_sessions`.
+
+---
+
+## `daily_plan_items`
+
+**IMPLEMENTED (persistence foundation only) — ADR-016 §1/§19.** Added by
+the same migration. The direct successor to `today_session_items`, with
+one structural difference: `course_id` is a genuinely independent, per-item
+fact, not a value forced equal to a single parent session's Course — this
+is exactly what lets Global Today and Course Today share one underlying
+plan (ADR-016 §1).
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | uuid | no | PK |
+| `daily_plan_id` | uuid | no | see composite FK below |
+| `user_id` | uuid | no | denormalized from `daily_plans.user_id` at insert time, same reason `today_session_items.user_id` is denormalized |
+| `course_id` | uuid | no | **not** forced equal to a parent's single Course — this item's own Course, independently |
+| `position` | int | no | `CHECK (position >= 0)`, 0-based |
+| `question_id` | uuid | no | see composite FK below |
+| `question_version_id` | uuid | no | resolved by the application layer at plan-persistence time, unchanged from `today_session_items`' rule |
+| `action_type` | text | no | matches `NextBestActionType` exactly, unchanged |
+| `tier` | text | no | matches `NextBestActionPriorityTier` exactly, unchanged |
+| `other_applicable_types` | jsonb | no | array, default `[]` |
+| `reasons` | jsonb | no | array, default `[]` |
+| `status` | text | no | `pending`/`completed`/`skipped`, default `pending` |
+| `resolved_at` | timestamptz | yes | **new relative to `today_session_items`** — set once, the first time this item leaves `pending` (ADR-016 §19), regardless of COMPLETED or SKIPPED |
+| `completed_at` | timestamptz | yes | set only for a COMPLETED item; equals `resolved_at` in that case |
+
+- **Unique constraints**:
+  - `UNIQUE (daily_plan_id, position)` — no duplicate position within a plan.
+  - `UNIQUE (daily_plan_id, question_id)` — a Question appears at most once
+    per plan. This is the exact constraint that closes plan-membership
+    double-counting by construction
+    (`docs/GLOBAL_TODAY_ARCHITECTURE_REVIEW.md` §2's central claim for
+    Option A).
+- **Foreign keys / composite FKs**:
+  - `(daily_plan_id, user_id) REFERENCES daily_plans (id, user_id)` —
+    deliberately does NOT also include `course_id` (unlike
+    `today_session_items`' equivalent FK), since there is no single parent
+    Course to cross-check against.
+  - `(question_id, question_version_id) REFERENCES question_versions (question_id, id)` — unchanged shape.
+  - `(question_id, course_id) REFERENCES questions (id, course_id)` — now
+    the ONLY mechanism enforcing Course consistency for this item (no
+    parent-session `course_id` to also cross-check).
+- **Frozen (never recomputed after insert)**: `position`, `action_type`,
+  `tier`, `other_applicable_types`, `reasons`, `question_version_id`,
+  `course_id`.
+- **Mutable**: `status`, `resolved_at`, `completed_at` only.
+- **Single-use resolution (ADR-016 §19)**: enforced by the repository layer
+  (`PostgresDailyPlanRepository.markCompleted`/`markSkipped`, a conditional
+  `UPDATE ... WHERE status = 'pending'`), not by a DB constraint —
+  `markItemCompleted` on the existing `today_session_items` table is
+  deliberately NOT gated this way today (a known, pre-existing gap this
+  migration does not retrofit onto the old table); the new
+  `daily_plan_items` methods close that gap for the new table from the
+  start.
+- **Delete behavior**: cascades from `daily_plans`.
+- **Source of truth**: frozen decision output for the plan-shape columns;
+  none for `status`/`resolved_at`/`completed_at`.
+- **Not yet added**: any `attempts` FK to this table.
+  `attempts.today_session_id`/`today_session_item_id` remain the only
+  Today-linkage columns on `attempts` — wiring `submitAnswer` to
+  `daily_plan_items` is deliberately out of scope for this foundation slice
+  (`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 6).
 
 ---
 

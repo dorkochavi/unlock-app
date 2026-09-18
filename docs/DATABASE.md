@@ -1178,7 +1178,7 @@ Before writing the real V1 schema, resolve at minimum:
 2. V1 exam-date hierarchy — OPEN
 3. Question editing/version strategy — DECIDED, see docs/DECISIONS/009-question-versioning.md
 4. Course structure depth — OPEN
-5. Today scope: one Course or multiple Courses — implemented schema is course-scoped (ADR-011, see docs/DECISIONS/011-today-is-course-scoped-v1.md); at the product/architecture level this is now partially superseded by docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md (ACCEPTED): one DailyPlan/DailyPlanItem per user per local day, Course Today and Global Today as filtered views. DECIDED, not yet migrated
+5. Today scope: one Course or multiple Courses — implemented/WRITTEN-TO schema is still course-scoped (ADR-011, see docs/DECISIONS/011-today-is-course-scoped-v1.md); at the product/architecture level this is now partially superseded by docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md (ACCEPTED): one DailyPlan/DailyPlanItem per user per local day, Course Today and Global Today as filtered views. DECIDED; persistence foundation migrated (supabase/migrations/20260921000000_daily_plan_v1.sql), application layer (generation/orchestration) not yet built
 6. Today session boundary/timezone behavior — OPEN (domain/persistence layer accepts an already-resolved logical date regardless)
 7. aggregate Learner State persistence — OPEN
 8. selected Next Best Action persistence strategy (persist only the chosen decision, not every candidate) — DECIDED, see docs/DECISIONS/010-answer-submission-transaction-model.md

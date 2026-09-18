@@ -90,14 +90,23 @@ Today sizing) have an accepted conservative production default; see
 "Learning Engine production-composition blocker," below, for the exact
 values and what remains open (calibration, not a product decision).
 
-**5. `DailyPlan`/`DailyPlanItem` migration and domain/application layer.**
-Scoped down for the vertical slice: stand up `DailyPlan`/`DailyPlanItem`
-for a **single Course's items at a time** — no multi-Course candidate
-merging needed yet (that is step 8 / Slice 1). This is Slice 3, below,
-scoped down. Include the single-use resolution rule (ADR-016 §19) in this
-step's acceptance criteria, and port Slice 0 (Skip semantics) and Slice 6
-(Manual Practice confirm/harden) onto `DailyPlanItem` here, since both are
-otherwise unchanged and naturally belong with this step.
+**5. `DailyPlan`/`DailyPlanItem` migration and domain/application layer —
+PERSISTENCE FOUNDATION IMPLEMENTED (2026-09-21), generation/orchestration
+NOT.** `supabase/migrations/20260921000000_daily_plan_v1.sql` adds
+`daily_plans`/`daily_plan_items`, purely additive alongside
+`today_sessions`/`today_session_items` (unmodified, per
+`docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md` §13). `src/domain/dailyPlan/types.ts`,
+`src/application/dailyPlan/ports.ts`, and
+`src/infrastructure/postgres/daily-plan-{repository,mapper}.ts` implement
+the single-use resolution rule (ADR-016 §19: `markCompleted`/`markSkipped`
+are each a conditional `UPDATE ... WHERE status = 'pending'`, returning a
+typed `RESOLVED`/`ALREADY_RESOLVED`/`NOT_FOUND` outcome). **Still NOT
+implemented**: any code that actually generates a plan (no candidate-pool
+assembly, no wiring to `getOrCreateTodaySession`/`submitAnswer`), Skip
+semantics (Slice 0) as a callable use case, and Manual Practice
+confirmation against `DailyPlanItem` specifically — those remain the next
+work in this step, still scoped to a single Course's items at a time (no
+multi-Course candidate merging, that is step 8 / Slice 1).
 
 **6. Single-Course Today vertical slice.** Real usable UI, Auth,
 CourseMembership, QR join, persistence — the full demo-readiness bar per

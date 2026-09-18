@@ -960,10 +960,15 @@ reconcile), and one `DailyPlan` counts once toward the primary
 Today-completion KPI regardless of which view(s) resolved it (ADR-016 §21,
 §22).
 
-**Not yet implemented.** No migration exists for `DailyPlan`/
-`DailyPlanItem`. `today_sessions`/`today_session_items`, keyed by
-`(user_id, course_id, planned_for_date)` per ADR-011, remain the actually
-implemented V1 schema today.
+**Persistence foundation now IMPLEMENTED, application layer NOT.** A
+`daily_plans`/`daily_plan_items` migration exists
+(`supabase/migrations/20260921000000_daily_plan_v1.sql`), with domain
+types, a repository port, and a Postgres repository implementation
+(single-use item resolution per §19 included) — but no application code
+generates a real plan into it, and `submitAnswer`/`getOrCreateTodaySession`
+are not wired to it. `today_sessions`/`today_session_items`, keyed by
+`(user_id, course_id, planned_for_date)` per ADR-011, remain the only
+tables any application code actually writes to today.
 
 **Historical V1 answer (ADR-011, now superseded as target architecture,
 still describes the implemented schema):** generated separately per

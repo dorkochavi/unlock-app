@@ -146,6 +146,47 @@ async function insertTodaySessionItem(args: {
   return id;
 }
 
+async function insertDailyPlan(
+  userId: string,
+  plannedForDate = "2026-01-10",
+): Promise<string> {
+  const id = randomUUID();
+  await db.query(
+    `insert into daily_plans
+       (id, user_id, planned_for_date, status, engine_version)
+     values ($1, $2, $3, 'prepared', 'test-engine-v1')`,
+    [id, userId, plannedForDate],
+  );
+  return id;
+}
+
+async function insertDailyPlanItem(args: {
+  dailyPlanId: string;
+  userId: string;
+  courseId: string;
+  questionId: string;
+  questionVersionId: string;
+  position?: number;
+}): Promise<string> {
+  const id = randomUUID();
+  await db.query(
+    `insert into daily_plan_items
+       (id, daily_plan_id, user_id, course_id, position, question_id, question_version_id,
+        action_type, tier)
+     values ($1, $2, $3, $4, $5, $6, $7, 'REVIEW_DUE', 'DUE_REVIEW')`,
+    [
+      id,
+      args.dailyPlanId,
+      args.userId,
+      args.courseId,
+      args.position ?? 0,
+      args.questionId,
+      args.questionVersionId,
+    ],
+  );
+  return id;
+}
+
 interface AttemptOverrides {
   id?: string;
   submissionId?: string;
@@ -850,6 +891,218 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
       [userId],
     );
     expect(result.rows[0].timezone).toBe("Asia/Jerusalem");
+  });
+
+  // -------------------------------------------------------------------------
+  // daily_plans / daily_plan_items — ADR-016 §1/§19
+  // -------------------------------------------------------------------------
+
+  it("32. rejects a duplicate (user_id, planned_for_date) daily_plans row", async () => {
+    const userId = await insertUser();
+    await insertDailyPlan(userId, "2026-02-01");
+
+    await expect(
+      insertDailyPlan(userId, "2026-02-01"),
+    ).rejects.toThrow(/duplicate key value violates unique constraint/);
+  });
+
+  it("33. permits two different users to each have a daily_plans row for the same date", async () => {
+    const userA = await insertUser();
+    const userB = await insertUser();
+
+    await expect(insertDailyPlan(userA, "2026-02-01")).resolves.toBeTypeOf("string");
+    await expect(insertDailyPlan(userB, "2026-02-01")).resolves.toBeTypeOf("string");
+  });
+
+  it("34. rejects a duplicate (daily_plan_id, question_id) daily_plan_items row — closes plan-membership double-counting by construction", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+    await insertDailyPlanItem({
+      dailyPlanId: planId,
+      userId: chain.userId,
+      courseId: chain.courseId,
+      questionId: chain.questionId,
+      questionVersionId: chain.questionVersionId,
+      position: 0,
+    });
+
+    await expect(
+      insertDailyPlanItem({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+        position: 1,
+      }),
+    ).rejects.toThrow(/duplicate key value violates unique constraint/);
+  });
+
+  it("35. rejects a duplicate (daily_plan_id, position) daily_plan_items row", async () => {
+    const chain = await seedValidChain();
+    const chain2Question = await insertQuestion(chain.courseId);
+    const chain2Version = await insertQuestionVersion(chain2Question);
+    const planId = await insertDailyPlan(chain.userId);
+    await insertDailyPlanItem({
+      dailyPlanId: planId,
+      userId: chain.userId,
+      courseId: chain.courseId,
+      questionId: chain.questionId,
+      questionVersionId: chain.questionVersionId,
+      position: 0,
+    });
+
+    await expect(
+      insertDailyPlanItem({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain2Question,
+        questionVersionId: chain2Version,
+        position: 0,
+      }),
+    ).rejects.toThrow(/duplicate key value violates unique constraint/);
+  });
+
+  it("36. rejects an invalid daily_plan_items.status value", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+    const id = randomUUID();
+
+    await expect(
+      db.query(
+        `insert into daily_plan_items
+           (id, daily_plan_id, user_id, course_id, position, question_id,
+            question_version_id, action_type, tier, status)
+         values ($1, $2, $3, $4, 0, $5, $6, 'REVIEW_DUE', 'DUE_REVIEW', $7)`,
+        [
+          id,
+          planId,
+          chain.userId,
+          chain.courseId,
+          chain.questionId,
+          chain.questionVersionId,
+          "SOMETHING_ELSE",
+        ],
+      ),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("37. rejects a daily_plan_items row whose Question does not actually belong to its claimed course_id", async () => {
+    const chain = await seedValidChain();
+    const otherOwner = await insertUser();
+    const otherCourseId = await insertCourse(otherOwner);
+    const planId = await insertDailyPlan(chain.userId);
+
+    await expect(
+      insertDailyPlanItem({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: otherCourseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+      }),
+    ).rejects.toThrow(/violates foreign key constraint/);
+  });
+
+  it("38. a daily_plan_items row independently carries its own course_id, unlike today_session_items (ADR-016 §1)", async () => {
+    const chain = await seedValidChain();
+    const secondCourseId = await insertCourse(chain.userId);
+    const secondQuestionId = await insertQuestion(secondCourseId);
+    const secondVersionId = await insertQuestionVersion(secondQuestionId);
+    const planId = await insertDailyPlan(chain.userId);
+
+    await insertDailyPlanItem({
+      dailyPlanId: planId,
+      userId: chain.userId,
+      courseId: chain.courseId,
+      questionId: chain.questionId,
+      questionVersionId: chain.questionVersionId,
+      position: 0,
+    });
+    await insertDailyPlanItem({
+      dailyPlanId: planId,
+      userId: chain.userId,
+      courseId: secondCourseId,
+      questionId: secondQuestionId,
+      questionVersionId: secondVersionId,
+      position: 1,
+    });
+
+    const result = await db.query<{ course_id: string }>(
+      "select distinct course_id from daily_plan_items where daily_plan_id = $1",
+      [planId],
+    );
+    expect(result.rows.map((r) => r.course_id).sort()).toEqual(
+      [chain.courseId, secondCourseId].sort(),
+    );
+  });
+
+  it("39. resolvedAt/completedAt are independent and round-trip (completed sets both, skipped sets only resolvedAt)", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+    const completedItemId = await insertDailyPlanItem({
+      dailyPlanId: planId,
+      userId: chain.userId,
+      courseId: chain.courseId,
+      questionId: chain.questionId,
+      questionVersionId: chain.questionVersionId,
+      position: 0,
+    });
+    const secondQuestionId = await insertQuestion(chain.courseId);
+    const secondVersionId = await insertQuestionVersion(secondQuestionId);
+    const skippedItemId = await insertDailyPlanItem({
+      dailyPlanId: planId,
+      userId: chain.userId,
+      courseId: chain.courseId,
+      questionId: secondQuestionId,
+      questionVersionId: secondVersionId,
+      position: 1,
+    });
+
+    await db.query(
+      "update daily_plan_items set status = 'completed', resolved_at = now(), completed_at = now() where id = $1",
+      [completedItemId],
+    );
+    await db.query(
+      "update daily_plan_items set status = 'skipped', resolved_at = now() where id = $1",
+      [skippedItemId],
+    );
+
+    const result = await db.query<{
+      id: string;
+      resolved_at: string | null;
+      completed_at: string | null;
+    }>(
+      "select id, resolved_at, completed_at from daily_plan_items where daily_plan_id = $1",
+      [planId],
+    );
+    const completedRow = result.rows.find((r) => r.id === completedItemId);
+    const skippedRow = result.rows.find((r) => r.id === skippedItemId);
+    expect(completedRow?.resolved_at).not.toBeNull();
+    expect(completedRow?.completed_at).not.toBeNull();
+    expect(skippedRow?.resolved_at).not.toBeNull();
+    expect(skippedRow?.completed_at).toBeNull();
+  });
+
+  it("40. daily_plans/daily_plan_items are purely additive: today_sessions/today_session_items remain fully intact and usable", async () => {
+    // seedValidChain() already exercises the full existing TodaySession
+    // path (session + item) — this test only needs to confirm that path
+    // still works unmodified after the daily_plans/daily_plan_items
+    // migration, not create a second session for the same
+    // (user_id, course_id, planned_for_date) key.
+    const chain = await seedValidChain();
+
+    const todaySessionResult = await db.query(
+      "select id from today_sessions where id = $1",
+      [chain.todaySessionId],
+    );
+    expect(todaySessionResult.rows).toHaveLength(1);
+    const todaySessionItemResult = await db.query(
+      "select id from today_session_items where id = $1",
+      [chain.todaySessionItemId],
+    );
+    expect(todaySessionItemResult.rows).toHaveLength(1);
   });
 
   it("RLS is enabled (not just declared) on every V1 table", async () => {
