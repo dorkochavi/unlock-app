@@ -194,6 +194,30 @@ async function insertValidProgress(
   );
 }
 
+async function insertCourseMembership(args: {
+  id?: string;
+  userId: string;
+  courseId: string;
+  role?: string;
+  revokedAt?: string | null;
+  archivedAt?: string | null;
+}): Promise<string> {
+  const id = args.id ?? randomUUID();
+  await db.query(
+    `insert into course_memberships (id, user_id, course_id, role, revoked_at, archived_at)
+     values ($1, $2, $3, $4, $5, $6)`,
+    [
+      id,
+      args.userId,
+      args.courseId,
+      args.role ?? "LEARNER",
+      args.revokedAt ?? null,
+      args.archivedAt ?? null,
+    ],
+  );
+  return id;
+}
+
 /** One full valid chain: user, course, question, version, Today session+item. */
 async function seedValidChain() {
   const userId = await insertUser();
@@ -672,6 +696,131 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
       [chain.userId, chain.questionId],
     );
     expect(progress.rows).toHaveLength(1);
+  });
+
+  // -------------------------------------------------------------------------
+  // course_memberships / courses.join_policy — ADR-015
+  // -------------------------------------------------------------------------
+
+  it("21. new courses default to AUTHORIZED_ONLY join_policy", async () => {
+    const userId = await insertUser();
+    const courseId = await insertCourse(userId);
+
+    const result = await db.query<{ join_policy: string }>(
+      "select join_policy from courses where id = $1",
+      [courseId],
+    );
+    expect(result.rows[0].join_policy).toBe("AUTHORIZED_ONLY");
+  });
+
+  it("22. rejects an invalid courses.join_policy value", async () => {
+    const userId = await insertUser();
+    const id = randomUUID();
+
+    await expect(
+      db.query(
+        "insert into courses (id, owner_user_id, title, join_policy) values ($1, $2, 'Test Course', $3)",
+        [id, userId, "SOMETHING_ELSE"],
+      ),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("23. rejects an invalid course_memberships.role value", async () => {
+    const userId = await insertUser();
+    const courseId = await insertCourse(userId);
+
+    await expect(
+      insertCourseMembership({ userId, courseId, role: "MANAGER" }),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("24. rejects a duplicate (user_id, course_id) membership", async () => {
+    const userId = await insertUser();
+    const courseId = await insertCourse(userId);
+    await insertCourseMembership({ userId, courseId });
+
+    await expect(
+      insertCourseMembership({ userId, courseId }),
+    ).rejects.toThrow(/duplicate key value violates unique constraint/);
+  });
+
+  it("25. rejects a membership referencing a nonexistent user", async () => {
+    const ownerId = await insertUser();
+    const courseId = await insertCourse(ownerId);
+
+    await expect(
+      insertCourseMembership({ userId: randomUUID(), courseId }),
+    ).rejects.toThrow(/violates foreign key constraint/);
+  });
+
+  it("26. rejects a membership referencing a nonexistent course", async () => {
+    const userId = await insertUser();
+
+    await expect(
+      insertCourseMembership({ userId, courseId: randomUUID() }),
+    ).rejects.toThrow(/violates foreign key constraint/);
+  });
+
+  it("27. archivedAt and revokedAt are independent, nullable, and round-trip", async () => {
+    const userId = await insertUser();
+    const courseId = await insertCourse(userId);
+    const archivedAt = new Date("2026-02-01T00:00:00Z").toISOString();
+    const id = await insertCourseMembership({
+      userId,
+      courseId,
+      archivedAt,
+      revokedAt: null,
+    });
+
+    const result = await db.query<{ revoked_at: string | null; archived_at: string | null }>(
+      "select revoked_at, archived_at from course_memberships where id = $1",
+      [id],
+    );
+    expect(result.rows[0].revoked_at).toBeNull();
+    expect(result.rows[0].archived_at).not.toBeNull();
+  });
+
+  it("28. revoking a membership does not delete or alter learner history (attempts)", async () => {
+    const chain = await seedValidChain();
+    await insertCourseMembership({ userId: chain.userId, courseId: chain.courseId });
+    await insertValidProgress(chain.userId, chain.questionId);
+    const attemptId = await insertAttempt({ ...chain });
+
+    await db.query(
+      "update course_memberships set revoked_at = now() where user_id = $1 and course_id = $2",
+      [chain.userId, chain.courseId],
+    );
+
+    const attemptResult = await db.query("select id from attempts where id = $1", [
+      attemptId,
+    ]);
+    expect(attemptResult.rows).toHaveLength(1);
+    const progressResult = await db.query(
+      "select user_id from user_question_progress where user_id = $1 and question_id = $2",
+      [chain.userId, chain.questionId],
+    );
+    expect(progressResult.rows).toHaveLength(1);
+  });
+
+  it("29. course_memberships requires no institution table/column (ADR-006, ADR-015 §10)", async () => {
+    const userId = await insertUser();
+    const courseId = await insertCourse(userId);
+
+    await expect(
+      insertCourseMembership({ userId, courseId, role: "OWNER" }),
+    ).resolves.toBeTypeOf("string");
+
+    const institutionTable = await db.query<{ table_name: string }>(
+      `select table_name from information_schema.tables
+        where table_schema = 'public' and table_name ilike '%institution%'`,
+    );
+    expect(institutionTable.rows).toHaveLength(0);
+
+    const institutionColumn = await db.query<{ column_name: string }>(
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and column_name ilike '%institution%'`,
+    );
+    expect(institutionColumn.rows).toHaveLength(0);
   });
 
   it("RLS is enabled (not just declared) on every V1 table", async () => {

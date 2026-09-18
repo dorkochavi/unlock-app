@@ -177,6 +177,37 @@ export async function seedQuestionChain(
 }
 
 /**
+ * A real `course_memberships` row via raw SQL (not through
+ * `PostgresCourseMembershipRepository`, so callers exercising that
+ * repository itself don't create a circular test dependency on it).
+ */
+export async function insertCourseMembership(
+  db: SqlExecutor,
+  args: {
+    userId: string;
+    courseId: string;
+    role?: "OWNER" | "INSTRUCTOR" | "LEARNER";
+    revokedAt?: Date | null;
+    archivedAt?: Date | null;
+  },
+): Promise<string> {
+  const id = randomUUID();
+  await db.query(
+    `insert into course_memberships (id, user_id, course_id, role, revoked_at, archived_at)
+     values ($1, $2, $3, $4, $5, $6)`,
+    [
+      id,
+      args.userId,
+      args.courseId,
+      args.role ?? "LEARNER",
+      args.revokedAt ?? null,
+      args.archivedAt ?? null,
+    ],
+  );
+  return id;
+}
+
+/**
  * A real Today session with one real item, via raw SQL (not through
  * `PostgresTodaySessionRepository`, so callers exercising that repository
  * itself don't create a circular test dependency on it). Returns enough
