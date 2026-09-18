@@ -32,117 +32,153 @@ Dor" note below as historical (what was blocking) rather than current
 
 ---
 
-## Accepted sequencing (Ruppin strategy) — read this before the slice list
+## Accepted sequencing (updated 2026-09-19) — read this before the slice list
 
 Per the accepted decisions (ADR-016 §20, resolving
-`docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §7), the implementation plan is
-reordered into three phases. This supersedes any implied ordering from the
-"Summary ordering table" at the bottom of this document where the two
-disagree — the phases below are authoritative.
+`docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §7) and the subsequent
+production-defaults formalization (`docs/OPEN_QUESTIONS.md` #11, #13, #16,
+#35; `docs/LEARNING_ENGINE.md` §16a/§20a;
+`docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` §7a), the
+implementation-readiness order is now:
 
-**Phase 1 — Correct DailyPlan foundation + single-Course vertical slice
-(build this first, unconditionally).** The goal is a real, usable,
-single-Course Today built directly on the `DailyPlan`/`DailyPlanItem`
-architecture from day one — never a Course-only architecture that would
-later need to be thrown away. This phase includes, in roughly this order:
-- **Slice 3** (Global Daily Plan persistence schema) — but scoped down: the
-  migration only needs to stand up `DailyPlan`/`DailyPlanItem` for a
-  **single Course's items at a time**; it does not need multi-Course
-  candidate merging to exist yet. This is now unblocked on "which option" —
-  Option A is decided — but remains blocked on the production composition
-  root (see "Learning Engine production-composition blocker," below) and
-  on ADR-015's `CourseMembership` migration for real Course/membership
-  data to generate a plan against.
-- **Slice 0** (Skip semantics) — ports directly onto `DailyPlanItem`
-  instead of `TodaySessionItem`; otherwise unchanged, and remains shippable
-  independently.
-- **Slice 6** (Manual Practice confirm/harden) — unchanged; confirm the
-  existing `todaySessionItemId === null` separation holds identically for
-  `DailyPlanItem`.
-- The single-use resolution rule (ADR-016 §19: a resolved `DailyPlanItem`
-  rejects a second Today answer attempt as a conflict) — not separately
-  sliced in the original document; add it to Slice 3's acceptance criteria
-  now that it is decided, rather than treating it as a later slice.
-- Real usable UI, Auth, CourseMembership, QR join — tracked elsewhere
-  (outside this document's scope; ADR-015 and the Ruppin demo plan cover
-  these), but are part of Phase 1's demo-readiness bar per ADR-016 §20.
+```text
+1. CourseMembership / joinPolicy persistence and runtime foundation (ADR-015)
+2. user profile timezone persistence/source-of-truth support (OPEN_QUESTIONS #35)
+3. Learning Engine production composition root
+4. conservative production policy defaults for:
+   - MasteryPolicy
+   - MisconceptionPolicy
+   - Today sizing
+5. DailyPlan / DailyPlanItem migration and domain/application layer
+6. single-Course Today vertical slice
+7. usable Ruppin flow
+8. multi-Course Global Today later / if schedule permits
+```
 
-**Phase 2 — Usable Ruppin flow.** Once Phase 1's single-Course vertical
-slice is real and demoable end-to-end (generate → present → answer →
-skip → complete → "done for today" → persisted history), harden it for the
-actual pilot: real Course content, real learners, real CourseMembership
-data, and whatever UI polish the demo needs. Multi-Course Global Today
-work does not start here.
+This supersedes any implied ordering from the "Summary ordering table" at
+the bottom of this document and from the previous revision's three-phase
+framing where the two disagree — the list above is authoritative. It is a
+refinement, not a reversal, of the previous "Phase 1/2/3" framing: steps
+1–5 below are what Phase 1 actually requires, made concrete and ordered;
+step 6 is the previous Phase 1's deliverable; step 7 is the previous Phase
+2; step 8 is the previous Phase 3.
 
-**Phase 3 — Multi-Course Global behavior, if time permits / immediately
-after the demo.** Slices 1, 2, 4, 5, 7 (cross-Course candidate pool,
-double-count guard, first-open orchestration, Global read view, archive
-exclusion) belong here. None of this is a hard demo requirement. Because
-Phase 1 was built directly on the `DailyPlan`/`DailyPlanItem` architecture,
-this phase is additive work on the same foundation, not a rebuild.
+**1. CourseMembership / joinPolicy persistence and runtime foundation
+(ADR-015).** No migration exists yet. This is the hard blocker already
+flagged in Slices 4 and 7 below ("active Courses" cannot be enumerated
+without it) and is a prerequisite for step 5 (a `DailyPlan` needs to know
+which Course(s) a learner actually belongs to).
+
+**2. User profile timezone persistence/source-of-truth support.** Per the
+accepted decision (`docs/OPEN_QUESTIONS.md` #35, RESOLVED): store an IANA
+timezone identifier on the user profile, detected client-side on first
+registration/relevant session, persisted as the server-side source of
+truth thereafter. No column or detection code exists yet. This is a
+prerequisite for step 5/6 — `DailyPlan`'s local-day calculation (ADR-016
+§17) needs a real timezone source, not a placeholder.
+
+**3. Learning Engine production composition root.** Per
+`docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` (unchanged
+headline finding, §4): no composition root exists anywhere in `src/`. This
+is the code-shape work — wiring together `SubmitAnswerContext`/
+`TodaySessionContext`-equivalent construction — which can be built now,
+ahead of every value being final, per the audit's §7a update.
+
+**4. Conservative production policy defaults.** Now fully unblocked — all
+previously-blocking policy groups (`MasteryPolicy`, `MisconceptionPolicy`,
+Today sizing) have an accepted conservative production default; see
+"Learning Engine production-composition blocker," below, for the exact
+values and what remains open (calibration, not a product decision).
+
+**5. `DailyPlan`/`DailyPlanItem` migration and domain/application layer.**
+Scoped down for the vertical slice: stand up `DailyPlan`/`DailyPlanItem`
+for a **single Course's items at a time** — no multi-Course candidate
+merging needed yet (that is step 8 / Slice 1). This is Slice 3, below,
+scoped down. Include the single-use resolution rule (ADR-016 §19) in this
+step's acceptance criteria, and port Slice 0 (Skip semantics) and Slice 6
+(Manual Practice confirm/harden) onto `DailyPlanItem` here, since both are
+otherwise unchanged and naturally belong with this step.
+
+**6. Single-Course Today vertical slice.** Real usable UI, Auth,
+CourseMembership, QR join, persistence — the full demo-readiness bar per
+ADR-016 §20, built on steps 1–5.
+
+**7. Usable Ruppin flow.** Harden step 6 for the actual pilot: real Course
+content, real learners, real CourseMembership data, whatever UI polish the
+demo needs. Multi-Course Global Today work does not start here.
+
+**8. Multi-Course Global Today, later / if schedule permits.** Slices 1,
+2, 4, 5, 7 below (cross-Course candidate pool, double-count guard,
+first-open orchestration, Global read view, archive exclusion) belong
+here. None of this is a hard demo requirement. Because step 5 was built
+directly on the `DailyPlan`/`DailyPlanItem` architecture, this step is
+additive work on the same foundation, not a rebuild.
 
 **Not phased — ongoing/deferred regardless of demo timing:** Slice 8
-(significant-event adaptation) remains the hardest, most heavily blocked
-slice (now further scoped by ADR-016 §4 to Today-sourced Attempts only,
-which removes one axis of ambiguity but not the others) and Slice 9
-(timezone handling) remains blocked on `docs/OPEN_QUESTIONS.md` #35. Neither
-is required for Phase 1 or Phase 2.
+(significant-event adaptation, scoped by ADR-016 §4 to Today-sourced
+Attempts only) and Slice 9 (timezone edge-case mechanics beyond step 2's
+storage model — DST, travel, session-continuation boundary, still blocked
+on `docs/TODAY_TIMEZONE_EDGE_CASES.md`). Neither is required for steps 1–7.
 
 ## First recommended implementation slice, concretely
 
-**The exact next slice is a scoped-down Slice 3: a `daily_plans` /
-`daily_plan_items` migration and repository sized for single-Course
-generation only**, done in parallel with (or immediately followed by) Slice
-0 (skip semantics, ported to `DailyPlanItem`). Do this before Slice 1
-(cross-Course pooling) — Slice 1's multi-Course scaffolding has no user
-visible until Phase 3, while a real single-Course `DailyPlan` unblocks
-Phase 1's entire vertical slice, including the demo-critical Skip and
-Manual Practice confirmation work. This slice is itself blocked on two
-prerequisites that are not Global-Today-specific and must land first
-(see below).
+**The exact next slice is step 1: CourseMembership/joinPolicy persistence
+(ADR-015), done in parallel with step 2 (timezone persistence)** — both are
+small, independent, non-Global-Today-specific foundational gaps that
+currently block everything downstream (Slice 4 and Slice 7's "active
+Courses" enumeration; step 5's DailyPlan generation needing a real
+timezone). Step 3 (composition root code shape) can start in parallel with
+either, since it does not depend on them. Step 5 (scoped-down `DailyPlan`/
+`DailyPlanItem` migration, i.e. Slice 3 below scoped to single-Course) is
+the next slice after 1–4 land, not before — building it earlier would mean
+generating plans with no real Course-membership or timezone data to
+generate them against.
 
-## Learning Engine production-composition blocker
+## Learning Engine production-composition blocker — RESOLVED at the product-decision level (2026-09-19)
 
 Per `docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` (audit only, not
-solved here): **no production composition root exists anywhere in `src/`,
-and no policy/config object (`TodayPlannerPolicy`, `MasteryPolicy`,
-`MisconceptionPolicy`, `EvidenceStrengthPolicy`,
-`RetrievalQualificationPolicy`) has a production default.** This blocks
-Phase 1 independently of everything else in this document — even a
-single-Course `DailyPlan` cannot be generated end-to-end without concrete
-values for these policies, because `getOrCreateTodaySession`'s
-DailyPlan-based successor still requires a `TodaySessionContext`-equivalent
-built from real policy values, not test-only literals.
+solved here; updated §7a/§7b per the production-defaults decisions): **no
+production composition root exists anywhere in `src/` yet** (§4's finding
+is still literally true of the code) — but as of §7b, **no product
+decision remains outstanding** for the values that root would need. Policy/
+config object status, final:
 
-This blocker must be resolved **before** Phase 1's vertical slice can run
-against real data (it can remain unresolved while Slice 3's schema/
-repository work proceeds, since that work does not itself require running
-the engine end-to-end). Resolving it requires separating three distinct
-kinds of work, per the audit's own classification (§7) — **this document
-does not invent any of the following values**:
+- **`TodayPlannerPolicy.maxItems`-equivalent (Today sizing)** —
+  **CONSERVATIVE PRODUCTION DEFAULT available**: minimum 5, typical 8–12,
+  hard maximum 15 (`docs/OPEN_QUESTIONS.md` #16,
+  `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md` §0b). Usable now, explicitly
+  provisional pending calibration.
+- **`MisconceptionPolicy` (7 fields)** — **CONSERVATIVE PRODUCTION DEFAULT
+  CANDIDATE available**: the illustrative score model (normal wrong +1,
+  high-confidence wrong +2, cross-question reinforcement, ACTIVE near
+  cumulative score 3 — `docs/LEARNING_ENGINE.md` §20a). Usable now,
+  explicitly provisional pending calibration.
+- **`MasteryPolicy` (4 fields) — RESOLVED, no longer blocked.**
+  Conservative initial defaults accepted (`docs/LEARNING_ENGINE.md` §16b):
+  `minSpacedRetrievalsForStrengthening = 1` (STRONG, plus no unresolved
+  lapse); `minSpacedRetrievalsForMastered = 3` AND
+  `minEvidenceStrengthForMastered = "strong"` AND
+  `minRetrievabilityForMastered = 0.80` AND no unresolved lapse (MASTERED,
+  reversible). Usable now, explicitly provisional pending calibration —
+  this was the last remaining product blocker and is now closed at the
+  decision level.
+- **`RetrievalQualificationPolicy.minGapMsForSpacedRetrieval` and
+  `EvidenceStrengthPolicy` — unchanged**, ENGINEERING CALIBRATION with
+  required product visibility; no accepted decision touched these, but
+  engineering may propose a provisional starting value per the audit's
+  original §7 guidance.
 
-- **Product decisions** (must come from Dor, not engineering): `MasteryPolicy`
-  (what "mastered" means to a learner), `MisconceptionPolicy` (when a
-  misconception is surfaced), `TodayPlannerPolicy.maxItems`-equivalent
-  sizing bounds (superseded by ADR-016 §5's dynamic-size model, but the
-  model's own bounds are still undecided).
-- **Conservative engineering defaults** (engineering may propose a
-  starting value, but per the audit it must be flagged as provisional and
-  reviewed, not shipped silently): `RetrievalQualificationPolicy.minGapMsForSpacedRetrieval`,
-  `EvidenceStrengthPolicy`'s attempt-count/span thresholds.
-- **Later calibration** (safe to pick conservatively now and revise): exact
-  numeric weights within the priority/adaptation/plan-size models already
-  flagged as open throughout ADR-016 (§5/§10 tier-crossing weights, §4
-  adaptation thresholds, §5 plan-size bounds, §14 novelty limits).
-
-A composition root (wherever it eventually lives — likely
-`src/infrastructure/` or a new `src/app/` route-adjacent module) must be
-built once these values exist. Building the composition root's *code shape*
-does not itself require the values to be final — it can be built now with
-explicitly-provisional values sourced from the "conservative engineering
-defaults" category above, clearly marked as such, while the "product
-decisions" category is separately tracked as a Dor-blocking prerequisite,
-not invented.
+**No product blocker remains before implementation.** All four
+policy groups a composition root needs now have an accepted, usable
+starting value. A composition root (wherever it eventually lives — likely
+`src/infrastructure/` or a new `src/app/` route-adjacent module) can now be
+built end-to-end with explicitly-provisional values for all of
+`TodayPlannerPolicy`, `MisconceptionPolicy`, and `MasteryPolicy` — nothing
+is invented here beyond what each source document already accepted; this
+is a Documentation update recording that fact, not new engineering work.
+This does not mean these numbers are final — every value above remains a
+configurable conservative default, explicitly subject to recalibration
+once real pilot data exists, per each source document's own framing.
 
 ---
 

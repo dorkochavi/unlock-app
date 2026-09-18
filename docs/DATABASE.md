@@ -666,17 +666,19 @@ Time zone matters for:
 - weekly analytics;
 - exam urgency.
 
-The V1 time-zone strategy is not yet finalized.
+**V1 strategy — DECIDED, not yet implemented** (see
+`docs/OPEN_QUESTIONS.md` #35, now RESOLVED): store an IANA timezone
+identifier on the user profile. Detect it automatically from the client on
+first registration / first relevant session, and persist it. After that,
+the persisted value is the server-side source of truth — DailyPlan local-day
+calculation uses the stored timezone, not a value recalculated from the
+current request/device on every request. Manual timezone editing in
+Settings may be added later; a full travel/timezone-change UX is not
+designed for V1. No column for this exists yet in the current schema/
+migration (`supabase/migrations/`) — this is a product decision pending
+implementation, not a claim that the column is already there.
 
-Possible direction:
-
-- store IANA timezone per user;
-- initialize from browser;
-- allow future override.
-
-For a controlled pilot, a fixed timezone may be acceptable temporarily if explicitly documented.
-
-Status: OPEN
+Status: DECIDED (direction); implementation OPEN
 
 ---
 

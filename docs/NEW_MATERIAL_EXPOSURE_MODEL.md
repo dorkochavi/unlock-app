@@ -46,9 +46,11 @@ So: new-material exposure as a Today input path does not exist today, at
 any layer. This document analyzes what it would need to look like, not how
 to finish a partially-built feature.
 
-## 3. Core distinction to preserve everywhere downstream
+## 3. Core distinction to preserve everywhere downstream — ACCEPTED PRODUCT PRINCIPLE
 
-The single fact this entire document exists to protect:
+Confirmed by Dor's product-owner review (`docs/LEARNING_ENGINE.md` §16a):
+**New Material Exposure contributes weak evidence only.** The single fact
+this entire document exists to protect:
 
 > **Exposure is not evidence of durable memory.** A learner answering 2–3
 > new-topic questions correctly on first sight has demonstrated
@@ -236,9 +238,19 @@ introduction on the same day, §7 does not force Today to spread exposure
 evenly across unrelated Courses, but §10 *does* suggest Today should
 prefer introducing fewer of those three new topics with a few
 representative questions each, rather than touching all three
-superficially. Exact numeric topic limits are explicitly not decided
-(`docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §10, §20) and this document does not
-propose one.
+superficially.
+
+**Accepted default direction (CONSERVATIVE PRODUCTION DEFAULT CANDIDATE,
+not a locked product invariant):** at most 2 new topics/day, using several
+representative exposure questions per selected topic. New-material
+exposure must consume part of the existing DailyPlan budget (it is not an
+addition on top of it) and must not create unbounded plan growth — see
+`docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md` for how the exposure allocation
+(§5 above) interacts with the plan's overall size. The exact exposure
+count and topic limit remain configurable calibration work — this default
+direction may be revised after real pilot data; it is not a final product
+number (`docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §10, §20d;
+`docs/OPEN_QUESTIONS.md` #4/#5).
 
 ## 8. Poor exposure performance → recommendation, never redirect
 

@@ -429,14 +429,81 @@ lapse_count
 evidence_strength
 ```
 
-Learner-facing category:
+## 16a. Mastery progression — ACCEPTED PRODUCT PRINCIPLE
+
+Learner-facing category (ACCEPTED, supersedes the earlier informal
+`not_started/learning/strengthening/mastered` draft):
 
 ```text
-not_started
-learning
-strengthening
-mastered
+UNKNOWN → EMERGING → DEVELOPING → STRONG → MASTERED
 ```
+
+Interpretation (accepted):
+
+- **UNKNOWN** — insufficient meaningful evidence.
+- **EMERGING** — initial positive evidence exists; stability not yet
+  demonstrated.
+- **DEVELOPING** — multiple successful retrievals exist; not yet enough
+  temporal spacing/consistency for strong confidence.
+- **STRONG** — repeated successful retrievals, including evidence after
+  meaningful spacing.
+- **MASTERED** — strong, stable evidence accumulated over time, not merely
+  several answers in one short session.
+
+Mastery must be evidence-based and cumulative: never determined from a
+single correct answer or a short success streak. High-confidence wrong
+counts as stronger negative evidence than ordinary wrong (see §11, §20a).
+New Material Exposure (`docs/NEW_MATERIAL_EXPOSURE_MODEL.md`) contributes
+weak evidence only — it is diagnostic/calibration, not proof of mastery,
+and must never be silently treated as equivalent to ordinary retrieval
+evidence.
+
+## 16b. Accepted initial MasteryPolicy production defaults
+
+Dor's product-owner review has accepted conservative initial numeric
+defaults for the `MasteryPolicy` fields
+(`src/domain/learning/mastery.ts:33` — `minSpacedRetrievalsForStrengthening`,
+`minSpacedRetrievalsForMastered`, `minEvidenceStrengthForMastered`,
+`minRetrievabilityForMastered`), expressed in the current policy shape
+with no additional threshold invented:
+
+```text
+STRONG requires:
+  minSpacedRetrievalsForStrengthening = 1 successful spaced retrieval
+  AND no unresolved lapse
+
+MASTERED requires ALL of:
+  minSpacedRetrievalsForMastered   = 3 successful spaced retrievals
+  minEvidenceStrengthForMastered   = "strong"
+  minRetrievabilityForMastered     = 0.80
+  AND no unresolved lapse
+```
+
+"No unresolved lapse" is a gate applied using the existing lapse-state
+check (§19, `src/domain/learning/lapse.ts`) — it is not a new
+`MasteryPolicy` field. MASTERED remains reversible: a later lapse or
+retrievability decline can move a learner's category back down, per §18.
+
+**These are CONSERVATIVE PRODUCTION DEFAULTS, not permanent product
+invariants.** They are configurable and may be recalibrated once real
+pilot data exists — see `docs/OPEN_QUESTIONS.md` #11 for what remains
+genuinely open (long-term calibration, internal representation format).
+The category progression/interpretation (§16a) and these initial
+thresholds together are what a production composition root should use to
+construct `MasteryPolicy` — see
+`docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` §7a/§7b.
+
+**Not yet implemented / not yet migrated.** The currently-implemented
+`mastery_category` enum (`supabase/migrations/20260917203000_initial_schema.sql`,
+`src/domain/learning/`) is `not_started`/`learning`/`strengthening`/
+`mastered` — a different, 4-value shape than the accepted 5-value
+progression (§16a). This is a DECIDED-but-not-IMPLEMENTED gap, not an
+error in either place; reconciling the implemented enum to this
+progression, and wiring these numeric defaults into a real
+`MasteryPolicy` construction, is implementation work, not done by this
+document. §17's "avoid an arbitrary '5 observations means mastered' rule"
+guidance below is unaffected — these are the accepted starting values, not
+an argument that any single number is self-evidently correct.
 
 ---
 
@@ -500,7 +567,51 @@ Do not erase months of evidence because of one error.
 
 Replace cumulative `misconception_hits` as the main model.
 
-Draft:
+## 20a. Misconception state model — ACCEPTED PRODUCT PRINCIPLE
+
+Accepted state progression (supersedes the earlier 5-state draft below —
+note there is no separate "recovering" state in the accepted model; a
+misconception is either ACTIVE or, once sufficient evidence accumulates,
+RESOLVED directly):
+
+```text
+NONE → SUSPECTED → ACTIVE → RESOLVED
+```
+
+Interpretation (accepted):
+
+- **NONE** — no meaningful misconception evidence.
+- **SUSPECTED** — some evidence exists; insufficient to materially affect
+  remediation/ranking as an active misconception.
+- **ACTIVE** — accumulated pattern is strong enough to affect learning
+  decisions.
+- **RESOLVED** — sufficient later evidence indicates the misconception has
+  been corrected.
+
+Accepted evidence principles: misconception is a stronger signal than
+ordinary failure — a single ordinary wrong answer must NOT automatically
+create ACTIVE. Ordinary wrong contributes misconception evidence weakly;
+high-confidence wrong contributes more strongly; repetition of the same
+misconception increases confidence; the same misconception expressed
+across different questions is especially meaningful; high-confidence wrong
+ALONE still does not automatically mean ACTIVE; resolving a misconception
+requires multiple relevant successful retrievals, not one correct answer.
+
+**CONSERVATIVE PRODUCTION DEFAULT CANDIDATE, not an accepted product
+rule** — illustrative only, explicitly not locked: a score model such as
+normal wrong +1, high-confidence wrong +2, repeated cross-question
+misconception earning additional reinforcement, ACTIVE near a cumulative
+score of 3. These values may be used as an engineering starting point but
+must not be treated as immutable product invariants — see
+`docs/OPEN_QUESTIONS.md` #13.
+
+**Not yet implemented / not yet migrated.** The currently-implemented
+`misconception_state` enum (`supabase/migrations/20260917203000_initial_schema.sql`)
+has 5 values, including `recovering`, a different shape than this accepted
+4-value model. This is a DECIDED-but-not-IMPLEMENTED gap; reconciling the
+implemented enum is implementation work, not done here.
+
+## 20b. Prior draft (historical, partially superseded by §20a's state names)
 
 ```text
 none
@@ -531,7 +642,7 @@ misconception_last_seen_at
 misconception_recovery_evidence
 ```
 
-Exact thresholds remain TBD.
+Exact thresholds remain TBD — see §20a's default-candidate note.
 
 ---
 

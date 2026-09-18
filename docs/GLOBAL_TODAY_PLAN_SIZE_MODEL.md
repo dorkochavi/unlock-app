@@ -50,6 +50,31 @@ not resolve how; the exact bucket/ceiling numbers remain open calibration
 work exactly as already stated throughout (§1's status line,
 `docs/OPEN_QUESTIONS.md` #16).
 
+## 0b. Reconciliation note (post-decision): accepted default direction, not final numbers
+
+Dor's product-owner review has since accepted a **default direction** for
+this document's §2 recommendation (tiered buckets with a whole-plan
+guardrail), without deciding the exact final calibration this document
+always said was out of scope: minimum useful plan **5 items**; typical
+range **8–12 items**; hard maximum **15 items** (see
+`docs/OPEN_QUESTIONS.md` #16). This maps directly onto §2's own shape — the
+"5" and "8–12" describe how large the tiered buckets typically resolve to
+on a normal day, and the "15" is exactly the kind of whole-plan guardrail
+§2/§7 already recommend as a circuit breaker for pathological pile-ups, not
+a new mechanism.
+
+**Status of these numbers: CONSERVATIVE PRODUCTION DEFAULT CANDIDATES, not
+locked product invariants.** They may be used as the initial engineering
+values when a composition root is built (see
+`docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` and
+`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`), but this document's
+existing position — that exact numeric caps are explicitly NOT decided and
+remain calibration work — is unchanged by their existence. Do not read "5 /
+8–12 / 15" as resolving this document's own "Exact numeric caps... are
+explicitly NOT decided" statement (§2); it resolves only the *direction* of
+that decision (a small floor, a modest typical range, a firm-but-not-tiny
+ceiling), not its final value.
+
 ## 1. The candidate sizing models
 
 ### (a) Absolute score threshold — include every candidate above a priority cutoff

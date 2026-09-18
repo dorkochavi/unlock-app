@@ -231,6 +231,82 @@ knowledge (`MasteryPolicy`, `MisconceptionPolicy`) — all of which the
 codebase's own doc comments and `docs/OPEN_QUESTIONS.md` already treat as
 requiring product judgment, not just an engineer's best guess.
 
+## 7a. Update (2026-09-19): accepted default directions change two rows' status
+
+Dor's product-owner review since accepted default *directions* (not final
+numeric thresholds) for two of the four blocking policy groups in §7's
+table. This audit's original classification remains otherwise unchanged —
+re-stated here as an update, not a rewrite of §7:
+
+- **`TodayPlannerPolicy.maxItems`-equivalent (superseded by ADR-016 §5's
+  dynamic-size model)** — an accepted default DIRECTION now exists:
+  minimum useful plan 5 items, typical range 8–12, hard maximum 15
+  (`docs/OPEN_QUESTIONS.md` #16, `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`
+  §0b). **Reclassified from blocking-on-Dor to CONSERVATIVE PRODUCTION
+  DEFAULT, usable now** — engineering may build the composition root's
+  sizing input against these bounds. This does not by itself supply the
+  *model* (tiered-bucket-plus-guardrail, per the plan-size document) —
+  only the numeric bounds that model's guardrail/floor should target. Final
+  calibration of exact per-tier behavior within those bounds remains open.
+- **`MisconceptionPolicy` (7 fields)** — an accepted qualitative state
+  model (`NONE → SUSPECTED → ACTIVE → RESOLVED`) and evidence-weighting
+  principles now exist (`docs/LEARNING_ENGINE.md` §20a), plus an
+  **illustrative candidate score model** (normal wrong +1, high-confidence
+  wrong +2, repeated cross-question reinforcement, ACTIVE near cumulative
+  score 3) explicitly flagged by product as a conservative default
+  candidate, not a locked rule. **Reclassified from pure-PRODUCT-blocked to
+  CONSERVATIVE PRODUCTION DEFAULT CANDIDATE, usable now with the
+  provisional flag preserved** — engineering may compose
+  `MisconceptionPolicy` against this illustrative model as an explicitly
+  provisional default, pending calibration, rather than waiting further on
+  product.
+- **`RetrievalQualificationPolicy.minGapMsForSpacedRetrieval` and
+  `EvidenceStrengthPolicy` — unchanged**, still ENGINEERING CALIBRATION
+  (with required product visibility per §7's original note); no accepted
+  decision touched these.
+- **FSRS `request_retention` — unchanged**, still correctly deferred.
+
+## 7b. Update (2026-09-19, second pass): MasteryPolicy reclassified — no product blocker remains
+
+Dor's product-owner review has since accepted initial numeric defaults for
+`MasteryPolicy` (`docs/LEARNING_ENGINE.md` §16b), expressed directly in
+the current 4-field shape (`minSpacedRetrievalsForStrengthening`,
+`minSpacedRetrievalsForMastered`, `minEvidenceStrengthForMastered`,
+`minRetrievabilityForMastered`), with "no unresolved lapse" enforced via
+the existing lapse-state check rather than a new field:
+
+```text
+STRONG:    minSpacedRetrievalsForStrengthening = 1, no unresolved lapse
+MASTERED:  minSpacedRetrievalsForMastered = 3
+           AND minEvidenceStrengthForMastered = "strong"
+           AND minRetrievabilityForMastered = 0.80
+           AND no unresolved lapse
+```
+
+**`MasteryPolicy` is reclassified from PRODUCT-blocked to CONSERVATIVE
+PRODUCTION DEFAULT, usable now** — the same status §7a already gave
+`TodayPlannerPolicy.maxItems`-equivalent and `MisconceptionPolicy`. This
+was the last of the four originally-blocking policy groups (§7) without a
+usable value.
+
+**Net effect, superseding §7a's net-effect statement: all four
+previously-blocking policy groups (`MasteryPolicy`, `MisconceptionPolicy`,
+`TodayPlannerPolicy.maxItems`-equivalent, and the already-non-blocking
+`RetrievalQualificationPolicy`/`EvidenceStrengthPolicy` calibration pair)
+now have a usable, explicitly-provisional starting value. No product
+decision remains outstanding for constructing a `SubmitAnswerContext`/
+`TodaySessionContext`-equivalent with concrete values** — building the
+production composition root itself (§4's still-accurate finding: no such
+root exists in `src/` yet) is now purely engineering/implementation work,
+not blocked on a further product decision. All values used remain
+explicitly provisional and subject to recalibration once real pilot data
+exists (per each source document's own "not a permanent invariant"
+framing) — "no product blocker" describes the *decision* state, not a
+claim that these numbers are final. See
+`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`'s "Learning Engine
+production-composition blocker" section for how this affects
+implementation sequencing.
+
 ## 8. Summary
 
 - No production composition root exists anywhere in `src/` (confirmed by

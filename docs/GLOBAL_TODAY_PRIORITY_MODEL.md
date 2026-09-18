@@ -252,6 +252,19 @@ are NOT decided here or by the accepted rule — this is flagged as new,
 required scope for whoever designs the eventual `tierOf()`/ranking
 replacement, not solved by this document.
 
+## 5b. Reconciliation note (post-decision): misconception state model
+
+Dor's product-owner review has since accepted a 4-state misconception
+model, `NONE → SUSPECTED → ACTIVE → RESOLVED`
+(`docs/LEARNING_ENGINE.md` §20a, `docs/OPEN_QUESTIONS.md` #13), refining
+the `suspected`/`active` shorthand used throughout this document (§2.1,
+§7, §10). This is compatible with, not a change to, this document's tier
+reasoning: `ACTIVE` → REMEDIATION and `SUSPECTED` → LOWER_SEVERITY_REPAIR
+as already stated; `NONE` and `RESOLVED` both mean "no misconception-driven
+tier contribution," exactly as the absence of `suspected`/`active` already
+implied wherever this document used the two-state shorthand. No tier logic
+described here changes as a result.
+
 ## 6. Implication of "no quota / no fairness floor" for the scoring architecture
 
 §7 forbids: artificial per-Course quotas, fairness balancing, minimum

@@ -329,7 +329,53 @@ Constraint:
 
 Avoid false precision.
 
-Status: OPEN pending prototype audit
+**Partially resolved (product decision, category model only).** The
+accepted V1 learner-facing progression is:
+
+```text
+UNKNOWN → EMERGING → DEVELOPING → STRONG → MASTERED
+```
+
+with accepted qualitative interpretation and rules — mastery must be
+evidence-based and cumulative (never from a single correct answer or a
+short success streak); mastery is reversible; MASTERED is not terminal
+(FSRS/review scheduling continues, later retrieval failure may reduce
+mastery); high-confidence wrong counts as stronger negative evidence than
+ordinary wrong; New Material Exposure contributes weak evidence only. See
+`docs/LEARNING_ENGINE.md` §16, updated to reflect this progression.
+
+**Resolved at the conservative-production-default level.** Dor's
+product-owner review has since accepted initial numeric defaults for the
+`MasteryPolicy` fields (`src/domain/learning/mastery.ts`,
+`minSpacedRetrievalsForStrengthening`, `minSpacedRetrievalsForMastered`,
+`minEvidenceStrengthForMastered`, `minRetrievabilityForMastered`):
+
+```text
+STRONG:    minSpacedRetrievalsForStrengthening = 1, AND no unresolved lapse
+MASTERED:  minSpacedRetrievalsForMastered = 3
+           AND minEvidenceStrengthForMastered = "strong"
+           AND minRetrievabilityForMastered = 0.80
+           AND no unresolved lapse
+```
+
+"No unresolved lapse" is enforced via the existing lapse-state check
+(`src/domain/learning/lapse.ts`), not a new `MasteryPolicy` field — no
+additional threshold was invented beyond what the current policy shape
+already exposes. **These are configurable conservative production
+defaults, NOT permanent product invariants** — future pilot data may
+recalibrate them; MASTERED remains reversible (a later lapse or retrieval
+failure can move a learner out of MASTERED, per
+`docs/LEARNING_ENGINE.md` §16a/§18).
+
+**Still OPEN:** whether these specific numbers hold after real pilot
+evidence (long-term calibration), and the exact internal representation
+(enum vs. score vs. hybrid) are NOT product-locked — do not treat these as
+final, only as the accepted V1 starting point.
+
+Status: OPEN for long-term calibration and internal representation;
+category progression, interpretation, AND initial numeric defaults are
+DECIDED — a usable V1 default now exists, pending prototype audit for
+final calibration
 
 Target phase: Prototype Learning Audit / Learning Engine
 
@@ -367,7 +413,33 @@ Potentially relevant evidence:
 - high-confidence incorrect answers;
 - recurrence after prior correction.
 
-Status: OPEN pending prototype audit
+**Partially resolved (product decision, state model and evidence
+principles only).** The accepted V1 state progression is:
+
+```text
+NONE → SUSPECTED → ACTIVE → RESOLVED
+```
+
+Misconception is a stronger signal than ordinary failure — a single
+ordinary wrong answer must NOT automatically create an ACTIVE
+misconception. Accepted evidence principles: ordinary wrong contributes
+misconception evidence weakly; high-confidence wrong contributes more
+strongly; repetition of the same misconception increases confidence; the
+same misconception expressed across different questions is especially
+meaningful; high-confidence wrong alone still does NOT automatically mean
+ACTIVE; resolving a misconception requires multiple relevant successful
+retrievals, not one correct answer. See `docs/LEARNING_ENGINE.md` §20,
+updated to reflect this model.
+
+**Still OPEN — engineering calibration, not product-locked:** illustrative
+candidate production defaults for a score model exist (e.g. normal wrong
++1, high-confidence wrong +2, repeated cross-question misconception adds
+reinforcement, ACTIVE near a cumulative score of 3) but these are
+**conservative production-default candidates**, not immutable product
+rules — do not treat these numbers as decided.
+
+Status: OPEN — state model/evidence principles DECIDED; exact
+thresholds/scores remain open, pending prototype audit
 
 Target phase: Prototype Learning Audit / Learning Engine
 
@@ -436,7 +508,29 @@ Need to balance:
 - product habit;
 - pilot constraints.
 
-Status: OPEN
+**Partially resolved (accepted default direction, not final numbers).**
+DailyPlan size is dynamic and based on learning need — no fixed "N
+questions every day," no "how many minutes do you have?" as the primary
+sizing mechanism, and no force-filling a plan with weak items merely to
+reach a target (ADR-016 §5; see `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`).
+
+**Accepted V1 default direction** (a conservative production-default
+candidate, NOT a locked product invariant): minimum useful plan 5 items;
+typical range 8–12 items; hard maximum 15 items. If only 5 genuinely
+justified items exist, the plan may contain 5; if need is higher, it may
+grow toward 12–15; if far more items deserve attention, the highest-priority
+subset up to the hard maximum is chosen and the remainder stay eligible for
+future days via ordinary ranking. Skip resolves an item as SKIPPED and does
+NOT replenish the plan with a replacement.
+
+**Still OPEN:** whether 5/8–12/15 are the actual launch values (vs. an
+engineering starting point to be revised after real pilot data) is
+calibration work, not decided here — treat these numbers as illustrative
+defaults, not final. See `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md` for the
+architecture these defaults slot into.
+
+Status: OPEN — default direction and its 3 illustrative bounds documented
+as conservative production defaults; final calibrated numbers remain open
 
 Target phase: Today Feature Contract
 
@@ -876,25 +970,28 @@ Target phase: Today Feature Contract (implementation, per
 
 ## 35. Learner Time Zone
 
-Question:
+Status: **RESOLVED (product decision).** V1 stores a learner timezone as an
+IANA timezone identifier (e.g. `Asia/Jerusalem`, `Europe/London`,
+`America/New_York`) on the user profile.
 
-How should learner timezone be determined for:
+- On first registration / first relevant client session: detect timezone
+  automatically from the client and persist it to the user profile.
+- After that: the persisted user timezone is the server-side source of
+  truth. DailyPlan local-day calculation uses the stored value — "today" is
+  not recalculated from the current request/device timezone on every
+  request.
+- Manual timezone editing in Settings may be added later; not designed now.
+- A full travel/timezone-change UX (mid-trip DST, crossing a boundary
+  mid-session) is explicitly NOT designed by this decision — see
+  `docs/TODAY_TIMEZONE_EDGE_CASES.md` for that separate, still-open
+  analysis.
 
-- Today session boundaries;
-- review dates;
-- weekly KPI;
-- exam urgency.
+**Not yet implemented.** No column exists on the user profile for this yet;
+no client-side detection or persistence code exists. This resolves the
+*source-of-truth model* (stored, server-authoritative, IANA identifier),
+not the schema/implementation itself.
 
-Possibilities:
-
-- account setting;
-- browser-derived timezone;
-- fixed pilot timezone;
-- stored IANA timezone.
-
-Status: OPEN
-
-Target phase: Today / Database Design
+Target phase: Today / Database Design (implementation)
 
 ---
 

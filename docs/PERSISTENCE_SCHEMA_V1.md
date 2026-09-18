@@ -348,6 +348,26 @@ replay contract and its open questions).
       + low_quality_attempt_count + invalid_for_mastery_attempt_count
   )
   ```
+- **Accepted product taxonomy vs. implemented enum — reconciliation gap,
+  not resolved here**: a 2026-09-19 product decision accepts
+  `UNKNOWN → EMERGING → DEVELOPING → STRONG → MASTERED` as the qualitative
+  mastery progression, and `NONE → SUSPECTED → ACTIVE → RESOLVED` as the
+  misconception state model (see `docs/LEARNING_ENGINE.md` §16/§20 and
+  `docs/OPEN_QUESTIONS.md` #11/#13). This differs from the **currently
+  implemented** `mastery_category` enum above
+  (`not_started`/`learning`/`strengthening`/`mastered`, four values) and
+  `misconception_state` enum above (`none`/`suspected`/`active`/
+  `recovering`/`resolved`, five values including `recovering`, which the
+  accepted model does not name as a distinct state) — both enforced today
+  by `supabase/migrations/20260917203000_initial_schema.sql`'s CHECK
+  constraints and read/written by `src/domain/learning/mastery.ts`,
+  `misconception.ts`, and `types.ts`. This document does not change the
+  migration or any runtime code to match the new taxonomy — that is
+  implementation work, not decided or performed here. Exact numeric
+  thresholds for the accepted progression are also not product-locked (see
+  `docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md`), so reconciling
+  the enum shape and the threshold values is one piece of future work, not
+  two.
 - **Naming note — do not conflate two different "lapse count" concepts**:
   `scheduler_lapse_count` is FSRS's own internal lapse counter
   (`SchedulerMemoryState.lapseCount`, owned by the scheduler adapter and
