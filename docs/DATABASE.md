@@ -726,16 +726,31 @@ Do not rely on hidden UI controls.
 
 ## 29. Row Level Security
 
-If Supabase is confirmed, RLS is required for user data.
+Supabase is confirmed for the database (ADR-013). RLS is required for user
+data, but real policies depend on the User↔Course authorization model
+(`docs/OPEN_QUESTIONS.md` #1), which is not yet decided.
 
-At minimum, policies should protect:
+**Current state (`supabase/migrations/20260917203000_initial_schema.sql`)**:
+RLS is enabled on every V1 table with ZERO policies — a safe deny-by-default
+posture for PostgREST's `anon`/`authenticated` callers, not a policy
+decision. This is deliberately not phrased as "only `service_role` bypasses
+RLS": PostgreSQL superusers, any `BYPASSRLS`-attributed role, and (absent
+`FORCE ROW LEVEL SECURITY`, not set here) a table's owner all bypass RLS
+independently of policies too — `service_role` is simply Supabase's
+`BYPASSRLS`-attributed role for trusted server-side access, not a role RLS
+treats specially by name. `anon`/`authenticated` have none of those
+attributes, so they remain genuinely deny-by-default on every V1 table.
+This specifically avoids the alternative of writing a permissive placeholder
+policy that would have to be walked back later.
+
+At minimum, once the authorization model is decided, policies should protect:
 
 - Attempts;
 - UserQuestionProgress;
 - Today Sessions;
 - private Courses/Materials where applicable.
 
-RLS policy behavior must be tested.
+RLS policy behavior must be tested once written.
 
 Institutional access rules should not be invented before institution support is implemented.
 
@@ -1144,7 +1159,7 @@ Before writing the real V1 schema, resolve at minimum:
 7. aggregate Learner State persistence — OPEN
 8. selected Next Best Action persistence strategy (persist only the chosen decision, not every candidate) — DECIDED, see docs/DECISIONS/010-answer-submission-transaction-model.md
 9. data deletion / Question retirement semantics — OPEN
-10. final Supabase confirmation — OPEN
+10. final Supabase confirmation — DATABASE/PROVIDER DECIDED, see `docs/DECISIONS/013-supabase-postgresql-as-v1-persistence-provider.md`; Auth/RLS/storage remain OPEN
 ```
 
 Do not let the migration code become the place where these product decisions are accidentally made.

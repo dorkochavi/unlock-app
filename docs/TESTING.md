@@ -319,6 +319,19 @@ Examples:
 
 Database tests should protect rules that cannot safely rely only on application code.
 
+**Implemented**: `supabase/tests/schema.integration.test.ts` (run via
+`npm run test:schema`, deliberately separate from `npm test`) runs the real
+initial migration against a real PostgreSQL engine
+(`@electric-sql/pglite` — a genuine, WASM-compiled Postgres, not a mock)
+and proves required relationships/unique constraints/ownership boundaries/
+the evidence-counter-sum check are actually rejected by the database, plus
+that a representative valid row chain is accepted. This is real database
+verification, not merely "the SQL looks right" — application-layer
+in-memory tests (`src/domain/**`, `src/application/**`) do not exercise
+real database constraint behavior and never claim to. RLS
+allow/deny-by-role behavior specifically is NOT covered by this suite (see
+§16) — pglite has no Supabase Auth/role-switching context to test against.
+
 ---
 
 ## 16. RLS Tests

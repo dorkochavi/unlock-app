@@ -110,6 +110,10 @@ UNLOCK V1 Today is course-scoped: `TodaySession` is uniquely keyed by `(user_id,
 
 `Attempt` gains a stable `learningSessionId`; `UserQuestionProgress` gains a matching `retrievalBaselineLearningSessionId`. `isSameLearningSession` is always derived fresh from these two identities, never stored as a relational snapshot (the prior approach could not survive reordering). Rebuild always uses CURRENT engine/scheduler/policy logic, never historical, and uses one fixed rebuild-time `now` for every replay step (proven equivalent to per-step `answeredAt`). Out-of-order online Attempts are reconciled synchronously via a full canonical-order replay in the same transaction — no permanent stale-progress state, no queue. `learningSessionId` ownership is split by Attempt origin: application-derived from `TodaySessionItem.todaySessionId` for Today, client-owned only for manual practice — a client can never claim an unrelated `learningSessionId` for a Today-attached Attempt.
 
+### ADR-013 — PostgreSQL + Supabase as the V1 Persistence Provider
+
+UNLOCK V1 uses PostgreSQL via Supabase (closing `docs/OPEN_QUESTIONS.md` #25 for the database-engine/provider question). Supabase is infrastructure only — no Supabase-specific type/import may appear in `src/domain/` or `src/application/`; a future adapter implementing the existing ports belongs under `src/services/`. RLS is enabled on every table now with zero policies (safe deny-by-default, not a policy decision); real policies wait for `docs/OPEN_QUESTIONS.md` #1 (User↔Course authorization) to be resolved. `users.id` is intended to eventually equal `auth.users.id`, with no FK/default added yet.
+
 ---
 
 ## Decision Rule

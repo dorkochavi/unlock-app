@@ -1,0 +1,40 @@
+# UNLOCK local Supabase CLI configuration.
+#
+# HAND-AUTHORED, not CLI-generated: the Supabase CLI is not installed in the
+# environment this file was written in (no `supabase`/`docker`/`psql` on
+# PATH), so this could not be produced by `supabase init` and verified with
+# `supabase start`. It follows the CLI's documented config.toml shape as of
+# this writing. Before relying on it, run `supabase init` in a throwaway
+# directory (or consult the installed CLI's own schema) and diff against
+# this file, then `supabase start` to confirm it actually works — see
+# supabase/README.md for the full list of what still needs to run locally.
+#
+# `db.major_version = 15` is NOT arbitrary: the first migration
+# (migrations/20260917203000_initial_schema.sql) uses PostgreSQL 15's
+# column-scoped `ON DELETE SET NULL (column_name)` FK syntax on `attempts`'
+# composite foreign key to `today_session_items` — this requires Postgres
+# 15 or newer to apply cleanly.
+
+project_id = "unlock-app"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = []
+jwt_expiry = 3600
+enable_signup = true

@@ -622,11 +622,16 @@ Should the project proceed with Supabase for:
 - RLS;
 - storage where needed?
 
-Current direction: Supabase.
+**Database/PostgreSQL: DECIDED — see `docs/DECISIONS/013-supabase-postgresql-as-v1-persistence-provider.md`.**
+UNLOCK V1 uses PostgreSQL via Supabase; the first migration is
+`supabase/migrations/20260917203000_initial_schema.sql`.
 
-Final confirmation should occur before database/auth implementation.
+**Auth / RLS / storage: still OPEN**, not overstated by ADR-013. RLS is
+enabled on every V1 table with zero policies (safe deny-by-default), but
+real policies, Supabase Auth wiring, and storage remain undecided pending
+`docs/OPEN_QUESTIONS.md` #1 (User↔Course authorization model).
 
-Status: OPEN
+Status: PARTIALLY RESOLVED (database/provider decided; Auth/RLS/storage open)
 
 Target phase: Before Database/Auth Foundation
 

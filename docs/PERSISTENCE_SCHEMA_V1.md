@@ -1,18 +1,28 @@
-# UNLOCK V1 Physical Persistence Schema (Design Only)
+# UNLOCK V1 Physical Persistence Schema
 
-Status: DESIGN — no migration exists yet; this document is a design contract,
-not SQL. Companion to `docs/DATABASE.md` (conceptual data model) and
+Status: **IMPLEMENTED** — the real first migration exists at
+`supabase/migrations/20260917203000_initial_schema.sql` (PostgreSQL via
+Supabase, ADR-013) and has been verified against a real PostgreSQL engine
+(`supabase/tests/schema.integration.test.ts`, `npm run test:schema`). This
+document remains the design-contract companion to that migration and to
+`docs/DATABASE.md` (conceptual data model) and
 `docs/DECISIONS/009-question-versioning.md` / `010-answer-submission-transaction-model.md`
-(the durable decisions this schema implements). Written during the overnight
-session that began at commit `ba3fc2f`; see `OVERNIGHT_REPORT.md` (repo root,
-not committed) for the audit that produced several of the constraints below.
+/ `012-attempt-replayability-and-rebuild-semantics.md` / `013-supabase-postgresql-as-v1-persistence-provider.md`
+(the durable decisions this schema implements). Originally written during
+the overnight session that began at commit `ba3fc2f`; see
+`OVERNIGHT_REPORT.md` (repo root, not committed) for the audit that produced
+several of the constraints below.
 
-Do not create migrations from this document without separately confirming
-final column types/enum representations with whoever owns the Supabase
-setup — this document fixes *relationships and invariants*, and is
-deliberately non-committal about a few implementation-detail choices noted
-inline (native Postgres `ENUM` vs. `CHECK (... IN (...))`, exact numeric
-precision, etc.).
+The implementation-detail choices this document was previously
+non-committal about are now DECIDED, in the migration itself: closed,
+already-decided value sets use `text` + `CHECK (... IN (...))`, not a
+native Postgres `ENUM` (see the migration file's own header comment for the
+reasoning); numeric precision is left unconstrained (plain `numeric`),
+matching this document's original stance. If this document and the
+migration ever disagree, the migration is authoritative — see its own
+header for anything genuinely re-evaluated (rather than just transcribed)
+during that pass, and update this document to match rather than the
+reverse.
 
 ---
 
@@ -190,6 +200,7 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
 | `course_id` | uuid | no | see composite FK below |
 | `question_id` | uuid | no | see composite FK below |
 | `question_version_id` | uuid | no | see composite FK below |
+| `today_session_id` | uuid | yes | **found missing during migration-writing**: `src/domain/learning/types.ts`'s `Attempt.todaySessionId` and ADR-010's canonical command-identity field list already treat this as its own independently client-supplied, independently compared field, distinct from `today_session_item_id` — this document's original draft omitted the column entirely. See composite FK below for how it's kept consistent with `today_session_item_id` whenever both are present |
 | `today_session_item_id` | uuid | yes | see composite FK below; null = manual practice / no Today context |
 | `learning_session_id` | text | yes | **ADR-012 §5**: stable, intrinsic identity of the continuous learning session/occasion this Attempt belongs to. Ownership is split by origin: for a Today-attached Attempt (`today_session_item_id` not null) this is APPLICATION-derived from that item's `today_session_id`, never the client's claim; for manual practice (`today_session_item_id` null) the client supplies and owns a stable token, and it participates in the idempotency command-identity comparison only in that case. This is what replaced the earlier, insufficient idea of persisting the `isSameLearningSession` boolean itself — see the Replay/Rebuild Contract section below |
 | `answered_at` | timestamptz | no | client-captured event time |
@@ -217,18 +228,41 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
     user_id)` — closes audit findings **#17/#18**, the two BLOCKING gaps
     found in Phase 2: this makes it a database-enforced impossibility, not
     just an application-level check, for an Attempt to reference a
-    TodaySessionItem belonging to a different user. `ON DELETE SET NULL` —
-    see `today_session_items` below for why.
+    TodaySessionItem belonging to a different user. `ON DELETE SET NULL
+    (today_session_item_id)` — **column-scoped** (PostgreSQL 15+), not a
+    plain `ON DELETE SET NULL` on the whole composite constraint. **Bug
+    found and fixed while writing the real migration**: an unqualified
+    composite `ON DELETE SET NULL` sets EVERY referencing column to null,
+    which here would also null out `attempts.user_id` — violating its
+    `NOT NULL` constraint and, in practice, making the delete fail outright
+    instead of the intended "Attempt keeps its evidence, only loses the
+    pointer" behavior this design always meant. Verified against a real
+    PostgreSQL engine, see `supabase/tests/schema.integration.test.ts`'s
+    "10b" test. See `today_session_items` below for the rest of the
+    reasoning.
+  - `(today_session_item_id, today_session_id) REFERENCES
+    today_session_items (id, today_session_id)`, `ON DELETE SET NULL
+    (today_session_item_id, today_session_id)` — a SEPARATE composite FK
+    (not merged into one 3-column FK with `user_id`: `user_id` is `NOT
+    NULL`, which would force `MATCH FULL` semantics that then break manual
+    practice's nullability requirement for the other two columns — see the
+    migration's own comment) closing the gap the missing `today_session_id`
+    column left: without it, nothing stopped an Attempt from claiming a
+    real `today_session_item_id` while independently claiming a
+    *different* `today_session_id` than that item's actual session.
+    Verified against a real PostgreSQL engine, test "5b".
 - **Mutable columns**: none. Entirely append-only.
 - **Delete behavior**: never deleted or updated by application code.
 - **Timestamps**: `answered_at` (event time, client) vs. `created_at`
   (persistence time, server) are kept deliberately distinct per
   `docs/DATABASE.md` §25/§27 — they will usually be close but are not the
   same concept, and conflating them would hide clock-skew/backfill cases.
-- **Indexes**: `(user_id, question_id, answered_at)` — the natural access
-  pattern for both `submitAnswer`'s own progress lookup and any future
-  per-question Attempt history view; `(today_session_item_id)` partial
-  index `WHERE today_session_item_id IS NOT NULL`.
+- **Indexes** (as actually implemented — a strict superset of the
+  originally-suggested 3-column version, see the migration's own comment
+  for why): `(user_id, question_id, answered_at, created_at, id)` — matches
+  `rebuild.ts`'s exact canonical replay order (ADR-012 §4), so Postgres can
+  satisfy the replay `ORDER BY` via an index scan; `(today_session_item_id)`
+  partial index `WHERE today_session_item_id IS NOT NULL`.
 - **Source of truth**: THE primary historical evidence table.
 
 ---
@@ -335,9 +369,16 @@ replay contract and its open questions).
 - **Delete behavior**: not addressed by application code in V1; a future
   rebuild tool would `UPDATE`/upsert in place rather than delete-then-reinsert
   (keeps the row's `created_at` meaningful), but this is not decided here.
-- **Indexes**: `(user_id, scheduled_review_at)` — supports "find due
-  reviews," the query `next-best-action.ts`'s `REVIEW_DUE` candidate
-  conceptually needs once wired to real data.
+- **Indexes**: `questions (course_id)` — supports `listForUser(userId,
+  courseId)`'s join to `questions`, the actual query
+  `getOrCreateTodaySession` uses. **Deviation from this document's earlier
+  draft, found and corrected during migration-writing**: a
+  `(user_id, scheduled_review_at)` "find due reviews" index was previously
+  suggested here, but the currently-IMPLEMENTED `listForUser` loads ALL
+  progress rows for a user+Course and filters/ranks them in pure domain
+  code — it never issues a due-date-filtered SQL query — so that index has
+  no real query to serve yet and was deliberately NOT added. Revisit if a
+  direct due-date query is ever implemented.
 - **Source of truth**: none — 100% rebuildable from `attempts`.
 
 ---
@@ -392,7 +433,7 @@ The frozen plan, one row per planned Question within a session — ADR-010's
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | `id` | uuid | no | PK |
-| `today_session_id` | uuid | no | FK → `today_sessions.id`, `ON DELETE CASCADE` |
+| `today_session_id` | uuid | no | see composite FK below (as implemented, this is the ONLY FK on this column — not also a separate plain FK, which would be redundant with the composite one) |
 | `user_id` | uuid | no | **denormalized** from `today_sessions.user_id` at insert time — exists purely to support the ownership-enforcing composite FK from `attempts` (Phase 2 audit findings #17/#18); see below |
 | `position` | int | no | `CHECK (position >= 0)`; 0-based, matches the domain `TodayPlanItem.position` exactly |
 | `question_id` | uuid | no | see composite FK below |
@@ -414,6 +455,9 @@ The frozen plan, one row per planned Question within a session — ADR-010's
     silently violate it).
   - `UNIQUE (id, user_id)` — exists purely so `attempts` can composite-FK
     against `(today_session_item_id, user_id)`.
+  - `UNIQUE (id, today_session_id)` — exists purely so `attempts` can
+    composite-FK against `(today_session_item_id, today_session_id)` (see
+    `attempts`' composite FKs above).
 - **Foreign keys / composite FKs**:
   - `(today_session_id, user_id) REFERENCES today_sessions (id, user_id)` —
     requires `today_sessions` to also carry `UNIQUE (id, user_id)`; this is
@@ -434,11 +478,14 @@ The frozen plan, one row per planned Question within a session — ADR-010's
 - **Mutable**: `status`, `completed_at` only — execution progress, not the
   plan itself.
 - **Delete behavior**: cascades from `today_sessions` (see above); protected
-  independently by `attempts.today_session_item_id`'s `ON DELETE SET NULL`
-  (not `CASCADE` or `RESTRICT`) — if a `today_session_items` row is ever
-  removed via its parent session's cascade, any Attempt that referenced it
-  keeps its raw evidence intact and simply loses the "which planned item"
-  pointer, rather than either blocking the delete or losing the Attempt.
+  independently by `attempts`' composite FK, whose `ON DELETE SET NULL
+  (today_session_item_id)` is column-scoped (not `CASCADE` or `RESTRICT`,
+  and not an unqualified `SET NULL` either — see the `attempts` section
+  above for the bug that distinction fixes) — if a `today_session_items`
+  row is ever removed via its parent session's cascade, any Attempt that
+  referenced it keeps its raw evidence AND its correct `user_id` intact,
+  and simply loses the "which planned item" pointer, rather than either
+  blocking the delete, losing the Attempt, or corrupting its ownership.
 - **Source of truth**: frozen decision output for the plan-shape columns;
   none for `status`/`completed_at` (those mirror execution state that could
   in principle be rederived from `attempts`, but are stored directly for
@@ -454,6 +501,7 @@ The frozen plan, one row per planned Question within a session — ADR-010's
 | Attempt's `course_id` matches its Question's actual Course | composite FK (`attempts`) | Phase 2 audit #19 |
 | TodaySessionItem's `question_version_id` belongs to its `question_id` | composite FK (`today_session_items`) | Phase 2 audit #20 |
 | Attempt cannot reference a TodaySessionItem owned by a different user | composite FK via denormalized `user_id` (`attempts` ↔ `today_session_items`) | **Phase 2 audit #17/#18 — the two BLOCKING gaps this session found and fixed** |
+| Attempt's `today_session_id` cannot disagree with the session its `today_session_item_id` actually belongs to | composite FK (`attempts` ↔ `today_session_items`) | found during migration-writing — `today_session_id` was missing from this document's original `attempts` table entirely |
 | `UserQuestionProgress`'s four evidence-quality counters sum to `attempt_count` | `CHECK` constraint (`user_question_progress`) | already documented as a domain invariant in `types.ts`, now also DB-enforced |
 | No duplicate Attempt for the same logical command | `UNIQUE (user_id, submission_id)` + application-level field comparison on conflict | ADR-010 (prior session) |
 | No duplicate TodaySessionItem position/Question within a session | `UNIQUE` constraints (`today_session_items`) | ADR-010 / this session |
@@ -464,6 +512,16 @@ Trigger-based enforcement was considered and rejected wherever a composite
 FK could express the same guarantee declaratively — matching the brief's
 "prefer declarative DB constraints... avoid clever trigger-heavy
 architecture unless necessary." No triggers appear in this design.
+
+**Immutability enforcement (`attempts`/`question_versions`) — DECIDED:
+application discipline only, no trigger/REVOKE.** Verified, not assumed:
+`AttemptRepository`/`QuestionVersionRepository` (`src/application/learning/ports.ts`)
+expose no `update` method at all for either entity — there is no code path
+that could mutate them even by accident, so DB-level enforcement would
+defend against a mutation path that does not exist. Revisit only if a
+future content-authoring/admin-correction flow adds an `update` capability
+to either port. See the migration's own "Immutability enforcement" section
+for the full reasoning.
 
 ---
 
