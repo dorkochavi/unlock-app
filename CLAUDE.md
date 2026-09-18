@@ -39,13 +39,20 @@ domain → application → infrastructure → runtime/API
 - Replay/rebuild uses the persisted `Attempt.isCorrect` — never re-grades history (ADR-012).
 - V1 question types: `SINGLE_CHOICE` + `MULTIPLE_CHOICE` only; `TRUE_FALSE` is a
   2-option `SINGLE_CHOICE`, not a distinct type; `selectedAnswer` semantics per ADR-014.
-- Auth / RLS authorization model is still unresolved.
+- User↔Course membership/join-authorization model is decided (ADR-015); Auth
+  wiring and real RLS policies are not yet implemented.
 
 ## 4. Current Blocker
 
-**Open Question #1** (`docs/OPEN_QUESTIONS.md`) — the User↔Course authorization
-model — blocks final Auth wiring, real RLS policies, and any implemented API route
-(`docs/API_V1_DRAFT.md` is deliberately unimplemented pending this).
+**Open Question #1** (`docs/OPEN_QUESTIONS.md`) is resolved at the product
+level by `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.
+Auth wiring, real RLS policies, and any implemented API route are no longer
+blocked on a missing decision — they remain simply unimplemented
+(`docs/API_V1_DRAFT.md` is still unimplemented, but no longer pending a
+decision, only pending the work itself). The exact `AUTHORIZED_ONLY`
+authorization source, lecturer-vs-institution content ownership, and the
+real RLS policy text remain open — see ADR-015's own "Explicitly deferred"
+section.
 
 ## 5. Workflow Rules
 

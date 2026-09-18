@@ -68,8 +68,11 @@ profile row with `id` equal to the corresponding `auth.users.id` (1:1,
 - **Mutable**: none beyond what Supabase Auth itself owns.
 - **Source of truth**: identity only; `docs/DATABASE.md` §3 — "do not add
   profile complexity unless required."
-- **Unresolved**: nothing beyond `docs/OPEN_QUESTIONS.md` #1 (User↔Course
-  relationship), which this table does not address — see `courses` below.
+- **User↔Course relationship**: decided at the product level by
+  `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
+  (`docs/OPEN_QUESTIONS.md` #1). This table does not itself implement that
+  decision — see `courses` below; the concrete `CourseMembership` migration
+  remains future work.
 
 ---
 
@@ -89,12 +92,20 @@ profile row with `id` equal to the corresponding `auth.users.id` (1:1,
   principle applies to *Question content*, not Course metadata).
 - **Delete behavior**: not addressed; no code path deletes a Course in V1.
 - **Source of truth**: shared content (`docs/DATABASE.md` §2).
-- **Explicitly UNRESOLVED, not decided here**: `owner_user_id` is the
-  "direct owner field on Course" option from `docs/DATABASE.md` §5's three
-  candidates — chosen only as the minimum needed to make this table
-  concrete, **not** a closure of `docs/OPEN_QUESTIONS.md` #1. A future
-  Enrollment/multi-access model can be added additively (a separate
-  `course_access` table) without changing this column.
+- **User↔Course relationship — decided, not yet implemented**:
+  `docs/OPEN_QUESTIONS.md` #1 is resolved by
+  `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`:
+  V1 uses an explicit `CourseMembership` relationship (conceptual fields
+  `userId`, `courseId`, `role`, `joinedAt`, `revokedAt`, `archivedAt`) with
+  three roles (`OWNER`, `INSTRUCTOR`, `LEARNER`) and a per-Course join
+  policy (`AUTHORIZED_ONLY` default, or `OPEN` — settable only by an
+  `OWNER`/`INSTRUCTOR`; a QR/link is never authorization by itself). None of
+  this is implemented by this document or any migration yet — `owner_user_id`
+  remains as the minimum field that made this table concrete before that
+  decision existed, and whether it is retired in favor of a `role = OWNER`
+  membership row or kept alongside `course_memberships` is itself left open
+  by ADR-015. The exact authorization source for an `AUTHORIZED_ONLY` Course
+  also remains open (ADR-015 §5).
 - No `institution_id` (ADR-006).
 
 ---
@@ -635,8 +646,11 @@ reasoning, stated explicitly rather than assumed.
 - `Question.verification_state`'s exact enum (`docs/DATABASE.md` §24 lists
   candidates, not final values).
 - `Material.material_type`'s exact enum (no candidate list exists yet).
-- User↔Course relationship beyond the minimal `owner_user_id` used here
-  (`docs/OPEN_QUESTIONS.md` #1).
+- The concrete `CourseMembership`/`join_policy` migration implementing the
+  now-decided User↔Course model (`docs/OPEN_QUESTIONS.md` #1,
+  `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`)
+  — the product/architecture decision itself is no longer open, only its
+  implementation in this schema.
 - Deletion/retirement mechanics for `questions`/`courses`/`materials`
   (`docs/DATABASE.md` §37/§38) — this schema only ensures deletion cannot
   silently destroy `attempts`/`question_versions` history, not what a

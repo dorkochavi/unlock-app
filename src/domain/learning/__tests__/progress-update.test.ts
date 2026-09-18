@@ -796,6 +796,61 @@ describe("applyAttemptToProgress — evidence summary counters", () => {
     expect(result.progress.lowQualityAttemptCount).toBe(0);
   });
 
+  it("invariant: the four evidence-quality counters always sum to attemptCount, after a mixed sequence of every quality type (matches the DB CHECK constraint in supabase/migrations)", () => {
+    const scheduler = new FakeMemoryScheduler();
+    const context = makeContext(scheduler, false);
+
+    let progress: UserQuestionProgress | null = null;
+    const steps: Array<Partial<Attempt>> = [
+      // FULL_EVIDENCE
+      { isCorrect: true, answeredAt: new Date("2026-01-01T00:00:00.000Z") },
+      // ASSISTED_EVIDENCE
+      {
+        isCorrect: true,
+        assistanceUsed: "HINT",
+        answeredAt: new Date("2026-01-02T00:00:00.000Z"),
+      },
+      // LOW_QUALITY_EVIDENCE
+      {
+        isCorrect: true,
+        attemptNumberForPresentedItem: 2,
+        answeredAt: new Date("2026-01-03T00:00:00.000Z"),
+      },
+      // INVALID_FOR_MASTERY
+      {
+        isCorrect: false,
+        answerWasRevealedBeforeResponse: true,
+        answeredAt: new Date("2026-01-04T00:00:00.000Z"),
+      },
+      // a second FULL_EVIDENCE, to prove the invariant holds after more
+      // than one increment per bucket, not just one-of-each.
+      { isCorrect: true, answeredAt: new Date("2026-01-06T00:00:00.000Z") },
+    ];
+
+    for (const overrides of steps) {
+      const result = applyAttemptToProgress(
+        progress,
+        makeAttempt(overrides),
+        context,
+      );
+      progress = result.progress;
+    }
+
+    expect(progress?.attemptCount).toBe(5);
+    expect(
+      (progress?.meaningfulAttemptCount ?? 0) +
+        (progress?.assistedAttemptCount ?? 0) +
+        (progress?.lowQualityAttemptCount ?? 0) +
+        (progress?.invalidForMasteryAttemptCount ?? 0),
+    ).toBe(progress?.attemptCount);
+    // Sanity: the mix actually exercised all four buckets, not a trivial
+    // all-one-bucket sequence.
+    expect(progress?.meaningfulAttemptCount).toBe(2);
+    expect(progress?.assistedAttemptCount).toBe(1);
+    expect(progress?.lowQualityAttemptCount).toBe(1);
+    expect(progress?.invalidForMasteryAttemptCount).toBe(1);
+  });
+
   it("F. sets firstMeaningfulEvidenceAt once and preserves it across later meaningful attempts", () => {
     const scheduler = new FakeMemoryScheduler();
     const first = applyAttemptToProgress(

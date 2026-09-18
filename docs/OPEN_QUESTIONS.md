@@ -22,7 +22,7 @@ Question:
 
 How should a learner be related to a Course in V1?
 
-Possible directions:
+Possible directions (historical — see Status below):
 
 - direct ownership;
 - direct membership/access record;
@@ -40,7 +40,16 @@ Decision should support:
 - clear authorization;
 - simple V1 implementation.
 
-Status: OPEN
+Status: **DECIDED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
+V1 uses an explicit `CourseMembership` relationship (`userId`, `courseId`,
+`role`, `joinedAt`, `revokedAt`, `archivedAt`) with three roles (`OWNER`,
+`INSTRUCTOR`, `LEARNER`) and a per-Course join policy (`AUTHORIZED_ONLY`
+default, `OPEN` settable only by a management role). QR/link is never
+authorization by itself. Institution/enrollment-provisioning remains
+architecture-ready, not built now (ADR-006 unaffected). The exact
+authorization source for `AUTHORIZED_ONLY` Courses, lecturer-vs-institution
+content ownership, and the real persistence/RLS implementation remain
+separately open — see ADR-015's own "Explicitly deferred" section.
 
 Target phase: Domain Contracts / Database Design
 

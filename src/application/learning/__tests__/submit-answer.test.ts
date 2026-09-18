@@ -242,6 +242,79 @@ describe("submitAnswer", () => {
     }
   });
 
+  it("J. two intentional answers to the same question with different submissionIds are BOTH retained as distinct Attempts (contrast with test 2's same-submissionId dedup)", async () => {
+    const db = new InMemoryLearningDatabase();
+    seedDefaultQuestion(db);
+    db.setCorrectAnswer("qv-1", "A");
+    const context = makeContext();
+
+    const first = await submitAnswer(
+      makeCommand({ submissionId: "sub-first", selectedAnswer: "A", answeredAt: JAN1 }),
+      context,
+      db,
+    );
+    const second = await submitAnswer(
+      makeCommand({ submissionId: "sub-second", selectedAnswer: "A", answeredAt: JAN2 }),
+      context,
+      db,
+    );
+
+    expect(first.kind).toBe("ACCEPTED");
+    expect(second.kind).toBe("ACCEPTED");
+    if (first.kind === "ACCEPTED" && second.kind === "ACCEPTED") {
+      // Two genuinely different Attempt ids/submissionIds, not the same
+      // record returned twice (unlike an idempotent retry — see test 2).
+      expect(second.attempt.id).not.toBe(first.attempt.id);
+      expect(db.hasAttempt("user-1", "sub-first")).toBe(true);
+      expect(db.hasAttempt("user-1", "sub-second")).toBe(true);
+      // Both contributed to accumulated history — progress reflects two
+      // Attempts, not one overwritten by the other.
+      expect(second.progress.attemptCount).toBe(2);
+    }
+  });
+
+  it("a malformed selectedAnswer (duplicate ids) is rejected as INVALID_SELECTED_ANSWER end-to-end through submitAnswer, never treated as isCorrect: false", async () => {
+    const db = new InMemoryLearningDatabase();
+    seedDefaultQuestion(db);
+    db.setCorrectAnswer("qv-1", "A");
+
+    const result = await submitAnswer(
+      makeCommand({ selectedAnswer: ["a", "a"] }),
+      makeContext(),
+      db,
+    );
+
+    expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    // No Attempt was ever created for a request that was never actually
+    // graded — a malformed submission must not silently become "incorrect".
+    expect(db.hasAttempt("user-1", "sub-1")).toBe(false);
+  });
+
+  it("a MULTIPLE_CHOICE retry with the SAME set submitted in a DIFFERENT array order is a safe idempotent retry, not an idempotency-key conflict (ADR-014's array-aware comparison)", async () => {
+    const db = new InMemoryLearningDatabase();
+    seedDefaultQuestion(db);
+    const context = makeContext();
+
+    const first = await submitAnswer(
+      makeCommand({ selectedAnswer: ["a", "c"] }),
+      context,
+      db,
+    );
+    const retry = await submitAnswer(
+      makeCommand({ selectedAnswer: ["c", "a"] }), // same set, different order
+      context,
+      db,
+    );
+
+    expect(first.kind).toBe("ACCEPTED");
+    expect(retry.kind).toBe("ACCEPTED");
+    if (retry.kind === "ACCEPTED") {
+      expect(retry.wasIdempotentRetry).toBe(true);
+      // Persisted in canonical (sorted) form, regardless of submission order.
+      expect(retry.attempt.selectedAnswer).toEqual(["a", "c"]);
+    }
+  });
+
   it("7. manual practice (no TodaySessionItem) is accepted normally", async () => {
     const db = new InMemoryLearningDatabase();
     seedDefaultQuestion(db);

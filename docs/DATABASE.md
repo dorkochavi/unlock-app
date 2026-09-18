@@ -119,26 +119,20 @@ Institution support may be added later.
 
 ## 5. User ↔ Course Relationship
 
-This relationship is not yet finalized.
+Status: **DECIDED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
 
-Possible implementations include:
+V1 uses an explicit `CourseMembership` relationship (conceptual fields:
+`userId`, `courseId`, `role`, `joinedAt`, `revokedAt`, `archivedAt`) with
+three roles (`OWNER`, `INSTRUCTOR`, `LEARNER`) and a per-Course join policy
+(`AUTHORIZED_ONLY` default, `OPEN` settable only by a management role).
+`courses.owner_user_id` is unaffected. This does not introduce full
+institutional enrollment complexity — Institution/enrollment provisioning
+remains architecture-ready, not built now (ADR-006 unaffected).
 
-- direct owner field on Course;
-- lightweight access/membership table;
-- lightweight Enrollment table.
+The concrete migration (table/column names, types, constraints) is not
+written by ADR-015 and remains future implementation work.
 
-The chosen model must support:
-
-- authorization;
-- learner access;
-- future multi-user Course scenarios;
-- simple V1 implementation.
-
-Do not introduce full institutional enrollment complexity before it is needed.
-
-Status: OPEN
-
-See `docs/OPEN_QUESTIONS.md`.
+See `docs/OPEN_QUESTIONS.md` #1 and ADR-015.
 
 ---
 
@@ -733,8 +727,9 @@ Do not rely on hidden UI controls.
 ## 29. Row Level Security
 
 Supabase is confirmed for the database (ADR-013). RLS is required for user
-data, but real policies depend on the User↔Course authorization model
-(`docs/OPEN_QUESTIONS.md` #1), which is not yet decided.
+data. The User↔Course authorization model this depends on is now decided
+(`docs/OPEN_QUESTIONS.md` #1, `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`);
+real policies implementing it are not yet written.
 
 **Current state (`supabase/migrations/20260917203000_initial_schema.sql`)**:
 RLS is enabled on every V1 table with ZERO policies — a safe deny-by-default
@@ -749,7 +744,7 @@ attributes, so they remain genuinely deny-by-default on every V1 table.
 This specifically avoids the alternative of writing a permissive placeholder
 policy that would have to be walked back later.
 
-At minimum, once the authorization model is decided, policies should protect:
+At minimum, once written, policies should protect:
 
 - Attempts;
 - UserQuestionProgress;
@@ -1156,7 +1151,7 @@ Agent infrastructure
 Before writing the real V1 schema, resolve at minimum:
 
 ```text
-1. User ↔ Course relationship — OPEN
+1. User ↔ Course relationship — DECIDED, see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
 2. V1 exam-date hierarchy — OPEN
 3. Question editing/version strategy — DECIDED, see docs/DECISIONS/009-question-versioning.md
 4. Course structure depth — OPEN
