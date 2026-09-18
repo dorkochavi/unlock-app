@@ -1,9 +1,11 @@
 # Learning Engine — Production Composition Audit
 
-Status: AUDIT ONLY. No code, defaults, or composition root were added by
-this document. Every claim below is grounded in the current repository
-state as of branch `feature/project-foundation`, commit `ca3547f`
-("harden learning contracts and formalize course access model").
+Status: AUDIT (§1-§8, historical) + IMPLEMENTED (§9, 2026-09-20). §1-§8 are
+grounded in the repository state as of commit `ca3547f` ("harden learning
+contracts and formalize course access model") and are left unmodified as
+the historical record of that audit; no code, defaults, or composition root
+existed at that point. §9 records what has since been built to close the
+gap §1-§8 found.
 
 ## 0. What this audits
 
@@ -326,6 +328,47 @@ implementation sequencing.
   "no `src/messages/` usage") is **stale/inaccurate** and is flagged in
   §5 for future correction, without editing that file here (out of this
   audit's scope).
+
+## 9. Update (2026-09-20): production composition root now IMPLEMENTED
+
+This audit's headline finding (§8: no production composition root, no
+policy defaults anywhere in `src/`) is now resolved by implementation, not
+merely by further product decisions:
+
+- `src/infrastructure/learning/production-policy-defaults.ts` — the
+  centralized production defaults this audit called for in §8, for every
+  policy group §7/§7a/§7b tracked to "usable now, no product blocker
+  remains": `RetrievalQualificationPolicy`, `EvidenceStrengthPolicy`,
+  `MasteryPolicy`, `MisconceptionPolicy`, `TodayPlannerPolicy`, plus a
+  `PRODUCTION_ENGINE_VERSION` string. Every value is the same one this
+  repo's own test fixtures (`submit-answer.test.ts`,
+  `learning-engine-golden-scenarios.test.ts`) had already independently
+  converged on — reused transparently, not replaced with a second set.
+- `src/infrastructure/learning/composition-root.ts` —
+  `createProductionSubmitAnswerContext(now)` /
+  `createProductionTodaySessionContext(now)`, the first real factory
+  functions in this repo that construct a working `SubmitAnswerContext`/
+  `TodaySessionContext` from concrete production values plus a real
+  `TsFsrsMemoryScheduler` and a real `crypto.randomUUID`-backed
+  `generateId`. `now` is a required explicit parameter on both — neither
+  function reads the clock itself, proven by
+  `src/infrastructure/learning/__tests__/composition-root.test.ts` (fakes
+  the system clock to a different instant and asserts `context.now` is
+  still exactly the injected value).
+- Proven working end-to-end (not just type-checked) against the existing
+  `submitAnswer`/`getOrCreateTodaySession` use cases via the same
+  `InMemoryLearningDatabase` fakes the rest of the learning application
+  suite already uses — see `composition-root.test.ts`'s last test in each
+  `describe` block.
+
+**Still not done, deliberately out of this slice's scope**: no HTTP/API
+route calls either factory (Auth wiring remains separately unimplemented,
+per `docs/OPEN_QUESTIONS.md` #1/#25); `TodayPlannerPolicy.maxItems`'s
+single-ceiling shape is a deliberate compression of ADR-016 §5's tiered
+sizing model down to what the current architecture can express (documented
+in `production-policy-defaults.ts` itself), not that model's actual
+implementation — the tiered minimum/typical-range behavior remains future
+DailyPlan work.
 
 ## Related Documents
 
