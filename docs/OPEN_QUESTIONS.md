@@ -973,7 +973,12 @@ Decision criteria should include:
 - future question formats;
 - query needs.
 
-Status: OPEN
+Status: DECIDED — see `docs/DECISIONS/014-question-answer-model-v1.md`.
+Structured JSON on `question_versions` (`answer_options`/`correct_answer`,
+validated at the application/infrastructure boundary, not normalized into
+a table). V1 supports `SINGLE_CHOICE`/`MULTIPLE_CHOICE` only; free
+text/essay/numeric/ordering/matching question types, and any free-text/LLM
+grading, remain undecided and are NOT addressed by ADR-014.
 
 Target phase: Database Design
 

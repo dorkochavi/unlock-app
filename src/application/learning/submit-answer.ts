@@ -109,6 +109,10 @@
  * retry, double-click after the first request already finished) cheaper.
  */
 
+import {
+  canonicalizeSelectedAnswer,
+  InvalidSelectedAnswerError,
+} from "../../domain/learning/answer";
 import { deriveIsSameLearningSession } from "../../domain/learning/learning-session";
 import {
   applyAttemptToProgress,
@@ -173,6 +177,17 @@ export type SubmitAnswerResult =
   | {
       kind: "QUESTION_VERSION_CONSISTENCY_VIOLATION";
       questionVersionId: string;
+    }
+  | {
+      /**
+       * ADR-014: a structurally malformed `selectedAnswer` — wrong shape
+       * for the Question's type, an unknown/duplicate option id, or
+       * `null`/empty when a real selection is required. This is a
+       * request-validation outcome, never conflated with `isCorrect:
+       * false` — a malformed submission was never actually graded.
+       */
+      kind: "INVALID_SELECTED_ANSWER";
+      reason: string;
     };
 
 /**
@@ -203,27 +218,39 @@ const CANONICAL_COMMAND_IDENTITY_FIELDS: Array<keyof SubmitAnswerCommand> = [
  * todaySessionItemId of 'item-123' and a retry carrying null are NOT the
  * same command"). Dates are compared by value, not reference.
  *
- * `learningSessionId` is handled separately, not via the generic list
- * above: it is genuine client-owned identity ONLY for manual practice
- * (`command.todaySessionItemId === null`). For a Today-attached Attempt it
- * is application-derived from the persisted `TodaySessionItem` (see
- * `resolveLearningSessionId`) — the client's claim there is not
- * authoritative, so comparing it as identity would reject a legitimate
- * retry whenever the client's (irrelevant) value happened to vary.
+ * `selectedAnswer` needs its own case too, since ADR-014: a MULTIPLE_CHOICE
+ * answer is a `string[]`, and plain `===` on two distinct array instances
+ * is always `false` even for identical contents (reference inequality) —
+ * naive `===` would make every legitimate MULTIPLE_CHOICE retry look like
+ * an idempotency-key conflict. Both sides SHOULD already be canonical
+ * (sorted, deduplicated) by the time they reach here — `command` is
+ * canonicalized at the top of `submitAnswerInTransaction`, and
+ * `existing.selectedAnswer` was canonicalized identically before its own
+ * original insert — but this comparison sorts defensively (both sides,
+ * fresh copies) rather than relying on that as an unstated cross-call-site
+ * contract: comparing as true sets costs nothing extra here and removes
+ * the assumption entirely, rather than merely documenting it.
  */
+function valuesEqual(a: unknown, b: unknown): boolean {
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() === b.getTime();
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    const sortedA = [...a].sort();
+    const sortedB = [...b].sort();
+    return sortedA.every((value, index) => value === sortedB[index]);
+  }
+  return a === b;
+}
+
 function findConflictingFields(
   command: SubmitAnswerCommand,
   existing: Attempt,
 ): string[] {
   const conflicts: string[] = [];
   for (const field of CANONICAL_COMMAND_IDENTITY_FIELDS) {
-    const commandValue = command[field];
-    const existingValue = existing[field];
-    const equal =
-      commandValue instanceof Date && existingValue instanceof Date
-        ? commandValue.getTime() === existingValue.getTime()
-        : commandValue === existingValue;
-    if (!equal) {
+    if (!valuesEqual(command[field], existing[field])) {
       conflicts.push(field);
     }
   }
@@ -347,6 +374,15 @@ export async function submitAnswer(
         questionVersionId: error.questionVersionId,
       };
     }
+    if (error instanceof InvalidSelectedAnswerError) {
+      // ADR-014: a structurally malformed selectedAnswer (wrong shape,
+      // unknown/duplicate option id, or null/empty) is a request-validation
+      // outcome, not an unexpected error and not "isCorrect: false" — it
+      // may be thrown either by the early canonicalization step above or
+      // by `repos.answerCorrectness.isCorrect`'s own deeper shape/option
+      // validation; either way it maps to the same typed result.
+      return { kind: "INVALID_SELECTED_ANSWER", reason: error.message };
+    }
     // Any other error is unexpected — re-thrown, never swallowed, per the
     // "code discipline" requirement from the Phase 2 audit (transaction
     // rollback must never be hidden from the caller). This includes a
@@ -359,10 +395,26 @@ export async function submitAnswer(
 }
 
 async function submitAnswerInTransaction(
-  command: SubmitAnswerCommand,
+  rawCommand: SubmitAnswerCommand,
   context: SubmitAnswerContext,
   repos: TransactionalRepositories,
 ): Promise<SubmitAnswerResult> {
+  // ADR-014: canonicalize selectedAnswer ONCE, up front — every use below
+  // (the fast-path idempotency comparison, the correctness check, and the
+  // persisted Attempt itself) then sees the same normalized value, so
+  // `["a","b"]` and `["b","a"]` are treated and PERSISTED identically. This
+  // needs no QuestionVersion/questionType knowledge (pure syntax — see
+  // `canonicalizeSelectedAnswer`'s own doc comment), so it can safely run
+  // before any repository call, including the fast-path retry lookup.
+  // Throws InvalidSelectedAnswerError on a duplicate-id array, caught by
+  // `submitAnswer`'s outer try/catch below and mapped to
+  // `INVALID_SELECTED_ANSWER` — never silently accepted or treated as
+  // "incorrect".
+  const command: SubmitAnswerCommand = {
+    ...rawCommand,
+    selectedAnswer: canonicalizeSelectedAnswer(rawCommand.selectedAnswer),
+  };
+
   // Fast path: a genuine, already-resolved retry short-circuits BEFORE the
   // lock, BEFORE QuestionVersion/TodaySessionItem consistency checks, and
   // BEFORE computing isCorrect/suspiciousTiming — none of that work is

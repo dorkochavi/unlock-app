@@ -5,7 +5,10 @@
  * spaced-repetition library (for example, ts-fsrs).
  */
 
+import type { SelectedAnswer } from "./answer";
 import type { SchedulerMemoryState } from "./scheduler";
+
+export type { SelectedAnswer };
 
 export const CONFIDENCE_LEVELS = ["low", "medium", "high"] as const;
 export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number];
@@ -83,7 +86,14 @@ export interface Attempt {
   answeredAt: Date;
 
   isCorrect: boolean;
-  selectedAnswer: string | number | null;
+  /**
+   * ADR-014: option-id-based (never a raw numeric index/value). See
+   * `./answer.ts`'s own doc comment for the full contract, including why
+   * `number` is no longer part of this type (it was never a decided
+   * format — dropped once a real one existed, rather than keeping two
+   * representations of "a choice" alive simultaneously).
+   */
+  selectedAnswer: SelectedAnswer;
 
   confidenceLevel: ConfidenceLevel | null;
   responseTimeSeconds: number | null;

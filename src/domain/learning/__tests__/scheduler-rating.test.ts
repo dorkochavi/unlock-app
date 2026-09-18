@@ -13,7 +13,7 @@ function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
     questionVersionId: "question-version-1",
     answeredAt: new Date("2026-09-16T18:00:00.000Z"),
     isCorrect: true,
-    selectedAnswer: 1,
+    selectedAnswer: "1",
     confidenceLevel: "medium",
     responseTimeSeconds: 10,
     todaySessionId: "today-1",

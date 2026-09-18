@@ -25,7 +25,11 @@ import type { NextBestActionPriorityTier } from "../../domain/learning/next-best
 // Reused directly from the domain layer — never redefined here, so the
 // application layer's persistence contract cannot silently drift from the
 // domain's own Attempt/UserQuestionProgress shapes.
-import type { Attempt, UserQuestionProgress } from "../../domain/learning/types";
+import type {
+  Attempt,
+  SelectedAnswer,
+  UserQuestionProgress,
+} from "../../domain/learning/types";
 
 export type { Attempt };
 export type { AttemptReplayRecord };
@@ -110,20 +114,25 @@ export interface UserQuestionProgressRepository {
 
 /**
  * Deliberately its own small port, not bundled into a general Question
- * read repository. Its real implementation depends on the still-unresolved
- * `answer_options`/`correct_answer` JSON shape (`docs/DATABASE.md` §9,
- * `docs/PERSISTENCE_SCHEMA_V1.md`'s `question_versions` table) and is out
- * of scope for this session — no domain function in
- * `src/domain/learning/` currently computes answer correctness; it has
- * always been treated as an already-given boolean input to
- * `applyAttemptToProgress`. This interface exists so submitAnswer's
- * orchestration can be written and tested against a fake today without
- * inventing that comparison logic.
+ * read repository — its real Postgres implementation
+ * (`PostgresAnswerCorrectnessChecker`) runs its own narrow read query
+ * directly rather than broadening `QuestionVersionRepository`'s contract
+ * (see ADR-014). The correctness computation itself is a pure domain
+ * function (`evaluateAnswerCorrectness`, `src/domain/learning/answer.ts`);
+ * this port's job is only to load and validate the persisted
+ * `QuestionAnswerDefinition` by exact `questionVersionId` and delegate.
+ *
+ * `isCorrect` throws `InvalidSelectedAnswerError`
+ * (`src/domain/learning/answer.ts`) — never merely returns `false` — for a
+ * structurally malformed `selectedAnswer` (wrong shape for the question's
+ * type, unknown option id, duplicate ids, or `null`/empty). Callers (see
+ * `submit-answer.ts`) must catch that specific error and map it to a
+ * request-validation result, not to "the answer was wrong."
  */
 export interface AnswerCorrectnessChecker {
   isCorrect(
     questionVersionId: string,
-    selectedAnswer: string | number | null,
+    selectedAnswer: SelectedAnswer,
   ): Promise<boolean>;
 }
 

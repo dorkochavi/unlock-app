@@ -112,7 +112,11 @@ UNLOCK V1 Today is course-scoped: `TodaySession` is uniquely keyed by `(user_id,
 
 ### ADR-013 — PostgreSQL + Supabase as the V1 Persistence Provider
 
-UNLOCK V1 uses PostgreSQL via Supabase (closing `docs/OPEN_QUESTIONS.md` #25 for the database-engine/provider question). Supabase is infrastructure only — no Supabase-specific type/import may appear in `src/domain/` or `src/application/`; a future adapter implementing the existing ports belongs under `src/services/`. RLS is enabled on every table now with zero policies (safe deny-by-default, not a policy decision); real policies wait for `docs/OPEN_QUESTIONS.md` #1 (User↔Course authorization) to be resolved. `users.id` is intended to eventually equal `auth.users.id`, with no FK/default added yet.
+UNLOCK V1 uses PostgreSQL via Supabase (closing `docs/OPEN_QUESTIONS.md` #25 for the database-engine/provider question). Supabase is infrastructure only — no Supabase-specific type/import may appear in `src/domain/` or `src/application/`; a future adapter implementing the existing ports belongs under `src/infrastructure/postgres/` (this ADR's own original text wrongly named `src/services/` — corrected in place once `src/infrastructure/learning/fsrs/` was found to already be the real, committed precedent). RLS is enabled on every table now with zero policies (safe deny-by-default, not a policy decision); real policies wait for `docs/OPEN_QUESTIONS.md` #1 (User↔Course authorization) to be resolved. `users.id` is intended to eventually equal `auth.users.id`, with no FK/default added yet.
+
+### ADR-014 — Question/Answer Model V1
+
+UNLOCK V1 supports exactly two question types, `SINGLE_CHOICE` and `MULTIPLE_CHOICE` (`TRUE_FALSE` is deliberately not a distinct type — it's a `SINGLE_CHOICE` question with two options). `QuestionAnswerDefinition` (`options: {id, content}[]`, `correctOptionIds: string[]`) is the durable persisted-content contract on `question_versions`; `SelectedAnswer` (`string | string[] | null`) is the submitted-answer contract on `Attempt`, always canonicalized (sorted, duplicate-free) before comparison or persistence. Correctness is computed by one pure domain function (`evaluateAnswerCorrectness`), never in SQL. A malformed persisted definition and a malformed submitted answer are two distinct, never-conflated error types — neither is ever silently treated as "incorrect."
 
 ---
 
