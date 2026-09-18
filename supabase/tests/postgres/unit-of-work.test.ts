@@ -21,10 +21,7 @@ import type { PGlite } from "@electric-sql/pglite";
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type {
-  AnswerCorrectnessChecker,
-  TransactionalRepositories,
-} from "../../../src/application/learning/ports";
+import type { TransactionalRepositories } from "../../../src/application/learning/ports";
 import { pgliteConnectionProvider } from "./db-harness";
 import {
   acquireLearnerQuestionLock,
@@ -44,15 +41,9 @@ import type { Attempt } from "../../../src/domain/learning/types";
 let db: PGlite;
 let uow: PostgresUnitOfWork;
 
-const fakeAnswerCorrectness: AnswerCorrectnessChecker = {
-  async isCorrect() {
-    return true;
-  },
-};
-
 beforeEach(async () => {
   db = await createTestDb();
-  uow = new PostgresUnitOfWork(pgliteConnectionProvider(db), fakeAnswerCorrectness);
+  uow = new PostgresUnitOfWork(pgliteConnectionProvider(db));
 });
 
 afterEach(async () => {

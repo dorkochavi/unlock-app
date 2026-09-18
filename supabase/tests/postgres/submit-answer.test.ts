@@ -1,20 +1,15 @@
 /**
- * Phase 12 — real-Postgres (PGlite) integration test for the `submitAnswer`
+ * Real-Postgres (PGlite) integration test for the `submitAnswer`
  * application use case (`src/application/learning/submit-answer.ts`)
- * wired to the REAL Postgres infrastructure built in this session:
- * `PostgresUnitOfWork`, `PostgresAttemptRepository`,
- * `PostgresUserQuestionProgressRepository`, `PostgresQuestionVersionRepository`,
- * `PostgresTodaySessionRepository`, and the real advisory lock.
- *
- * `AnswerCorrectnessChecker` is the ONE exception (Phase 8's documented
- * blocker — see PERSISTENCE_IMPLEMENTATION_REPORT.md): the `answer_options`/
- * `correct_answer` JSON shape on `question_versions` is still an open
- * content-format decision, so a real Postgres implementation cannot be
- * written honestly. `FakeAnswerCorrectnessChecker` below is a plain test
- * double standing in for exactly that one port — clearly labeled as such —
- * while every OTHER port in this test is the real Postgres adapter. This
- * matches the task's own instruction: a blocker in one path is not
- * permission to skip integration-testing everything else.
+ * wired to the REAL Postgres infrastructure: `PostgresUnitOfWork`,
+ * `PostgresAttemptRepository`, `PostgresUserQuestionProgressRepository`,
+ * `PostgresQuestionVersionRepository`, `PostgresTodaySessionRepository`,
+ * the real advisory lock, and — since ADR-014 —
+ * `PostgresAnswerCorrectnessChecker` too. There is no fake/test-double
+ * port left in this file: every dependency `submitAnswer` has is now a
+ * real Postgres adapter (the previous session's `FakeAnswerCorrectnessChecker`
+ * has been removed entirely, per ADR-014 Decision §6 and Phase 11 of the
+ * Question/Answer Model task).
  *
  * Policy values mirror `src/application/learning/__tests__/
  * submit-answer.test.ts`'s own fixtures exactly, so this suite is testing
@@ -31,7 +26,6 @@ import type { MasteryPolicy } from "../../../src/domain/learning/mastery";
 import type { MisconceptionPolicy } from "../../../src/domain/learning/misconception";
 import type { RetrievalQualificationPolicy } from "../../../src/domain/learning/retrieval-qualification";
 import { TsFsrsMemoryScheduler } from "../../../src/infrastructure/learning/fsrs/ts-fsrs-memory-scheduler";
-import type { AnswerCorrectnessChecker } from "../../../src/application/learning/ports";
 import type { UserQuestionProgress } from "../../../src/domain/learning/types";
 import {
   submitAnswer,
@@ -41,10 +35,12 @@ import {
 import { PostgresUnitOfWork } from "../../../src/infrastructure/postgres/postgres-unit-of-work";
 import {
   createTestDb,
+  insertQuestionVersion,
   insertUser,
   pgliteConnectionProvider,
   seedQuestionChain,
   seedTodaySessionWithItem,
+  setCurrentVersion,
 } from "./db-harness";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -77,22 +73,6 @@ const MISCONCEPTION_POLICY: MisconceptionPolicy = {
   resolvedScoreThreshold: 0,
 };
 
-/** Test double for the one Postgres port this session cannot honestly
- * implement yet (Phase 8 blocker) — "B" is always wrong, everything else
- * is correct, which is enough to exercise both is_correct outcomes without
- * inventing a real answer-format decision. */
-class FakeAnswerCorrectnessChecker implements AnswerCorrectnessChecker {
-  async isCorrect(
-    _questionVersionId: string,
-    selectedAnswer: string | number | null,
-  ): Promise<boolean> {
-    if (selectedAnswer === "THROW") {
-      throw new Error("simulated AnswerCorrectnessChecker failure");
-    }
-    return selectedAnswer !== "B";
-  }
-}
-
 function withoutIdentity(
   progress: UserQuestionProgress,
 ): Partial<UserQuestionProgress> {
@@ -107,10 +87,7 @@ let uow: PostgresUnitOfWork;
 
 beforeEach(async () => {
   db = await createTestDb();
-  uow = new PostgresUnitOfWork(
-    pgliteConnectionProvider(db),
-    new FakeAnswerCorrectnessChecker(),
-  );
+  uow = new PostgresUnitOfWork(pgliteConnectionProvider(db));
 });
 
 afterEach(async () => {
@@ -407,16 +384,20 @@ describe("submitAnswer against real Postgres infrastructure", () => {
     expect(itemRow.rows[0].completed_at).not.toBeNull();
   });
 
-  it("K. a mid-transaction failure rolls back the already-inserted Attempt — nothing partial is committed", async () => {
+  it("K. a mid-transaction failure (genuinely malformed PERSISTED answer content) rolls back — nothing partial is committed, and it is NOT silently treated as incorrect (ADR-014)", async () => {
     const chain = await seedQuestionChain(db);
+    // Directly corrupt the QuestionVersion's answer_options, bypassing
+    // application validation entirely — the DB itself has no CHECK on
+    // JSONB internals (ADR-014 Decision §4), so this is a real reachable
+    // corruption shape, not a contrived one.
+    await db.query(
+      "update question_versions set answer_options = '[]'::jsonb where id = $1",
+      [chain.questionVersionId],
+    );
 
     await expect(
-      submitAnswer(
-        makeCommand(chain, { selectedAnswer: "THROW" }),
-        makeContext(),
-        uow,
-      ),
-    ).rejects.toThrow("simulated AnswerCorrectnessChecker failure");
+      submitAnswer(makeCommand(chain), makeContext(), uow),
+    ).rejects.toThrow(/Invalid persisted QuestionAnswerDefinition/);
 
     const attemptCount = await db.query<{ count: string }>(
       "select count(*)::int as count from attempts where user_id = $1 and question_id = $2",
@@ -464,5 +445,255 @@ describe("submitAnswer against real Postgres infrastructure", () => {
     expect(result.attempt.learningSessionId).not.toBe(
       "client-claimed-value-should-be-ignored",
     );
+  });
+});
+
+describe("submitAnswer answer correctness (ADR-014, real PostgresAnswerCorrectnessChecker)", () => {
+  describe("SINGLE_CHOICE", () => {
+    it("correct answer is graded true", async () => {
+      const chain = await seedQuestionChain(db); // default: A/B options, A correct
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: "A" }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("ACCEPTED");
+      if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(result.attempt.isCorrect).toBe(true);
+    });
+
+    it("incorrect answer is graded false, never an error", async () => {
+      const chain = await seedQuestionChain(db);
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: "B" }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("ACCEPTED");
+      if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(result.attempt.isCorrect).toBe(false);
+    });
+
+    it("an option id that does not exist on this QuestionVersion is INVALID_SELECTED_ANSWER, not graded false", async () => {
+      const chain = await seedQuestionChain(db);
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: "Z" }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    });
+
+    it("an array selectedAnswer for a SINGLE_CHOICE Question is INVALID_SELECTED_ANSWER (wrong shape)", async () => {
+      const chain = await seedQuestionChain(db);
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: ["A"] }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    });
+
+    it("null selectedAnswer is INVALID_SELECTED_ANSWER, never graded false", async () => {
+      const chain = await seedQuestionChain(db);
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: null }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    });
+
+    it("a true/false question is just SINGLE_CHOICE with two options — no semantic loss (ADR-014 Decision §1)", async () => {
+      const chain = await seedQuestionChain(db, {
+        options: [
+          { id: "TRUE", content: "True" },
+          { id: "FALSE", content: "False" },
+        ],
+        correctOptionIds: ["TRUE"],
+      });
+
+      const correct = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: "TRUE" }),
+        makeContext(),
+        uow,
+      );
+      const incorrect = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: "FALSE" }),
+        makeContext(),
+        uow,
+      );
+
+      if (correct.kind !== "ACCEPTED" || incorrect.kind !== "ACCEPTED") {
+        throw new Error("unreachable");
+      }
+      expect(correct.attempt.isCorrect).toBe(true);
+      expect(incorrect.attempt.isCorrect).toBe(false);
+    });
+  });
+
+  describe("MULTIPLE_CHOICE", () => {
+    async function seedMultipleChoiceChain() {
+      return seedQuestionChain(db, {
+        questionType: "MULTIPLE_CHOICE",
+        options: [
+          { id: "A", content: "Option A" },
+          { id: "B", content: "Option B" },
+          { id: "C", content: "Option C" },
+        ],
+        correctOptionIds: ["A", "C"],
+      });
+    }
+
+    it("the exact correct set is graded true", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: ["A", "C"] }),
+        makeContext(),
+        uow,
+      );
+      if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(result.attempt.isCorrect).toBe(true);
+    });
+
+    it("the same set in a DIFFERENT order is still graded true (order-irrelevant set equality)", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: ["C", "A"] }),
+        makeContext(),
+        uow,
+      );
+      if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(result.attempt.isCorrect).toBe(true);
+      // Persisted in canonical (sorted) form regardless of submission order.
+      expect(result.attempt.selectedAnswer).toEqual(["A", "C"]);
+    });
+
+    it("missing one correct option is graded false", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: ["A"] }),
+        makeContext(),
+        uow,
+      );
+      if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(result.attempt.isCorrect).toBe(false);
+    });
+
+    it("an extra (incorrect) option included is graded false", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: ["A", "B", "C"] }),
+        makeContext(),
+        uow,
+      );
+      if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(result.attempt.isCorrect).toBe(false);
+    });
+
+    it("a duplicate option id in the selection is INVALID_SELECTED_ANSWER, not silently deduplicated", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: ["A", "A", "C"] }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    });
+
+    it("an unknown option id anywhere in the selection is INVALID_SELECTED_ANSWER", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: ["A", "Z"] }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    });
+
+    it("a scalar selectedAnswer for a MULTIPLE_CHOICE Question is INVALID_SELECTED_ANSWER (wrong shape)", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: "A" }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    });
+
+    it("an empty array selectedAnswer is INVALID_SELECTED_ANSWER, never graded false", async () => {
+      const chain = await seedMultipleChoiceChain();
+      const result = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: [] }),
+        makeContext(),
+        uow,
+      );
+      expect(result.kind).toBe("INVALID_SELECTED_ANSWER");
+    });
+  });
+
+  describe("historical QuestionVersion correctness (Phase 12/13)", () => {
+    it("an Attempt against an OLD QuestionVersion is graded by that version's own definition, even after current_version_id has moved on to a Question edit with a DIFFERENT correct answer", async () => {
+      const chain = await seedQuestionChain(db); // v1: A/B, A correct
+      const v1Attempt = await submitAnswer(
+        makeCommand(chain, { selectedAnswer: "A" }),
+        makeContext(),
+        uow,
+      );
+      if (v1Attempt.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(v1Attempt.attempt.isCorrect).toBe(true);
+
+      // Simulate editing the Question: a NEW version with B correct instead
+      // of A, and current_version_id moved forward to it.
+      const v2Id = await insertQuestionVersion(db, chain.questionId, 2, {
+        correctOptionIds: ["B"],
+      });
+      await setCurrentVersion(db, chain.questionId, v2Id);
+
+      // A brand-new Attempt against the NEW current version, answering "B":
+      // correct under v2's definition.
+      const v2Attempt = await submitAnswer(
+        makeCommand(chain, {
+          questionVersionId: v2Id,
+          selectedAnswer: "B",
+          submissionId: randomUUID(),
+        }),
+        makeContext(),
+        uow,
+      );
+      if (v2Attempt.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(v2Attempt.attempt.isCorrect).toBe(true);
+
+      // A THIRD Attempt explicitly against the now-OLD v1, still answering
+      // "A": must still be graded correct under v1's (unchanged) rule —
+      // proving the checker loads by the Attempt's own frozen
+      // questionVersionId, never through questions.current_version_id
+      // (which now points at v2).
+      const v1AgainAttempt = await submitAnswer(
+        makeCommand(chain, {
+          questionVersionId: chain.questionVersionId,
+          selectedAnswer: "A",
+          submissionId: randomUUID(),
+        }),
+        makeContext(),
+        uow,
+      );
+      if (v1AgainAttempt.kind !== "ACCEPTED") throw new Error("unreachable");
+      expect(v1AgainAttempt.attempt.isCorrect).toBe(true);
+
+      // And the ORIGINAL first Attempt's persisted isCorrect is untouched —
+      // no retroactive regrading happened as a side effect of the Question
+      // being edited (ADR-005/ADR-012: Attempt.isCorrect is historical
+      // evidence captured once at submission time. Verified directly in
+      // `src/domain/learning/progress-update.ts`/`rebuild.ts`: every read
+      // of correctness there is `attempt.isCorrect` itself — neither file
+      // calls any correctness-checking port, so a replay/rebuild has no
+      // mechanism to re-grade a historical Attempt even in principle).
+      const persisted = await db.query<{ is_correct: boolean }>(
+        "select is_correct from attempts where id = $1",
+        [v1Attempt.attempt.id],
+      );
+      expect(persisted.rows[0].is_correct).toBe(true);
+    });
   });
 });

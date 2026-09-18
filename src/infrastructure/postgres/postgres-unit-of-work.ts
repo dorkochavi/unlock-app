@@ -3,10 +3,10 @@
  * ports.ts`) and ADR-010's transaction-scoped advisory lock.
  */
 import type {
-  AnswerCorrectnessChecker,
   TransactionalRepositories,
   UnitOfWork,
 } from "../../application/learning/ports";
+import { PostgresAnswerCorrectnessChecker } from "./answer-correctness-checker";
 import { PostgresAttemptRepository } from "./attempt-repository";
 import type { ConnectionProvider } from "./connection-provider";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
@@ -70,21 +70,7 @@ export async function acquireLearnerQuestionLock(
 }
 
 export class PostgresUnitOfWork implements UnitOfWork {
-  constructor(
-    private readonly connectionProvider: ConnectionProvider,
-    /**
-     * Injected, not constructed by this class: a real Postgres
-     * `AnswerCorrectnessChecker` is explicitly BLOCKED (Phase 8 — see
-     * PERSISTENCE_IMPLEMENTATION_REPORT.md) because the `answer_options`/
-     * `correct_answer` JSON shape on `question_versions` is still an open
-     * content-format decision (`docs/DATABASE.md` §9), and guessing a
-     * shape now would silently make that product decision. Every OTHER
-     * repository below is a real Postgres adapter constructed internally;
-     * only this one port is supplied by the caller (a test double in
-     * integration tests today, a real adapter once the format is decided).
-     */
-    private readonly answerCorrectness: AnswerCorrectnessChecker,
-  ) {}
+  constructor(private readonly connectionProvider: ConnectionProvider) {}
 
   /**
    * BEGIN — run `fn` with repositories bound to this one transaction —
@@ -102,7 +88,7 @@ export class PostgresUnitOfWork implements UnitOfWork {
             acquireLearnerQuestionLock(db, userId, questionId),
           attempts: new PostgresAttemptRepository(db),
           progress: new PostgresUserQuestionProgressRepository(db),
-          answerCorrectness: this.answerCorrectness,
+          answerCorrectness: new PostgresAnswerCorrectnessChecker(db),
           questionVersions: new PostgresQuestionVersionRepository(db),
           todaySessions: new PostgresTodaySessionRepository(db),
         };

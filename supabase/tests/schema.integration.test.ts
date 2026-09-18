@@ -26,16 +26,29 @@
  */
 import { PGlite } from "@electric-sql/pglite";
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const MIGRATION_SQL = readFileSync(
-  path.join(dir, "../migrations/20260917203000_initial_schema.sql"),
-  "utf8",
-);
+const MIGRATIONS_DIR = path.join(dir, "../migrations");
+
+/**
+ * Applies EVERY migration in `supabase/migrations/`, in filename
+ * (timestamp-prefixed, so lexicographic === chronological) order — not
+ * just the first one. This is also what proves the full migration chain
+ * applies cleanly from an empty database; a second migration
+ * (`20260918000000_question_answer_model_v1.sql`, ADR-014) was added
+ * after this file was first written, and this loader was fixed to pick it
+ * up rather than silently continuing to test only the first migration in
+ * isolation.
+ */
+const MIGRATION_SQL = readdirSync(MIGRATIONS_DIR)
+  .filter((file) => file.endsWith(".sql"))
+  .sort()
+  .map((file) => readFileSync(path.join(MIGRATIONS_DIR, file), "utf8"))
+  .join("\n");
 
 let db: PGlite;
 
@@ -79,10 +92,13 @@ async function insertQuestionVersion(
   versionNumber = 1,
 ): Promise<string> {
   const id = randomUUID();
+  // ADR-014 shape: answer_options is an array of {id, content}; correct_answer
+  // is always an array of option ids (here, a single-entry SINGLE_CHOICE).
   await db.query(
     `insert into question_versions
-       (id, question_id, version_number, prompt, answer_options, correct_answer)
-     values ($1, $2, $3, 'Prompt?', '["A","B"]'::jsonb, '"A"'::jsonb)`,
+       (id, question_id, version_number, prompt, question_type, answer_options, correct_answer)
+     values ($1, $2, $3, 'Prompt?', 'SINGLE_CHOICE',
+       '[{"id":"a","content":"A"},{"id":"b","content":"B"}]'::jsonb, '["a"]'::jsonb)`,
     [id, questionId, versionNumber],
   );
   return id;

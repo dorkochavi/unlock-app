@@ -10,6 +10,7 @@ import {
   ASSISTANCE_TYPES,
   CONFIDENCE_LEVELS,
   type Attempt,
+  type SelectedAnswer,
 } from "../../domain/learning/types";
 import {
   MalformedRowError,
@@ -24,22 +25,34 @@ import {
 
 const TABLE = "attempts";
 
-/** `selected_answer` is `jsonb`, but the domain type only ever allows a
- * plain string, number, or null — never an array/object/boolean. */
-function readSelectedAnswer(
-  row: Record<string, unknown>,
-): string | number | null {
+/**
+ * `selected_answer` is `jsonb`. Per ADR-014, the domain `SelectedAnswer`
+ * shape is a single option id (`string`, SINGLE_CHOICE), a set of option
+ * ids (`string[]`, MULTIPLE_CHOICE), or `null` — never a bare number,
+ * object, or an array containing anything but strings.
+ */
+function readSelectedAnswer(row: Record<string, unknown>): SelectedAnswer {
   const value = row.selected_answer;
   if (value === null || value === undefined) {
     return null;
   }
-  if (typeof value === "string" || typeof value === "number") {
+  if (typeof value === "string") {
     return value;
+  }
+  if (Array.isArray(value)) {
+    if (value.every((entry) => typeof entry === "string")) {
+      return value;
+    }
+    throw new MalformedRowError(
+      TABLE,
+      "selected_answer",
+      `expected every array element to be a string option id, got ${JSON.stringify(value)}`,
+    );
   }
   throw new MalformedRowError(
     TABLE,
     "selected_answer",
-    `expected string, number, or null, got ${JSON.stringify(value)}`,
+    `expected a string option id, an array of string option ids, or null, got ${JSON.stringify(value)}`,
   );
 }
 

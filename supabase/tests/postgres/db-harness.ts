@@ -19,7 +19,7 @@
  */
 import { PGlite } from "@electric-sql/pglite";
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,10 +27,26 @@ import type { ConnectionProvider } from "../../../src/infrastructure/postgres/co
 import type { SqlExecutor } from "../../../src/infrastructure/postgres/sql-executor";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const MIGRATION_SQL = readFileSync(
-  path.join(dir, "../../migrations/20260917203000_initial_schema.sql"),
-  "utf8",
-);
+const MIGRATIONS_DIR = path.join(dir, "../../migrations");
+
+/**
+ * Applies EVERY migration in `supabase/migrations/`, in filename order —
+ * not just the first one. Filenames are timestamp-prefixed
+ * (`YYYYMMDDHHMMSS_name.sql`), so a plain lexicographic sort is already
+ * chronological order, matching how the real Supabase CLI / `supabase db
+ * push` applies them. Bug found and fixed while adding the second
+ * migration (`20260918000000_question_answer_model_v1.sql`, ADR-014):
+ * this harness originally hardcoded only the FIRST migration's filename,
+ * so every test seeding a `question_versions` row with the new
+ * `question_type` column failed against a database that had never
+ * actually been given that column — a real "does the full migration chain
+ * apply cleanly from empty" gap, not a data problem.
+ */
+const MIGRATION_SQL = readdirSync(MIGRATIONS_DIR)
+  .filter((file) => file.endsWith(".sql"))
+  .sort()
+  .map((file) => readFileSync(path.join(MIGRATIONS_DIR, file), "utf8"))
+  .join("\n");
 
 export async function createTestDb(): Promise<PGlite> {
   const db = new PGlite();
@@ -87,17 +103,44 @@ export async function insertQuestion(
   return id;
 }
 
+/**
+ * ADR-014 shape by default: `SINGLE_CHOICE`, options `A`/`B` (id === a
+ * short display label here, purely a fixture convenience — ids and
+ * content are independent per ADR-014), `A` correct. Matches the
+ * `selectedAnswer: "A"`/`"B"` convention already used throughout
+ * `submit-answer.test.ts`'s pre-existing (pre-ADR-014) fixtures. Pass
+ * `overrides` for a MULTIPLE_CHOICE version or a custom option set — see
+ * `answer-correctness-checker.test.ts` for real usage of both.
+ */
 export async function insertQuestionVersion(
   db: SqlExecutor,
   questionId: string,
   versionNumber = 1,
+  overrides: {
+    questionType?: "SINGLE_CHOICE" | "MULTIPLE_CHOICE";
+    options?: Array<{ id: string; content: string }>;
+    correctOptionIds?: string[];
+  } = {},
 ): Promise<string> {
   const id = randomUUID();
+  const questionType = overrides.questionType ?? "SINGLE_CHOICE";
+  const options = overrides.options ?? [
+    { id: "A", content: "Option A" },
+    { id: "B", content: "Option B" },
+  ];
+  const correctOptionIds = overrides.correctOptionIds ?? ["A"];
   await db.query(
     `insert into question_versions
-       (id, question_id, version_number, prompt, answer_options, correct_answer)
-     values ($1, $2, $3, 'Prompt?', '["A","B"]'::jsonb, '"A"'::jsonb)`,
-    [id, questionId, versionNumber],
+       (id, question_id, version_number, prompt, question_type, answer_options, correct_answer)
+     values ($1, $2, $3, 'Prompt?', $4, $5, $6)`,
+    [
+      id,
+      questionId,
+      versionNumber,
+      questionType,
+      JSON.stringify(options),
+      JSON.stringify(correctOptionIds),
+    ],
   );
   return id;
 }
@@ -113,12 +156,22 @@ export async function setCurrentVersion(
   ]);
 }
 
-/** One full valid chain: user, course, question, its current version. */
-export async function seedQuestionChain(db: SqlExecutor) {
+/** One full valid chain: user, course, question, its current version.
+ * Pass `versionOverrides` to seed a MULTIPLE_CHOICE version or a custom
+ * option set instead of the SINGLE_CHOICE A/B default. */
+export async function seedQuestionChain(
+  db: SqlExecutor,
+  versionOverrides: Parameters<typeof insertQuestionVersion>[3] = {},
+) {
   const userId = await insertUser(db);
   const courseId = await insertCourse(db, userId);
   const questionId = await insertQuestion(db, courseId);
-  const questionVersionId = await insertQuestionVersion(db, questionId);
+  const questionVersionId = await insertQuestionVersion(
+    db,
+    questionId,
+    1,
+    versionOverrides,
+  );
   await setCurrentVersion(db, questionId, questionVersionId);
   return { userId, courseId, questionId, questionVersionId };
 }

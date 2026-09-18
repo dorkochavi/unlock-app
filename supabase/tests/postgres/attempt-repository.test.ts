@@ -82,22 +82,22 @@ describe("PostgresAttemptRepository", () => {
     expect(stored.selectedAnswer).toBe("A");
   });
 
-  it("selectedAnswer round-trips exactly for string, number, and null", async () => {
+  it("selectedAnswer round-trips exactly for a single option id (SINGLE_CHOICE), a set of option ids (MULTIPLE_CHOICE), and null (ADR-014)", async () => {
     const chain = await seedQuestionChain(db);
 
-    const stringAnswer = buildAttempt({
+    const singleChoiceAnswer = buildAttempt({
       userId: chain.userId,
       courseId: chain.courseId,
       questionId: chain.questionId,
       questionVersionId: chain.questionVersionId,
       selectedAnswer: "A",
     });
-    const numberAnswer = buildAttempt({
+    const multipleChoiceAnswer = buildAttempt({
       userId: chain.userId,
       courseId: chain.courseId,
       questionId: chain.questionId,
       questionVersionId: chain.questionVersionId,
-      selectedAnswer: 2,
+      selectedAnswer: ["a", "c"],
     });
     const nullAnswer = buildAttempt({
       userId: chain.userId,
@@ -108,11 +108,13 @@ describe("PostgresAttemptRepository", () => {
     });
 
     const results = await Promise.all(
-      [stringAnswer, numberAnswer, nullAnswer].map((a) => repo.insertIfNotExists(a)),
+      [singleChoiceAnswer, multipleChoiceAnswer, nullAnswer].map((a) =>
+        repo.insertIfNotExists(a),
+      ),
     );
 
     expect(results[0].attempt.selectedAnswer).toBe("A");
-    expect(results[1].attempt.selectedAnswer).toBe(2);
+    expect(results[1].attempt.selectedAnswer).toEqual(["a", "c"]);
     expect(results[2].attempt.selectedAnswer).toBeNull();
   });
 
