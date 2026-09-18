@@ -823,6 +823,35 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     expect(institutionColumn.rows).toHaveLength(0);
   });
 
+  // -------------------------------------------------------------------------
+  // users.timezone — docs/OPEN_QUESTIONS.md #35, docs/DATABASE.md §26
+  // -------------------------------------------------------------------------
+
+  it("30. a newly-created user has a null timezone (no implied default)", async () => {
+    const userId = await insertUser();
+
+    const result = await db.query<{ timezone: string | null }>(
+      "select timezone from users where id = $1",
+      [userId],
+    );
+    expect(result.rows[0].timezone).toBeNull();
+  });
+
+  it("31. users.timezone accepts and round-trips an arbitrary text value (IANA validity is an application-layer concern, not a DB CHECK)", async () => {
+    const userId = await insertUser();
+
+    await db.query("update users set timezone = $2 where id = $1", [
+      userId,
+      "Asia/Jerusalem",
+    ]);
+
+    const result = await db.query<{ timezone: string | null }>(
+      "select timezone from users where id = $1",
+      [userId],
+    );
+    expect(result.rows[0].timezone).toBe("Asia/Jerusalem");
+  });
+
   it("RLS is enabled (not just declared) on every V1 table", async () => {
     const result = await db.query<{ relname: string; relrowsecurity: boolean }>(
       `select relname, relrowsecurity

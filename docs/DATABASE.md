@@ -677,19 +677,29 @@ Time zone matters for:
 - weekly analytics;
 - exam urgency.
 
-**V1 strategy — DECIDED, not yet implemented** (see
-`docs/OPEN_QUESTIONS.md` #35, now RESOLVED): store an IANA timezone
+**V1 strategy — DECIDED, persistence foundation IMPLEMENTED** (see
+`docs/OPEN_QUESTIONS.md` #35, RESOLVED): store an IANA timezone
 identifier on the user profile. Detect it automatically from the client on
 first registration / first relevant session, and persist it. After that,
 the persisted value is the server-side source of truth — DailyPlan local-day
 calculation uses the stored timezone, not a value recalculated from the
 current request/device on every request. Manual timezone editing in
 Settings may be added later; a full travel/timezone-change UX is not
-designed for V1. No column for this exists yet in the current schema/
-migration (`supabase/migrations/`) — this is a product decision pending
-implementation, not a claim that the column is already there.
+designed for V1.
 
-Status: DECIDED (direction); implementation OPEN
+`users.timezone` (nullable text, no implied default) is added by
+`supabase/migrations/20260920000000_user_timezone_v1.sql`; validity and
+canonical-form normalization are enforced at the application boundary
+(`src/domain/user/timezone.ts`, via the platform's own `Intl` IANA tzdata —
+no timezone library dependency added). A deterministic
+`deriveLocalDateString` utility (`src/domain/user/local-date.ts`) derives a
+`YYYY-MM-DD` local date from an instant + stored timezone. **Not yet
+implemented**: client-side first-session detection, and any DailyPlan code
+that actually calls this derivation — this slice is persistence +
+domain/application foundation only.
+
+Status: DECIDED; persistence/domain foundation IMPLEMENTED; client-side
+detection and DailyPlan usage OPEN
 
 ---
 

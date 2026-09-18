@@ -1,13 +1,15 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED** — three forward-only migrations exist,
+Status: **IMPLEMENTED** — four forward-only migrations exist,
 `supabase/migrations/20260917203000_initial_schema.sql` (the initial schema:
 PostgreSQL via Supabase, ADR-013),
 `supabase/migrations/20260918000000_question_answer_model_v1.sql` (adds
-`question_versions.question_type`, ADR-014), and
+`question_versions.question_type`, ADR-014),
 `supabase/migrations/20260919000000_course_membership_v1.sql` (adds
-`courses.join_policy` and `course_memberships`, ADR-015). All three are
-verified against a real PostgreSQL engine
+`courses.join_policy` and `course_memberships`, ADR-015), and
+`supabase/migrations/20260920000000_user_timezone_v1.sql` (adds
+`users.timezone`, `docs/OPEN_QUESTIONS.md` #35). All four are verified
+against a real PostgreSQL engine
 (`supabase/tests/schema.integration.test.ts`, `npm run test:schema`),
 applied in filename order; no later migration edits an earlier one. This
 document remains the design-contract companion to those migrations and to
@@ -64,12 +66,17 @@ profile row with `id` equal to the corresponding `auth.users.id` (1:1,
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | `id` | uuid | no | PK; conceptually `= auth.users.id` |
+| `timezone` | text | yes | IANA timezone identifier, `docs/OPEN_QUESTIONS.md` #35 (RESOLVED). `NULL` = not yet detected/persisted — never an implied default. No DB `CHECK`; validity/canonicalization is enforced at the application boundary (`src/domain/user/timezone.ts`). Added by `supabase/migrations/20260920000000_user_timezone_v1.sql` |
 | `created_at` | timestamptz | no | default `now()` |
 
 - **Unique constraints**: PK only.
-- **Mutable**: none beyond what Supabase Auth itself owns.
+- **Mutable**: `timezone` — detected client-side on first relevant session,
+  then server-authoritative (self-service write only, see
+  `src/application/user/set-user-timezone.ts`); nothing else beyond what
+  Supabase Auth itself owns.
 - **Source of truth**: identity only; `docs/DATABASE.md` §3 — "do not add
-  profile complexity unless required."
+  profile complexity unless required." `timezone` is the one accepted
+  exception (`docs/DATABASE.md` §26).
 - **User↔Course relationship**: decided at the product level by
   `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
   (`docs/OPEN_QUESTIONS.md` #1) and implemented by

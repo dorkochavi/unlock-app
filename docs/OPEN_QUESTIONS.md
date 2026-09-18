@@ -994,10 +994,19 @@ IANA timezone identifier (e.g. `Asia/Jerusalem`, `Europe/London`,
   `docs/TODAY_TIMEZONE_EDGE_CASES.md` for that separate, still-open
   analysis.
 
-**Not yet implemented.** No column exists on the user profile for this yet;
-no client-side detection or persistence code exists. This resolves the
-*source-of-truth model* (stored, server-authoritative, IANA identifier),
-not the schema/implementation itself.
+**Persistence/domain foundation IMPLEMENTED**: `users.timezone` (nullable
+text, no implied default) via
+`supabase/migrations/20260920000000_user_timezone_v1.sql`;
+validation/canonicalization (`src/domain/user/timezone.ts`) and a
+deterministic local-date derivation (`src/domain/user/local-date.ts`), both
+via the platform's own `Intl` IANA tzdata, no new dependency; read/write use
+cases in `src/application/user/`; `PostgresUserRepository`
+(`src/infrastructure/postgres/user-repository.ts`).
+
+**Still not implemented**: client-side first-session timezone detection,
+and any DailyPlan code that actually calls `deriveLocalDateString` — this
+slice resolves the *source-of-truth model and its persistence foundation*
+only, not client detection or DailyPlan's own local-day calculation.
 
 Target phase: Today / Database Design (implementation)
 
