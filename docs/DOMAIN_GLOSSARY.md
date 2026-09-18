@@ -122,22 +122,33 @@ Learner-specific mastery or progress must not be stored directly on the shared Q
 
 ---
 
-## 8. Answer Option
+## 8. QuestionVersion
 
-One possible response to a Question.
+An immutable content snapshot of a Question at one point in time (prompt, answer options, correct answer, explanation).
 
-The exact storage model for answer options remains TBD.
+Question is the stable logical identity; QuestionVersion is the frozen content the learner actually saw. Editing a Question's content (prompt, options, correct answer) always creates a new QuestionVersion — an existing QuestionVersion is never edited in place.
 
-Possible implementations include:
+An Attempt always references the exact QuestionVersion presented, not just the Question, so a historical Attempt remains interpretable even after the Question's content later changes.
 
-- normalized records;
-- structured JSON.
-
-Do not treat the storage choice as decided until the database design is approved.
+See ADR-009 (versioning decision) and ADR-014 (answer-content contract).
 
 ---
 
-## 9. Attempt
+## 9. Answer Option
+
+One possible response to a Question.
+
+Status: DECIDED for V1 — see ADR-014. Stored as structured JSON on
+QuestionVersion (`{id, content}`, display order meaningful and frozen), not
+a normalized table. V1 supports `SINGLE_CHOICE` (exactly one correct
+option) and `MULTIPLE_CHOICE` (one or more correct options, set equality);
+`TRUE_FALSE` is represented as a 2-option `SINGLE_CHOICE`, not a distinct
+type. Free text, essay, and other question formats remain out of scope for
+V1.
+
+---
+
+## 10. Attempt
 
 An immutable historical record of a learner answering a Question at a specific moment.
 
@@ -163,7 +174,7 @@ They must not be rewritten to represent current mastery or progress.
 
 ---
 
-## 10. UserQuestionProgress
+## 11. UserQuestionProgress
 
 The evolving learner-specific state associated with a Question.
 
@@ -173,11 +184,13 @@ UserQuestionProgress answers:
 
 Known signals include:
 
-- `mastery_level`
-- `next_review_date`
-- `misconception_hits`
-- `confidence_level`
-- `average_time_seconds`
+- `mastery_category`
+- `scheduled_review_at` (memory/scheduler state)
+- `misconception_state` / `misconception_score`
+- `average_response_time_seconds`
+
+`confidence_level` is recorded per-Attempt, not as a UserQuestionProgress
+field — there is no single "current confidence" value for a Question.
 
 Potential additional derived fields may be introduced only when justified.
 
@@ -185,7 +198,7 @@ UserQuestionProgress is not a replacement for Attempt history.
 
 ---
 
-## 11. Learner State
+## 12. Learner State
 
 UNLOCK's current estimate of the learner's learning condition.
 
@@ -208,7 +221,7 @@ It is not raw historical evidence.
 
 ---
 
-## 12. Learner State Brain
+## 13. Learner State Brain
 
 The conceptual intelligence boundary responsible for maintaining UNLOCK's best current estimate of what the learner knows.
 
@@ -223,7 +236,7 @@ A Brain is a capability boundary, not necessarily a separate service.
 
 ---
 
-## 13. Next Best Action
+## 14. Next Best Action
 
 The learning action UNLOCK currently believes should have the highest priority for the learner.
 
@@ -239,7 +252,7 @@ Next Best Action should be derived from approved deterministic learning logic in
 
 ---
 
-## 14. Next Best Action Brain
+## 15. Next Best Action Brain
 
 The conceptual intelligence boundary responsible for deciding what the learner should do next.
 
@@ -253,7 +266,7 @@ In V1:
 
 ---
 
-## 15. Learning Engine
+## 16. Learning Engine
 
 The deterministic domain logic responsible for transforming learning evidence and academic context into learner-state updates and learning priorities.
 
@@ -273,7 +286,7 @@ The exact V1 formulas must be based on validated prototype behavior where applic
 
 ---
 
-## 16. Today
+## 17. Today
 
 The primary recurring product experience of UNLOCK.
 
@@ -294,7 +307,7 @@ Today is not merely a random Quiz.
 
 ---
 
-## 17. Today Session
+## 18. Today Session
 
 A persisted instance of a learner's Today plan for the applicable learning period.
 
@@ -312,7 +325,7 @@ Do not silently regenerate the plan when persistence rules say the current sessi
 
 ---
 
-## 18. Today Session Item
+## 19. Today Session Item
 
 A prepared learning item inside a Today Session.
 
@@ -330,7 +343,7 @@ Quiz does not independently replace them with newly selected Questions in Today 
 
 ---
 
-## 19. Quiz
+## 20. Quiz
 
 The execution interface for presenting Questions and collecting learner responses.
 
@@ -346,7 +359,7 @@ Quiz is not responsible for deciding the adaptive Today plan.
 
 ---
 
-## 20. Review
+## 21. Review
 
 A later learner interaction with previously encountered content because the system believes another retrieval attempt is useful.
 
@@ -363,7 +376,7 @@ Review is broader than simply "repeat every X days."
 
 ---
 
-## 21. Spaced Repetition
+## 22. Spaced Repetition
 
 The principle of scheduling review across time instead of repeatedly studying the same material in one block.
 
@@ -371,17 +384,17 @@ In UNLOCK, spaced repetition contributes to learning priority but is not the who
 
 Known related field:
 
-- `next_review_date`
+- `scheduled_review_at` (UserQuestionProgress memory/scheduler state)
 
 ---
 
-## 22. Mastery
+## 23. Mastery
 
 An estimate of how strongly the learner currently controls a Question or concept.
 
 Known field:
 
-- `mastery_level`
+- `mastery_category`
 
 Mastery must not mean:
 
@@ -391,13 +404,13 @@ It should reflect evidence accumulated over time according to the approved Learn
 
 ---
 
-## 23. Misconception
+## 24. Misconception
 
 Evidence that a learner may hold an incorrect mental model rather than simply making an isolated mistake.
 
 Known related field:
 
-- `misconception_hits`
+- `misconception_state` / `misconception_score`
 
 A high-confidence incorrect answer may be particularly relevant to misconception detection.
 
@@ -405,7 +418,7 @@ The exact V1 logic must come from validated prototype behavior.
 
 ---
 
-## 24. Confidence
+## 25. Confidence
 
 The learner's expressed certainty about an answer or learning judgment.
 
@@ -424,13 +437,13 @@ Confidence should not be interpreted in isolation.
 
 ---
 
-## 25. Response Time
+## 26. Response Time
 
 The time required for a learner to answer a Question.
 
 Known related field:
 
-- `average_time_seconds`
+- `average_response_time_seconds`
 
 Response time is a supporting signal.
 
@@ -438,11 +451,12 @@ It must not be used alone to determine mastery.
 
 ---
 
-## 26. Exam Date
+## 27. Exam Date
 
 A date representing an upcoming exam that may influence learning priority.
 
-Current precedence concept:
+Status: OPEN — see `docs/OPEN_QUESTIONS.md` #2. Illustrative candidate
+precedence, not a settled rule:
 
 ```text
 personal_exam_date
@@ -452,15 +466,15 @@ shared/group/course exam date
 null
 ```
 
-A personal override takes precedence.
+A personal override, if this hierarchy is adopted, would take precedence.
 
 If no valid exam date exists, UNLOCK must not fabricate exam urgency.
 
-The exact V1 shared-date model must be finalized during database/domain design.
+The exact V1 shared-date model remains open and must be finalized during database/domain design.
 
 ---
 
-## 27. Exam Urgency
+## 28. Exam Urgency
 
 A deterministic priority signal that may increase the importance of relevant learning content as an exam approaches.
 
@@ -472,7 +486,7 @@ The exact V1 urgency formula remains TBD until approved.
 
 ---
 
-## 28. Exam Readiness
+## 29. Exam Readiness
 
 An estimate of how prepared a learner may be for an exam.
 
@@ -489,7 +503,7 @@ A precise-looking percentage must not be shown when evidence does not justify it
 
 ---
 
-## 29. Starter Experience
+## 30. Starter Experience
 
 The experience used when UNLOCK does not yet have enough learner evidence to create a meaningful adaptive plan.
 
@@ -506,7 +520,7 @@ Exact behavior must be defined before implementation.
 
 ---
 
-## 30. Diagnostic
+## 31. Diagnostic
 
 A structured learning interaction intended primarily to generate useful evidence about the learner's current knowledge.
 
@@ -516,7 +530,7 @@ It may be lightweight and integrated into onboarding.
 
 ---
 
-## 31. Basic Progress
+## 32. Basic Progress
 
 The minimum learner-facing progress experience required in V1.
 
@@ -534,7 +548,7 @@ It is not an advanced analytics dashboard.
 
 ---
 
-## 32. Material Provenance
+## 33. Material Provenance
 
 Information describing where learning content came from.
 
@@ -550,7 +564,7 @@ Provenance should only be stored when it has a defined product, quality, ownersh
 
 ---
 
-## 33. Verification State
+## 34. Verification State
 
 A traceable trust state for generated or reviewed content.
 
@@ -567,7 +581,7 @@ Verification state must not be inferred merely because AI produced the content.
 
 ---
 
-## 34. AI Verification
+## 35. AI Verification
 
 A separate verification step that evaluates AI-generated content against source evidence.
 
@@ -583,7 +597,7 @@ AI verification happens at content generation/approval time, not on every learne
 
 ---
 
-## 35. Brain
+## 36. Brain
 
 A conceptual intelligence capability boundary.
 
@@ -606,7 +620,7 @@ A Brain may be implemented as:
 
 ---
 
-## 36. Architecture-Ready
+## 37. Architecture-Ready
 
 A capability is architecture-ready when the current design avoids blocking its reasonable future addition.
 
@@ -623,7 +637,7 @@ A Course can later reference an Institution without requiring Institution functi
 
 ---
 
-## 37. Deferred
+## 38. Deferred
 
 A feature or capability intentionally excluded from the current V1 implementation.
 
@@ -637,7 +651,7 @@ Deferred does not mean forgotten.
 
 ---
 
-## 38. V1
+## 39. V1
 
 The smallest production-quality version of UNLOCK that validates the core adaptive learning loop.
 
@@ -664,7 +678,7 @@ User
 
 ---
 
-## 39. Architecture-Ready vs V1 Required vs Deferred
+## 40. Architecture-Ready vs V1 Required vs Deferred
 
 Every significant capability should be classified where useful.
 
@@ -684,7 +698,7 @@ Do not silently move a capability between these categories during implementation
 
 ---
 
-## 40. Canonical Naming Principle
+## 41. Canonical Naming Principle
 
 Use one canonical term for each domain concept.
 
@@ -700,6 +714,7 @@ Preferred terms include:
 - Course
 - Material
 - Question
+- QuestionVersion
 
 Do not create alternate names for the same concept without a documented reason.
 

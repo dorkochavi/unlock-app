@@ -333,7 +333,9 @@ Learning strategy and question presentation are separate responsibilities.
 
 Exam dates may influence learning priority.
 
-Effective precedence:
+Status: OPEN — see `docs/OPEN_QUESTIONS.md` #2. Whether a `group_exam_date`
+tier is needed at all in V1 (groups are deferred) is not yet decided.
+Illustrative candidate precedence, not a settled rule:
 
 ```text
 personal_exam_date
@@ -343,7 +345,7 @@ group_exam_date
 no exam date
 ```
 
-A personal exam date overrides a shared/group exam date.
+A personal exam date, if this hierarchy is adopted, would override a shared/group exam date.
 
 UNLOCK must never invent an exam date.
 

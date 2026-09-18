@@ -9,8 +9,8 @@
  * is valid, executable SQL that a real Postgres engine accepts.
  *
  * What this file does NOT and CANNOT prove (see `postgres-unit-of-work.ts`'s
- * own doc comment, and PERSISTENCE_IMPLEMENTATION_REPORT.md): that the
- * advisory lock actually BLOCKS a second, concurrent transaction. PGlite is
+ * own doc comment): that the advisory lock actually BLOCKS a second,
+ * concurrent transaction. PGlite is
  * a single in-process WASM engine with no second concurrent backend to
  * contend with — there is no meaningful way to open two truly concurrent
  * transactions against it. That specific property requires a real

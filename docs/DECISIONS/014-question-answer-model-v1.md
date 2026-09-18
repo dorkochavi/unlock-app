@@ -4,9 +4,9 @@ Status: ACCEPTED
 
 ## Context
 
-`PostgresAnswerCorrectnessChecker` has been blocked since the first Postgres
-infrastructure checkpoint (see `PERSISTENCE_IMPLEMENTATION_REPORT.md`)
-because `question_versions.answer_options`/`correct_answer` (`jsonb`,
+`PostgresAnswerCorrectnessChecker` has been blocked since the Postgres
+infrastructure checkpoint that implemented the other repository adapters
+(commit `f55da33`) because `question_versions.answer_options`/`correct_answer` (`jsonb`,
 `supabase/migrations/20260917203000_initial_schema.sql`) were deliberately
 left an "UNRESOLVED shape... simplest V1 placeholder" — `docs/DATABASE.md`
 §9 and `docs/PERSISTENCE_SCHEMA_V1.md`'s own `question_versions` section

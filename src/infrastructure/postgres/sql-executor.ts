@@ -1,9 +1,8 @@
 /**
  * Minimal SQL execution seam between the Postgres infrastructure adapters
  * in this directory and whatever actually runs a query — a real
- * node-postgres client/pool in production (not wired up yet — see ADR-013
- * and PERSISTENCE_IMPLEMENTATION_REPORT.md), or `@electric-sql/pglite` in
- * integration tests.
+ * node-postgres client/pool in production (not wired up yet — see ADR-013),
+ * or `@electric-sql/pglite` in integration tests.
  *
  * Deliberately NOT an ORM and not a query builder: every adapter in this
  * directory writes its own explicit, typed SQL text against this

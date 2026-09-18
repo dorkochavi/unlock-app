@@ -1,6 +1,10 @@
 # UNLOCK Learning Engine V1 — Design Draft 0.2
 
-Status: DESIGN CANDIDATE — ready to place in `docs/` after project review  
+Status: ADOPTED — committed design reference for the current Learning Engine
+implementation (`src/domain/learning/`); cited by ADR-008 and
+`docs/OPEN_QUESTIONS.md` #12. Individual sub-decisions it describes may
+still be open — see `docs/OPEN_QUESTIONS.md` for exact status per item.
+
 Scope: Learning Engine V1 only. This is not the full product roadmap.
 
 This version consolidates:

@@ -223,27 +223,33 @@ Status: DECIDED for V1 — see `docs/DECISIONS/009-question-versioning.md`.
 
 Question is the stable logical identity (`course_id`, `current_version_id` pointer, lifecycle metadata). QuestionVersion is a fully immutable content snapshot (prompt, options, correct answer, explanation). Editing content means inserting a new QuestionVersion and repointing `current_version_id` — an existing QuestionVersion any Attempt references is never mutated. `Attempt.question_version_id` always points at the exact version the learner saw.
 
+The exact answer-content shape a QuestionVersion holds (question type, options, correct answer) is decided separately — see §9 below and `docs/DECISIONS/014-question-answer-model-v1.md`.
+
 ---
 
 ## 9. Answer Options
 
-The exact V1 storage model is not yet decided.
+Status: DECIDED for V1 — see `docs/DECISIONS/014-question-answer-model-v1.md`.
 
-Possible implementations:
+`question_versions` carries a `question_type` column (`SINGLE_CHOICE` /
+`MULTIPLE_CHOICE`; `TRUE_FALSE` is represented as a 2-option
+`SINGLE_CHOICE`, not a distinct type) plus two structured-JSON columns:
+`answer_options` (`{id, content}[]`, display order meaningful and frozen at
+version-creation time) and `correct_answer` (`correctOptionIds: string[]`,
+one shared shape for both question types — `SINGLE_CHOICE` requires exactly
+one entry, `MULTIPLE_CHOICE` requires at least one; `MULTIPLE_CHOICE`
+correctness is set equality). No normalized `question_options` table was
+introduced — structured JSON on `question_versions` was chosen; deep
+JSON-shape validation happens in application/infrastructure code, not as a
+DB `CHECK`. Changing any of `question_type`/`answer_options`/`correct_answer`
+requires a new QuestionVersion (§8) — there is no in-place edit.
 
-- normalized `question_options` table;
-- structured JSON on Question/QuestionVersion.
+Free text, essay, numeric-tolerance, ordering, matching, fill-in-the-blank
+question types, and any free-text/LLM grading remain explicitly OUT OF
+SCOPE for V1 and are not addressed by this decision.
 
-Decision criteria should include:
-
-- simplicity;
-- validation;
-- ordering;
-- edit/version behavior;
-- future question formats;
-- query needs.
-
-Do not normalize automatically without a real need.
+Do not normalize into relational tables without a real query need structured
+JSON cannot serve (see ADR-014's "Alternatives Considered").
 
 ---
 

@@ -51,9 +51,9 @@ Auth wiring do not exist yet — see `docs/API_V1_DRAFT.md` for the prepared
   (a real gap found and fixed during this session: the test harnesses
   originally hardcoded only the first migration's filename).
 - The full real-Postgres integration suite (schema + infrastructure)
-  passes — see `PERSISTENCE_IMPLEMENTATION_REPORT.md` and
-  `QUESTION_MODEL_OVERNIGHT_REPORT.md` (both temporary, untracked) for
-  exact counts and per-area detail.
+  passes — see `npm run test:schema`'s own output for exact counts; the
+  test files themselves (`supabase/tests/schema.integration.test.ts`,
+  `supabase/tests/postgres/*.test.ts`) are the per-area detail.
 - RLS is confirmed ENABLED (via `pg_class.relrowsecurity`) on every table —
   actual allow/deny behavior under a simulated `anon`/`authenticated` role
   was NOT tested, since that requires Supabase's own Auth/role-switching

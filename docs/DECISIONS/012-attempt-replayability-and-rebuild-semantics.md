@@ -4,7 +4,7 @@ Status: ACCEPTED
 
 ## Context
 
-A prior review (`OVERNIGHT_REPORT.md`, not committed) found that
+A prior design review found that
 `ProgressUpdateContext.isSameLearningSession` — the flag
 `retrieval-qualification.ts` uses to decide whether a retrieval is "the
 same learning session/occasion as the previous qualifying retrieval" — was

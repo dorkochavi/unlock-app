@@ -414,7 +414,9 @@ Do not introduce mandatory multi-tenant institutional complexity into V1.
 
 Academic urgency may depend on an effective exam date.
 
-Resolution order:
+Status: OPEN — see `docs/OPEN_QUESTIONS.md` #2. The exact V1 hierarchy is
+not yet decided. Illustrative candidate resolution order, not a settled
+rule:
 
 ```text
 personal_exam_date
@@ -424,7 +426,7 @@ group_exam_date
 null
 ```
 
-The resolution should be implemented in one reusable domain location.
+Whatever hierarchy is finally decided should be implemented in one reusable domain location.
 
 Do not duplicate exam-precedence logic across UI components or database queries.
 

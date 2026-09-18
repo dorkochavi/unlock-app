@@ -366,11 +366,18 @@ Represents an assignment or deadline that may affect learning priority.
 
 # 8. Question model
 
-The initial core question type is multiple choice.
+V1 supports two question types — `SINGLE_CHOICE` (one correct option) and
+`MULTIPLE_CHOICE` (one or more correct options, evaluated by
+order-independent set equality) — see ADR-014
+(`docs/DECISIONS/014-question-answer-model-v1.md`). `TRUE_FALSE` is not a
+separate type: it is represented as a 2-option `SINGLE_CHOICE` question.
+Future question types (free text, essay, numeric, ordering, matching)
+remain out of scope for V1.
 
-A question may contain:
+A question version may contain:
 
 ```text
+question_type
 question_text
 answer_options
 correct_answer
@@ -382,7 +389,12 @@ created_by
 created_at
 ```
 
-The final storage model for answer options — normalized table vs structured JSON — remains **TBD** pending database design.
+Storage model — DECIDED, see ADR-014: `answer_options` and `correct_answer`
+are structured JSON on the immutable QuestionVersion, not a normalized
+table. `answer_options` is an ordered `{id, content}[]` array;
+`correct_answer` is `correctOptionIds: string[]` — one shared shape for both
+question types (exactly one id for `SINGLE_CHOICE`, one or more for
+`MULTIPLE_CHOICE`).
 
 Questions should be traceable to source material whenever possible.
 
@@ -1119,7 +1131,9 @@ Exact diagnostic logic is **TBD**, but the empty state cannot simply show:
 
 UNLOCK should support exam urgency.
 
-The currently defined precedence rule is:
+Status: OPEN — see `docs/OPEN_QUESTIONS.md` #2. Whether a `group_exam_date`
+tier is needed at all in V1 (groups are deferred) is not yet decided.
+Illustrative candidate precedence, not a settled rule:
 
 ```text
 personal_exam_date
@@ -1129,13 +1143,13 @@ group_exam_date
 null
 ```
 
-Meaning:
+Meaning, if this hierarchy is adopted:
 
 1. if the learner has a personal exam date override, use it;
 2. otherwise use the shared/group/course exam date;
 3. if no exam date exists, exam urgency should not be fabricated.
 
-This hierarchy must be represented in the data model.
+The final hierarchy, once decided, must be represented in the data model.
 
 ---
 
@@ -2422,7 +2436,6 @@ The following remain open and should be explicitly decided later:
 - final Supabase decision;
 - exact role permissions;
 - exact course/topic hierarchy constraints;
-- exact answer option storage model;
 - final Learning Engine formula;
 - mastery thresholds;
 - review interval algorithm;

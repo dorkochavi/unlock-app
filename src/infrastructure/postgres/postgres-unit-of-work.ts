@@ -55,8 +55,8 @@ import { PostgresTodaySessionRepository } from "./today-session-repository";
  * to contend with (`supabase/README.md`'s own "what pglite does not
  * prove" note, extended here to advisory locks specifically). Real
  * concurrent-blocking behavior requires a real multi-connection Postgres
- * instance — see PERSISTENCE_IMPLEMENTATION_REPORT.md's "real-Postgres
- * follow-up requirements" for the concrete test plan this implies.
+ * instance — see `supabase/README.md`'s "What was NOT verified" section
+ * for the concrete follow-up requirement this implies.
  */
 export async function acquireLearnerQuestionLock(
   db: TransactionExecutor,

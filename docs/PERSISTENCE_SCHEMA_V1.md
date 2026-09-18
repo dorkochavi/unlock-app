@@ -1,17 +1,23 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED** — the real first migration exists at
-`supabase/migrations/20260917203000_initial_schema.sql` (PostgreSQL via
-Supabase, ADR-013) and has been verified against a real PostgreSQL engine
-(`supabase/tests/schema.integration.test.ts`, `npm run test:schema`). This
-document remains the design-contract companion to that migration and to
-`docs/DATABASE.md` (conceptual data model) and
+Status: **IMPLEMENTED** — two forward-only migrations exist,
+`supabase/migrations/20260917203000_initial_schema.sql` (the initial schema:
+PostgreSQL via Supabase, ADR-013) and
+`supabase/migrations/20260918000000_question_answer_model_v1.sql` (adds
+`question_versions.question_type`, ADR-014). Both are verified against a
+real PostgreSQL engine (`supabase/tests/schema.integration.test.ts`,
+`npm run test:schema`), applied in filename order; the second migration
+does not edit the first. This document remains the design-contract
+companion to those migrations and to `docs/DATABASE.md` (conceptual data
+model) and
 `docs/DECISIONS/009-question-versioning.md` / `010-answer-submission-transaction-model.md`
 / `012-attempt-replayability-and-rebuild-semantics.md` / `013-supabase-postgresql-as-v1-persistence-provider.md`
-(the durable decisions this schema implements). Originally written during
-the overnight session that began at commit `ba3fc2f`; see
-`OVERNIGHT_REPORT.md` (repo root, not committed) for the audit that produced
-several of the constraints below.
+/ `014-question-answer-model-v1.md`
+(the durable decisions this schema implements). The composite-FK and
+CHECK-constraint choices below were produced by iterative adversarial
+review of this schema against the actual domain/application code; the
+migration files themselves and the cross-table invariant table below are
+the authoritative record of that reasoning.
 
 The implementation-detail choices this document was previously
 non-committal about are now DECIDED, in the migration itself: closed,
@@ -36,8 +42,7 @@ reverse.
   document to change.
 - Composite foreign keys are used in several places specifically to make an
   invariant a *database* guarantee rather than an application-only promise —
-  each one is called out with the specific risk it closes (found during the
-  Phase 2 audit in `OVERNIGHT_REPORT.md`).
+  each one is called out below with the specific risk it closes.
 - `ON DELETE RESTRICT` (the default assumed everywhere unless stated
   otherwise) is chosen over `CASCADE` wherever a cascade could silently
   destroy historical evidence or a frozen decision snapshot — consistent
@@ -160,7 +165,8 @@ Stable logical identity only — see ADR-009.
 
 ## `question_versions`
 
-Immutable content snapshot — see ADR-009. **Never updated after creation,
+Immutable content snapshot — see ADR-009 (versioning) and ADR-014
+(answer/question-type content contract). **Never updated after creation,
 never deleted.**
 
 | Column | Type | Nullable | Notes |
@@ -169,8 +175,9 @@ never deleted.**
 | `question_id` | uuid | no | FK → `questions.id`, `ON DELETE RESTRICT` |
 | `version_number` | int | no | monotonic per Question, for human readability only |
 | `prompt` | text | no | |
-| `answer_options` | jsonb | no | **UNRESOLVED shape** — `docs/DATABASE.md` §9 (normalized table vs. JSON) is still OPEN; JSONB used here as the simplest V1 placeholder, not a closure of that question |
-| `correct_answer` | jsonb | no | same shape caveat as `answer_options` |
+| `question_type` | text | no | `SINGLE_CHOICE` / `MULTIPLE_CHOICE`, `CHECK` constraint — DECIDED, ADR-014 §1. `TRUE_FALSE` is represented as a 2-option `SINGLE_CHOICE`, not a distinct type. Added by the second migration (`supabase/migrations/20260918000000_question_answer_model_v1.sql`): added nullable, backfilled to `SINGLE_CHOICE`, then set `NOT NULL` — no column default left behind, matching this schema's `users.id` precedent |
+| `answer_options` | jsonb | no | `AnswerOption[]` (`{id, content}[]`) — DECIDED, ADR-014 §2. Display order is meaningful and frozen at version-creation time |
+| `correct_answer` | jsonb | no | `correctOptionIds: string[]` — DECIDED, ADR-014 §2. One shape for both question types; per-type cardinality (exactly one for `SINGLE_CHOICE`, at least one for `MULTIPLE_CHOICE`) is an application-level rule, not a DB `CHECK` (deep JSON-shape validation is application/infrastructure code, per this schema's established style) |
 | `explanation` | text | yes | |
 | `created_at` | timestamptz | no | the only timestamp this table needs — **no `updated_at`**, since a version is never updated |
 
@@ -625,7 +632,6 @@ reasoning, stated explicitly rather than assumed.
 ## Explicitly unresolved in this document (not guessed)
 
 - `TodaySession.status`'s exact state machine (`docs/DATABASE.md` §17).
-- `answer_options`/`correct_answer` exact JSON shape (`docs/DATABASE.md` §9).
 - `Question.verification_state`'s exact enum (`docs/DATABASE.md` §24 lists
   candidates, not final values).
 - `Material.material_type`'s exact enum (no candidate list exists yet).

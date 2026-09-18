@@ -13,9 +13,9 @@
  * one. `TodaySessionRepository.createIfNotExists` is itself race-free
  * (ADR-010), so this file does not need its own additional locking for
  * the "two concurrent callers both try to create the same session" case —
- * see docs/PERSISTENCE_SCHEMA_V1.md's `today_sessions` section and
- * OVERNIGHT_REPORT.md audit finding #11 for why the INSERT ... ON CONFLICT
- * DO NOTHING pattern is race-free without an advisory lock here (unlike
+ * see docs/PERSISTENCE_SCHEMA_V1.md's `today_sessions` section for why the
+ * INSERT ... ON CONFLICT DO NOTHING pattern is race-free by Postgres's own
+ * unique-index insert semantics, without an advisory lock here (unlike
  * submitAnswer's first-Attempt race, which specifically needed one).
  */
 

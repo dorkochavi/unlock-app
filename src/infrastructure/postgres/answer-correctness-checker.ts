@@ -2,9 +2,9 @@
  * PostgreSQL implementation of `AnswerCorrectnessChecker`
  * (`src/application/learning/ports.ts`) — ADR-014.
  *
- * Previously blocked (see PERSISTENCE_IMPLEMENTATION_REPORT.md) pending a
- * decided `answer_options`/`correct_answer` shape; now implemented against
- * that decision.
+ * Previously blocked pending a decided `answer_options`/`correct_answer`
+ * shape (see ADR-014's Context section); now implemented against that
+ * decision.
  *
  * Deliberately thin: this class only loads and validates a persisted
  * `QuestionAnswerDefinition`, then delegates the actual correctness

@@ -29,9 +29,13 @@ domain → application → infrastructure → runtime/API
 
 - Next.js 16 + TypeScript, App Router.
 - PostgreSQL via Supabase (ADR-013); modular monolith (ADR-001).
+- Course does not require an Institution (ADR-006); cost-efficient by default (ADR-007).
 - Hebrew/RTL product, English internals (ADR-002).
+- FSRS-family memory scheduler behind a `MemoryScheduler` interface (ADR-008).
 - Today is course-scoped in V1 (ADR-011).
 - Attempts are immutable historical evidence (ADR-005); QuestionVersion is immutable (ADR-009).
+- `submitAnswer` runs as one transaction with an advisory lock + idempotency
+  key on `(user_id, submission_id)` (ADR-010).
 - Replay/rebuild uses the persisted `Attempt.isCorrect` — never re-grades history (ADR-012).
 - V1 question types: `SINGLE_CHOICE` + `MULTIPLE_CHOICE` only; `TRUE_FALSE` is a
   2-option `SINGLE_CHOICE`, not a distinct type; `selectedAnswer` semantics per ADR-014.
