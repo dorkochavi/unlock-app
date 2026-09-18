@@ -439,7 +439,7 @@ Potential statuses may include:
 
 Exact status model belongs in the Today feature contract.
 
-Uniqueness (DECIDED for V1 — see `docs/DECISIONS/011-today-is-course-scoped-v1.md`): `UNIQUE (user_id, course_id, planned_for_date)`. UNLOCK V1 Today is course-scoped — a learner with multiple active Courses may have multiple TodaySession rows for the same date, one per Course. Global cross-course Today is deferred beyond V1. `getOrCreateTodaySession` is an `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT`, never a check-then-insert race — this is the mechanism that makes "the same session resumes" reliable. `planned_for_date` is a caller-supplied date; no timezone/day-boundary logic exists in the domain or persistence layer (`docs/OPEN_QUESTIONS.md` #3 remains open).
+Uniqueness (implemented, per `docs/DECISIONS/011-today-is-course-scoped-v1.md`): `UNIQUE (user_id, course_id, planned_for_date)`. This remains the actual implemented schema today — a learner with multiple active Courses may have multiple TodaySession rows for the same date, one per Course. At the product/architecture level this is now partially superseded: `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md` (ACCEPTED) establishes one DailyPlan/DailyPlanItem per user per local day, with Course Today and Global Today as filtered views of that same plan — DECIDED, but not yet migrated; `today_sessions`/`today_session_items` remain the implemented tables until that migration happens. `getOrCreateTodaySession` is an `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT`, never a check-then-insert race — this is the mechanism that makes "the same session resumes" reliable. `planned_for_date` is a caller-supplied date; no timezone/day-boundary logic exists in the domain or persistence layer (`docs/OPEN_QUESTIONS.md` #3 remains open).
 
 ---
 
@@ -1155,7 +1155,7 @@ Before writing the real V1 schema, resolve at minimum:
 2. V1 exam-date hierarchy — OPEN
 3. Question editing/version strategy — DECIDED, see docs/DECISIONS/009-question-versioning.md
 4. Course structure depth — OPEN
-5. Today scope: one Course or multiple Courses — DECIDED for V1 (course-scoped), see docs/DECISIONS/011-today-is-course-scoped-v1.md. Global cross-course Today deferred beyond V1
+5. Today scope: one Course or multiple Courses — implemented schema is course-scoped (ADR-011, see docs/DECISIONS/011-today-is-course-scoped-v1.md); at the product/architecture level this is now partially superseded by docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md (ACCEPTED): one DailyPlan/DailyPlanItem per user per local day, Course Today and Global Today as filtered views. DECIDED, not yet migrated
 6. Today session boundary/timezone behavior — OPEN (domain/persistence layer accepts an already-resolved logical date regardless)
 7. aggregate Learner State persistence — OPEN
 8. selected Next Best Action persistence strategy (persist only the chosen decision, not every candidate) — DECIDED, see docs/DECISIONS/010-answer-submission-transaction-model.md

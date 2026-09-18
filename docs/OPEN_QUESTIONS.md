@@ -145,7 +145,11 @@ Need to define:
 - re-entry behavior if needed;
 - insufficient-content behavior.
 
-Status: OPEN
+Status: OPEN. Note: `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
+(ADR-016 §13, ACCEPTED) resolved the *framing* question of whether New
+Material Exposure and Starter Experience are one mechanism family or two —
+they are one family, Exposure is an extension of Starter. That does **not**
+decide this question's actual eligibility thresholds; this remains OPEN.
 
 Target phase: Starter Feature Contract
 
@@ -170,7 +174,10 @@ Constraint:
 
 Do not pretend adaptive personalization exists before evidence is collected.
 
-Status: OPEN
+Status: OPEN. Note: ADR-016 §13 (ACCEPTED) frames this sampling question as
+applying to the broader Starter/New-Material-Exposure mechanism family, not
+only Course-level Starter — the sampling strategy itself remains
+undecided.
 
 Target phase: Starter Feature Contract
 
@@ -835,20 +842,35 @@ This decision affects:
 - session model;
 - KPI interpretation.
 
-Status: RESOLVED for V1 — see `docs/DECISIONS/011-today-is-course-scoped-v1.md`.
+Status: RESOLVED — see
+`docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
+(ADR-016, ACCEPTED), superseding the ADR-011 answer below at the target-
+architecture level.
 
-V1 answer: generated separately per Course. `TodaySession` is keyed by
-`(user_id, course_id, planned_for_date)`; a learner with multiple active
-Courses may have multiple Today sessions on the same date. Global
-cross-course Today remains a possible future extension, not decided or
-built now.
+**Current accepted answer (ADR-016):** Today is global at the persistence
+level — one `DailyPlan` per learner per local day, composed of
+`DailyPlanItem`s. Course Today and Global Today are *views* over that one
+plan (Course Today filters by `courseId`); they are not independently
+generated. This also resolves the UI-treatment and KPI-interpretation
+questions this entry previously left open: completing an item through
+either view resolves the same underlying item (no per-view state to
+reconcile), and one `DailyPlan` counts once toward the primary
+Today-completion KPI regardless of which view(s) resolved it (ADR-016 §21,
+§22).
 
-Still open, not addressed by ADR-011: UI treatment when a learner has
-multiple Courses (how multiple per-Course sessions are presented/switched
-between) and KPI interpretation across Courses — these belong to the Today
-Feature Contract when it exists.
+**Not yet implemented.** No migration exists for `DailyPlan`/
+`DailyPlanItem`. `today_sessions`/`today_session_items`, keyed by
+`(user_id, course_id, planned_for_date)` per ADR-011, remain the actually
+implemented V1 schema today.
 
-Target phase: Today Feature Contract
+**Historical V1 answer (ADR-011, now superseded as target architecture,
+still describes the implemented schema):** generated separately per
+Course. `TodaySession` is keyed by `(user_id, course_id, planned_for_date)`;
+a learner with multiple active Courses may have multiple Today sessions on
+the same date.
+
+Target phase: Today Feature Contract (implementation, per
+`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`)
 
 ---
 
@@ -1013,7 +1035,15 @@ Possible protections may include:
 - transaction-level guard;
 - application-level duplicate protection.
 
-Status: OPEN
+Status: OPEN. Note: the specific sub-case of a new Today answer attempt
+against an already-resolved (COMPLETED/SKIPPED) `DailyPlanItem`/
+`TodaySessionItem` is now decided — it must be rejected as a conflict, not
+silently accepted as a duplicate or a new Attempt (ADR-016 §19,
+`docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`). The
+general idempotency question (double-click, refresh, network replay
+against a still-pending item) remains OPEN; ADR-010's submissionId-based
+idempotency addresses technical retries of the *same* submission, not this
+broader question.
 
 Target phase: Quiz / Today / Database Design
 

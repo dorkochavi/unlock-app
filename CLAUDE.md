@@ -32,7 +32,7 @@ domain → application → infrastructure → runtime/API
 - Course does not require an Institution (ADR-006); cost-efficient by default (ADR-007).
 - Hebrew/RTL product, English internals (ADR-002).
 - FSRS-family memory scheduler behind a `MemoryScheduler` interface (ADR-008).
-- Today is course-scoped in V1 (ADR-011).
+- Today's persisted, implemented substrate is still `TodaySession`/course-scoped (ADR-011); ADR-016 (ACCEPTED) supersedes ADR-011's product-level framing with one DailyPlan/DailyPlanItem per user per local day, of which Course Today is a filtered view — DECIDED, not yet migrated/implemented.
 - Attempts are immutable historical evidence (ADR-005); QuestionVersion is immutable (ADR-009).
 - `submitAnswer` runs as one transaction with an advisory lock + idempotency
   key on `(user_id, submission_id)` (ADR-010).

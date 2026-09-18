@@ -424,8 +424,13 @@ decided).
   course-scoped. `course_id uuid NOT NULL REFERENCES courses(id)` +
   `UNIQUE (user_id, course_id, planned_for_date)`. A learner with multiple
   active Courses may have multiple `today_sessions` rows for the same
-  date, one per Course. Global cross-course Today is deferred beyond V1 —
-  not designed further here.
+  date, one per Course. This remains the actual implemented schema today.
+  At the product/architecture level this is now partially superseded by
+  `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
+  (ACCEPTED): one DailyPlan/DailyPlanItem per user per local day, with
+  Course Today and Global Today as filtered views of that same plan —
+  DECIDED, but no migration exists yet; `today_sessions`/
+  `today_session_items` remain the implemented tables until it does.
 - `getOrCreateTodaySession` is implemented as `INSERT ... ON CONFLICT DO
   NOTHING RETURNING` against this key, with a fallback `SELECT` — race-free
   by Postgres's own unique-index insert semantics (verified by hand-tracing
