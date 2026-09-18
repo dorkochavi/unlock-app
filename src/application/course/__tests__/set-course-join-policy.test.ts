@@ -75,6 +75,38 @@ describe("setCourseJoinPolicy", () => {
     expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
   });
 
+  // ADR-015 §9: archive is per-user learning-participation state, independent
+  // of §7's access/management facts — an archived (but not revoked) OWNER or
+  // INSTRUCTOR retains full management capability over the Course.
+  it("allows an archived-but-not-revoked OWNER to change joinPolicy", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "AUTHORIZED_ONLY");
+    seedActor(db, { role: "OWNER", archivedAt: new Date("2026-02-01T00:00:00Z") });
+
+    const result = await setCourseJoinPolicy(
+      { actorUserId: "actor-1", courseId: "course-1", joinPolicy: "OPEN" },
+      db.repos(),
+    );
+
+    expect(result).toEqual({ outcome: "UPDATED", joinPolicy: "OPEN" });
+  });
+
+  it("allows an archived-but-not-revoked INSTRUCTOR to change joinPolicy", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "AUTHORIZED_ONLY");
+    seedActor(db, {
+      role: "INSTRUCTOR",
+      archivedAt: new Date("2026-02-01T00:00:00Z"),
+    });
+
+    const result = await setCourseJoinPolicy(
+      { actorUserId: "actor-1", courseId: "course-1", joinPolicy: "OPEN" },
+      db.repos(),
+    );
+
+    expect(result).toEqual({ outcome: "UPDATED", joinPolicy: "OPEN" });
+  });
+
   it("does not allow a non-member to change joinPolicy", async () => {
     const db = new InMemoryCourseDatabase();
     db.seedCourse("course-1", "AUTHORIZED_ONLY");

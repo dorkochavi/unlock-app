@@ -40,7 +40,7 @@ Decision should support:
 - clear authorization;
 - simple V1 implementation.
 
-Status: **DECIDED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
+Status: **DECIDED AND IMPLEMENTED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
 V1 uses an explicit `CourseMembership` relationship (`userId`, `courseId`,
 `role`, `joinedAt`, `revokedAt`, `archivedAt`) with three roles (`OWNER`,
 `INSTRUCTOR`, `LEARNER`) and a per-Course join policy (`AUTHORIZED_ONLY`
@@ -49,7 +49,15 @@ authorization by itself. Institution/enrollment-provisioning remains
 architecture-ready, not built now (ADR-006 unaffected). The exact
 authorization source for `AUTHORIZED_ONLY` Courses, lecturer-vs-institution
 content ownership, and the real persistence/RLS implementation remain
-separately open — see ADR-015's own "Explicitly deferred" section.
+separately open — see ADR-015's own "Explicitly deferred" section, and
+Open Question #43 for edge cases the implementation deliberately does not
+guess at.
+
+Implemented by `supabase/migrations/20260919000000_course_membership_v1.sql`,
+`src/domain/course/`, `src/application/course/`, and the
+`PostgresCourseRepository`/`PostgresCourseMembershipRepository` pair in
+`src/infrastructure/postgres/`. Auth wiring and real RLS policies remain
+unimplemented.
 
 Target phase: Domain Contracts / Database Design
 
@@ -1176,3 +1184,45 @@ Use this file for questions that materially affect:
 - V1 scope.
 
 Minor implementation details can be resolved locally in code review.
+
+---
+
+## 43. Course Membership Revocation/Rejoin Edge Cases
+
+Question:
+
+Three concrete behaviors were surfaced while hardening the ADR-015
+implementation (`src/application/course/`) and are not decided by ADR-015
+itself. Current code takes the conservative, non-access-granting path in
+each case; none of the following is a guessed-at product decision:
+
+1. **Rejoin after revoke.** If a previously-revoked `CourseMembership`
+   attempts to self-join an `OPEN` Course again, `joinCourse`'s
+   `createMembership` is `INSERT ... ON CONFLICT (user_id, course_id) DO
+   NOTHING` — it returns the pre-existing (still-revoked) row with outcome
+   `ALREADY_MEMBER`. Access is never silently restored. What is undecided:
+   whether a revoked user should be able to rejoin an `OPEN` Course at all,
+   and if so, through what mechanism (self-service reactivation vs.
+   management-only `un-revoke`) and under what outcome label.
+2. **Last-management-member self-revocation.** `revokeCourseMembership`
+   does not prevent a sole `OWNER`/`INSTRUCTOR` from revoking their own
+   management membership, which can leave a Course with zero management
+   members. What is undecided: whether this should be prevented, and if
+   so, how "last manager" is even defined (e.g. does a revoked-but-not-yet-
+   replaced `OWNER` count?).
+3. **Repeated revoke/archive timestamp semantics.** Calling `revoke` (or
+   `setArchived`) again on an already-revoked (or already-archived)
+   membership unconditionally overwrites the timestamp with the new call's
+   value — there is no "first revocation/archive wins" guarantee. This is
+   harmless to the boolean access/archive fact (still revoked/archived
+   either way) but not a designed audit-trail guarantee. What is
+   undecided: whether the first timestamp should be preserved for audit
+   purposes.
+
+Current behavior for all three is pinned by tests
+(`src/application/course/__tests__/`) so it does not silently drift, but
+none of the three is a resolved product decision.
+
+Status: OPEN
+
+Target phase: Course Membership / ADR-015 follow-up

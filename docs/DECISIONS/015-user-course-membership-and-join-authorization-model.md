@@ -274,6 +274,42 @@ scope requires distinguishing an institution-level manager from a single
 Course's `OWNER`/`INSTRUCTOR`. Deferred as architecture-ready, not built now,
 consistent with ADR-006's treatment of Institution itself.
 
+## Addendum (Implementation Hardening)
+
+Recorded alongside the implementation-hardening pass over
+`src/application/course/` (migration, domain, application, and
+Postgres-infrastructure layers all now exist). Both points below are
+clarifications of intent already implied by the Decision above, not new
+decisions:
+
+- **`CourseMembership.role = OWNER` is the authorization source of truth**
+  for Course management. `courses.owner_user_id` remains creator/legacy
+  metadata only, per §12's already-decided separation of "Course ownership"
+  from "Course management permission" — it must not independently grant
+  management authorization, and no application code path
+  (`src/application/course/set-course-join-policy.ts`,
+  `revoke-course-membership.ts`) reads it for that purpose; both check only
+  a non-revoked management `CourseMembership`.
+- **`AUTHORIZED_ONLY` self-join fails closed unconditionally in V1**: with
+  no eligibility mechanism decided (§5), `canSelfJoin`
+  (`src/domain/course/types.ts`) returns `false` for `AUTHORIZED_ONLY`
+  Courses with no exceptions — this is deliberate, not a placeholder bug,
+  and requires a real future decision (not a code change alone) to open up.
+- **Archived-but-not-revoked management members retain management
+  rights.** Archive (§9) is per-user and affects only that user's active
+  learning participation; it was never intended to affect a management
+  role's ability to manage a Course. `setCourseJoinPolicy` and
+  `revokeCourseMembership` already only check `revokedAt`, never
+  `archivedAt`, for this reason — pinned by tests in
+  `src/application/course/__tests__/`.
+- Three genuinely undecided edge cases surfaced during this pass (revoked-
+  membership rejoin outcome semantics, last-management-member
+  self-revocation, repeated revoke/archive timestamp overwrite semantics)
+  are **not resolved here** — see `docs/OPEN_QUESTIONS.md` #43. Current
+  code takes the conservative, non-access-granting path in each case and
+  that behavior is pinned by tests, but none of the three is a product
+  decision.
+
 ## Related Documents
 
 - `docs/OPEN_QUESTIONS.md` #1 (resolved by this ADR)

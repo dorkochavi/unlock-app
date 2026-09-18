@@ -1,18 +1,20 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED** — two forward-only migrations exist,
+Status: **IMPLEMENTED** — three forward-only migrations exist,
 `supabase/migrations/20260917203000_initial_schema.sql` (the initial schema:
-PostgreSQL via Supabase, ADR-013) and
+PostgreSQL via Supabase, ADR-013),
 `supabase/migrations/20260918000000_question_answer_model_v1.sql` (adds
-`question_versions.question_type`, ADR-014). Both are verified against a
-real PostgreSQL engine (`supabase/tests/schema.integration.test.ts`,
-`npm run test:schema`), applied in filename order; the second migration
-does not edit the first. This document remains the design-contract
-companion to those migrations and to `docs/DATABASE.md` (conceptual data
-model) and
+`question_versions.question_type`, ADR-014), and
+`supabase/migrations/20260919000000_course_membership_v1.sql` (adds
+`courses.join_policy` and `course_memberships`, ADR-015). All three are
+verified against a real PostgreSQL engine
+(`supabase/tests/schema.integration.test.ts`, `npm run test:schema`),
+applied in filename order; no later migration edits an earlier one. This
+document remains the design-contract companion to those migrations and to
+`docs/DATABASE.md` (conceptual data model) and
 `docs/DECISIONS/009-question-versioning.md` / `010-answer-submission-transaction-model.md`
 / `012-attempt-replayability-and-rebuild-semantics.md` / `013-supabase-postgresql-as-v1-persistence-provider.md`
-/ `014-question-answer-model-v1.md`
+/ `014-question-answer-model-v1.md` / `015-user-course-membership-and-join-authorization-model.md`
 (the durable decisions this schema implements). The composite-FK and
 CHECK-constraint choices below were produced by iterative adversarial
 review of this schema against the actual domain/application code; the
@@ -70,9 +72,10 @@ profile row with `id` equal to the corresponding `auth.users.id` (1:1,
   profile complexity unless required."
 - **User↔Course relationship**: decided at the product level by
   `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
-  (`docs/OPEN_QUESTIONS.md` #1). This table does not itself implement that
-  decision — see `courses` below; the concrete `CourseMembership` migration
-  remains future work.
+  (`docs/OPEN_QUESTIONS.md` #1) and implemented by
+  `supabase/migrations/20260919000000_course_membership_v1.sql` — see
+  `courses` and `course_memberships` below. This table itself carries no
+  new column for the relationship; `course_memberships` is where it lives.
 
 ---
 
@@ -83,30 +86,96 @@ profile row with `id` equal to the corresponding `auth.users.id` (1:1,
 | `id` | uuid | no | PK |
 | `owner_user_id` | uuid | no | FK → `users.id`, `ON DELETE RESTRICT` |
 | `title` | text | no | |
+| `join_policy` | text | no | `AUTHORIZED_ONLY` (default) / `OPEN`, `CHECK` constraint — ADR-015 §3. Added by `supabase/migrations/20260919000000_course_membership_v1.sql` |
 | `created_at` | timestamptz | no | |
 | `updated_at` | timestamptz | no | |
 
 - **Unique constraints**: none beyond PK.
-- **Mutable**: `title`, `updated_at` — shared content metadata, safe to edit
-  in place (`docs/DECISIONS/009-question-versioning.md`'s immutability
-  principle applies to *Question content*, not Course metadata).
+- **Mutable**: `title`, `join_policy`, `updated_at` — shared content
+  metadata, safe to edit in place
+  (`docs/DECISIONS/009-question-versioning.md`'s immutability principle
+  applies to *Question content*, not Course metadata). `join_policy` writes
+  are gated at the application layer to a management `CourseMembership`
+  (OWNER/INSTRUCTOR, non-revoked) on that specific Course — see
+  `course_memberships` below — not by a DB constraint (same
+  physical-integrity-vs-authorization-policy division as every other table
+  here).
 - **Delete behavior**: not addressed; no code path deletes a Course in V1.
 - **Source of truth**: shared content (`docs/DATABASE.md` §2).
-- **User↔Course relationship — decided, not yet implemented**:
+- **User↔Course relationship — DECIDED and IMPLEMENTED**:
   `docs/OPEN_QUESTIONS.md` #1 is resolved by
-  `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`:
-  V1 uses an explicit `CourseMembership` relationship (conceptual fields
-  `userId`, `courseId`, `role`, `joinedAt`, `revokedAt`, `archivedAt`) with
-  three roles (`OWNER`, `INSTRUCTOR`, `LEARNER`) and a per-Course join
-  policy (`AUTHORIZED_ONLY` default, or `OPEN` — settable only by an
-  `OWNER`/`INSTRUCTOR`; a QR/link is never authorization by itself). None of
-  this is implemented by this document or any migration yet — `owner_user_id`
-  remains as the minimum field that made this table concrete before that
-  decision existed, and whether it is retired in favor of a `role = OWNER`
-  membership row or kept alongside `course_memberships` is itself left open
-  by ADR-015. The exact authorization source for an `AUTHORIZED_ONLY` Course
-  also remains open (ADR-015 §5).
+  `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
+  and implemented by `supabase/migrations/20260919000000_course_membership_v1.sql`
+  — see `course_memberships` below. `owner_user_id` is **unaffected by
+  ADR-015 and remains as creator/legacy metadata only**: `CourseMembership
+  .role = OWNER` is the authorization source of truth for Course
+  management (checked by every application-layer use case in
+  `src/application/course/` via `isManagementRole`); `owner_user_id` must
+  **not** independently grant management authorization, and no current code
+  path reads it for that purpose. Whether `owner_user_id` is retired in a
+  future migration remains open (ADR-015 §1, §12) — this is a documentation
+  clarification of already-accepted intent, not a new decision or a schema
+  change. The exact authorization source for an `AUTHORIZED_ONLY` Course
+  also remains open (ADR-015 §5); until it exists, self-join against an
+  `AUTHORIZED_ONLY` Course fails closed (`NOT_AUTHORIZED`) unconditionally —
+  see `canSelfJoin` (`src/domain/course/types.ts`) — not a bug, a
+  deliberate dead end pending that future decision.
 - No `institution_id` (ADR-006).
+
+---
+
+## `course_memberships`
+
+The single explicit User↔Course relationship (ADR-015 §1) — there is no
+other path to Course access. Added by
+`supabase/migrations/20260919000000_course_membership_v1.sql`.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | uuid | no | PK |
+| `user_id` | uuid | no | FK → `users.id`, `ON DELETE RESTRICT` |
+| `course_id` | uuid | no | FK → `courses.id`, `ON DELETE RESTRICT` |
+| `role` | text | no | `OWNER` / `INSTRUCTOR` / `LEARNER`, `CHECK` constraint — ADR-015 §2 |
+| `joined_at` | timestamptz | no | default `now()` |
+| `revoked_at` | timestamptz | yes | `null` = has access; non-null = access revoked (ADR-015 §7) |
+| `archived_at` | timestamptz | yes | `null` = participates in this learner's active learning set; non-null = excluded from automatic Today for this learner only, still accessible/manually-practiceable (ADR-015 §7, §9) |
+| `created_at` | timestamptz | no | |
+
+- **Unique constraints**: `UNIQUE (user_id, course_id)` — at most one
+  membership row per user per Course; also what makes `joinCourse`
+  race-free by construction (`INSERT ... ON CONFLICT (user_id, course_id)
+  DO NOTHING RETURNING`, mirroring `today_sessions.createIfNotExists`'s own
+  established pattern), never a check-then-insert race.
+- **Mutable**: `revoked_at`, `archived_at` — independent facts, never
+  conflated (ADR-015 §7); each is a single conditional `UPDATE`. `role` is
+  not currently mutated by any application code path (no "promote/demote a
+  member" use case exists yet — out of scope for this slice).
+- **Delete behavior**: never deleted by any application code path.
+  Revoking sets `revoked_at`; it does not delete the row, and it never
+  touches `attempts`/`user_question_progress` (ADR-015 §8 — learner history
+  durability extends to the membership boundary).
+- **Source of truth**: access/authorization state
+  (`docs/DATABASE.md` §28).
+- **Known open follow-ups (not decided by ADR-015, not guessed at by this
+  implementation — see `docs/OPEN_QUESTIONS.md` #43)**:
+  - Rejoin semantics for a previously-revoked membership: `joinCourse`'s
+    `createMembership` is `INSERT ... ON CONFLICT DO NOTHING`, so a second
+    join attempt against an existing (possibly revoked) row returns
+    `ALREADY_MEMBER` with that row as-is — access is never silently
+    restored by self-join, but the `ALREADY_MEMBER` outcome label for a
+    still-revoked membership is not a designed product signal, just the
+    conservative (non-access-granting) consequence of the current
+    idempotent-insert shape.
+  - Last-management-member self-revocation: `revokeCourseMembership` does
+    not special-case `targetUserId === actorUserId`, nor does it check
+    whether the target is the Course's only remaining OWNER/INSTRUCTOR — a
+    sole manager can currently revoke their own management access, leaving
+    the Course with zero management members. No product decision exists on
+    whether this should be prevented.
+  - Repeated `revoke`/`setArchived` calls unconditionally overwrite
+    `revoked_at`/`archived_at` with the new timestamp (not a no-op once
+    already set) — harmless to the boolean access/archive fact either way,
+    but not a designed "first revocation wins" audit guarantee.
 
 ---
 

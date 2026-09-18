@@ -119,20 +119,31 @@ Institution support may be added later.
 
 ## 5. User ↔ Course Relationship
 
-Status: **DECIDED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
+Status: **DECIDED AND IMPLEMENTED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
 
 V1 uses an explicit `CourseMembership` relationship (conceptual fields:
 `userId`, `courseId`, `role`, `joinedAt`, `revokedAt`, `archivedAt`) with
 three roles (`OWNER`, `INSTRUCTOR`, `LEARNER`) and a per-Course join policy
 (`AUTHORIZED_ONLY` default, `OPEN` settable only by a management role).
-`courses.owner_user_id` is unaffected. This does not introduce full
-institutional enrollment complexity — Institution/enrollment provisioning
-remains architecture-ready, not built now (ADR-006 unaffected).
+`courses.owner_user_id` is unaffected by ADR-015 and remains creator/legacy
+metadata only — `CourseMembership.role = OWNER` (non-revoked) is the
+authorization source of truth for Course management; `owner_user_id` must
+not independently grant management authorization. This does not introduce
+full institutional enrollment complexity — Institution/enrollment
+provisioning remains architecture-ready, not built now (ADR-006
+unaffected).
 
-The concrete migration (table/column names, types, constraints) is not
-written by ADR-015 and remains future implementation work.
+Implemented by `supabase/migrations/20260919000000_course_membership_v1.sql`
+(`courses.join_policy`, `course_memberships` table),
+`src/domain/course/`, `src/application/course/`, and
+`src/infrastructure/postgres/course-repository.ts` /
+`course-membership-repository.ts`. Auth wiring and real RLS policies remain
+unimplemented (§29). A small set of edge cases ADR-015 does not decide
+(revoked-membership rejoin outcome semantics, last-management-member
+self-revocation, repeated revoke/archive timestamp overwrite) are tracked,
+not guessed at, in `docs/OPEN_QUESTIONS.md` #43.
 
-See `docs/OPEN_QUESTIONS.md` #1 and ADR-015.
+See `docs/OPEN_QUESTIONS.md` #1 and #43, and ADR-015.
 
 ---
 
@@ -1153,7 +1164,7 @@ Agent infrastructure
 Before writing the real V1 schema, resolve at minimum:
 
 ```text
-1. User ↔ Course relationship — DECIDED, see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
+1. User ↔ Course relationship — DECIDED AND IMPLEMENTED, see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
 2. V1 exam-date hierarchy — OPEN
 3. Question editing/version strategy — DECIDED, see docs/DECISIONS/009-question-versioning.md
 4. Course structure depth — OPEN

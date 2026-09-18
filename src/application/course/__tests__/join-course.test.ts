@@ -72,4 +72,36 @@ describe("joinCourse", () => {
     const active = await repos.memberships.listActiveForUser("user-1");
     expect(active).toHaveLength(1);
   });
+
+  // Open Question #43: not a decided product rule — pins the current
+  // conservative behavior. A revoked membership's row already exists, so
+  // `createMembership`'s ON-CONFLICT-DO-NOTHING path returns it unchanged
+  // (still revoked) rather than restoring access. The ALREADY_MEMBER outcome
+  // label for a still-revoked membership is a known open follow-up, not a
+  // designed signal.
+  it("does not restore access when a revoked member attempts to rejoin an OPEN course (Open Question #43)", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "OPEN");
+    db.seedMembership({
+      id: "revoked-membership",
+      userId: "user-1",
+      courseId: "course-1",
+      role: "LEARNER",
+      joinedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: new Date("2026-01-15T00:00:00Z"),
+      archivedAt: null,
+    });
+
+    const result = await joinCourse(
+      { actorUserId: "user-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("ALREADY_MEMBER");
+    if (result.outcome !== "ALREADY_MEMBER") throw new Error("unreachable");
+    expect(result.membership.revokedAt).not.toBeNull();
+
+    const active = await db.repos().memberships.listActiveForUser("user-1");
+    expect(active).toHaveLength(0);
+  });
 });
