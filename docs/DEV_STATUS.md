@@ -50,6 +50,83 @@ Raw infrastructure errors, SQL, connection strings, stack traces, credentials, a
 
 A dedicated regression test imports and calls the real production `GET()` route wiring and fails if database construction is moved back before authentication.
 
+## Real-environment verification milestone (uncommitted)
+
+A real hosted Supabase project has been verified end-to-end for
+`GET /api/daily-plan/today`. This is NOT yet committed/pushed — see
+"Uncommitted work" below.
+
+Verified against the real hosted project:
+
+- hosted Supabase project connectivity
+- all 7 committed migrations applied successfully against the real project
+- real `auth.users -> public.users` provisioning for a real OWNER user
+- real `auth.users -> public.users` provisioning for a real LEARNER user
+  (persisted timezone `Asia/Jerusalem`)
+- real browser login (Supabase Auth password grant) against the real
+  LEARNER, followed by a real authenticated `GET /api/daily-plan/today`
+  request through the real Next.js route
+- real DailyPlan persistence: `outcome: "READY"`, 3 items, all
+  `actionType: "REVIEW_DUE"` / `tier: "DUE_REVIEW"`
+- same-day idempotency: repeating the authenticated request returned the
+  identical persisted `plan.id` (`93fc85be-ffa7-4151-b10a-f79fc7d19bc1`) and
+  the identical 3 `DailyPlanItem` ids on a second call, confirming the
+  local-date plan key is stable across repeated requests on the same local
+  day
+
+### Real bug found and fixed during this verification: PostgreSQL DATE read-back
+
+The first authenticated call returned `plannedForDate: "2026-09-18"` for a
+request whose correct learner-local calendar date (`Asia/Jerusalem`) was
+`2026-09-19`. Investigation confirmed this was a **read-back-only** bug,
+not a persistence or timezone-derivation bug:
+
+- `node-postgres`'s default type parser for `date` columns (OID 1082)
+  constructs the returned `Date` from the column's LOCAL calendar
+  components (server-process OS timezone), never UTC midnight.
+- `readDateOnlyString` (`src/infrastructure/postgres/row-validation.ts`)
+  converted that `Date` back to a string via `.toISOString().slice(0, 10)`
+  — UTC — which is off by one calendar day whenever the server process's
+  own OS timezone has a nonzero UTC offset (confirmed: this environment
+  runs under `Asia/Jerusalem`, UTC+3).
+- `deriveLocalDateString` (the write-side local-date derivation) and the
+  `(user_id, planned_for_date)` DailyPlan lookup key were already correct
+  throughout — the persisted `planned_for_date` value was always
+  `2026-09-19`.
+- Confirmed empirically after the fix: re-running the same authenticated
+  request returned the SAME `plan.id` and the SAME 3 `DailyPlanItem` ids as
+  the original (buggy-display) call, now correctly reported as
+  `plannedForDate: "2026-09-19"`. If the persisted row had actually been
+  `2026-09-18`, the corrected lookup for `2026-09-19` could not have
+  returned the identical plan/item ids. No remote data was modified,
+  deleted, or regenerated.
+
+Fix: `readDateOnlyString`'s `Date`-instance branch now reads back via local
+getters (`getFullYear`/`getMonth`/`getDate`) instead of `toISOString()` —
+the exact inverse of how `pg` constructed the value, correct at any process
+UTC offset. This is a shared helper also used by `today-session-mapper.ts`'s
+`planned_for_date`, so the same latent bug there is fixed by the same
+change.
+
+### Uncommitted work
+
+- `src/infrastructure/postgres/row-validation.ts` — the fix above
+- `src/infrastructure/postgres/__tests__/row-validation.test.ts` — new
+  regression tests, including the exact reported scenario
+  (`now=2026-09-19T16:56:17.843Z`, `Asia/Jerusalem` ->
+  `plannedForDate=2026-09-19`, surviving a simulated `pg` round-trip)
+
+Not committed, staged, or pushed yet.
+
+### Known gap surfaced by this verification
+
+There is no PGlite/Postgres integration test for
+`PostgresDailyPlanRepository` / `daily-plan-mapper.ts` — the existing
+`daily_plan`/`DailyPlan` application-layer tests use in-memory fakes and
+never exercise real `pg` type parsing. This is why the DATE read-back bug
+was invisible to the existing suite and was only found via real-Supabase
+verification. Reported as a gap, not silently fixed as part of this slice.
+
 ## Current implementation state
 
 Implemented and approved:
@@ -78,7 +155,8 @@ Implemented and approved:
 - stable route-level `INTERNAL_ERROR` boundary
 - real route-wiring regression coverage for auth-before-DB ordering
 
-Not yet end-to-end verified:
+Real-environment-verified (see "Real-environment verification milestone"
+above):
 
 - hosted Supabase project
 - real Supabase Auth login/session
@@ -86,6 +164,10 @@ Not yet end-to-end verified:
 - real `auth.users -> public.users` signup provisioning
 - real `DATABASE_URL`
 - real browser → API → PostgreSQL DailyPlan request
+- same-day DailyPlan idempotency against real persisted state
+
+Not yet end-to-end verified:
+
 - login/signup UI
 - Today UI
 
@@ -133,15 +215,15 @@ This work is workflow/configuration-only and separate from the DailyPlan route c
 
 ## Current test baseline
 
-At `450af9a` (last commit touching application code):
+At the current uncommitted working tree (last pushed commit still
+`e784dd5`; changes are the DATE read-back fix described above plus its
+regression tests — see "Uncommitted work"):
 
-- Unit tests: `455 / 455`
+- Unit tests: `461 / 461`
 - Schema/Postgres tests: `159 / 159`
 - Typecheck: clean
 - Lint: clean
-- `git diff --check`: clean at the route-fix checkpoint
-
-`e784dd5` (current pushed HEAD) only changed workflow/documentation/configuration files and did not touch `src/` or `supabase/`; these numbers have not been independently re-verified at `e784dd5`, but no application code changed since they were last measured.
+- `git diff --check`: clean
 
 These numbers are regression checkpoints for the current development state, not permanent requirements.
 
@@ -151,21 +233,17 @@ Verification level for the DailyPlan Today route:
 - real route wiring regression-tested with mocked infrastructure seams
 - supporting persistence/schema behavior tested with the existing schema/Postgres-compatible suite
 - reviewed by inspection
-- NOT yet real-Supabase tested
-- NOT yet real hosted-PostgreSQL verified through the route
-- NOT yet browser E2E tested
+- real-Supabase tested (see "Real-environment verification milestone" above)
+- real hosted-PostgreSQL verified through the route, including same-day idempotency
+- real browser Auth login tested (via a temporary local test page, since removed)
+- NOT yet tested through a permanent product login/Today UI (none exists yet)
 
 ## Next development actions
 
-1. Start a fresh Claude context with `/clear`.
-2. Configure a real hosted Supabase project.
-3. Create local environment configuration from `.env.example`.
-4. Apply the committed migration chain to the authorized Supabase project.
-5. Verify real signup → `public.users` provisioning.
-6. Verify persisted user timezone flow in the real environment.
-7. Verify real `GET /api/daily-plan/today`.
-8. Build the minimal login/signup + Today UI vertical slice.
-9. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
+1. Commit the DATE read-back fix and its regression tests as a focused, reviewed slice (see recommended commit message).
+2. Build the minimal login/signup + Today UI vertical slice.
+3. Add PGlite/Postgres integration coverage for `PostgresDailyPlanRepository` / `daily-plan-mapper.ts` (gap surfaced by this verification — real `pg` type-parsing behavior is currently untested below the real-Supabase level).
+4. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
 
 Do not connect to, link, migrate, or modify a remote Supabase project without explicit user authorization.
 

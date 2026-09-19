@@ -155,6 +155,23 @@ const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
  * time-of-day/timezone component, since that would silently smuggle
  * exactly the day-boundary semantics this column is documented not to
  * have.
+ *
+ * ## Why the `Date`-instance branch reads LOCAL getters, never `toISOString()`
+ *
+ * `pg`'s own default type parser for `date` (OID 1082) builds that `Date`
+ * instance from the column's `YYYY-MM-DD` text using the LOCAL calendar
+ * components of the running Node process — effectively
+ * `new Date(year, month - 1, day)` — never UTC midnight. `toISOString()` is
+ * always UTC, so converting via `.toISOString().slice(0, 10)` silently
+ * re-interprets that local-midnight instant through UTC and is off by one
+ * calendar day whenever the process's own OS timezone has a nonzero UTC
+ * offset (verified: a real bug, not a hypothetical — a hosted-Supabase
+ * smoke test on a machine running under `Asia/Jerusalem`, UTC+3, persisted
+ * `planned_for_date = '2026-09-19'` but read it back as `'2026-09-18'`).
+ * Reading back via `getFullYear()`/`getMonth()`/`getDate()` (local getters)
+ * is the exact inverse of how the value was constructed and is therefore
+ * correct at ANY process UTC offset, not merely a fix for this one
+ * timezone.
  */
 export function readDateOnlyString(
   row: Record<string, unknown>,
@@ -166,7 +183,10 @@ export function readDateOnlyString(
     return value;
   }
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
   throw new MalformedRowError(
     table,
