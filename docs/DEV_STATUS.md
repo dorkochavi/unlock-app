@@ -323,6 +323,26 @@ Verification level for the DailyPlan Today route:
 - real browser Auth login tested (via a temporary local test page, since removed)
 - NOT yet tested through a permanent product login/Today UI (none exists yet)
 
+## Auth session middleware — assessed, not implemented
+
+Reviewed whether a `middleware.ts` is required now that a real UI exists
+(`@supabase/ssr`'s own README, "Known patterns and limitations"). Finding:
+the real limitation `middleware.ts` mitigates is a narrow one — two
+*concurrent* requests sharing the same expired session cookie both attempt
+a (single-use) refresh token, and the second fails until the browser syncs
+the first response's updated cookie. This repo's current call pattern
+(`/today` makes one `fetch` to `GET /api/daily-plan/today`, then
+conditionally one more to `POST /api/user/timezone`, sequentially, not in
+parallel) does not exercise this race in the common case; two browser tabs
+opened simultaneously with the same stale session still could. Route
+Handlers (the only place trusted auth happens today — no Server Component
+needs auth yet) can already set refreshed cookies themselves via
+`createSupabaseServerClient()`'s existing `setAll`, so middleware is not
+needed for basic refresh persistence at the current scope. Not clearly
+required yet — documented rather than guessed at; revisit if a Server
+Component needs auth, or if multi-tab concurrent-refresh becomes a real
+reported issue.
+
 ## Next development actions
 
 1. By hand (or an explicitly-authorized session), exercise the real
@@ -333,8 +353,6 @@ Verification level for the DailyPlan Today route:
    path (prompt/options, never `correct_answer`) so Today items can render
    more than an action-type label.
 3. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
-4. Review permanent auth/session handling (middleware/cookie refresh) now
-   that a real UI exists — not yet assessed.
 
 ## Blocked: unseen-question / new-material exposure eligibility
 

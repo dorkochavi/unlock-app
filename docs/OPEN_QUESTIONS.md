@@ -1008,12 +1008,23 @@ via the platform's own `Intl` IANA tzdata, no new dependency; read/write use
 cases in `src/application/user/`; `PostgresUserRepository`
 (`src/infrastructure/postgres/user-repository.ts`).
 
-**Still not implemented**: client-side first-session timezone detection,
-and any DailyPlan code that actually calls `deriveLocalDateString` — this
-slice resolves the *source-of-truth model and its persistence foundation*
-only, not client detection or DailyPlan's own local-day calculation.
+**Client-side first-session detection and DailyPlan's own local-day
+calculation are now IMPLEMENTED**: `/today` (`src/app/today/page.tsx`)
+detects the browser's IANA timezone via
+`Intl.DateTimeFormat().resolvedOptions().timeZone` and persists it via
+`POST /api/user/timezone`, but ONLY when `GET /api/daily-plan/today`
+reports `TIMEZONE_NOT_SET` — an already-persisted timezone is never
+silently overwritten on a later page load. `getOrCreateDailyPlanForToday`
+already calls `deriveLocalDateString` against the persisted timezone for
+real DailyPlan generation (verified against a real hosted Supabase project
+— see `docs/DEV_STATUS.md`).
 
-Target phase: Today / Database Design (implementation)
+**Still not designed**: manual timezone editing in Settings, and the
+full travel/timezone-change UX noted above (`docs/TODAY_TIMEZONE_EDGE_CASES.md`).
+
+Target phase: Today / Database Design (implementation) — core mechanism
+COMPLETE; remaining items above are explicitly deferred, not gaps in this
+resolution.
 
 ---
 
