@@ -24,7 +24,9 @@ login/signup UI exists, and no API route calls any of it yet. See
   be produced or verified by the CLI itself. It follows the CLI's
   documented `config.toml` shape as of this writing. `db.major_version = 15`
   is load-bearing, not arbitrary — see the file's own header comment.
-- `migrations/` — TWO migrations, applied in filename (timestamp) order:
+- `migrations/` — applied in filename (timestamp) order (updated here to
+  match what is actually committed; this list previously went stale after
+  new migrations were added without updating this file):
   - `20260917203000_initial_schema.sql` — the first real migration,
     translating `docs/PERSISTENCE_SCHEMA_V1.md` into plain PostgreSQL DDL.
     `users`, `courses`, `materials`, `questions`, `question_versions`,
@@ -35,6 +37,24 @@ login/signup UI exists, and no API route calls any of it yet. See
   - `20260918000000_question_answer_model_v1.sql` — ADR-014's
     `question_versions.question_type` column (forward-only; does not edit
     the first migration, which is already committed/pushed).
+  - `20260919000000_course_membership_v1.sql` — ADR-015's `courses
+    .join_policy` column and the `course_memberships` table (the single
+    User<->Course relationship: `role`, `joined_at`, `revoked_at`,
+    `archived_at`), RLS-enabled with zero policies.
+  - `20260920000000_user_timezone_v1.sql` — `users.timezone`, nullable,
+    no default (`docs/OPEN_QUESTIONS.md` #35).
+  - `20260921000000_daily_plan_v1.sql` — DailyPlan/DailyPlanItem
+    persistence (ADR-016).
+  - `20260922000000_daily_plan_item_state_consistency.sql` — DailyPlanItem
+    state/timestamp consistency constraints (ADR-016 §19).
+  - `20260923000000_auth_user_provisioning.sql` — the `auth.users ->
+    public.users` `SECURITY DEFINER` provisioning trigger.
+
+  Both test harnesses (`tests/schema.integration.test.ts` and
+  `tests/postgres/db-harness.ts`) apply every `.sql` file in this directory
+  dynamically, by filename order — they were not hardcoded to only the
+  first two migrations, so this staleness was in this README's prose only,
+  not in what was actually tested.
 - `tests/schema.integration.test.ts` — runs BOTH migrations above, in
   order, against a real (WASM, in-process) PostgreSQL engine via
   `@electric-sql/pglite` and proves the database itself rejects the
