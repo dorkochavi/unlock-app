@@ -12,6 +12,18 @@
  * (`src/application/learning/__tests__/submit-answer.test.ts`,
  * `src/domain/learning/__tests__/learning-engine-golden-scenarios.test.ts`)
  * — a single canonical set, not a second competing one.
+ *
+ * Every exported policy object is `Object.freeze`d: these constants are
+ * shared by reference across every `createProductionSubmitAnswerContext`/
+ * `createProductionTodaySessionContext` call
+ * (`src/infrastructure/learning/composition-root.ts`) in the same process,
+ * not copied per call, so an accidental in-place mutation of one returned
+ * context's policy field would otherwise silently corrupt every other
+ * context built from the same defaults. Freezing makes that mutation throw
+ * (`TypeError`, since this codebase's ES modules run in strict mode)
+ * instead of silently succeeding — see
+ * `src/infrastructure/learning/__tests__/composition-root.test.ts`'s
+ * "production policy defaults are immutable" cases.
  */
 import type { EvidenceStrengthPolicy } from "../../domain/learning/evidence-strength";
 import type { MasteryPolicy } from "../../domain/learning/mastery";
@@ -27,9 +39,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * consistently across this repo's own test fixtures.
  */
 export const PRODUCTION_RETRIEVAL_QUALIFICATION_POLICY: RetrievalQualificationPolicy =
-  {
+  Object.freeze({
     minGapMsForSpacedRetrieval: 1 * DAY_MS,
-  };
+  });
 
 /**
  * ENGINEERING CALIBRATION, with required product visibility (audit §7:
@@ -37,14 +49,15 @@ export const PRODUCTION_RETRIEVAL_QUALIFICATION_POLICY: RetrievalQualificationPo
  * same numbers already used consistently across this repo's own test
  * fixtures.
  */
-export const PRODUCTION_EVIDENCE_STRENGTH_POLICY: EvidenceStrengthPolicy = {
-  minMeaningfulAttemptsForEarly: 1,
-  minMeaningfulAttemptsForModerate: 3,
-  minMeaningfulAttemptsForStrong: 5,
-  minSpacedRetrievalsForModerate: 1,
-  minSpacedRetrievalsForStrong: 3,
-  minObservationSpanMsForStrong: 3 * DAY_MS,
-};
+export const PRODUCTION_EVIDENCE_STRENGTH_POLICY: EvidenceStrengthPolicy =
+  Object.freeze({
+    minMeaningfulAttemptsForEarly: 1,
+    minMeaningfulAttemptsForModerate: 3,
+    minMeaningfulAttemptsForStrong: 5,
+    minSpacedRetrievalsForModerate: 1,
+    minSpacedRetrievalsForStrong: 3,
+    minObservationSpanMsForStrong: 3 * DAY_MS,
+  });
 
 /**
  * `docs/OPEN_QUESTIONS.md` #11: accepted conservative production default
@@ -55,12 +68,12 @@ export const PRODUCTION_EVIDENCE_STRENGTH_POLICY: EvidenceStrengthPolicy = {
  * additional threshold is invented beyond what `MasteryPolicy`'s shape
  * already exposes.
  */
-export const PRODUCTION_MASTERY_POLICY: MasteryPolicy = {
+export const PRODUCTION_MASTERY_POLICY: MasteryPolicy = Object.freeze({
   minSpacedRetrievalsForStrengthening: 1,
   minSpacedRetrievalsForMastered: 3,
   minEvidenceStrengthForMastered: "strong",
   minRetrievabilityForMastered: 0.8,
-};
+});
 
 /**
  * `docs/OPEN_QUESTIONS.md` #13: accepted illustrative candidate score
@@ -71,7 +84,7 @@ export const PRODUCTION_MASTERY_POLICY: MasteryPolicy = {
  * `suspectedScoreThreshold` (2), never `activeScoreThreshold` (4); reaching
  * ACTIVE requires at least two qualifying confident-error signals.
  */
-export const PRODUCTION_MISCONCEPTION_POLICY: MisconceptionPolicy = {
+export const PRODUCTION_MISCONCEPTION_POLICY: MisconceptionPolicy = Object.freeze({
   confidentErrorScoreIncrement: 2,
   recoveryScoreDecrement: 1,
   minScore: 0,
@@ -79,7 +92,7 @@ export const PRODUCTION_MISCONCEPTION_POLICY: MisconceptionPolicy = {
   suspectedScoreThreshold: 2,
   activeScoreThreshold: 4,
   resolvedScoreThreshold: 0,
-};
+});
 
 /**
  * `docs/OPEN_QUESTIONS.md` #16 / ADR-016 §5 /
@@ -96,9 +109,9 @@ export const PRODUCTION_MISCONCEPTION_POLICY: MisconceptionPolicy = {
  * rule), so this does not force a plan up to 15 when fewer are genuinely
  * justified — it only caps the upper bound.
  */
-export const PRODUCTION_TODAY_PLANNER_POLICY: TodayPlannerPolicy = {
+export const PRODUCTION_TODAY_PLANNER_POLICY: TodayPlannerPolicy = Object.freeze({
   maxItems: 15,
-};
+});
 
 /**
  * `docs/OPEN_QUESTIONS.md` #10 (Engine Versioning Granularity, OPEN): a

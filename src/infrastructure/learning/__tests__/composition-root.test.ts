@@ -156,3 +156,93 @@ describe("createProductionTodaySessionContext", () => {
     expect(session.items).toEqual([]);
   });
 });
+
+describe("production policy defaults are immutable", () => {
+  // `PRODUCTION_*_POLICY` constants are shared by reference across every
+  // factory call (see production-policy-defaults.ts's module doc comment)
+  // — this describe block proves that an accidental in-place mutation of
+  // one returned context's policy field cannot silently corrupt the
+  // default a later, independently-created context receives. The chosen
+  // hardening is `Object.freeze`, so mutation THROWS (a `TypeError`, this
+  // codebase's ES modules being strict-mode) rather than being silently
+  // isolated by a defensive copy — that throwing behavior is asserted
+  // explicitly below, not merely implied by the isolation checks.
+
+  // These mutation attempts are valid TypeScript (`MasteryPolicy` et al.
+  // deliberately keep mutable, non-`readonly` fields — this hardening does
+  // not change any policy interface) and only fail at RUNTIME, because the
+  // underlying object is frozen. Cast through `Record<string, unknown>` so
+  // the assignment itself type-checks cleanly, exactly like any other
+  // runtime-only invariant this codebase proves via a test rather than the
+  // type system (e.g. `MalformedRowError`'s callers).
+
+  it("throws when mutating MasteryPolicy on a returned SubmitAnswerContext", () => {
+    const context = createProductionSubmitAnswerContext(NOW);
+
+    expect(() => {
+      (context.masteryPolicy as unknown as Record<string, unknown>)
+        .minRetrievabilityForMastered = 0.1;
+    }).toThrow(TypeError);
+  });
+
+  it("throws when mutating MisconceptionPolicy on a returned SubmitAnswerContext", () => {
+    const context = createProductionSubmitAnswerContext(NOW);
+
+    expect(() => {
+      (context.misconceptionPolicy as unknown as Record<string, unknown>)
+        .activeScoreThreshold = 999;
+    }).toThrow(TypeError);
+  });
+
+  it("throws when mutating TodayPlannerPolicy on a returned TodaySessionContext", () => {
+    const context = createProductionTodaySessionContext(NOW);
+
+    expect(() => {
+      (context.todayPlannerPolicy as unknown as Record<string, unknown>).maxItems = 1;
+    }).toThrow(TypeError);
+  });
+
+  it("MasteryPolicy: a failed mutation attempt never alters a later, independently-created context", () => {
+    const first = createProductionSubmitAnswerContext(NOW);
+    try {
+      (first.masteryPolicy as unknown as Record<string, unknown>)
+        .minRetrievabilityForMastered = 0.1;
+    } catch {
+      // Expected — frozen object rejects the write.
+    }
+
+    const second = createProductionSubmitAnswerContext(NOW);
+
+    expect(second.masteryPolicy).toEqual(PRODUCTION_MASTERY_POLICY);
+    expect(second.masteryPolicy.minRetrievabilityForMastered).toBe(0.8);
+  });
+
+  it("MisconceptionPolicy: a failed mutation attempt never alters a later, independently-created context", () => {
+    const first = createProductionSubmitAnswerContext(NOW);
+    try {
+      (first.misconceptionPolicy as unknown as Record<string, unknown>)
+        .activeScoreThreshold = 999;
+    } catch {
+      // Expected — frozen object rejects the write.
+    }
+
+    const second = createProductionSubmitAnswerContext(NOW);
+
+    expect(second.misconceptionPolicy).toEqual(PRODUCTION_MISCONCEPTION_POLICY);
+    expect(second.misconceptionPolicy.activeScoreThreshold).toBe(4);
+  });
+
+  it("TodayPlannerPolicy: a failed mutation attempt never alters a later, independently-created context", () => {
+    const first = createProductionTodaySessionContext(NOW);
+    try {
+      (first.todayPlannerPolicy as unknown as Record<string, unknown>).maxItems = 1;
+    } catch {
+      // Expected — frozen object rejects the write.
+    }
+
+    const second = createProductionTodaySessionContext(NOW);
+
+    expect(second.todayPlannerPolicy).toEqual(PRODUCTION_TODAY_PLANNER_POLICY);
+    expect(second.todayPlannerPolicy.maxItems).toBe(15);
+  });
+});

@@ -370,6 +370,15 @@ in `production-policy-defaults.ts` itself), not that model's actual
 implementation — the tiered minimum/typical-range behavior remains future
 DailyPlan work.
 
+**Enum-shape note**: `PRODUCTION_MASTERY_POLICY`/`PRODUCTION_MISCONCEPTION_POLICY`
+supply values into the CURRENTLY IMPLEMENTED `mastery_category`/
+`misconception_state` enum shapes, not the accepted target conceptual
+models — those still differ (4-value implemented vs. 5-value accepted for
+mastery; 5-value implemented, including `recovering`, vs. 4-value accepted
+for misconception). This commit does not change or migrate either enum;
+see `docs/LEARNING_ENGINE.md` §16b and §20a for the full accepted-vs-
+implemented comparison.
+
 ## Related Documents
 
 - `docs/V1_VERTICAL_SLICE_PLAN.md` (source of the audited claim, Checkpoints 3-4)
