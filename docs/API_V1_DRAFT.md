@@ -2,7 +2,7 @@
 
 Status: DRAFT — mostly still preparation, not an ADR. Sections 1/2 below
 (`submitAnswer`, the legacy Course-scoped "Get Today") remain unimplemented
-shapes to build FROM, not decisions already made. **Section 3
+shapes to build FROM, not decisions already made. **Section 2a
 (`GET /api/daily-plan/today`) is the one exception: it is now IMPLEMENTED**
 (`src/app/api/daily-plan/today/route.ts`) — added once Auth wiring
 (`src/infrastructure/supabase/`) existed, per this document's own original
@@ -139,9 +139,19 @@ input is the incoming Supabase session cookie. `getOrCreateDailyPlanForToday`
 owns Course/timezone discovery itself (ADR-016 §1) — the route has nothing
 left to accept from the client.
 
-**Auth flow**: `createSupabaseServerClient()` (per-request, never a module
-singleton) -> `requireAuthenticatedUser(supabase)` -> `UNAUTHENTICATED` maps
-to `401` before any DailyPlan code runs at all.
+**Auth flow, and auth strictly BEFORE database construction**:
+`createSupabaseServerClient()` (per-request, never a module singleton) ->
+`requireAuthenticatedUser(supabase)` -> `UNAUTHENTICATED` maps to `401`
+**before any Postgres infrastructure is constructed at all** — not just
+before DailyPlan generation runs. `getPool()`/`PgConnectionProvider`/the
+production ports/settings live INSIDE the `generateDailyPlan` closure
+passed to `handleGetDailyPlanToday`, which that function's own control
+flow only ever invokes after confirming `AUTHENTICATED`. An unauthenticated
+request therefore never calls `getPool()` and never requires
+`DATABASE_URL` to be set — covered by a dedicated regression test
+(`route-auth-db-ordering.test.ts`) proving the DB-factory stand-in is
+never invoked for an unauthenticated request, including when that stand-in
+is rigged to throw (simulating a missing `DATABASE_URL`).
 
 **`now`**: `new Date()` is called exactly once, in `route.ts` itself —
 never inside the testable handler (`handle-get-daily-plan-today.ts`) or
@@ -155,6 +165,16 @@ singleton) -> `new PgConnectionProvider(pool)` ->
 `tsc --noEmit`, exactly like `PoolClient` already did (see the pg-runtime
 commit).
 
+**Route-level error handling**: one outer `try`/`catch` wraps the whole
+`GET` handler in `route.ts`, mapping ANY escaped failure — Supabase client
+construction, `getPool()`/composition construction, or anything else not
+already handled inside `handleGetDailyPlanToday` — to the same
+`{error: {code: "INTERNAL_ERROR"}}` / `500` contract, logged server-side
+via `console.error` only. `handleGetDailyPlanToday` itself never throws
+(it already catches and maps its own internal failures), so this outer
+boundary and the handler's own internal one never double-log the same
+error.
+
 **Outcome -> HTTP mapping** (the exact choice made, extending section 1's
 category table style to `GetOrCreateDailyPlanForTodayResult`):
 
@@ -163,13 +183,21 @@ category table style to `GetOrCreateDailyPlanForTodayResult`):
 | `READY` | 200 | `{plan: <DailyPlanDto>}` — a route-layer DTO (`daily-plan-dto.ts`), never the raw domain `DailyPlan`/`DailyPlanItem` |
 | `TIMEZONE_NOT_SET` | 422 | `{error: {code: "TIMEZONE_NOT_SET"}}` — chosen over 409: nothing conflicts with existing resource state, a precondition on the caller's own profile just isn't met yet |
 | `USER_NOT_FOUND` | 500 | `{error: {code: "USER_PROVISIONING_INCONSISTENT"}}` — a server-side data-consistency fault (the `auth.users -> public.users` trigger should make this unreachable for a real authenticated user), NEVER an ordinary client 404 |
-| unexpected thrown error | 500 | `{error: {code: "INTERNAL_ERROR"}}` — the real error is logged server-side only, never included in the response body |
+| unexpected thrown error (application-layer OR route-level) | 500 | `{error: {code: "INTERNAL_ERROR"}}` — the real error is logged server-side only, never included in the response body |
 
 **Test seam**: `handleGetDailyPlanToday(dependencies)` in
 `handle-get-daily-plan-today.ts` has no Next.js/Supabase/`pg` types in its
 own signature — `route.ts` stays a thin wiring file with no logic of its
-own worth testing directly. 12 unit tests (8 for the handler, 4 for the DTO
-mapper) — no real Supabase/network/Postgres connection anywhere.
+own worth testing directly. 16 unit tests (8 for the handler, 4 for the DTO
+mapper, 4 dedicated to the auth-before-database ordering property) — no
+real Supabase/network/Postgres connection anywhere.
+
+**Not yet verified against a real environment**: a real Supabase Auth
+session/cookie roundtrip, a real `auth.getUser()` call, a real signup
+provisioning into `public.users`, a real `DATABASE_URL` connection, and a
+real HTTP request against this route. Everything above is unit- and
+PGlite-integration-tested only — describe this route as implemented and
+unit-tested, not E2E verified, until a real Supabase project exists.
 
 ## 3. Server-derived userId boundary
 

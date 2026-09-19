@@ -22,13 +22,36 @@
  * `handleGetDailyPlanToday`, `getOrCreateDailyPlanForToday`, or anything
  * deeper.
  *
- * `getPool()` is the existing lazy, memoized, per-process singleton
- * (`src/infrastructure/postgres/pg-pool.ts`) — calling it here does NOT
- * construct a new `pg.Pool` per request; it returns the same one every
- * time. `PgConnectionProvider`/the production ports/settings bundles are
- * cheap, stateless wrappers with no resources of their own, so
- * constructing them fresh per request is harmless and avoids any
- * module-level state beyond the Pool singleton itself.
+ * ## Auth before database, stated explicitly (fixes a real ordering bug
+ * found in review)
+ *
+ * `getPool()`/`PgConnectionProvider`/the production ports/settings are
+ * built LAZILY, INSIDE the `generateDailyPlan` closure below — not
+ * eagerly before it. `handleGetDailyPlanToday`'s own control flow already
+ * calls `authenticate()` first and returns immediately on
+ * `UNAUTHENTICATED`, before ever invoking `generateDailyPlan` — so this
+ * closure body, and therefore `getPool()`/`DATABASE_URL`, is now
+ * structurally UNREACHABLE for an unauthenticated request. This required
+ * no change to `handle-get-daily-plan-today.ts` at all: that file's
+ * control flow was already correct; the bug was that THIS file
+ * previously constructed Postgres infrastructure before calling it,
+ * defeating that ordering. `getPool()` itself remains the existing lazy,
+ * memoized, per-process singleton — calling it here (now only for an
+ * authenticated request) does NOT construct a new `pg.Pool` per request;
+ * it returns the same one every time.
+ *
+ * ## Route-level error handling
+ *
+ * ONE outer try/catch wraps this whole function, mapping to the same
+ * `{error: {code: "INTERNAL_ERROR"}}` / 500 contract
+ * `handleGetDailyPlanToday` already uses internally. No double-logging:
+ * `handleGetDailyPlanToday` never throws — it catches its own internal
+ * failures (`authenticate()`/`generateDailyPlan()` throwing) and already
+ * logs + returns a clean `{status, body}` result for those, so this outer
+ * catch only ever fires for a genuinely route-level failure that occurs
+ * BEFORE `handleGetDailyPlanToday` is even called (e.g.
+ * `createSupabaseServerClient()` throwing on missing Supabase env vars) —
+ * the two boundaries do not overlap in what they actually catch.
  */
 export const runtime = "nodejs";
 
@@ -49,18 +72,26 @@ import { handleGetDailyPlanToday } from "./handle-get-daily-plan-today";
 export async function GET(): Promise<Response> {
   const now = new Date();
 
-  const supabase = await createSupabaseServerClient();
+  try {
+    const supabase = await createSupabaseServerClient();
 
-  const pool = getPool();
-  const connectionProvider = new PgConnectionProvider(pool);
-  const ports = createProductionDailyPlanPorts(pool, connectionProvider);
-  const settings = createProductionDailyPlanGenerationSettings();
+    const { status, body } = await handleGetDailyPlanToday({
+      authenticate: () => requireAuthenticatedUser(supabase),
+      now,
+      generateDailyPlan: async (command) => {
+        // Reached ONLY for an already-authenticated request — see this
+        // file's own module doc comment.
+        const pool = getPool();
+        const connectionProvider = new PgConnectionProvider(pool);
+        const ports = createProductionDailyPlanPorts(pool, connectionProvider);
+        const settings = createProductionDailyPlanGenerationSettings();
+        return getOrCreateDailyPlanForToday(command, settings, ports);
+      },
+    });
 
-  const { status, body } = await handleGetDailyPlanToday({
-    authenticate: () => requireAuthenticatedUser(supabase),
-    now,
-    generateDailyPlan: (command) => getOrCreateDailyPlanForToday(command, settings, ports),
-  });
-
-  return NextResponse.json(body, { status });
+    return NextResponse.json(body, { status });
+  } catch (error) {
+    console.error("GET /api/daily-plan/today: unexpected route-level error", error);
+    return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
+  }
 }
