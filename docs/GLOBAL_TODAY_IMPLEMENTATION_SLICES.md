@@ -92,8 +92,8 @@ values and what remains open (calibration, not a product decision).
 
 **5. `DailyPlan`/`DailyPlanItem` migration and domain/application layer —
 PERSISTENCE FOUNDATION IMPLEMENTED (2026-09-21); INTERNAL GENERATION CORE
-IMPLEMENTED (2026-09-19 session); PUBLIC ENTRY POINT IMPLEMENTED
-(2026-09-19 session), Postgres/runtime wiring NOT.**
+IMPLEMENTED; PUBLIC ENTRY POINT IMPLEMENTED; POSTGRES WIRING + PRODUCTION
+COMPOSITION IMPLEMENTED (all 2026-09-19 session), API route/UI NOT.**
 `supabase/migrations/20260921000000_daily_plan_v1.sql` adds
 `daily_plans`/`daily_plan_items`, purely additive alongside
 `today_sessions`/`today_session_items` (unmodified, per
@@ -145,15 +145,49 @@ including `Asia/Jerusalem`/`America/New_York` UTC-vs-local-date boundary
 cases, LEARNER-only filtering, archived/revoked exclusion, and same-day
 resume with no regeneration.
 
-**Still NOT implemented**: a `PostgresDailyPlanUnitOfWork` (the
-transaction contract has no Postgres implementation yet — both
-`generateDailyPlanForResolvedInputs` and `getOrCreateDailyPlanForToday`
-are exercised only via in-memory fakes), any runtime/API/UI wiring, and
-any `submitAnswer` integration (`DailyPlanItem` completion is not wired to
-real Attempts). Skip semantics (Slice 0) and Manual Practice confirmation
-against `DailyPlanItem` remain unimplemented as before. **Global Today is
-not usable yet** — no Postgres/API/UI path connects a real request to any
-of this.
+**IMPLEMENTED — Postgres wiring and production composition:**
+`PostgresDailyPlanUnitOfWork`
+(`src/infrastructure/postgres/daily-plan-unit-of-work.ts`) — mirrors
+`PostgresUnitOfWork`'s BEGIN/COMMIT/ROLLBACK pattern exactly, scoped to
+exactly the three repositories generation needs
+(`dailyPlans`/`progress`/`questionVersions`); deliberately does NOT
+acquire `submitAnswer`'s advisory lock (generation only ever reads
+`UserQuestionProgress`, never reads-then-writes it). Production
+composition root at `src/infrastructure/dailyPlan/composition-root.ts`
+(`createProductionDailyPlanGenerationSettings`,
+`createProductionDailyPlanPorts`) — reuses the same centralized
+`PRODUCTION_ENGINE_VERSION`/`PRODUCTION_TODAY_PLANNER_POLICY`/
+`TsFsrsMemoryScheduler` the learning composition root already uses; no new
+policy values. Still code-shape only: it takes a caller-supplied
+`SqlExecutor`/`ConnectionProvider` rather than constructing one — no real
+production Postgres connection (`pg.Pool` or equivalent) exists anywhere
+in this codebase yet (ADR-013 remains "not wired up yet"). 4 unit tests
+(`src/infrastructure/dailyPlan/__tests__/composition-root.test.ts`,
+in-memory ports) plus 5 real-Postgres (PGlite) integration tests
+(`supabase/tests/postgres/daily-plan-unit-of-work.test.ts`) proving:
+transaction atomicity across `daily_plans`/`daily_plan_items` (a forced
+failure after the plan row and one item are written rolls back both
+tables to zero rows); sequential first-open calls for the same
+`(userId, local date)` produce exactly one `daily_plans` row with no
+mixed/duplicated items (PGlite has no true multi-connection concurrency —
+this proves the race-free-by-construction property sequentially, the same
+honest limitation already documented for `submitAnswer`'s advisory lock);
+end-to-end generation with correct `Asia/Jerusalem` local-date derivation
+and same-day resume against a real migrated schema; LEARNER-only role
+filtering against real `course_memberships` rows; and confirmation that no
+`today_sessions`/`today_session_items`/`attempts` row is written as a side
+effect.
+
+**Still NOT implemented**: any API route or UI (no HTTP handler calls
+`getOrCreateDailyPlanForToday` yet — the production composition root has
+no real `SqlExecutor`/`ConnectionProvider` to be given one, since no
+production Postgres connection exists anywhere in this codebase, ADR-013),
+Supabase Auth wiring, any `submitAnswer` integration (`DailyPlanItem`
+completion is not wired to real Attempts), Skip as a callable use case,
+and mid-day adaptation. **Global Today is not usable end-to-end by a real
+user yet** — the full generation pipeline is now proven correct against a
+real migrated Postgres schema (this step), but nothing outside a test
+file invokes it.
 
 **6. Single-Course Today vertical slice.** Real usable UI, Auth,
 CourseMembership, QR join, persistence — the full demo-readiness bar per
