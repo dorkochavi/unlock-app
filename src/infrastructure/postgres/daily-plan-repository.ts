@@ -81,6 +81,21 @@ export class PostgresDailyPlanRepository implements DailyPlanRepository {
    * the already-committed plan — mirroring
    * `PostgresTodaySessionRepository.createIfNotExists`'s documented
    * contract exactly.
+   *
+   * This race-freedom claim assumes the default `READ COMMITTED` isolation
+   * level (what every `UnitOfWork` in this codebase actually runs at —
+   * neither `PostgresUnitOfWork` nor `PostgresDailyPlanUnitOfWork` sets a
+   * different one). Under `READ COMMITTED`, a concurrent conflicting
+   * `INSERT` for the same key blocks until the first inserter's
+   * transaction ends, then either sees a real (now-committed) conflict —
+   * `ON CONFLICT DO NOTHING` fires, and the follow-up `SELECT` below
+   * reliably observes the winner — or finds no conflict at all if the
+   * first inserter rolled back, and proceeds normally. At a stricter
+   * isolation level (e.g. `SERIALIZABLE`), the same race instead produces
+   * a serialization failure requiring the whole transaction to retry — a
+   * materially different failure mode this code does not handle. If
+   * either `UnitOfWork` ever adopts a stricter isolation level, this
+   * race-freedom claim needs re-verification, not just re-reading.
    */
   async createIfNotExists(
     plan: Omit<DailyPlan, "items" | "id">,

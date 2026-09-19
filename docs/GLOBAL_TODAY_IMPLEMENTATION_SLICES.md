@@ -92,8 +92,12 @@ values and what remains open (calibration, not a product decision).
 
 **5. `DailyPlan`/`DailyPlanItem` migration and domain/application layer —
 PERSISTENCE FOUNDATION IMPLEMENTED (2026-09-21); INTERNAL GENERATION CORE
-IMPLEMENTED; PUBLIC ENTRY POINT IMPLEMENTED; POSTGRES WIRING + PRODUCTION
-COMPOSITION IMPLEMENTED (all 2026-09-19 session), API route/UI NOT.**
+IMPLEMENTED; PUBLIC ENTRY POINT IMPLEMENTED; PRODUCTION COMPOSITION
+(construction/policy wiring) IMPLEMENTED; PG RUNTIME ADAPTER IMPLEMENTED
+(all 2026-09-19 session) — no real environment/database configured, no
+API route/UI/Auth.** These are four separable claims, not one — read
+each "IMPLEMENTED" paragraph below for exactly what it covers; none of
+them means a real request can reach this code path yet.
 `supabase/migrations/20260921000000_daily_plan_v1.sql` adds
 `daily_plans`/`daily_plan_items`, purely additive alongside
 `today_sessions`/`today_session_items` (unmodified, per
@@ -145,8 +149,8 @@ including `Asia/Jerusalem`/`America/New_York` UTC-vs-local-date boundary
 cases, LEARNER-only filtering, archived/revoked exclusion, and same-day
 resume with no regeneration.
 
-**IMPLEMENTED — Postgres wiring and production composition:**
-`PostgresDailyPlanUnitOfWork`
+**IMPLEMENTED — Postgres wiring and production composition (construction/
+policy wiring, not a runtime connection):** `PostgresDailyPlanUnitOfWork`
 (`src/infrastructure/postgres/daily-plan-unit-of-work.ts`) — mirrors
 `PostgresUnitOfWork`'s BEGIN/COMMIT/ROLLBACK pattern exactly, scoped to
 exactly the three repositories generation needs
@@ -158,10 +162,10 @@ composition root at `src/infrastructure/dailyPlan/composition-root.ts`
 `createProductionDailyPlanPorts`) — reuses the same centralized
 `PRODUCTION_ENGINE_VERSION`/`PRODUCTION_TODAY_PLANNER_POLICY`/
 `TsFsrsMemoryScheduler` the learning composition root already uses; no new
-policy values. Still code-shape only: it takes a caller-supplied
-`SqlExecutor`/`ConnectionProvider` rather than constructing one — no real
-production Postgres connection (`pg.Pool` or equivalent) exists anywhere
-in this codebase yet (ADR-013 remains "not wired up yet"). 4 unit tests
+policy values. At the time this was built, it took a caller-supplied
+`SqlExecutor`/`ConnectionProvider` because no concrete implementation of
+either existed anywhere in this codebase yet — that gap is what the next
+paragraph closes. 4 unit tests
 (`src/infrastructure/dailyPlan/__tests__/composition-root.test.ts`,
 in-memory ports) plus 5 real-Postgres (PGlite) integration tests
 (`supabase/tests/postgres/daily-plan-unit-of-work.test.ts`) proving:
@@ -171,23 +175,55 @@ tables to zero rows); sequential first-open calls for the same
 `(userId, local date)` produce exactly one `daily_plans` row with no
 mixed/duplicated items (PGlite has no true multi-connection concurrency —
 this proves the race-free-by-construction property sequentially, the same
-honest limitation already documented for `submitAnswer`'s advisory lock);
-end-to-end generation with correct `Asia/Jerusalem` local-date derivation
-and same-day resume against a real migrated schema; LEARNER-only role
+honest limitation already documented for `submitAnswer`'s advisory lock —
+see `daily-plan-repository.ts`'s own doc comment for the `READ COMMITTED`
+isolation-level assumption this reasoning depends on); end-to-end
+generation with correct `Asia/Jerusalem` local-date derivation and
+same-day resume against a real migrated schema; LEARNER-only role
 filtering against real `course_memberships` rows; and confirmation that no
 `today_sessions`/`today_session_items`/`attempts` row is written as a side
 effect.
 
-**Still NOT implemented**: any API route or UI (no HTTP handler calls
-`getOrCreateDailyPlanForToday` yet — the production composition root has
-no real `SqlExecutor`/`ConnectionProvider` to be given one, since no
-production Postgres connection exists anywhere in this codebase, ADR-013),
-Supabase Auth wiring, any `submitAnswer` integration (`DailyPlanItem`
-completion is not wired to real Attempts), Skip as a callable use case,
-and mid-day adaptation. **Global Today is not usable end-to-end by a real
-user yet** — the full generation pipeline is now proven correct against a
-real migrated Postgres schema (this step), but nothing outside a test
-file invokes it.
+**IMPLEMENTED — pg runtime adapter (this closes the "no concrete
+`ConnectionProvider`" gap above, still no real database configured):**
+`PgConnectionProvider` (`src/infrastructure/postgres/
+pg-connection-provider.ts`) — a real `pg.Pool`-backed `ConnectionProvider`
+implementation; `pg.PoolClient` satisfies `SqlExecutor` by direct
+TypeScript structural typing, no wrapper needed. Owns ONLY connection
+checkout/release (always releases in a `finally`, even on error) — never
+`BEGIN`/`COMMIT`/`ROLLBACK`, which remain entirely
+`PostgresUnitOfWork`/`PostgresDailyPlanUnitOfWork`'s job, unchanged.
+`getPool()` (`src/infrastructure/postgres/pg-pool.ts`) provides the one
+`pg.Pool` per server process: lazy (constructed on first actual call, not
+at module-import time, so importing this module during a test run or
+build never opens a connection or requires `DATABASE_URL`), memoized, and
+`globalThis`-guarded outside production so Next.js dev HMR module
+reloads recover the same `Pool` instead of leaking a new one. Throws
+immediately and clearly if `getPool()` is called with `DATABASE_URL`
+unset. SSL is deliberately not hardcoded in code (no
+`rejectUnauthorized: false`-style default) — `pg` already honors
+`sslmode`/`ssl` query parameters embedded directly in `DATABASE_URL`,
+which is where the per-environment choice belongs. 10 unit tests (`src/
+infrastructure/postgres/__tests__/{pg-connection-provider,pg-pool}
+.test.ts`) against fake `Pool`/`PoolClient` shapes — no real network
+connection, no `DATABASE_URL` required to run them. `pg`/`@types/pg` are
+now real dependencies of this project (`package.json`); `@supabase/*` are
+still not installed.
+
+**Still NOT implemented**: no `DATABASE_URL` (or any other real
+environment configuration) has actually been set anywhere — `getPool()`
+has never been called against a real database, local or remote, by
+anything in this session; no API route or UI exists (no HTTP handler
+calls `getOrCreateDailyPlanForToday` yet, so nothing in this codebase
+actually constructs `PgConnectionProvider`/`getPool()` outside their own
+unit tests); Supabase Auth wiring (no `auth.users` -> `public.users`
+provisioning trigger exists either — see the runtime/auth audit); any
+`submitAnswer` integration (`DailyPlanItem` completion is not wired to
+real Attempts); Skip as a callable use case; and mid-day adaptation.
+**Global Today is not usable end-to-end by a real user yet** — every
+piece up through a real Postgres connection ADAPTER is now proven
+correct (via PGlite integration tests and adapter unit tests), but no
+real database has been configured and no request path reaches any of it.
 
 **6. Single-Course Today vertical slice.** Real usable UI, Auth,
 CourseMembership, QR join, persistence — the full demo-readiness bar per
