@@ -1,6 +1,6 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED** — five forward-only migrations exist,
+Status: **IMPLEMENTED** — six forward-only migrations exist,
 `supabase/migrations/20260917203000_initial_schema.sql` (the initial schema:
 PostgreSQL via Supabase, ADR-013),
 `supabase/migrations/20260918000000_question_answer_model_v1.sql` (adds
@@ -8,11 +8,14 @@ PostgreSQL via Supabase, ADR-013),
 `supabase/migrations/20260919000000_course_membership_v1.sql` (adds
 `courses.join_policy` and `course_memberships`, ADR-015),
 `supabase/migrations/20260920000000_user_timezone_v1.sql` (adds
-`users.timezone`, `docs/OPEN_QUESTIONS.md` #35), and
+`users.timezone`, `docs/OPEN_QUESTIONS.md` #35),
 `supabase/migrations/20260921000000_daily_plan_v1.sql` (adds `daily_plans`/
 `daily_plan_items`, ADR-016 §1/§19 — persistence foundation only, additive
-alongside the still-intact `today_sessions`/`today_session_items`). All
-five are verified against a real PostgreSQL engine
+alongside the still-intact `today_sessions`/`today_session_items`), and
+`supabase/migrations/20260922000000_daily_plan_item_state_consistency.sql`
+(adds a CHECK constraint tying `daily_plan_items.status` to
+`resolved_at`/`completed_at`). All six are verified against a real
+PostgreSQL engine
 (`supabase/tests/schema.integration.test.ts`, `npm run test:schema`),
 applied in filename order; no later migration edits an earlier one. This
 document remains the design-contract companion to those migrations and to
@@ -658,7 +661,10 @@ exactly: additive only, no drop, no data migration).
 ## `daily_plan_items`
 
 **IMPLEMENTED (persistence foundation only) — ADR-016 §1/§19.** Added by
-the same migration. The direct successor to `today_session_items`, with
+`supabase/migrations/20260921000000_daily_plan_v1.sql`; its status/
+timestamp CHECK constraint (below) was added by a second, forward-only
+migration, `supabase/migrations/20260922000000_daily_plan_item_state_consistency.sql`.
+The direct successor to `today_session_items`, with
 one structural difference: `course_id` is a genuinely independent, per-item
 fact, not a value forced equal to a single parent session's Course — this
 is exactly what lets Global Today and Course Today share one underlying
@@ -688,6 +694,22 @@ plan (ADR-016 §1).
     double-counting by construction
     (`docs/GLOBAL_TODAY_ARCHITECTURE_REVIEW.md` §2's central claim for
     Option A).
+- **CHECK `daily_plan_items_status_timestamps_check`** (added by
+  `20260922000000_daily_plan_item_state_consistency.sql`, following an
+  adversarial review of the first migration that found Postgres would
+  otherwise accept a structurally impossible row via any write path other
+  than the repository's own conditional `UPDATE`):
+  ```text
+  pending   -> resolved_at IS NULL     AND completed_at IS NULL
+  completed -> resolved_at IS NOT NULL AND completed_at IS NOT NULL
+  skipped   -> resolved_at IS NOT NULL AND completed_at IS NULL
+  ```
+  Exhaustive across the three values `status`'s own CHECK already allows.
+  This constraint only rules out self-contradictory rows — it does NOT by
+  itself enforce ADR-016 §19's "resolved exactly once" rule (a `pending`
+  item resolving a second time would still produce a *consistent*
+  `completed`/`skipped` row under this CHECK alone); that remains the
+  repository layer's job, per the "Single-use resolution" bullet below.
 - **Foreign keys / composite FKs**:
   - `(daily_plan_id, user_id) REFERENCES daily_plans (id, user_id)` —
     deliberately does NOT also include `course_id` (unlike

@@ -1105,6 +1105,207 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     expect(todaySessionItemResult.rows).toHaveLength(1);
   });
 
+  // -------------------------------------------------------------------------
+  // daily_plan_items status/timestamp consistency —
+  // 20260922000000_daily_plan_item_state_consistency.sql, ADR-016 §19
+  // -------------------------------------------------------------------------
+
+  async function insertDailyPlanItemWithTimestamps(args: {
+    dailyPlanId: string;
+    userId: string;
+    courseId: string;
+    questionId: string;
+    questionVersionId: string;
+    status: string;
+    resolvedAt: string | null;
+    completedAt: string | null;
+    position?: number;
+  }): Promise<string> {
+    const id = randomUUID();
+    await db.query(
+      `insert into daily_plan_items
+         (id, daily_plan_id, user_id, course_id, position, question_id,
+          question_version_id, action_type, tier, status, resolved_at, completed_at)
+       values ($1, $2, $3, $4, $5, $6, $7, 'REVIEW_DUE', 'DUE_REVIEW', $8, $9, $10)`,
+      [
+        id,
+        args.dailyPlanId,
+        args.userId,
+        args.courseId,
+        args.position ?? 0,
+        args.questionId,
+        args.questionVersionId,
+        args.status,
+        args.resolvedAt,
+        args.completedAt,
+      ],
+    );
+    return id;
+  }
+
+  it("41. rejects pending with resolved_at set", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+
+    await expect(
+      insertDailyPlanItemWithTimestamps({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+        status: "pending",
+        resolvedAt: new Date().toISOString(),
+        completedAt: null,
+      }),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("42. rejects completed with completed_at NULL", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+
+    await expect(
+      insertDailyPlanItemWithTimestamps({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+        status: "completed",
+        resolvedAt: new Date().toISOString(),
+        completedAt: null,
+      }),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("43. rejects skipped with completed_at NOT NULL", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+
+    await expect(
+      insertDailyPlanItemWithTimestamps({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+        status: "skipped",
+        resolvedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+      }),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("44. rejects completed_at NOT NULL while resolved_at IS NULL", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+
+    await expect(
+      insertDailyPlanItemWithTimestamps({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+        status: "completed",
+        resolvedAt: null,
+        completedAt: new Date().toISOString(),
+      }),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("45. accepts every valid (status, resolved_at, completed_at) combination", async () => {
+    const chain = await seedValidChain();
+    const planId = await insertDailyPlan(chain.userId);
+    const now = new Date().toISOString();
+
+    const secondQuestionId = await insertQuestion(chain.courseId);
+    const secondVersionId = await insertQuestionVersion(secondQuestionId);
+    const thirdQuestionId = await insertQuestion(chain.courseId);
+    const thirdVersionId = await insertQuestionVersion(thirdQuestionId);
+
+    await expect(
+      insertDailyPlanItemWithTimestamps({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+        status: "pending",
+        resolvedAt: null,
+        completedAt: null,
+        position: 0,
+      }),
+    ).resolves.toBeTypeOf("string");
+
+    await expect(
+      insertDailyPlanItemWithTimestamps({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: secondQuestionId,
+        questionVersionId: secondVersionId,
+        status: "completed",
+        resolvedAt: now,
+        completedAt: now,
+        position: 1,
+      }),
+    ).resolves.toBeTypeOf("string");
+
+    await expect(
+      insertDailyPlanItemWithTimestamps({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: thirdQuestionId,
+        questionVersionId: thirdVersionId,
+        status: "skipped",
+        resolvedAt: now,
+        completedAt: null,
+        position: 2,
+      }),
+    ).resolves.toBeTypeOf("string");
+  });
+
+  // -------------------------------------------------------------------------
+  // daily_plan_items composite-FK regression tests
+  // -------------------------------------------------------------------------
+
+  it("46. rejects a daily_plan_items row whose user_id does not match its parent daily_plans row's user_id", async () => {
+    const chain = await seedValidChain();
+    const otherUserId = await insertUser();
+    const planId = await insertDailyPlan(chain.userId);
+
+    await expect(
+      insertDailyPlanItem({
+        dailyPlanId: planId,
+        userId: otherUserId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        questionVersionId: chain.questionVersionId,
+      }),
+    ).rejects.toThrow(/violates foreign key constraint/);
+  });
+
+  it("47. rejects a daily_plan_items row whose question_version_id belongs to a different question_id", async () => {
+    const chain = await seedValidChain();
+    const otherQuestionId = await insertQuestion(chain.courseId);
+    const otherQuestionVersionId = await insertQuestionVersion(otherQuestionId);
+    const planId = await insertDailyPlan(chain.userId);
+
+    await expect(
+      insertDailyPlanItem({
+        dailyPlanId: planId,
+        userId: chain.userId,
+        courseId: chain.courseId,
+        questionId: chain.questionId,
+        // Belongs to otherQuestionId, not chain.questionId.
+        questionVersionId: otherQuestionVersionId,
+      }),
+    ).rejects.toThrow(/violates foreign key constraint/);
+  });
+
   it("RLS is enabled (not just declared) on every V1 table", async () => {
     const result = await db.query<{ relname: string; relrowsecurity: boolean }>(
       `select relname, relrowsecurity
