@@ -187,8 +187,10 @@ above):
 
 Not yet end-to-end verified:
 
-- login/signup UI
-- Today UI
+- login/signup UI (implemented, unverified against a real signup — see
+  "Minimal learner vertical slice" below for what WAS verified)
+- Today UI (implemented; unauthenticated path verified against the real
+  hosted project — see below)
 
 Not implemented yet:
 
@@ -196,7 +198,75 @@ Not implemented yet:
 - Skip use case
 - mid-day Today adaptation
 - Global Today user-facing UI
+- learner-facing question content (prompt/options) in the Today API/UI —
+  Today items currently render by `actionType`/`status` only; see
+  "Minimal learner vertical slice" below
 - production deployment
+
+## Minimal learner vertical slice: auth + timezone + Today UI
+
+Added in this slice (2026-09-19):
+
+- `POST /api/user/timezone` (+ `handle-set-user-timezone.ts` testable core,
+  mirroring `handle-get-daily-plan-today.ts`'s DI/auth-before-DB shape
+  exactly): persists the caller's own IANA timezone via the existing
+  `setUserTimezone` application use case + `PostgresUserRepository`. Auth
+  resolved and body validated before any `getPool()`/DB construction,
+  covered by a dedicated route-wiring ordering test (mirroring
+  `daily-plan/today`'s own `route-auth-db-ordering.test.ts`).
+- `/login` — client-side sign-in/sign-up (email+password) using
+  `createSupabaseBrowserClient()` directly (`supabase.auth
+  .signInWithPassword`/`.signUp`), redirecting to `/today` on a session, or
+  showing a "check your email" message when Supabase Auth requires email
+  confirmation (session not immediately returned).
+- `/today` — client component: calls `GET /api/daily-plan/today`; on `401`
+  shows a sign-in prompt; on `422 TIMEZONE_NOT_SET` detects the browser's
+  IANA timezone (`Intl.DateTimeFormat().resolvedOptions().timeZone`), POSTs
+  it to `/api/user/timezone` (ONLY reached because the server just said
+  none is persisted — an already-set timezone is never overwritten), then
+  retries once; on `200` renders plan items by `actionType`/tier
+  reasons/status (Hebrew labels, no raw ids); loading/empty/error states
+  included; a sign-out button calls `supabase.auth.signOut()`.
+- `/` now links to `/today`.
+- Hebrew/RTL throughout, using the existing `src/messages/he.ts` /
+  `src/lib/locale.ts` convention (extended with `auth`/`today` keys).
+
+**Explicitly deferred, not guessed at:** exposing question prompt/options
+in the Today API/UI. The existing `question_versions` read paths
+(`question-answer-definition-mapper.ts`) read `correct_answer` in the same
+query used for grading — reusing that directly for a learner-facing
+response would risk leaking it without a dedicated, narrowly-projected SQL
+read path (never selecting `correct_answer` at all) and its own leak-proof
+tests. Given this slice's explicit scope ("only implement if the
+repository/domain already safely supports it"), that safe read path does
+not yet exist, so Today items currently render by action type only — a
+real but bounded UX gap, not a security compromise.
+
+**Verification level, stated honestly:**
+
+- unit-tested: `handle-set-user-timezone.ts` (7 cases) and the route
+  auth-before-DB ordering test (5 cases) — all fake/mocked, no real
+  network.
+- typecheck/lint: clean.
+- smoke-tested against the REAL hosted Supabase project
+  (`.env.local`, already configured from an earlier session) via `npm run
+  dev` + `curl` only — deliberately NOT interactive/form-submission
+  testing, to avoid creating or modifying any real hosted data (this
+  autonomous session was not authorized to modify hosted Supabase data).
+  Confirmed: `/`, `/login`, `/today` all return `200` and render their
+  expected Hebrew content; `html[dir="rtl"][lang="he"]` confirmed; a real
+  unauthenticated `GET /api/daily-plan/today` returns real `401
+  UNAUTHENTICATED` (no `DATABASE_URL`/DB touch); a real unauthenticated
+  `POST /api/user/timezone` returns real `401 UNAUTHENTICATED` the same
+  way.
+- NOT verified: an actual real sign-up/sign-in round trip, real timezone
+  persistence via the browser flow, or a real populated Today plan
+  rendering in a browser — none of these were exercised because doing so
+  would create/modify real hosted data, outside this session's
+  authorization. This is the concrete next verification step for a human
+  (or an explicitly-authorized session) to run by hand.
+- NOT interactive-browser-tested (no click-through/visual QA) — verified
+  via `curl` HTTP status/content checks only.
 
 ## Recent development-workflow work
 
@@ -234,8 +304,8 @@ This work is workflow/configuration-only and separate from the DailyPlan route c
 
 ## Current test baseline
 
-- Unit tests: `461 / 461`
-- Schema/Postgres tests: `162 / 162`
+- Unit tests: `474 / 474`
+- Schema/Postgres tests: `162 / 162` (unchanged this slice — no DB-relevant code changed)
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -255,8 +325,16 @@ Verification level for the DailyPlan Today route:
 
 ## Next development actions
 
-1. Build the minimal login/signup + Today UI vertical slice.
-2. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
+1. By hand (or an explicitly-authorized session), exercise the real
+   sign-up/sign-in + timezone + Today flow against the hosted Supabase
+   project in a real browser — this slice deliberately stopped short of
+   that (see "Minimal learner vertical slice" above).
+2. Design a safe, narrowly-projected learner-facing question-content read
+   path (prompt/options, never `correct_answer`) so Today items can render
+   more than an action-type label.
+3. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
+4. Review permanent auth/session handling (middleware/cookie refresh) now
+   that a real UI exists — not yet assessed.
 
 ## Blocked: unseen-question / new-material exposure eligibility
 
