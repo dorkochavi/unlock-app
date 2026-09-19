@@ -10,13 +10,15 @@
 
 ## Last pushed commit
 
-`450af9a` — fix daily plan route auth ordering
+`e784dd5` — improve claude development workflow
 
 The branch was pushed successfully to:
 
 `origin/feature/project-foundation`
 
-No known unpushed application commits currently exist.
+No known unpushed commits currently exist.
+
+The last commit touching application code (`src/`, `supabase/`) is `450af9a` — fix daily plan route auth ordering. `e784dd5` is a workflow/documentation/configuration-only commit (`CLAUDE.md`, `AGENTS.md`, `docs/CONTEXT_MAP.md`, `docs/DEV_STATUS.md`, `.claude/**`, `.cursor/**`) and did not touch `src/` or `supabase/`.
 
 ## Current active checkpoint
 
@@ -95,11 +97,11 @@ Not implemented yet:
 - Global Today user-facing UI
 - production deployment
 
-## Current development-workflow work
+## Recent development-workflow work
 
-A new Claude/Cursor development workflow has been prepared locally but is not yet committed.
+The Claude/Cursor development workflow was committed and pushed as `e784dd5` — improve claude development workflow.
 
-Current local workflow work includes:
+It included:
 
 - updated `CLAUDE.md`
 - updated `AGENTS.md`
@@ -113,9 +115,7 @@ Current local workflow work includes:
 - `.claude/skills/review-commit/**`
 - targeted alignment updates under `.cursor/rules/**`
 
-The workflow changes are intentionally separate from the already-pushed DailyPlan route commits.
-
-Before committing them, run a final focused verification of the workspace/configuration diff and ensure no application/source changes are accidentally included.
+This work is workflow/configuration-only and separate from the DailyPlan route commits. No application/source changes (`src/`, `supabase/`) were included.
 
 ## Accepted product decisions relevant to current work
 
@@ -133,13 +133,15 @@ Before committing them, run a final focused verification of the workspace/config
 
 ## Current test baseline
 
-At pushed HEAD `450af9a`:
+At `450af9a` (last commit touching application code):
 
 - Unit tests: `455 / 455`
 - Schema/Postgres tests: `159 / 159`
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean at the route-fix checkpoint
+
+`e784dd5` (current pushed HEAD) only changed workflow/documentation/configuration files and did not touch `src/` or `supabase/`; these numbers have not been independently re-verified at `e784dd5`, but no application code changed since they were last measured.
 
 These numbers are regression checkpoints for the current development state, not permanent requirements.
 
@@ -155,18 +157,15 @@ Verification level for the DailyPlan Today route:
 
 ## Next development actions
 
-1. Final-verify the local Claude/Cursor workspace configuration changes.
-2. Commit the workspace/configuration changes separately from application code.
-3. Push that workspace commit manually after review.
-4. Start a fresh Claude context with `/clear`.
-5. Configure a real hosted Supabase project.
-6. Create local environment configuration from `.env.example`.
-7. Apply the committed migration chain to the authorized Supabase project.
-8. Verify real signup → `public.users` provisioning.
-9. Verify persisted user timezone flow in the real environment.
-10. Verify real `GET /api/daily-plan/today`.
-11. Build the minimal login/signup + Today UI vertical slice.
-12. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
+1. Start a fresh Claude context with `/clear`.
+2. Configure a real hosted Supabase project.
+3. Create local environment configuration from `.env.example`.
+4. Apply the committed migration chain to the authorized Supabase project.
+5. Verify real signup → `public.users` provisioning.
+6. Verify persisted user timezone flow in the real environment.
+7. Verify real `GET /api/daily-plan/today`.
+8. Build the minimal login/signup + Today UI vertical slice.
+9. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
 
 Do not connect to, link, migrate, or modify a remote Supabase project without explicit user authorization.
 

@@ -236,7 +236,7 @@ read:
 
 docs/DATABASE.md
 docs/ARCHITECTURE.md
-docs/DECISIONS/013-supabase-postgresql-as-v1-persistence.md
+docs/DECISIONS/013-supabase-postgresql-as-v1-persistence-provider.md
 supabase/migrations/
 
 For Claude Code:

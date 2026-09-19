@@ -178,6 +178,8 @@ Do not rewrite shared/pushed history casually.
 
 Before push, verify the intended commits and worktree state.
 
+`git push` and Supabase `link`/`db push` commands are additionally hard-blocked at the tool-permission level (`.claude/settings.json`). Pushes are always performed manually by the user outside Claude Code, consistent with `docs/DEV_STATUS.md`'s session protocol.
+
 ## 11. Session / Context Discipline
 
 Prefer fresh context over carrying long session history.
