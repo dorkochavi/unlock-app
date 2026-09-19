@@ -116,13 +116,18 @@ globally, before persisting via `DailyPlanRepository.createIfNotExists`.
 Also implemented: a DailyPlan-scoped transaction contract
 (`DailyPlanTransactionalRepositories`/`DailyPlanUnitOfWork`, in
 `application/dailyPlan/ports.ts`), deliberately independent of
-`application/learning/ports.ts`'s own `UnitOfWork`. Covered by 8
+`application/learning/ports.ts`'s own `UnitOfWork`. Covered by 9
 application-layer tests (in-memory fakes,
 `application/dailyPlan/__tests__/`): existing-plan resume with no re-read,
 multi-Course pooling, `maxItems` truncation, no-filler-when-fewer, empty
 plan (zero Courses / zero progress), QuestionVersion freeze-on-generation,
 transaction rollback on a persistence failure, and returning a concurrent
-`createIfNotExists` winner rather than the locally generated plan.
+`createIfNotExists` winner rather than the locally generated plan. A
+follow-up hardening pass additionally deduplicates `eligibleCourseIds` and
+throws loudly on a conflicting `questionId -> courseId` mapping (defensive
+only — real schema already makes the conflict unreachable), covered by 3
+more tests (duplicate Course input, conflicting mapping, empty-plan
+resume).
 
 **Still NOT implemented**: the public
 persisted-timezone -> local-day entry point (no `deriveLocalDateString`

@@ -245,4 +245,76 @@ describe("generateDailyPlanForResolvedInputs", () => {
 
     expect(plan).toEqual(winner);
   });
+
+  it("I. deduplicates eligibleCourseIds — listForUser called once, no duplicated candidate-derived metadata", async () => {
+    const db = new InMemoryDailyPlanDatabase();
+    // masteryCategory "strengthening" + the fixture's already-due
+    // scheduledReviewAt makes BOTH REVIEW_DUE and STRENGTHEN_MEMORY
+    // applicable to the same Question, so a duplicated pool would produce
+    // a visibly duplicated otherApplicableTypes entry if deduplication
+    // were broken.
+    db.seedProgress(
+      "course-1",
+      makeProgress({ questionId: "question-1", masteryCategory: "strengthening" }),
+    );
+    db.setCurrentVersion("question-1", "qv-1");
+
+    const callsBefore = db.listForUserCallCount;
+
+    const plan = await generateDailyPlanForResolvedInputs(
+      { ...KEY, eligibleCourseIds: ["course-1", "course-1"] },
+      makeContext(),
+      db,
+    );
+
+    expect(db.listForUserCallCount).toBe(callsBefore + 1);
+    expect(plan.items.length).toBe(1);
+    expect(plan.items[0].otherApplicableTypes).toEqual(["STRENGTHEN_MEMORY"]);
+  });
+
+  it("J. throws and does not persist a DailyPlan when the same questionId is observed under conflicting courseIds", async () => {
+    const db = new InMemoryDailyPlanDatabase();
+    // Simulates a malformed/buggy UserQuestionProgressRepository:
+    // question-x is returned under two DIFFERENT courseIds — schema-
+    // impossible for the real repository (questions.course_id is a single
+    // NOT NULL FK), but nothing stops a fake/buggy implementation from
+    // doing it.
+    db.seedProgress("course-1", makeProgress({ questionId: "question-x" }));
+    db.seedProgress("course-2", makeProgress({ questionId: "question-x" }));
+    db.setCurrentVersion("question-x", "qv-x");
+
+    await expect(
+      generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1", "course-2"] },
+        makeContext(),
+        db,
+      ),
+    ).rejects.toThrow(/question-x/);
+
+    expect(db.hasDailyPlan(KEY)).toBe(false);
+  });
+
+  it("K. resumes a persisted empty plan without regenerating on a second call", async () => {
+    const db = new InMemoryDailyPlanDatabase();
+
+    const first = await generateDailyPlanForResolvedInputs(
+      { ...KEY, eligibleCourseIds: [] },
+      makeContext(),
+      db,
+    );
+    expect(first.items).toEqual([]);
+
+    const listForUserCallsAfterFirst = db.listForUserCallCount;
+    const getCurrentVersionCallsAfterFirst = db.getCurrentVersionCallCount;
+
+    const second = await generateDailyPlanForResolvedInputs(
+      { ...KEY, eligibleCourseIds: [] },
+      makeContext(),
+      db,
+    );
+
+    expect(second).toEqual(first);
+    expect(db.listForUserCallCount).toBe(listForUserCallsAfterFirst);
+    expect(db.getCurrentVersionCallCount).toBe(getCurrentVersionCallsAfterFirst);
+  });
 });

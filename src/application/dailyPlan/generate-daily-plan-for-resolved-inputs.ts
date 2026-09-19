@@ -97,14 +97,37 @@ export async function generateDailyPlanForResolvedInputs(
     // loop already has for free, rather than via a second lookup later —
     // a Question belongs to exactly one Course, so the courseId a progress
     // row was fetched under IS that Question's Course.
+    //
+    // `eligibleCourseIds` is deduplicated (Set preserves first-seen/
+    // insertion order) before iterating — a repeated courseId would
+    // otherwise call `listForUser` twice and pool the same progress rows
+    // twice, producing duplicate candidates for the same Question and
+    // leaking into the persisted item's `otherApplicableTypes`.
+    const eligibleCourseIds = [...new Set(command.eligibleCourseIds)];
+
     const progresses: UserQuestionProgress[] = [];
     const questionCourseId = new Map<string, string>();
-    for (const courseId of command.eligibleCourseIds) {
+    for (const courseId of eligibleCourseIds) {
       const courseProgress = await repos.progress.listForUser(
         command.userId,
         courseId,
       );
       for (const progress of courseProgress) {
+        // Defensive only — real schema (`questions.course_id NOT NULL`)
+        // makes a Question belonging to two Courses unreachable; this
+        // guards against a malformed/buggy repository implementation
+        // silently mis-attributing an item's courseId instead of failing
+        // loudly.
+        const existingCourseId = questionCourseId.get(progress.questionId);
+        if (existingCourseId !== undefined && existingCourseId !== courseId) {
+          throw new Error(
+            `generateDailyPlanForResolvedInputs: questionId ` +
+              `${progress.questionId} was returned under conflicting ` +
+              `courseIds ("${existingCourseId}" and "${courseId}") — a ` +
+              `Question must belong to exactly one Course; this indicates ` +
+              `a UserQuestionProgressRepository.listForUser bug`,
+          );
+        }
         questionCourseId.set(progress.questionId, courseId);
       }
       progresses.push(...courseProgress);
@@ -132,7 +155,12 @@ export async function generateDailyPlanForResolvedInputs(
     // responsibility, not today-planner.ts's (ADR-010) — identical
     // reasoning and identical defensive skip to getOrCreateTodaySession: a
     // Question with no current version is skipped rather than crashing the
-    // whole generation.
+    // whole generation. `planItem.position` (below) is reused as-is, so a
+    // skipped Question can leave a gap in persisted positions (e.g.
+    // [0,1,2,4]) rather than being renumbered contiguously — intentional,
+    // matching getOrCreateTodaySession's identical existing behavior; the
+    // schema has no contiguity constraint and nothing reads position as a
+    // dense sequence.
     const items: Array<Omit<DailyPlanItem, "id" | "dailyPlanId">> = [];
     for (const planItem of plan.items) {
       const version = await repos.questionVersions.getCurrentVersion(
