@@ -15,7 +15,14 @@ import { MalformedRowError, readEnum } from "./row-validation";
 
 const TABLE = "question_versions";
 
-function readAnswerOptions(value: unknown): AnswerOption[] {
+/**
+ * Exported so `learner-question-content-mapper.ts` (this codebase's
+ * dedicated learner-facing, `correct_answer`-free read path) can reuse the
+ * exact same `answer_options` shape validation without duplicating it —
+ * this function never touches `correct_answer`, so sharing it introduces no
+ * risk of that field leaking into the learner-facing mapper.
+ */
+export function readAnswerOptions(value: unknown): AnswerOption[] {
   if (!Array.isArray(value)) {
     throw new MalformedRowError(
       TABLE,

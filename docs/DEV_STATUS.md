@@ -173,6 +173,9 @@ Implemented and approved:
 - auth-before-DB route ordering
 - stable route-level `INTERNAL_ERROR` boundary
 - real route-wiring regression coverage for auth-before-DB ordering
+- safe learner-facing question content (prompt/options/type) on
+  `GET /api/daily-plan/today` and `/today` — see "Learner-facing question
+  content slice" below
 
 Real-environment-verified (see "Real-environment verification milestone"
 above):
@@ -198,9 +201,6 @@ Not implemented yet:
 - Skip use case
 - mid-day Today adaptation
 - Global Today user-facing UI
-- learner-facing question content (prompt/options) in the Today API/UI —
-  Today items currently render by `actionType`/`status` only; see
-  "Minimal learner vertical slice" below
 - production deployment
 
 ## Minimal learner vertical slice: auth + timezone + Today UI
@@ -231,16 +231,10 @@ Added in this slice (2026-09-19):
 - Hebrew/RTL throughout, using the existing `src/messages/he.ts` /
   `src/lib/locale.ts` convention (extended with `auth`/`today` keys).
 
-**Explicitly deferred, not guessed at:** exposing question prompt/options
-in the Today API/UI. The existing `question_versions` read paths
-(`question-answer-definition-mapper.ts`) read `correct_answer` in the same
-query used for grading — reusing that directly for a learner-facing
-response would risk leaking it without a dedicated, narrowly-projected SQL
-read path (never selecting `correct_answer` at all) and its own leak-proof
-tests. Given this slice's explicit scope ("only implement if the
-repository/domain already safely supports it"), that safe read path does
-not yet exist, so Today items currently render by action type only — a
-real but bounded UX gap, not a security compromise.
+Exposing question prompt/options in the Today API/UI was explicitly
+deferred out of this slice (no dedicated, `correct_answer`-free read path
+existed yet) — see "Learner-facing question content slice" below for how
+this was closed in a later slice.
 
 **Verification level, stated honestly:**
 
@@ -267,6 +261,99 @@ real but bounded UX gap, not a security compromise.
   (or an explicitly-authorized session) to run by hand.
 - NOT interactive-browser-tested (no click-through/visual QA) — verified
   via `curl` HTTP status/content checks only.
+
+## Learner-facing question content slice (2026-09-20)
+
+Closes the gap noted above: `/today` now renders each `DailyPlanItem`'s
+real question `prompt` and `answerOptions` (plus `questionType`), never
+`correct_answer` or any other grading-only field.
+
+**Architecture — a dedicated, narrowly-projected read path, not a reuse of
+the grading mapper:**
+
+- `LearnerQuestionContent` / `LearnerQuestionContentRepository`
+  (`src/application/learning/ports.ts`) — a new, SEPARATE port from
+  `AnswerCorrectnessChecker`/`QuestionVersionRepository`. The shape has no
+  `correctOptionIds`/`explanation` field to forget to strip.
+- `PostgresLearnerQuestionContentRepository`
+  (`src/infrastructure/postgres/learner-question-content-repository.ts`)
+  issues exactly `select id, question_type, prompt, answer_options from
+  question_versions where id = any($1)` — `correct_answer` and
+  `explanation` are never named in the column list, so neither value is
+  ever fetched from the database. This is the actual enforcement point, not
+  "select then strip in application code." A dedicated unit test
+  (`__tests__/learner-question-content-repository.test.ts`) asserts the
+  literal SQL text never matches `correct_answer`/`explanation`/`select *`.
+- `learner-question-content-mapper.ts` reuses
+  `question-answer-definition-mapper.ts`'s exported `readAnswerOptions`
+  (the same option-shape validation, which itself never touches
+  `correct_answer`) rather than duplicating it.
+- Resolves by the exact persisted `questionVersionId`, never "the
+  Question's current version" (same discipline as
+  `PostgresAnswerCorrectnessChecker`).
+- `GET /api/daily-plan/today` is enriched, not replaced:
+  `handleGetDailyPlanToday` (`handle-get-daily-plan-today.ts`) calls a new
+  injected `loadLearnerQuestionContent` dependency AFTER a plan is already
+  known to exist for the authenticated caller, using only the
+  `questionVersionId`s already present on that plan's own items — no new
+  arbitrary-lookup endpoint, no client-supplied id. Skipped entirely when a
+  plan has no items (no extra round trip). A content-load failure, or
+  content missing for any item's exact `questionVersionId` (should be
+  unreachable — QuestionVersion rows are immutable and never deleted), both
+  map to the existing generic `500 INTERNAL_ERROR` — never a silent
+  substitution.
+- `daily-plan-dto.ts`'s `toDailyPlanDto`/`toDailyPlanItemDto` now take a
+  `contentByVersionId` map and merge by exact id, preserving `DailyPlanItem`
+  order; `toDailyPlanItemDto` throws if an entry is missing (a second,
+  independent guard beyond the handler's own check).
+- `route.ts` wires the real `PostgresLearnerQuestionContentRepository`
+  using the same lazily-constructed pool, reached only inside the
+  already-authenticated closure (auth-before-DB ordering unchanged).
+- `/today` (`src/app/today/page.tsx`) renders `prompt` and `answerOptions`
+  as the primary content per item, with action type/status moved to a
+  smaller secondary row. Still read-only: no click/submit handlers added.
+
+No schema/migration change: `answer_options`/`question_type`/`prompt`
+already existed as columns; only the query's column list is new.
+
+**Tests added:** `learner-question-content-mapper.test.ts` (7 cases,
+including a leak regression asserting the mapper never forwards
+`correct_answer`/`explanation` even if a row carries them),
+`learner-question-content-repository.test.ts` (5 cases, including the SQL
+projection regression), `daily-plan-dto.test.ts` (extended, +4 cases:
+content merge by exact id, missing-content throw, ordering with
+out-of-order content, and a full-serialization leak check),
+`handle-get-daily-plan-today.test.ts` (extended, +6 cases: content
+merge/ordering, dedup of repeated `questionVersionId`s, content-load
+failure, missing-content failure, full-response leak check,
+SINGLE_CHOICE/MULTIPLE_CHOICE shapes), `route-auth-db-ordering.test.ts`
+(+1 case: real wiring reaches the new repository only post-auth).
+
+**Verification:**
+
+- unit tests: `496 / 496` (was `474 / 474`; +22 from this slice).
+- typecheck: clean.
+- lint: clean.
+- `git diff --check`: clean.
+- `npm run test:schema`: `162 / 162` — run once this slice since a new
+  Postgres repository/query was added (unchanged count: no migration, no
+  existing repository behavior touched).
+- smoke-tested against the REAL hosted Supabase project via the
+  already-running `npm run dev` + `curl`: `GET /`, `GET /today` return
+  `200`; `/today` still renders `html[lang="he"][dir="rtl"]`; unauthenticated
+  `GET /api/daily-plan/today` returns real `401 UNAUTHENTICATED` (auth
+  still resolved before any DB/content-loading work). No real hosted data
+  was created, modified, or deleted.
+- NOT verified: an authenticated real learner's populated `/today` actually
+  rendering prompt/options in a browser — this session had no real learner
+  session/credentials to sign in with, and did not attempt to create or
+  guess one. This is the concrete next verification step for a human (or
+  an explicitly-authorized session with real credentials) to run by hand,
+  GET-only, without submitting any answer.
+
+**Explicitly out of scope for this slice (unchanged):** answer submission,
+Skip, Today redesign, AI generation, any remote Supabase data/schema
+change.
 
 ## Recent development-workflow work
 
@@ -304,8 +391,9 @@ This work is workflow/configuration-only and separate from the DailyPlan route c
 
 ## Current test baseline
 
-- Unit tests: `474 / 474`
-- Schema/Postgres tests: `162 / 162` (unchanged this slice — no DB-relevant code changed)
+- Unit tests: `496 / 496`
+- Schema/Postgres tests: `162 / 162` (rerun this slice — a new Postgres
+  repository/query was added; count unchanged, no migration/behavior change)
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -346,13 +434,16 @@ reported issue.
 ## Next development actions
 
 1. By hand (or an explicitly-authorized session), exercise the real
-   sign-up/sign-in + timezone + Today flow against the hosted Supabase
-   project in a real browser — this slice deliberately stopped short of
-   that (see "Minimal learner vertical slice" above).
-2. Design a safe, narrowly-projected learner-facing question-content read
-   path (prompt/options, never `correct_answer`) so Today items can render
-   more than an action-type label.
-3. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
+   sign-up/sign-in + timezone + Today flow — including a real learner
+   session actually rendering populated prompt/options — against the
+   hosted Supabase project in a real browser. Both this slice and the
+   "Minimal learner vertical slice" one before it deliberately stopped
+   short of that.
+2. Continue with DailyPlanItem completion through `submitAnswer` and Skip
+   as separate slices — `submitAnswer`'s existing grading path
+   (`AnswerCorrectnessChecker`) is untouched by this slice and remains the
+   correctness source of truth; this slice only added a read-only display
+   path.
 
 ## Blocked: unseen-question / new-material exposure eligibility
 

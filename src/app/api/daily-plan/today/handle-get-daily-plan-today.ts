@@ -48,11 +48,31 @@
  *   included in the response — matches `docs/API_V1_DRAFT.md`'s "never
  *   exposed... a real infrastructure fault" framing for the equivalent
  *   `submitAnswer` case, extended here.
+ *
+ * ## Learner-facing question content
+ *
+ * On `READY`, this function additionally loads learner-facing question
+ * content (prompt/options/type) via `deps.loadLearnerQuestionContent`, by
+ * the EXACT persisted `questionVersionId` of every item on the plan — never
+ * "the Question's current version." This is a SEPARATE call from
+ * `generateDailyPlan`, made only after a plan is already known to exist for
+ * this authenticated user, using ids that come only from that already-
+ * authorized plan (never a client-supplied id) — there is no code path
+ * here through which an arbitrary `questionVersionId` could be requested.
+ *
+ * Skipped entirely when the plan has no items (nothing to enrich, avoiding
+ * a needless round trip). A content-loading failure, or the loaded content
+ * being incomplete (missing an entry for some item's `questionVersionId`,
+ * which should be unreachable since QuestionVersion rows are immutable and
+ * never deleted), both map to the same generic 500 `INTERNAL_ERROR` used
+ * elsewhere in this function — never a silent substitution of different
+ * content and never a partially-enriched item.
  */
 import { toDailyPlanDto } from "./daily-plan-dto";
 import type {
   GetOrCreateDailyPlanForTodayResult,
 } from "../../../../application/dailyPlan/get-or-create-daily-plan-for-today";
+import type { LearnerQuestionContent } from "../../../../application/learning/ports";
 import type { RequireAuthenticatedUserResult } from "../../../../infrastructure/supabase/require-authenticated-user";
 
 export interface HandleGetDailyPlanTodayDependencies {
@@ -62,6 +82,9 @@ export interface HandleGetDailyPlanTodayDependencies {
     userId: string;
     now: Date;
   }) => Promise<GetOrCreateDailyPlanForTodayResult>;
+  loadLearnerQuestionContent: (
+    questionVersionIds: string[],
+  ) => Promise<LearnerQuestionContent[]>;
 }
 
 export interface RouteJsonResponse {
@@ -101,8 +124,45 @@ export async function handleGetDailyPlanToday(
   }
 
   switch (result.outcome) {
-    case "READY":
-      return { status: 200, body: { plan: toDailyPlanDto(result.plan) } };
+    case "READY": {
+      const uniqueVersionIds = Array.from(
+        new Set(result.plan.items.map((item) => item.questionVersionId)),
+      );
+
+      if (uniqueVersionIds.length === 0) {
+        return { status: 200, body: { plan: toDailyPlanDto(result.plan, new Map()) } };
+      }
+
+      let content: LearnerQuestionContent[];
+      try {
+        content = await deps.loadLearnerQuestionContent(uniqueVersionIds);
+      } catch (error) {
+        console.error(
+          "GET /api/daily-plan/today: unexpected error loading learner-facing question content",
+          error,
+        );
+        return internalErrorResponse();
+      }
+
+      const contentByVersionId = new Map(
+        content.map((item) => [item.questionVersionId, item] as const),
+      );
+      const missingVersionId = uniqueVersionIds.find(
+        (versionId) => !contentByVersionId.has(versionId),
+      );
+      if (missingVersionId !== undefined) {
+        console.error(
+          `GET /api/daily-plan/today: no learner-facing content found for questionVersionId ` +
+            `(${missingVersionId}) referenced by a persisted DailyPlanItem — this should be ` +
+            `unreachable since QuestionVersion rows are immutable and never deleted; treated ` +
+            `as a server-side data-consistency fault, never silently substituted with another ` +
+            `version's content.`,
+        );
+        return internalErrorResponse();
+      }
+
+      return { status: 200, body: { plan: toDailyPlanDto(result.plan, contentByVersionId) } };
+    }
 
     case "TIMEZONE_NOT_SET":
       return { status: 422, body: { error: { code: "TIMEZONE_NOT_SET" } } };

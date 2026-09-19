@@ -21,7 +21,7 @@
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import type { DailyPlan } from "@/application/dailyPlan/ports";
+import type { DailyPlan, DailyPlanItem } from "@/application/dailyPlan/ports";
 
 const mocks = vi.hoisted(() => ({
   createSupabaseServerClient: vi.fn(),
@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   createProductionDailyPlanPorts: vi.fn(),
   createProductionDailyPlanGenerationSettings: vi.fn(),
   getOrCreateDailyPlanForToday: vi.fn(),
+  findManyByVersionIds: vi.fn(),
 }));
 
 vi.mock("@/infrastructure/supabase/server-client", () => ({
@@ -58,11 +59,19 @@ vi.mock("@/application/dailyPlan/get-or-create-daily-plan-for-today", () => ({
   getOrCreateDailyPlanForToday: mocks.getOrCreateDailyPlanForToday,
 }));
 
+vi.mock("@/infrastructure/postgres/learner-question-content-repository", () => ({
+  PostgresLearnerQuestionContentRepository: vi.fn().mockImplementation(function (
+    this: { findManyByVersionIds: typeof mocks.findManyByVersionIds },
+  ) {
+    this.findManyByVersionIds = mocks.findManyByVersionIds;
+  }),
+}));
+
 // `vi.mock` calls above are hoisted above this import by Vitest, so `GET`
 // here is the real production route, wired against the mocks above.
 import { GET } from "../route";
 
-function makePlan(): DailyPlan {
+function makePlan(overrides: Partial<DailyPlan> = {}): DailyPlan {
   return {
     id: "plan-1",
     userId: "supabase-user-1",
@@ -73,6 +82,27 @@ function makePlan(): DailyPlan {
     startedAt: null,
     completedAt: null,
     items: [],
+    ...overrides,
+  };
+}
+
+function makeItem(overrides: Partial<DailyPlanItem> = {}): DailyPlanItem {
+  return {
+    id: "item-1",
+    dailyPlanId: "plan-1",
+    userId: "supabase-user-1",
+    courseId: "course-1",
+    position: 0,
+    questionId: "question-1",
+    questionVersionId: "qv-1",
+    actionType: "REVIEW_DUE",
+    tier: "DUE_REVIEW",
+    otherApplicableTypes: [],
+    reasons: ["SCHEDULED_REVIEW_DUE"],
+    status: "pending",
+    resolvedAt: null,
+    completedAt: null,
+    ...overrides,
   };
 }
 
@@ -138,6 +168,41 @@ describe("GET /api/daily-plan/today — real route wiring: auth before DB constr
     expect(dateSpy).toHaveBeenCalledTimes(1);
 
     dateSpy.mockRestore();
+  });
+
+  it("B2. authenticated, READY with items: real wiring reaches PostgresLearnerQuestionContentRepository with the pool, using the plan's exact questionVersionIds", async () => {
+    mocks.requireAuthenticatedUser.mockResolvedValue({
+      outcome: "AUTHENTICATED",
+      userId: "supabase-user-1",
+    });
+    const fakePool = { marker: "fake-pool" };
+    mocks.getPool.mockReturnValue(fakePool);
+    mocks.createProductionDailyPlanGenerationSettings.mockReturnValue({});
+    mocks.createProductionDailyPlanPorts.mockReturnValue({});
+    const plan = makePlan({ items: [makeItem({ questionVersionId: "qv-1" })] });
+    mocks.getOrCreateDailyPlanForToday.mockResolvedValue({ outcome: "READY", plan });
+    mocks.findManyByVersionIds.mockResolvedValue([
+      {
+        questionVersionId: "qv-1",
+        questionType: "SINGLE_CHOICE",
+        prompt: "What is 2 + 2?",
+        options: [
+          { id: "a", content: "3" },
+          { id: "b", content: "4" },
+        ],
+      },
+    ]);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.findManyByVersionIds).toHaveBeenCalledWith(["qv-1"]);
+    expect(body.plan.items[0]).toMatchObject({
+      prompt: "What is 2 + 2?",
+      questionType: "SINGLE_CHOICE",
+    });
+    expect(JSON.stringify(body)).not.toContain("correct_answer");
   });
 
   it("C. authenticated but DB construction throws: 500 INTERNAL_ERROR, no raw error/secret leaked", async () => {

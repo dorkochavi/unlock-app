@@ -207,9 +207,20 @@ function TodayItemCard({ item }: { item: DailyPlanItemDto }) {
 
   return (
     <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <div className="flex items-center justify-between">
-        <span className="font-medium">{actionLabel}</span>
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mb-3 font-medium">{item.prompt}</p>
+      <ul className="mb-3 flex flex-col gap-1">
+        {item.answerOptions.map((option) => (
+          <li
+            key={option.id}
+            className="rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800"
+          >
+            {option.content}
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+        <span>{actionLabel}</span>
+        <span>
           {messages.today.statusLabel}: {statusLabel}
         </span>
       </div>

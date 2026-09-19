@@ -64,6 +64,7 @@ import {
 } from "@/infrastructure/dailyPlan/composition-root";
 import { PgConnectionProvider } from "@/infrastructure/postgres/pg-connection-provider";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
+import { PostgresLearnerQuestionContentRepository } from "@/infrastructure/postgres/learner-question-content-repository";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
@@ -86,6 +87,14 @@ export async function GET(): Promise<Response> {
         const ports = createProductionDailyPlanPorts(pool, connectionProvider);
         const settings = createProductionDailyPlanGenerationSettings();
         return getOrCreateDailyPlanForToday(command, settings, ports);
+      },
+      loadLearnerQuestionContent: async (questionVersionIds) => {
+        // Reached ONLY when handleGetDailyPlanToday has a READY plan with
+        // at least one item — i.e. only for an already-authenticated
+        // request, same as generateDailyPlan above.
+        const pool = getPool();
+        const repository = new PostgresLearnerQuestionContentRepository(pool);
+        return repository.findManyByVersionIds(questionVersionIds);
       },
     });
 

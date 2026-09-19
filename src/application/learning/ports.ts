@@ -17,6 +17,7 @@
  */
 
 import type { AttemptReplayRecord } from "../../domain/learning/rebuild";
+import type { AnswerOption, QuestionType } from "../../domain/learning/answer";
 import type {
   NextBestActionReason,
   NextBestActionType,
@@ -134,6 +135,47 @@ export interface AnswerCorrectnessChecker {
     questionVersionId: string,
     selectedAnswer: SelectedAnswer,
   ): Promise<boolean>;
+}
+
+/**
+ * Learner-facing content for one QuestionVersion — this slice's dedicated
+ * SAFE read shape (`docs/DEV_STATUS.md` "learner-facing question content").
+ * Deliberately excludes `correctOptionIds`, `explanation`, or any other
+ * grading-only/internal field that exists on the same `question_versions`
+ * row `QuestionAnswerDefinition` (above) reads for grading — there is no
+ * field on this type a caller could accidentally forward to a learner that
+ * would leak the correct answer, by construction, not by convention.
+ *
+ * `options` reuses `AnswerOption` directly (id/content only, same as the
+ * grading shape) since option identity/content is not itself secret; only
+ * `correctOptionIds` is.
+ */
+export interface LearnerQuestionContent {
+  questionVersionId: string;
+  questionType: QuestionType;
+  prompt: string;
+  options: AnswerOption[];
+}
+
+/**
+ * Dedicated learner-facing read port — SEPARATE from
+ * `AnswerCorrectnessChecker`/`QuestionVersionRepository` above, which exist
+ * to serve grading, not learner display. A real implementation's SQL text
+ * must select only the columns `LearnerQuestionContent` needs and must
+ * NEVER select `correct_answer` or `explanation` — this is a
+ * security-sensitive boundary, not an ordinary repository convenience (see
+ * `PostgresLearnerQuestionContentRepository`'s own doc comment and its
+ * dedicated regression test asserting the literal SQL text).
+ *
+ * Resolves EXACT persisted QuestionVersion ids, never "the Question's
+ * current version" — matching `AnswerCorrectnessChecker.isCorrect`'s own
+ * requirement that historical/frozen content is never silently swapped for
+ * a newer version.
+ */
+export interface LearnerQuestionContentRepository {
+  findManyByVersionIds(
+    questionVersionIds: readonly string[],
+  ): Promise<LearnerQuestionContent[]>;
 }
 
 export interface QuestionVersionRepository {
