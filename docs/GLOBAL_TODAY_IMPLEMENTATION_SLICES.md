@@ -92,7 +92,8 @@ values and what remains open (calibration, not a product decision).
 
 **5. `DailyPlan`/`DailyPlanItem` migration and domain/application layer —
 PERSISTENCE FOUNDATION IMPLEMENTED (2026-09-21); INTERNAL GENERATION CORE
-IMPLEMENTED (2026-09-19 session), public entry point/runtime wiring NOT.**
+IMPLEMENTED (2026-09-19 session); PUBLIC ENTRY POINT IMPLEMENTED
+(2026-09-19 session), Postgres/runtime wiring NOT.**
 `supabase/migrations/20260921000000_daily_plan_v1.sql` adds
 `daily_plans`/`daily_plan_items`, purely additive alongside
 `today_sessions`/`today_session_items` (unmodified, per
@@ -103,12 +104,11 @@ the single-use resolution rule (ADR-016 §19: `markCompleted`/`markSkipped`
 are each a conditional `UPDATE ... WHERE status = 'pending'`, returning a
 typed `RESOLVED`/`ALREADY_RESOLVED`/`NOT_FOUND` outcome).
 
-**IMPLEMENTED:** the internal DailyPlan generation core,
+**IMPLEMENTED — internal generation core:**
 `generateDailyPlanForResolvedInputs`
 (`src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`) —
-takes an explicit, caller-supplied `eligibleCourseIds` list (not yet
-CourseMembership-derived) and an already-resolved `plannedForDate` (not yet
-timezone-derived), and orchestrates the same unmodified
+takes an explicit, caller-supplied `eligibleCourseIds` list and an
+already-resolved `plannedForDate`, and orchestrates the same unmodified
 `generateNextBestActionCandidates` -> `rankNextBestActionCandidates` ->
 `generateTodayPlan` pipeline `getOrCreateTodaySession` uses, extended to
 pool `UserQuestionProgress` across every `eligibleCourseId` and rank once,
@@ -116,32 +116,44 @@ globally, before persisting via `DailyPlanRepository.createIfNotExists`.
 Also implemented: a DailyPlan-scoped transaction contract
 (`DailyPlanTransactionalRepositories`/`DailyPlanUnitOfWork`, in
 `application/dailyPlan/ports.ts`), deliberately independent of
-`application/learning/ports.ts`'s own `UnitOfWork`. Covered by 9
-application-layer tests (in-memory fakes,
-`application/dailyPlan/__tests__/`): existing-plan resume with no re-read,
-multi-Course pooling, `maxItems` truncation, no-filler-when-fewer, empty
-plan (zero Courses / zero progress), QuestionVersion freeze-on-generation,
-transaction rollback on a persistence failure, and returning a concurrent
-`createIfNotExists` winner rather than the locally generated plan. A
-follow-up hardening pass additionally deduplicates `eligibleCourseIds` and
-throws loudly on a conflicting `questionId -> courseId` mapping (defensive
-only — real schema already makes the conflict unreachable), covered by 3
-more tests (duplicate Course input, conflicting mapping, empty-plan
-resume).
+`application/learning/ports.ts`'s own `UnitOfWork`; `eligibleCourseIds`
+deduplication and a loud throw on a conflicting `questionId -> courseId`
+mapping (defensive only — real schema already makes the conflict
+unreachable). 12 application-layer tests
+(`application/dailyPlan/__tests__/generate-daily-plan-for-resolved-inputs.test.ts`).
 
-**Still NOT implemented**: the public
-persisted-timezone -> local-day entry point (no `deriveLocalDateString`
-wiring, no `UserRepository` call from this layer), membership-driven Course
-discovery (no `CourseMembershipRepository.listActiveForUser` call —
-`eligibleCourseIds` is still a plain caller-supplied parameter), a
-`PostgresDailyPlanUnitOfWork` (the transaction contract above has no
-Postgres implementation yet), any runtime/API/UI wiring, and any
-`submitAnswer` integration (DailyPlanItem completion is not wired to real
-Attempts). Skip semantics (Slice 0) and Manual Practice confirmation
+**IMPLEMENTED — public entry point:** `getOrCreateDailyPlanForToday`
+(`src/application/dailyPlan/get-or-create-daily-plan-for-today.ts`) —
+resolves `UserRepository.findTimezone` -> `deriveLocalDateString` ->
+`CourseMembershipRepository.listActiveForUser` -> eligible `courseId`s,
+then delegates unchanged to `generateDailyPlanForResolvedInputs`. Accepts
+no `courseId`/`courseIds`/`scope` parameter — course discovery is this
+function's own job (ADR-016 §1). Typed result
+(`{outcome: "READY" | "USER_NOT_FOUND" | "TIMEZONE_NOT_SET"}`), never
+throws for either expected non-ready state. **Accepted product decision,
+now implemented and recorded (`docs/OPEN_QUESTIONS.md` #44, RESOLVED):
+only `CourseMembership.role === "LEARNER"` is eligible for automatic
+DailyPlan participation — `OWNER`/`INSTRUCTOR` memberships never
+automatically contribute their Course.** Same-day resume still performs
+one `listActiveForUser` read even when a plan already exists for that day
+(stated explicitly in the file's own doc comment as a deliberate,
+low-cost tradeoff — avoiding it cleanly would need either a new
+non-transactional `DailyPlanRepository` read port or a second transaction
+per resume, neither authorized by this slice). 11 application-layer tests
+(`application/dailyPlan/__tests__/get-or-create-daily-plan-for-today.test.ts`),
+including `Asia/Jerusalem`/`America/New_York` UTC-vs-local-date boundary
+cases, LEARNER-only filtering, archived/revoked exclusion, and same-day
+resume with no regeneration.
+
+**Still NOT implemented**: a `PostgresDailyPlanUnitOfWork` (the
+transaction contract has no Postgres implementation yet — both
+`generateDailyPlanForResolvedInputs` and `getOrCreateDailyPlanForToday`
+are exercised only via in-memory fakes), any runtime/API/UI wiring, and
+any `submitAnswer` integration (`DailyPlanItem` completion is not wired to
+real Attempts). Skip semantics (Slice 0) and Manual Practice confirmation
 against `DailyPlanItem` remain unimplemented as before. **Global Today is
-not usable yet** — this is generation-core orchestration only, exercised
-by in-memory fakes, with no Postgres/API/UI path connecting a real request
-to it.
+not usable yet** — no Postgres/API/UI path connects a real request to any
+of this.
 
 **6. Single-Course Today vertical slice.** Real usable UI, Auth,
 CourseMembership, QR join, persistence — the full demo-readiness bar per

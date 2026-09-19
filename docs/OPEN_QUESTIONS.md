@@ -1240,3 +1240,29 @@ none of the three is a resolved product decision.
 Status: OPEN
 
 Target phase: Course Membership / ADR-015 follow-up
+
+---
+
+## 44. Role Eligibility for Automatic DailyPlan Generation
+
+Question:
+
+`CourseMembershipRepository.listActiveForUser` (ADR-015) already excludes
+revoked and archived memberships but does not filter by `CourseRole`. Does
+an `OWNER`/`INSTRUCTOR` membership automatically contribute its Course to
+that same user's own personal DailyPlan (ADR-016), the same way a
+`LEARNER` membership does?
+
+Status: **RESOLVED.** Only `CourseMembership.role === "LEARNER"` is
+eligible for automatic DailyPlan participation. `OWNER`/`INSTRUCTOR`
+memberships are Course-management roles
+(`domain/course/types.ts`'s `MANAGEMENT_COURSE_ROLES`) and must NOT
+automatically contribute their Courses to the acting user's personal
+DailyPlan. Implemented in
+`src/application/dailyPlan/get-or-create-daily-plan-for-today.ts`, which
+filters `listActiveForUser`'s result to `role === "LEARNER"` before a
+Course's `UserQuestionProgress` is pooled into candidate generation. An
+instructor/owner's own authoring or class-management surface is a
+separate, not-yet-built concern, unaffected by this decision.
+
+Target phase: Global Today / DailyPlan generation (ADR-016 implementation)
