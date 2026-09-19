@@ -50,11 +50,10 @@ Raw infrastructure errors, SQL, connection strings, stack traces, credentials, a
 
 A dedicated regression test imports and calls the real production `GET()` route wiring and fails if database construction is moved back before authentication.
 
-## Real-environment verification milestone (uncommitted)
+## Real-environment verification milestone
 
 A real hosted Supabase project has been verified end-to-end for
-`GET /api/daily-plan/today`. This is NOT yet committed/pushed — see
-"Uncommitted work" below.
+`GET /api/daily-plan/today`.
 
 Verified against the real hosted project:
 
@@ -108,24 +107,44 @@ UTC offset. This is a shared helper also used by `today-session-mapper.ts`'s
 `planned_for_date`, so the same latent bug there is fixed by the same
 change.
 
-### Uncommitted work
+The DATE read-back fix and its regression tests were committed as `b502ca9`
+— `src/infrastructure/postgres/row-validation.ts` and
+`src/infrastructure/postgres/__tests__/row-validation.test.ts` (the latter
+covers the exact reported scenario, `now=2026-09-19T16:56:17.843Z`,
+`Asia/Jerusalem` -> `plannedForDate=2026-09-19`, across positive/negative/
+zero process UTC offsets via `process.env.TZ`).
 
-- `src/infrastructure/postgres/row-validation.ts` — the fix above
-- `src/infrastructure/postgres/__tests__/row-validation.test.ts` — new
-  regression tests, including the exact reported scenario
-  (`now=2026-09-19T16:56:17.843Z`, `Asia/Jerusalem` ->
-  `plannedForDate=2026-09-19`, surviving a simulated `pg` round-trip)
+### PGlite DailyPlan integration coverage gap — CLOSED
 
-Not committed, staged, or pushed yet.
+`supabase/tests/postgres/daily-plan-repository.test.ts` and
+`supabase/tests/postgres/daily-plan-unit-of-work.test.ts` already provided
+substantial PGlite integration coverage for `PostgresDailyPlanRepository`
+and the full generation pipeline (create/persist, read-back, idempotency,
+resolve-once semantics, LEARNER-only course pooling). This slice closed the
+two remaining specific gaps:
 
-### Known gap surfaced by this verification
+- item ordering: added a test proving `findByKey` orders items by the
+  `position` column itself (not insertion/id order), by inserting rows
+  directly out of position order.
+- `plannedForDate` round-trip at a year boundary (`2025-12-31`), in
+  addition to the existing mid-month case.
 
-There is no PGlite/Postgres integration test for
-`PostgresDailyPlanRepository` / `daily-plan-mapper.ts` — the existing
-`daily_plan`/`DailyPlan` application-layer tests use in-memory fakes and
-never exercise real `pg` type parsing. This is why the DATE read-back bug
-was invisible to the existing suite and was only found via real-Supabase
-verification. Reported as a gap, not silently fixed as part of this slice.
+**New finding, not fixed in this slice (test-double fidelity, not a
+production risk):** PGlite's own `date`-column type parser constructs the
+returned `Date` from UTC calendar components, while real `pg`'s default
+OID-1082 parser constructs it from LOCAL calendar components (the
+convention `readDateOnlyString`'s fix above is calibrated for). Verified
+directly: under a negative-process-UTC-offset (e.g. `America/Los_Angeles`),
+a PGlite-style UTC-midnight `Date` read back via `readDateOnlyString`'s
+local-getter branch is off by one day, while a real-`pg`-style
+local-midnight `Date` is not. This does not affect production (which only
+ever talks to real `pg`, never PGlite), and does not manifest in this
+repo's actual dev/CI environments (UTC or non-negative offsets), but it
+means the PGlite-based repository tests cannot, by themselves, prove
+`readDateOnlyString`'s `Date`-branch correctness on a negative-offset host
+— `row-validation.test.ts`'s own `process.env.TZ`-parametrized tests
+already carry that proof for the real-`pg` convention. Documented in
+`daily-plan-repository.test.ts`'s file-level doc comment; no code changed.
 
 ## Current implementation state
 
@@ -215,12 +234,8 @@ This work is workflow/configuration-only and separate from the DailyPlan route c
 
 ## Current test baseline
 
-At the current uncommitted working tree (last pushed commit still
-`e784dd5`; changes are the DATE read-back fix described above plus its
-regression tests — see "Uncommitted work"):
-
 - Unit tests: `461 / 461`
-- Schema/Postgres tests: `159 / 159`
+- Schema/Postgres tests: `162 / 162`
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -240,10 +255,39 @@ Verification level for the DailyPlan Today route:
 
 ## Next development actions
 
-1. Commit the DATE read-back fix and its regression tests as a focused, reviewed slice (see recommended commit message).
-2. Build the minimal login/signup + Today UI vertical slice.
-3. Add PGlite/Postgres integration coverage for `PostgresDailyPlanRepository` / `daily-plan-mapper.ts` (gap surfaced by this verification — real `pg` type-parsing behavior is currently untested below the real-Supabase level).
-4. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
+1. Build the minimal login/signup + Today UI vertical slice.
+2. Continue with DailyPlanItem completion through `submitAnswer` and Skip as separate slices.
+
+## Blocked: unseen-question / new-material exposure eligibility
+
+Investigated for an autonomous session's queued slice (2026-09-19). NOT
+implemented — this is a genuinely unresolved product decision, not a
+missing-parameter gap:
+
+- `src/domain/learning/next-best-action.ts`'s own doc comment explicitly
+  excludes `EXPAND_COVERAGE`/`NEW_LEARNING` candidates as requiring
+  "course/topic coverage context that does not exist on
+  `UserQuestionProgress`" — modeling them "would mean fabricating a
+  course-aggregate contract that hasn't been designed."
+- `src/domain/learning/today-planner.ts`'s own doc comment states it
+  deliberately does NOT fabricate `NEW_LEARNING`/`EXPAND_COVERAGE` filler
+  when ranked candidates are empty, calling Starter/calibration planning "a
+  deliberately separate, still-deferred future input path."
+- `docs/OPEN_QUESTIONS.md` #4 (Starter Experience Eligibility) and #5
+  (Starter Sampling Strategy) are both explicitly **OPEN** — no entry
+  condition, sampling strategy, or count is decided.
+- `docs/NEW_MATERIAL_EXPOSURE_MODEL.md` is self-labeled "DESIGN ANALYSIS
+  ONLY — NOT AN ADR, NOT IMPLEMENTED, NOT A DECISION," explicitly states no
+  numeric threshold/sample size/novelty-budget is decided, and explicitly
+  scopes itself as a **read-only** analysis of `next-best-action.ts` and
+  `today-planner.ts` — "No change to ... all four are read-only inputs to
+  this analysis."
+
+Implementing any unseen-question candidate path now would mean inventing
+the eligibility/sampling policy these documents explicitly defer to future
+product review, contradicting CLAUDE.md §7/§4 ("do not invent an answer"
+when a product decision is unresolved). Left undone; needs a product
+decision on OPEN_QUESTIONS #4/#5 before implementation.
 
 Do not connect to, link, migrate, or modify a remote Supabase project without explicit user authorization.
 
