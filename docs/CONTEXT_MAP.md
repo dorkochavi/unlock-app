@@ -2,368 +2,400 @@
 
 Status: Active navigation guide
 
-Purpose: help developers and AI coding agents quickly identify which documents should be read for a given type of task.
+Purpose: route developers and coding agents to the minimum relevant context for a task.
 
 This file is intentionally short.
 
-It is a map, not another source of truth.
+It is a navigation map, not a source of truth.
 
 ---
 
-## 1. Always Start Here
+## 1. Session Start
 
-For any meaningful UNLOCK implementation task, begin with:
+For substantial work, start with:
 
-```text
+CLAUDE.md
+docs/DEV_STATUS.md
+git status
+git status -sb
+git log --oneline -5
+
+Then use this map to read only the additional context relevant to the current task.
+
+Do not load the entire documentation tree by default.
+
+---
+
+## 2. Source Hierarchy
+
+When determining behavior or architecture, use:
+
+1. committed code
+2. accepted ADRs under `docs/DECISIONS/`
+3. `docs/OPEN_QUESTIONS.md`
+4. committed migrations under `supabase/migrations/`
+5. relevant canonical product/API/design documentation
+
+`docs/DEV_STATUS.md` describes the current development checkpoint.
+
+`docs/MASTER_SPEC.md` provides high-level product/system context.
+
+Neither overrides committed code or accepted ADRs.
+
+Content under `scratch/` is temporary and non-canonical.
+
+---
+
+## 3. Product Behavior
+
+If the task changes product behavior, read only what is relevant from:
+
+docs/PRODUCT.md
 docs/MASTER_SPEC.md
-docs/PRODUCT.md
-docs/ARCHITECTURE.md
-```
-
-These define:
-
-- product direction;
-- V1 scope;
-- major boundaries;
-- technical structure.
-
----
-
-## 2. If the Task Changes Product Behavior
-
-Read:
-
-```text
-docs/PRODUCT.md
 docs/DOMAIN_GLOSSARY.md
-docs/FEATURES/<relevant-feature>.md
-```
-
-Also check:
-
-```text
 docs/OPEN_QUESTIONS.md
-```
+docs/FEATURES/
+docs/DECISIONS/
 
-Use `docs/MASTER_SPEC.md` when the behavior touches product strategy, V1 scope, or a potentially conflicting requirement.
+Use the relevant ADR when one exists.
+
+Do not invent unresolved behavior.
 
 ---
 
-## 3. If the Task Changes Architecture
+## 4. Architecture
 
-Read:
+If the task changes module boundaries, dependency direction, runtime structure, or composition:
 
-```text
 docs/ARCHITECTURE.md
 docs/DECISIONS/
-.cursor/rules/architecture.mdc
-```
+
+For Claude Code also use relevant rules under:
+
+.claude/rules/
+
+For Cursor, use relevant rules under:
+
+.cursor/rules/
+
+Do not read every rule file automatically.
+
+---
+
+## 5. Learning Engine
+
+If the task changes:
+
+- mastery
+- evidence
+- misconception
+- scheduling
+- retrieval qualification
+- Next Best Action
+- replay/rebuild
+- Today ranking/planning
+
+read:
+
+docs/DECISIONS/004-ai-is-not-the-learning-engine.md
+docs/DECISIONS/005-attempts-are-immutable.md
+docs/DECISIONS/008-fsrs-memory-scheduler.md
+docs/DECISIONS/009-question-versioning.md
+docs/DECISIONS/012-attempt-replayability-and-rebuild-semantics.md
+docs/LEARNING_ENGINE.md
+docs/DOMAIN_GLOSSARY.md
+docs/TESTING.md
+
+For Claude Code:
+
+.claude/rules/learning-engine.md
+
+Critical invariants:
+
+Attempts are immutable historical evidence.
+QuestionVersion preserves historical question state.
+Learning Engine behavior is deterministic for explicit state, policy, and time.
+AI is not the real-time Learning Engine.
+
+Do not silently reconcile current implementation enums with future target models during unrelated work.
+
+---
+
+## 6. DailyPlan / Today
+
+If the task changes Today or DailyPlan, start with:
+
+docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md
+docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md
+docs/DEV_STATUS.md
+
+Read additional Global Today documents only when the specific task requires them.
+
+Relevant supporting documents may include:
+
+docs/GLOBAL_TODAY_APPLICATION_FLOW.md
+docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md
+docs/GLOBAL_TODAY_PRIORITY_MODEL.md
+docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md
+docs/NEW_MATERIAL_EXPOSURE_MODEL.md
+docs/TODAY_ADAPTATION_MODEL.md
+docs/TODAY_TIMEZONE_EDGE_CASES.md
+
+Critical current invariants:
+
+One DailyPlan per user per local day.
+Global Today and Course Today are views of the same DailyPlan.
+Only active LEARNER memberships participate automatically.
+Manual Practice is separate from Today.
+Today planning selects learning items; Quiz executes prepared work.
+
+Do not load every Global Today document by default.
+
+---
+
+## 7. Course Membership / Authorization
+
+If the task changes:
+
+- course membership
+- join behavior
+- roles
+- archive/revoke behavior
+- management authorization
+- automatic learning eligibility
+
+read:
+
+docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md
+docs/OPEN_QUESTIONS.md
+
+For Claude Code, also use:
+
+.claude/rules/auth.md
+
+Important current rule:
+
+CourseMembership.role is the authorization source.
+Only active LEARNER memberships participate automatically in personal DailyPlan generation.
+
+Do not invent unresolved revoke/rejoin/ownership-transfer behavior.
+
+---
+
+## 8. Authentication / API
+
+If the task changes:
+
+- Supabase Auth
+- login/session handling
+- authenticated API routes
+- user identity propagation
+- API error contracts
+- API runtime wiring
+
+read:
+
+docs/API_V1_DRAFT.md
+docs/DEV_STATUS.md
+
+For Claude Code:
+
+.claude/rules/auth.md
+.claude/rules/api.md
+
+Critical rules:
+
+userId comes only from verified server-side authentication.
+Use auth.getUser() for trusted identity.
+Authenticate before constructing database runtime.
+Do not expose raw infrastructure errors or secrets.
+
+Current real route:
+
+GET /api/daily-plan/today
+
+Check `docs/DEV_STATUS.md` for known active issues before modifying it.
+
+---
+
+## 9. Database / PostgreSQL
+
+If the task changes:
+
+- schema
+- migrations
+- repositories
+- transactions
+- UnitOfWork
+- Postgres runtime
+- concurrency assumptions
+- constraints
+- triggers
+
+read:
+
+docs/DATABASE.md
+docs/ARCHITECTURE.md
+docs/DECISIONS/013-supabase-postgresql-as-v1-persistence.md
+supabase/migrations/
+
+For Claude Code:
+
+.claude/rules/postgres.md
+
+Also inspect relevant tests under:
+
+supabase/tests/
+
+Critical rules:
+
+Migrations are forward-only.
+Do not edit accepted historical migrations for new behavior.
+PGlite does not prove real multi-connection concurrency.
+Supabase-managed auth schema is not recreated in production migrations.
+
+---
+
+## 10. Attempts / submitAnswer
+
+If the task changes answer submission, Attempt persistence, idempotency, correctness, or replay:
+
+docs/DECISIONS/005-attempts-are-immutable.md
+docs/DECISIONS/009-question-versioning.md
+docs/DECISIONS/010-answer-submission-transaction-model.md
+docs/DECISIONS/012-attempt-replayability-and-rebuild-semantics.md
+docs/DECISIONS/014-question-answer-model-v1.md
+docs/DATABASE.md
 
 Also inspect:
 
-```text
-docs/MASTER_SPEC.md
-docs/PRODUCT.md
-```
+src/application/learning/submit-answer.ts
+supabase/tests/postgres/submit-answer.test.ts
 
-if the architecture change affects product behavior or scope.
+Do not mutate historical Attempts.
 
 ---
 
-## 4. If the Task Changes Learning Logic
+## 11. User Timezone / Local Day
 
-Read:
+If the task changes timezone persistence, local date, or Today day boundaries, inspect:
 
-```text
-docs/MASTER_SPEC.md
-docs/PRODUCT.md
-docs/DOMAIN_GLOSSARY.md
-.cursor/rules/learning-engine.mdc
+src/domain/user/timezone.ts
+src/domain/user/local-date.ts
+src/application/user/
+docs/TODAY_TIMEZONE_EDGE_CASES.md
+
+Relevant product rule:
+
+Persisted user timezone is authoritative for DailyPlan local-day calculation.
+
+Do not silently fall back to UTC when timezone is required.
+
+---
+
+## 12. Testing
+
+If the task adds or changes tests:
+
 docs/TESTING.md
-```
+docs/DEFINITION_OF_DONE.md
 
-Also read the focused prototype-learning notes relevant to the signal being changed.
+For Claude Code:
 
-Do not invent missing Learning Engine rules.
+.claude/rules/testing.md
 
-If the behavior is not yet known, mark it as unresolved and surface it before implementation.
+Prefer tests that protect behavior and invariants, not implementation details.
 
----
+Distinguish:
 
-## 5. If the Task Changes Today
+unit-tested
+PGlite integration-tested
+reasoned under PostgreSQL semantics
+real Supabase tested
+browser E2E tested
 
-Read:
-
-```text
-docs/PRODUCT.md
-docs/DOMAIN_GLOSSARY.md
-docs/ROADMAP.md
-docs/FEATURES/TODAY.md
-.cursor/rules/product.mdc
-.cursor/rules/learning-engine.mdc
-```
-
-`docs/FEATURES/TODAY.md` does not exist yet. Read it once it has been created.
-
-Critical invariant:
-
-```text
-Today planning selects the learning items.
-Quiz executes the prepared plan.
-```
-
-Do not move Today selection logic into Quiz.
+Do not describe these as equivalent.
 
 ---
 
-## 6. If the Task Changes Quiz
+## 13. UI / Copy / Localization
 
-Read:
+If the task changes user-facing UI or copy:
 
-```text
-docs/PRODUCT.md
-docs/DOMAIN_GLOSSARY.md
-docs/FEATURES/QUIZ.md
-docs/TESTING.md
-```
-
-`docs/FEATURES/QUIZ.md` does not exist yet. Read it once it has been created.
-
-Also inspect Today contracts if Quiz is being used in Today mode.
-
-Critical invariant:
-
-```text
-Quiz does not independently select Today Questions.
-```
-
----
-
-## 7. If the Task Changes Attempts or Progress
-
-Read:
-
-```text
-docs/PRODUCT.md
-docs/DOMAIN_GLOSSARY.md
-docs/DATABASE.md
-docs/TESTING.md
-.cursor/rules/database.mdc
-.cursor/rules/learning-engine.mdc
-```
-
-Critical invariant:
-
-```text
-Attempts are historical evidence.
-UserQuestionProgress is derived learner state.
-```
-
-Do not rewrite Attempt history to represent current progress.
-
----
-
-## 8. If the Task Changes the Database
-
-Read:
-
-```text
-docs/DATABASE.md
-docs/DOMAIN_GLOSSARY.md
-docs/ARCHITECTURE.md
-.cursor/rules/database.mdc
-```
-
-Also inspect:
-
-```text
-docs/OPEN_QUESTIONS.md
-docs/DECISIONS/
-```
-
-for unresolved or durable data-model decisions.
-
-Do not infer a future-heavy schema from architecture-ready concepts.
-
----
-
-## 9. If the Task Changes Authentication or Authorization
-
-Read:
-
-```text
-docs/ARCHITECTURE.md
-docs/DATABASE.md
-.cursor/rules/security.mdc
-.cursor/rules/database.mdc
-```
-
-When Supabase is introduced, also inspect current RLS policies and related tests.
-
-Critical principle:
-
-```text
-The UI is not a security boundary.
-```
-
----
-
-## 10. If the Task Uses AI
-
-Read:
-
-```text
-docs/PRODUCT.md
-docs/ARCHITECTURE.md
-.cursor/rules/ai.mdc
-```
-
-For AI-generated Questions, also read the relevant feature/content-verification contract.
-
-Critical principle:
-
-```text
-AI is not the Learning Engine.
-```
-
-Prefer:
-
-```text
-deterministic logic
-→ SQL/statistics
-→ cached/precomputed logic
-→ AI only where justified
-```
-
----
-
-## 11. If the Task Changes UI or Copy
-
-Read:
-
-```text
 docs/PRODUCT.md
 docs/DEFINITION_OF_DONE.md
-.cursor/rules/rtl-i18n.mdc
-```
-
-Also inspect:
-
-```text
 src/messages/
 src/lib/locale.ts
-```
+
+For Cursor:
+
+.cursor/rules/rtl-i18n.mdc
 
 Critical defaults:
 
-```text
 language: Hebrew
 direction: RTL
 locale: he-IL
-```
 
-User-facing copy should use the messages layer where practical.
-
----
-
-## 12. If the Task Adds or Changes Tests
-
-Read:
-
-```text
-docs/TESTING.md
-docs/DEFINITION_OF_DONE.md
-```
-
-For learning-critical tests, also inspect:
-
-```text
-.cursor/rules/learning-engine.mdc
-```
-
-Prefer tests that protect behavior, not implementation details.
+Do not move domain or learning policy into UI components.
 
 ---
 
-## 13. If the Task Adds a New Feature
+## 14. AI Features
 
-Before coding:
+If the task introduces AI behavior:
 
-1. read the relevant product/domain docs;
-2. check `docs/OPEN_QUESTIONS.md`;
-3. create or update the feature contract under `docs/FEATURES/`;
-4. identify affected data/domain boundaries;
-5. define relevant tests;
-6. surface unresolved behavior before implementation.
+docs/DECISIONS/004-ai-is-not-the-learning-engine.md
+docs/PRODUCT.md
+docs/ARCHITECTURE.md
 
-Use:
+For Cursor:
 
-```text
-docs/FEATURES/FEATURE_TEMPLATE.md
-```
+.cursor/rules/ai.mdc
+
+Critical principle:
+
+AI may assist product workflows.
+AI is not the deterministic real-time Learning Engine.
+
+Prefer deterministic logic before AI where practical.
 
 ---
 
-## 14. If the Task Changes a Durable Decision
+## 15. Durable Decisions
 
-Check:
+If a task materially changes:
 
-```text
+- architecture
+- persistence strategy
+- domain boundaries
+- security model
+- provider strategy
+- data ownership
+- Learning Engine strategy
+
+inspect:
+
 docs/DECISIONS/
-```
 
-Create or update an ADR when the change materially affects:
-
-- architecture;
-- domain boundaries;
-- persistence;
-- data ownership;
-- security;
-- provider strategy;
-- deployment;
-- Learning Engine strategy.
+Create a new ADR when the decision is durable and cross-cutting.
 
 Do not create ADRs for minor implementation details.
 
----
-
-## 15. If the Task Is Prototype Recovery
-
-Read:
-
-```text
-docs/MASTER_SPEC.md
-docs/PROTOTYPE_LEARNINGS_TEMPLATE.md
-.cursor/rules/learning-engine.mdc
-```
-
-Audit only the behavior currently needed.
-
-Current priority:
-
-```text
-mastery_level
-next_review_date
-misconception_hits
-direct inputs to those calculations
-```
-
-Do not rebuild the prototype wholesale.
+Do not rewrite accepted ADR history casually.
 
 ---
 
-## 16. If the Task Is Planning the Next Work
+## 16. Planning the Next Slice
 
-Read:
+For deciding what to build next, start with:
 
-```text
+docs/DEV_STATUS.md
 docs/ROADMAP.md
 docs/OPEN_QUESTIONS.md
-```
 
-Then confirm that the proposed work supports the current core loop:
+The current core loop remains:
 
-```text
 Course
 → Content
 → Starter / Today
@@ -372,87 +404,59 @@ Course
 → Learner State
 → Next Best Action
 → Future Today
-```
+
+Prefer work that builds, validates, or protects this loop.
 
 ---
 
-## 17. Documentation Ownership Principle
+## 17. Review / Verification Workflows
 
-Avoid duplicating detailed rules across many documents.
+For Claude Code:
 
-Each document should have a primary responsibility.
+/implement-slice
+/checkpoint
+/review-commit
 
-Preferred ownership:
+Reviewer agents:
 
-```text
-MASTER_SPEC.md
-→ product constitution and high-level system vision
+unlock-reviewer
+unlock-db-reviewer
+unlock-security-reviewer
 
-PRODUCT.md
-→ practical product map and V1 behavior boundaries
+Use only the reviewer relevant to the actual change.
 
-ARCHITECTURE.md
-→ technical structure and module boundaries
-
-DOMAIN_GLOSSARY.md
-→ canonical terminology
-
-DATABASE.md
-→ data-model and persistence decisions
-
-TESTING.md
-→ test strategy
-
-ROADMAP.md
-→ implementation sequence
-
-FEATURES/*.md
-→ feature-specific behavior
-
-DECISIONS/*.md
-→ durable decisions and rationale
-
-.cursor/rules/*.mdc
-→ concise coding-agent execution rules
-```
-
-When a detailed rule already has an owner, other documents should reference it rather than restating it extensively.
+Do not invoke every specialist automatically.
 
 ---
 
 ## 18. Conflict Rule
 
-If two sources appear to conflict:
+If sources appear to conflict:
 
-1. do not silently choose;
-2. identify the conflicting statements;
-3. check whether one is newer or explicitly more specific;
-4. use the Master Spec's current V1 activation guidance where it explicitly overrides broader earlier guidance;
-5. surface unresolved conflict before coding.
+1. do not silently choose
+2. inspect committed code
+3. inspect the relevant accepted ADR
+4. inspect `docs/OPEN_QUESTIONS.md`
+5. determine whether a document is historical, draft, operational, or canonical
+6. surface unresolved conflict before implementation
 
-A hidden interpretation is worse than an explicit open question.
+Do not let a broad planning document silently override a specific accepted ADR.
 
 ---
 
-## 19. Current Core Context
+## 19. Context Discipline
 
-The current product focus is:
+The purpose of this file is to reduce context usage.
 
-```text
-Build the smallest trustworthy adaptive loop.
-```
+Rules:
 
-The current implementation priority is not:
+- read only what the task requires
+- do not load all docs by default
+- do not read `scratch/` by default
+- do not carry old chat assumptions into a fresh session
+- prefer current repository state over conversation history
+- use `/clear` after major approved checkpoints or pushes
 
-- institution management;
-- social features;
-- advanced gamification;
-- autonomous agents;
-- native mobile apps;
-- broad LMS functionality.
+The goal is not maximum context.
 
-The main question for new work is:
-
-> Does this directly help build, validate, or protect the core adaptive learning loop?
-
-If not, it is probably not the current priority.
+The goal is the minimum trustworthy context needed for the current slice.

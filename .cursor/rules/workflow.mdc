@@ -26,7 +26,7 @@ Detailed product and engineering behavior belongs in `docs/`, not here.
 
 ## Core Invariants
 
-- `docs/MASTER_SPEC.md` remains the product constitution.
+- `docs/MASTER_SPEC.md` provides high-level product direction and system context, but it does not override committed code or accepted ADRs.
 - Today is the primary recurring learning experience.
 - Today planning selects learning items; Quiz executes the prepared plan.
 - Attempts are historical evidence and must not be rewritten as current progress changes.

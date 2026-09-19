@@ -1,0 +1,21 @@
+{
+    "permissions": {
+      "deny": [
+        "Bash(git push*)",
+        "Bash(git reset --hard*)",
+        "Bash(git clean -fd*)",
+        "Bash(git clean -df*)",
+        "Bash(git clean -xdf*)",
+        "Bash(git clean -fxd*)",
+        "Bash(git checkout -- *)",
+        "Bash(git restore *)",
+        "Bash(git branch -D *)",
+        "Bash(git tag -d *)",
+        "Bash(rm -rf *)",
+        "Bash(rmdir /s /q *)",
+        "Bash(del /f /s /q *)",
+        "Bash(supabase link*)",
+        "Bash(supabase db push*)"
+      ]
+    }
+  }

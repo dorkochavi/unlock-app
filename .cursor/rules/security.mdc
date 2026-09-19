@@ -21,6 +21,8 @@ If Supabase is used:
 - restrict users to authorized data
 - keep institution-level access isolated
 - keep user progress private
+- RLS is part of the intended security model, but policy changes must only be implemented as part of an explicit auth/security task or accepted decision
+- do not invent permissive placeholder policies
 
 Do not perform destructive database migrations without explicit approval.
 

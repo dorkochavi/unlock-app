@@ -30,6 +30,7 @@ src/
   services/
   types/
   messages/
+Backend code must follow the current domain → application → infrastructure → app dependency structure defined in CLAUDE.md. Any folder-layout guidance here applies only where compatible with that architecture and must not be used to place backend business logic into UI-oriented folders.
 
 Do not create infrastructure before there is a concrete product need.
 
@@ -57,7 +58,10 @@ Do not add:
 - extra databases
 unless a documented feature actually requires them.
 
-The Master Spec is the high-level source of truth:
-`docs/MASTER_SPEC.md`
+`docs/MASTER_SPEC.md` provides high-level product and system context.
 
-For V1 scope, follow the V1 Core Activation Plan and Immediate next steps in that document (§102 and §103) when they are more specific than earlier checklists.
+It does not override committed code or accepted ADRs.
+
+If architecture or V1-scope documents appear to conflict, check the relevant accepted ADR, current committed implementation, and `docs/OPEN_QUESTIONS.md` before making a decision.
+
+Do not silently resolve conflicts based only on document section numbering or age.

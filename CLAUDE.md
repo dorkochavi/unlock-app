@@ -1,83 +1,193 @@
 # UNLOCK — Working Instructions for Claude Code
 
-## 1. Source of Truth
+## 1. Start Every Session from the Repository
 
-Trust, in order: committed code, `docs/DECISIONS/` (ADRs), `docs/OPEN_QUESTIONS.md`,
-`docs/API_V1_DRAFT.md` (where relevant), and committed migrations under
-`supabase/migrations/`.
+Do not rely on prior chat/session memory.
 
-**NOT sources of truth** — temporary session audit trails, untracked and not meant
-to be committed. Do not read unless the user explicitly asks:
-`OVERNIGHT_REPORT.md`, `PERSISTENCE_IMPLEMENTATION_REPORT.md`,
-`QUESTION_MODEL_OVERNIGHT_REPORT.md`.
+At the beginning of substantial work:
 
-## 2. Architecture
+1. Read this file.
+2. Read `docs/DEV_STATUS.md`.
+3. Run:
+   - `git status`
+   - `git status -sb`
+   - `git log --oneline -5`
+4. Read only the ADRs, rules, docs, tests, and code relevant to the current task.
 
-Dependency direction (one-way only):
+The committed repository is the source of truth.
 
-```
+## 2. Source of Truth
+
+Use, in this order:
+
+1. committed code
+2. accepted ADRs under `docs/DECISIONS/`
+3. `docs/OPEN_QUESTIONS.md`
+4. committed migrations under `supabase/migrations/`
+5. relevant API/design docs
+
+`docs/DEV_STATUS.md` is the operational development-state summary.
+It is not an ADR and must not override committed code or accepted decisions.
+
+Content under `scratch/` is temporary, non-canonical development material.
+
+Do not read, rely on, or commit files under `scratch/` unless the user explicitly asks for them or the current task specifically requires one.
+
+`scratch/` must never override committed code, accepted ADRs, or canonical documentation.
+
+## 3. Architecture Boundary
+
+Dependency direction is one-way:
+
 domain → application → infrastructure → runtime/API
-```
 
-- No Postgres/Supabase imports in `src/domain/` or `src/application/`.
-- Learning logic (mastery, scheduling, misconceptions, ranking) lives in `domain`.
-- `application` orchestrates ports/transactions; no learning policy of its own.
-- `infrastructure` implements ports (e.g. `src/infrastructure/postgres/`).
-- SQL (FKs/CHECKs) enforces persistence integrity, never learning policy.
+Rules:
 
-## 3. Current Major Decisions
+- `src/domain/` contains learning/domain logic.
+- `src/application/` orchestrates use cases, ports, transactions, and explicit inputs.
+- `src/infrastructure/` implements persistence, Supabase, PostgreSQL, schedulers, and external adapters.
+- `src/app/` is the Next.js runtime/UI/API boundary.
+- Domain/application code must not depend on Next.js, browser APIs, Supabase SDK, `pg`, or PGlite.
+- Learning policy must not be duplicated inside API routes or UI code.
+- Persistence constraints enforce data integrity, not learning policy.
 
-- Next.js 16 + TypeScript, App Router.
-- PostgreSQL via Supabase (ADR-013); modular monolith (ADR-001).
-- Course does not require an Institution (ADR-006); cost-efficient by default (ADR-007).
-- Hebrew/RTL product, English internals (ADR-002).
-- FSRS-family memory scheduler behind a `MemoryScheduler` interface (ADR-008).
-- Today's persisted, implemented substrate is still `TodaySession`/course-scoped (ADR-011); ADR-016 (ACCEPTED) supersedes ADR-011's product-level framing with one DailyPlan/DailyPlanItem per user per local day, of which Course Today is a filtered view — DECIDED, not yet migrated/implemented.
-- Attempts are immutable historical evidence (ADR-005); QuestionVersion is immutable (ADR-009).
-- `submitAnswer` runs as one transaction with an advisory lock + idempotency
-  key on `(user_id, submission_id)` (ADR-010).
-- Replay/rebuild uses the persisted `Attempt.isCorrect` — never re-grades history (ADR-012).
-- V1 question types: `SINGLE_CHOICE` + `MULTIPLE_CHOICE` only; `TRUE_FALSE` is a
-  2-option `SINGLE_CHOICE`, not a distinct type; `selectedAnswer` semantics per ADR-014.
-- User↔Course membership/join-authorization model is decided (ADR-015); Auth
-  wiring and real RLS policies are not yet implemented.
+Prefer explicit ports/repositories over generic abstractions.
+Do not introduce a generic `Repository<T>` abstraction.
 
-## 4. Current Blocker
+## 4. Product / Learning Invariants
 
-**Open Question #1** (`docs/OPEN_QUESTIONS.md`) is resolved at the product
-level by `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.
-Auth wiring, real RLS policies, and any implemented API route are no longer
-blocked on a missing decision — they remain simply unimplemented
-(`docs/API_V1_DRAFT.md` is still unimplemented, but no longer pending a
-decision, only pending the work itself). The exact `AUTHORIZED_ONLY`
-authorization source, lecturer-vs-institution content ownership, and the
-real RLS policy text remain open — see ADR-015's own "Explicitly deferred"
-section.
+Do not silently change accepted product behavior during unrelated work.
 
-## 5. Workflow Rules
+Important invariants:
 
-Before substantial work: `git status`, `git log --oneline -10`, read the relevant
-ADR(s)/docs/code. Treat the committed repo as source of truth, not memory of past
-sessions.
+- Attempts are immutable historical evidence.
+- QuestionVersion snapshots are immutable historical evidence.
+- Replay/rebuild uses persisted Attempt correctness and does not re-grade history.
+- Learning Engine behavior should remain deterministic for the same persisted state, policy, and explicit time.
+- Real-time learning-state/ranking logic does not depend on LLM calls.
+- One DailyPlan exists per user per local calendar day.
+- Global Today and Course Today are views of the same DailyPlan.
+- Only active `LEARNER` memberships participate automatically in personal DailyPlan generation.
+- Manual Practice is separate from Today.
+- Client code must never supply authoritative `userId`.
 
-Before any commit: `npm test`, `npm run test:schema`, `npm run typecheck`,
-`npm run lint`, `git diff --check`, `git status`, `git diff --stat`.
+For detailed rules, use the relevant files under `.claude/rules/`.
 
-Never stage, commit, or push unless explicitly told to.
+## 5. Authentication / Security
 
-## 6. Security / Infra Rules
+For authenticated server operations:
 
-- Do not disable Windows security features.
-- Do not use production credentials.
-- Do not link or push to remote Supabase unless explicitly requested.
-- Do not create permissive placeholder RLS policies.
-- At the future API boundary, `userId` must come from the authenticated principal,
-  never from client-supplied request data.
+- trusted `userId` comes only from verified server-side authentication
+- use `supabase.auth.getUser()` for trusted identity
+- never trust client-supplied `userId`
+- authenticate before constructing/using database runtime
+- keep `DATABASE_URL` and service-role credentials server-only
+- never expose raw errors, stack traces, SQL, connection strings, or credentials in API responses
+- do not create permissive placeholder RLS policies
+- do not use service-role credentials merely to bypass authorization
+
+Do not disable Windows security features.
+
+Do not connect/link/push to a remote Supabase project unless the user explicitly authorizes it.
+
+## 6. Database / Migration Discipline
+
+- Migrations are forward-only.
+- Do not edit accepted historical migrations to implement new behavior.
+- Use the existing PostgreSQL repository / UnitOfWork architecture.
+- Do not rewrite persistence using Supabase JS unless explicitly requested.
+- Do not create a new `pg.Pool` per request.
+- Distinguish PGlite behavior from real PostgreSQL/Supabase behavior.
+- Do not claim real multi-connection concurrency is tested unless it actually is.
+
+Use `.claude/rules/postgres.md` for detailed database rules.
 
 ## 7. Scope Discipline
 
-- Do not invent answers to unresolved product decisions — add/check
-  `docs/OPEN_QUESTIONS.md` instead.
-- If one path is blocked, continue other independent safe work rather than stalling.
-- Prefer small, explicit ports/repositories over generic abstractions
-  (no generic `Repository<T>`).
+Implement one development slice at a time.
+
+Do not mix unrelated changes such as:
+
+- Auth work changing mastery semantics
+- API work changing ranking weights
+- UI work changing misconception logic
+- infrastructure work changing Today product semantics
+
+If you discover an unrelated issue:
+
+1. report it
+2. explain whether it blocks the current task
+3. do not silently fix it unless explicitly instructed
+
+If a product decision is unresolved, consult `docs/OPEN_QUESTIONS.md`.
+Do not invent an answer.
+
+## 8. Testing / Verification
+
+Use targeted tests while developing.
+
+Before commit/push/handoff, use the repository's checkpoint workflow:
+
+`/checkpoint`
+
+Do not claim behavior is verified beyond the environment actually used.
+
+Distinguish:
+
+- unit-tested
+- PGlite integration-tested
+- reviewed by inspection
+- reasoned under PostgreSQL semantics
+- real PostgreSQL tested
+- real Supabase tested
+- browser E2E tested
+
+Use `.claude/rules/testing.md` for detailed testing rules.
+
+## 9. Review Workflow
+
+For commit review, use:
+
+`/review-commit`
+
+Use the appropriate reviewer agent only when relevant:
+
+- `unlock-reviewer`
+- `unlock-db-reviewer`
+- `unlock-security-reviewer`
+
+Reviewers are read-only.
+
+Do not ask reviewers to justify the author's implementation.
+They must inspect the actual code independently.
+
+## 10. Git Safety
+
+Never stage, commit, or push unless the current task explicitly requests it.
+
+Never use destructive commands such as:
+
+- `git reset --hard`
+- `git clean -fd`
+
+without explicit approval.
+
+Do not delete or ignore unknown untracked files automatically.
+
+Do not rewrite shared/pushed history casually.
+
+Before push, verify the intended commits and worktree state.
+
+## 11. Session / Context Discipline
+
+Prefer fresh context over carrying long session history.
+
+After a major approved checkpoint or push:
+
+- update `docs/DEV_STATUS.md`
+- use `/clear`
+- begin again from the repository state
+
+Do not preserve old implementation assumptions merely because they appeared earlier in the conversation.
+
+The repository, ADRs, rules, tests, and current DEV_STATUS are authoritative.

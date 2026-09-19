@@ -1,10 +1,52 @@
 # UNLOCK project instructions
 
-Before doing any work in this repository:
+Before doing substantial work in this repository:
 
-1. Read `docs/CONTEXT_MAP.md` first — it routes you to the documents relevant to your task.
-2. `docs/MASTER_SPEC.md` is the product constitution; treat it as the high-level source of truth.
-3. Do not invent unresolved product, learning, or data behavior — check `docs/OPEN_QUESTIONS.md` and surface gaps instead of guessing.
+1. Read `CLAUDE.md` for the repository-wide working rules.
+2. Read `docs/DEV_STATUS.md` for the current development checkpoint.
+3. Run:
+   - `git status`
+   - `git status -sb`
+   - `git log --oneline -5`
+4. Use `docs/CONTEXT_MAP.md` to locate additional documents relevant to the current task.
+
+## Source of truth
+
+Use, in this order:
+
+1. committed code
+2. accepted ADRs under `docs/DECISIONS/`
+3. `docs/OPEN_QUESTIONS.md`
+4. committed migrations under `supabase/migrations/`
+5. relevant canonical product/API/design documentation
+
+`docs/MASTER_SPEC.md` is important high-level product context, but it does not override committed code or accepted ADRs.
+
+`docs/DEV_STATUS.md` describes the current development state. It is operational context, not a product decision record.
+
+Content under `scratch/` is temporary and non-canonical. Do not use it as a source of truth unless the current task explicitly requires it.
+
+## Scope discipline
+
+Do not invent unresolved product, learning, authorization, or data behavior.
+
+If a decision is unclear:
+
+1. check the relevant ADR
+2. check `docs/OPEN_QUESTIONS.md`
+3. surface the gap instead of guessing
+
+Implement one focused development slice at a time.
+
+Do not silently mix unrelated product, learning-engine, database, auth, API, or UI changes.
+
+## Git safety
+
+Do not push unless explicitly instructed.
+
+Do not use destructive git commands such as `git reset --hard` or `git clean -fd` without explicit approval.
+
+Do not delete unknown untracked files.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

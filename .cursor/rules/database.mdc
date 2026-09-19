@@ -8,20 +8,36 @@ alwaysApply: true
 These are principles only. Do not design or migrate a schema until a dedicated V1 data-model task.
 
 Do not turn conceptual entity lists into migrations without a database design review.
-
 ## V1 data scope
 
-When schema work begins, design only what the V1 loop needs:
+The V1 persistence model is already implemented and must be evolved from the current committed schema and migrations.
+
+Do not redesign the schema from scratch.
+
+Current core V1 entities include:
 
 - User
 - Course
+- CourseMembership
 - Material
 - Question
+- QuestionVersion
 - Attempt
 - UserQuestionProgress
 - Exam Date
-- Today Session
-- Today Session Items
+- DailyPlan
+- DailyPlanItem
+
+DailyPlan / DailyPlanItem are the accepted current model for Today persistence.
+
+The older Today Session / Today Session Items naming is superseded. See ADR-016 for the accepted current model.
+
+For new schema changes:
+
+- inspect the current committed migrations first
+- use forward-only migrations
+- do not edit accepted historical migrations for new behavior
+- do not introduce future-heavy schema beyond the current task
 
 The schema should stay extensible for Institution, Instructor, Assignments, knowledge graphs, and intelligence modules without requiring those features now.
 
@@ -33,7 +49,7 @@ Question and UserQuestionProgress are separate concerns. The same question can b
 
 Raw Attempts are immutable learning evidence. Derived mastery or progress must not replace attempt history.
 
-Today requires persistent session records when it is implemented. The same daily learning period must resume the same session rather than silently regenerating a different plan.
+Today requires a persisted DailyPlan. For the same user and local day, reopening Today must resume the same persisted DailyPlan rather than silently generating a different plan.
 
 Exam date precedence:
 
@@ -55,6 +71,8 @@ If Supabase is used:
 - learner progress stays private
 - institution-level access stays isolated
 - service-role keys must never reach the browser
+- RLS is part of the intended security model, but policy changes must only be implemented as part of an explicit auth/security task or accepted decision.
+- Do not invent permissive placeholder policies.
 
 Preserve ownership and provenance for materials, questions, generated content, and learner progress.
 

@@ -22,7 +22,9 @@ User
 
 The product should optimize for repeat learning behavior, especially Today completion and return frequency.
 
-Do not introduce product behavior that conflicts with `docs/MASTER_SPEC.md`.
+Do not introduce product behavior that conflicts with committed code, accepted ADRs, or current canonical product documentation.
+
+`docs/MASTER_SPEC.md` provides high-level product context, but it does not override committed code or accepted ADRs.
 
 Do not invent product requirements when the specification is unclear.
 
@@ -45,15 +47,16 @@ V1 MUST prioritize (Master Spec §102):
 - Exam Date
 - Learner State
 - Next Best Action
-- Today Session
-- Today Session Items
+- DailyPlan
+- DailyPlanItem
 - Quiz
 - Basic Progress
+DailyPlan / DailyPlanItem are the accepted current Today persistence model. The older Today Session / Today Session Items naming is superseded by ADR-016.
 
 Institution is architecture-ready and is not a V1 blocker. A Course must be valid without an Institution.
 
 Exam Date (including personal override precedence) is V1. Assignments are architecture-ready and must not block V1 unless a later documented need requires them.
 
-Where the Master Spec's recommended V1 checklist (for example §77) conflicts with the V1 Core Activation Plan (§102) and Immediate next steps (§103), follow §102 and §103.
+If product documents appear to conflict, do not silently choose between sections. Check the relevant accepted ADR, current committed behavior, and `docs/OPEN_QUESTIONS.md`, then surface any unresolved conflict before implementation.
 
 Do not allow deferred features to delay the V1 learning loop.
