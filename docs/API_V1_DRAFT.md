@@ -1,11 +1,13 @@
 # UNLOCK API Boundary — V1 Draft
 
-Status: DRAFT — preparation for the next checkpoint, not an ADR and not
-implemented. No route files exist yet under `src/app/` (verified — it is
-still the default Next.js scaffold). This document exists so that
-checkpoint can start from a considered shape instead of an improvised one,
-per this session's own instruction not to build insecure routes ahead of
-Auth.
+Status: DRAFT — mostly still preparation, not an ADR. Sections 1/2 below
+(`submitAnswer`, the legacy Course-scoped "Get Today") remain unimplemented
+shapes to build FROM, not decisions already made. **Section 3
+(`GET /api/daily-plan/today`) is the one exception: it is now IMPLEMENTED**
+(`src/app/api/daily-plan/today/route.ts`) — added once Auth wiring
+(`src/infrastructure/supabase/`) existed, per this document's own original
+"per this session's own instruction not to build insecure routes ahead of
+Auth."
 
 This is deliberately NOT canonical the way an ADR is: it records a shape to
 build FROM, not a decision already made. Promote the settled parts into an
@@ -124,6 +126,51 @@ remains an opaque caller-supplied `YYYY-MM-DD` string end to end
 exists anywhere in this stack, and this boundary must not quietly invent
 any).
 
+## 2a. `GET /api/daily-plan/today` — IMPLEMENTED
+
+Unlike sections 1/2 above (still draft shapes), this route is real:
+`src/app/api/daily-plan/today/route.ts`, `export const runtime = "nodejs"`
+(required — `pg` has no Edge build).
+
+**No query params, request body, or custom headers accepted at all** —
+unlike section 2's legacy `?courseId=&plannedForDate=`, this route's only
+input is the incoming Supabase session cookie. `getOrCreateDailyPlanForToday`
+(`src/application/dailyPlan/get-or-create-daily-plan-for-today.ts`) already
+owns Course/timezone discovery itself (ADR-016 §1) — the route has nothing
+left to accept from the client.
+
+**Auth flow**: `createSupabaseServerClient()` (per-request, never a module
+singleton) -> `requireAuthenticatedUser(supabase)` -> `UNAUTHENTICATED` maps
+to `401` before any DailyPlan code runs at all.
+
+**`now`**: `new Date()` is called exactly once, in `route.ts` itself —
+never inside the testable handler (`handle-get-daily-plan-today.ts`) or
+anything deeper.
+
+**Postgres wiring**: `getPool()` (existing lazy, memoized, per-process
+singleton) -> `new PgConnectionProvider(pool)` ->
+`createProductionDailyPlanPorts(pool, connectionProvider)` +
+`createProductionDailyPlanGenerationSettings()`. No new `Pool` per request;
+`pg.Pool` itself satisfies `SqlExecutor` structurally, confirmed by
+`tsc --noEmit`, exactly like `PoolClient` already did (see the pg-runtime
+commit).
+
+**Outcome -> HTTP mapping** (the exact choice made, extending section 1's
+category table style to `GetOrCreateDailyPlanForTodayResult`):
+
+| `outcome` | HTTP | Notes |
+|---|---|---|
+| `READY` | 200 | `{plan: <DailyPlanDto>}` — a route-layer DTO (`daily-plan-dto.ts`), never the raw domain `DailyPlan`/`DailyPlanItem` |
+| `TIMEZONE_NOT_SET` | 422 | `{error: {code: "TIMEZONE_NOT_SET"}}` — chosen over 409: nothing conflicts with existing resource state, a precondition on the caller's own profile just isn't met yet |
+| `USER_NOT_FOUND` | 500 | `{error: {code: "USER_PROVISIONING_INCONSISTENT"}}` — a server-side data-consistency fault (the `auth.users -> public.users` trigger should make this unreachable for a real authenticated user), NEVER an ordinary client 404 |
+| unexpected thrown error | 500 | `{error: {code: "INTERNAL_ERROR"}}` — the real error is logged server-side only, never included in the response body |
+
+**Test seam**: `handleGetDailyPlanToday(dependencies)` in
+`handle-get-daily-plan-today.ts` has no Next.js/Supabase/`pg` types in its
+own signature — `route.ts` stays a thin wiring file with no logic of its
+own worth testing directly. 12 unit tests (8 for the handler, 4 for the DTO
+mapper) — no real Supabase/network/Postgres connection anywhere.
+
 ## 3. Server-derived userId boundary
 
 This is the single most important boundary property, restated because it's
@@ -159,13 +206,24 @@ by design (it is what makes retries idempotent).
 
 ## Deferred / explicitly not decided by this document
 
-- HTTP status codes for each result category above.
+- HTTP status codes for each result category above (sections 1/2 only —
+  section 2a's are decided, see its own table).
 - The actual Auth mechanism (session cookie vs JWT vs something else) —
-  this document only says "wherever it comes from, resolve `userId` before
-  the application layer, never after."
+  resolved for section 2a specifically (Supabase session cookie via
+  `@supabase/ssr`); sections 1/2 remain unimplemented and unbuilt against
+  it.
 - Rate limiting, request size limits, CORS — none of this repo's current
   code has an opinion on them yet.
 - Any UI that would call these routes.
+
+**Not verified end-to-end for section 2a, stated explicitly**: a real
+Supabase Auth session, a real `DATABASE_URL` connection, the migration
+chain (including the `auth.users -> public.users` provisioning trigger)
+actually applied against a hosted/local Supabase project, a real browser
+login, and any Today UI. All of the code above is unit- and
+PGlite-integration-tested; none of it has been exercised against a real
+project or a real browser. **Localhost Today is not usable yet** — see
+`supabase/README.md` for the exact remaining prerequisites.
 
 ## Related Documents
 
