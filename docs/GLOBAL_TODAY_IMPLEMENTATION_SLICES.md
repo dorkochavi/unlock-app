@@ -91,8 +91,9 @@ Today sizing) have an accepted conservative production default; see
 values and what remains open (calibration, not a product decision).
 
 **5. `DailyPlan`/`DailyPlanItem` migration and domain/application layer —
-PERSISTENCE FOUNDATION IMPLEMENTED (2026-09-21), generation/orchestration
-NOT.** `supabase/migrations/20260921000000_daily_plan_v1.sql` adds
+PERSISTENCE FOUNDATION IMPLEMENTED (2026-09-21); INTERNAL GENERATION CORE
+IMPLEMENTED (2026-09-19 session), public entry point/runtime wiring NOT.**
+`supabase/migrations/20260921000000_daily_plan_v1.sql` adds
 `daily_plans`/`daily_plan_items`, purely additive alongside
 `today_sessions`/`today_session_items` (unmodified, per
 `docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md` §13). `src/domain/dailyPlan/types.ts`,
@@ -100,13 +101,42 @@ NOT.** `supabase/migrations/20260921000000_daily_plan_v1.sql` adds
 `src/infrastructure/postgres/daily-plan-{repository,mapper}.ts` implement
 the single-use resolution rule (ADR-016 §19: `markCompleted`/`markSkipped`
 are each a conditional `UPDATE ... WHERE status = 'pending'`, returning a
-typed `RESOLVED`/`ALREADY_RESOLVED`/`NOT_FOUND` outcome). **Still NOT
-implemented**: any code that actually generates a plan (no candidate-pool
-assembly, no wiring to `getOrCreateTodaySession`/`submitAnswer`), Skip
-semantics (Slice 0) as a callable use case, and Manual Practice
-confirmation against `DailyPlanItem` specifically — those remain the next
-work in this step, still scoped to a single Course's items at a time (no
-multi-Course candidate merging, that is step 8 / Slice 1).
+typed `RESOLVED`/`ALREADY_RESOLVED`/`NOT_FOUND` outcome).
+
+**IMPLEMENTED:** the internal DailyPlan generation core,
+`generateDailyPlanForResolvedInputs`
+(`src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`) —
+takes an explicit, caller-supplied `eligibleCourseIds` list (not yet
+CourseMembership-derived) and an already-resolved `plannedForDate` (not yet
+timezone-derived), and orchestrates the same unmodified
+`generateNextBestActionCandidates` -> `rankNextBestActionCandidates` ->
+`generateTodayPlan` pipeline `getOrCreateTodaySession` uses, extended to
+pool `UserQuestionProgress` across every `eligibleCourseId` and rank once,
+globally, before persisting via `DailyPlanRepository.createIfNotExists`.
+Also implemented: a DailyPlan-scoped transaction contract
+(`DailyPlanTransactionalRepositories`/`DailyPlanUnitOfWork`, in
+`application/dailyPlan/ports.ts`), deliberately independent of
+`application/learning/ports.ts`'s own `UnitOfWork`. Covered by 8
+application-layer tests (in-memory fakes,
+`application/dailyPlan/__tests__/`): existing-plan resume with no re-read,
+multi-Course pooling, `maxItems` truncation, no-filler-when-fewer, empty
+plan (zero Courses / zero progress), QuestionVersion freeze-on-generation,
+transaction rollback on a persistence failure, and returning a concurrent
+`createIfNotExists` winner rather than the locally generated plan.
+
+**Still NOT implemented**: the public
+persisted-timezone -> local-day entry point (no `deriveLocalDateString`
+wiring, no `UserRepository` call from this layer), membership-driven Course
+discovery (no `CourseMembershipRepository.listActiveForUser` call —
+`eligibleCourseIds` is still a plain caller-supplied parameter), a
+`PostgresDailyPlanUnitOfWork` (the transaction contract above has no
+Postgres implementation yet), any runtime/API/UI wiring, and any
+`submitAnswer` integration (DailyPlanItem completion is not wired to real
+Attempts). Skip semantics (Slice 0) and Manual Practice confirmation
+against `DailyPlanItem` remain unimplemented as before. **Global Today is
+not usable yet** — this is generation-core orchestration only, exercised
+by in-memory fakes, with no Postgres/API/UI path connecting a real request
+to it.
 
 **6. Single-Course Today vertical slice.** Real usable UI, Auth,
 CourseMembership, QR join, persistence — the full demo-readiness bar per

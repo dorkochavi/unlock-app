@@ -8,9 +8,14 @@
  * structural difference: `courseId` lives on each `DailyPlanItem`
  * independently, not on a single parent session.
  *
- * This is a PERSISTENCE FOUNDATION ONLY. No candidate generation, no
- * multi-Course pooling, and no wiring into `submitAnswer`/`UnitOfWork`
- * exists yet — see `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 5/6
+ * Candidate generation/multi-Course pooling now exists —
+ * `generate-daily-plan-for-resolved-inputs.ts` (internal generation core
+ * only, not the public entry point; see that file's own doc comment) — and
+ * this file additionally carries that generation core's own transaction
+ * contract (`DailyPlanTransactionalRepositories`/`DailyPlanUnitOfWork`,
+ * below). Still NOT implemented: a `PostgresDailyPlanUnitOfWork`, the
+ * public timezone/membership-driven entry point, and any wiring into
+ * `submitAnswer` — see `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 6
  * for what remains before this is used end-to-end.
  */
 import type {
@@ -19,6 +24,10 @@ import type {
 } from "../../domain/learning/next-best-action";
 import type { NextBestActionPriorityTier } from "../../domain/learning/next-best-action-ranking";
 import type { DailyPlanItemStatus } from "../../domain/dailyPlan/types";
+import type {
+  QuestionVersionRepository,
+  UserQuestionProgressRepository,
+} from "../learning/ports";
 
 export interface DailyPlanItem {
   id: string;
@@ -107,4 +116,42 @@ export interface DailyPlanRepository {
     itemId: string,
     skippedAt: Date,
   ): Promise<ResolveDailyPlanItemResult>;
+}
+
+/**
+ * Transaction contract for DailyPlan GENERATION only (ADR-016 §1/§2) — used
+ * by `generateDailyPlanForResolvedInputs`
+ * (`generate-daily-plan-for-resolved-inputs.ts`), not by the persistence
+ * port above on its own.
+ *
+ * Deliberately does NOT reuse `src/application/learning/ports.ts`'s
+ * `UnitOfWork`/`TransactionalRepositories` types: DailyPlan generation's
+ * read set (`UserQuestionProgress`, `QuestionVersion`) does not overlap
+ * with `submitAnswer`'s write set (`Attempt`, `UserQuestionProgress`
+ * writes, `TodaySessionItem` writes) and needs no advisory lock (mirroring
+ * `getOrCreateTodaySession`'s own reasoning for why its equivalent call
+ * needs none either) — reusing that type would couple
+ * `application/dailyPlan` to `application/learning`'s own transaction
+ * shape for no benefit. The individual repository PORT interfaces
+ * (`UserQuestionProgressRepository`, `QuestionVersionRepository`) are
+ * reused directly, unchanged, from `application/learning/ports.ts` — only
+ * the UnitOfWork/TransactionalRepositories wrapper itself is new.
+ */
+export interface DailyPlanTransactionalRepositories {
+  dailyPlans: DailyPlanRepository;
+  progress: UserQuestionProgressRepository;
+  questionVersions: QuestionVersionRepository;
+}
+
+export interface DailyPlanUnitOfWork {
+  /**
+   * Runs `fn` inside one database transaction — mirrors
+   * `application/learning/ports.ts`'s `UnitOfWork.runInTransaction`
+   * contract exactly (any thrown error rolls the whole transaction back;
+   * nothing partial is ever committed) without importing that file's
+   * types. No Postgres implementation exists yet — a later slice.
+   */
+  runInTransaction<T>(
+    fn: (repos: DailyPlanTransactionalRepositories) => Promise<T>,
+  ): Promise<T>;
 }
