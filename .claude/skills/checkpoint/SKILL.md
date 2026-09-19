@@ -108,9 +108,11 @@ Run:
 
 `npm test`
 
-`npm run test:schema`
-
 `git diff --check`
+
+`npm run test:schema` is NOT a default checkpoint step. Run it only when the current slice changes or directly depends on: Supabase/PostgreSQL migrations, database schema, SQL queries, PostgreSQL repositories, database row mappers/serialization, persistence constraints, transaction behavior, or other database-specific integration behavior (full policy: `.claude/rules/testing.md`).
+
+Do not run `npm run test:schema` when the only changes are documentation, UI-only code, styling, unrelated client-side changes, or workflow/config documentation. If it already passed earlier in the same slice and nothing DB-relevant changed since, do not rerun it — report the earlier result instead.
 
 If one command fails, continue only when it is safe and useful to gather the remaining diagnostic information.
 
@@ -204,7 +206,7 @@ Summarize:
 
 Report:
 - `npm test` pass/total
-- `npm run test:schema` pass/total
+- `npm run test:schema`: pass/total if run this checkpoint, or state why it was not run (not DB-relevant to this slice, or already passed earlier in this slice with no DB-relevant changes since)
 
 ### Typecheck / Lint
 

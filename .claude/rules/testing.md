@@ -61,7 +61,7 @@ Before a local commit:
 Before a push/checkpoint:
 
 - run full unit suite
-- run full schema/Postgres suite when relevant
+- run full schema/Postgres suite only when relevant (see "When to run `npm run test:schema`" below)
 - run typecheck
 - run lint
 - run `git diff --check`
@@ -86,6 +86,34 @@ Typical verification commands:
 `git status`
 
 Do not invent new scripts merely to avoid using an existing one.
+
+## When to run `npm run test:schema`
+
+`npm run test:schema` is not a default checkpoint step. It is a targeted suite, run only when relevant.
+
+Run it when the current slice changes or directly depends on:
+
+- Supabase/PostgreSQL migrations
+- database schema
+- SQL queries
+- PostgreSQL repositories
+- database row mappers / serialization
+- persistence constraints
+- transaction behavior
+- database-specific integration behavior
+
+Do not run it when the only changes since the last successful `test:schema` run in this slice are:
+
+- documentation
+- UI-only code
+- styling
+- unrelated client-side changes
+- workflow/config documentation
+- other changes that do not affect persistence/database behavior
+
+If `test:schema` already passed earlier in the same slice and no DB-relevant code changed afterward, do not run it again just to close the checkpoint — report the earlier result instead.
+
+This does not weaken migration/Postgres safety elsewhere in this file or in `.claude/rules/postgres.md` — it only avoids redundant reruns when nothing DB-relevant changed.
 
 ## Determinism
 
