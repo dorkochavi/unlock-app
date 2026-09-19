@@ -4,9 +4,17 @@ Status: database-foundation + Postgres infrastructure phase (see ADR-013,
 ADR-014). Postgres repository adapters, `PostgresUnitOfWork`, the
 advisory-lock transaction, and `submitAnswer`/answer-correctness are all
 implemented and integration-tested against a real Postgres engine
-(`src/infrastructure/postgres/`, `supabase/tests/postgres/`). API routes and
-Auth wiring do not exist yet — see `docs/API_V1_DRAFT.md` for the prepared
-(not implemented) shape of the next checkpoint.
+(`src/infrastructure/postgres/`, `supabase/tests/postgres/`), including a
+real `pg.Pool`-backed `ConnectionProvider`
+(`src/infrastructure/postgres/pg-{connection-provider,pool}.ts`).
+
+Supabase Auth CLIENT construction (`src/infrastructure/supabase/`) and the
+`auth.users -> public.users` provisioning trigger
+(`migrations/20260923000000_auth_user_provisioning.sql`) now exist too —
+**this is client/migration code only, not a working Auth flow**: no real
+Supabase project has been configured against any environment, no
+login/signup UI exists, and no API route calls any of it yet. See
+`docs/API_V1_DRAFT.md` for the prepared (not implemented) route shape.
 
 ## What's here
 
@@ -63,6 +71,19 @@ Auth wiring do not exist yet — see `docs/API_V1_DRAFT.md` for the prepared
   provable under PGlite (single in-process engine, no second concurrent
   backend) — see `src/infrastructure/postgres/postgres-unit-of-work.ts`'s
   own doc comment.
+- The `auth.users -> public.users` provisioning trigger's own SQL/logic is
+  proven correct — against a MINIMAL, explicitly-labeled stand-in
+  `auth.users` table (one column, `id uuid primary key`), NOT Supabase's
+  real `auth` schema, which stock `pglite` has no representation of at all
+  (verified directly: `pg_namespace` has zero rows for `nspname = 'auth'`
+  on a fresh PGlite instance). The stand-in is created by
+  `tests/postgres/db-harness.ts`'s own `createTestDb()`, before every real
+  migration file (including this one) is applied — every test using
+  `createTestDb()` needed this, not only the trigger's own test, since the
+  migration chain itself would otherwise fail to apply at all once this
+  migration existed. See `tests/auth-user-provisioning
+  .integration.test.ts`'s own doc comment for the exact scope of what this
+  does and does not prove.
 
 ## What was NOT verified, and remains for the next checkpoint
 
@@ -78,8 +99,14 @@ Auth wiring do not exist yet — see `docs/API_V1_DRAFT.md` for the prepared
 - RLS policy behavior (as opposed to "RLS is enabled") — requires the real
   authorization model (`docs/OPEN_QUESTIONS.md` #1) to be decided first.
 - Real multi-connection advisory-lock concurrency (see above).
-- API routes and Supabase Auth wiring — explicitly out of scope; see
-  `docs/API_V1_DRAFT.md` for the prepared shape.
+- The provisioning trigger against Supabase's REAL `auth.users` table —
+  only a minimal stand-in was testable (see above); this requires a real
+  Supabase project.
+- Any existing `auth.users` row backfill — not written; no evidence of
+  pre-existing production data exists in this repo (see the migration's
+  own header comment).
+- API routes, login/signup UI, and `middleware.ts` session refresh — none
+  exist yet; see `docs/API_V1_DRAFT.md` for the prepared route shape.
 
 ## Running this locally once the CLI is available
 

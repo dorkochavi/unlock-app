@@ -54,6 +54,22 @@ let db: PGlite;
 
 beforeEach(async () => {
   db = new PGlite();
+  // Minimal stand-in for Supabase's real `auth` schema/`auth.users` table
+  // — created BEFORE the migration chain runs, since
+  // `20260923000000_auth_user_provisioning.sql`'s trigger targets
+  // `auth.users` directly and the migration chain would otherwise fail to
+  // apply here at all (a bare PGlite instance has no `auth` schema).
+  // Deliberately minimal and NOT a claim about Supabase's real
+  // `auth.users` shape — mirrors the identical stand-in in
+  // `supabase/tests/postgres/db-harness.ts`'s own `createTestDb()`; kept
+  // separate here since this file deliberately does not share that
+  // harness (see this file's own doc comment).
+  await db.exec(`
+    create schema auth;
+    create table auth.users (
+      id uuid primary key
+    );
+  `);
   await db.exec(MIGRATION_SQL);
 });
 

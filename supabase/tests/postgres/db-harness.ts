@@ -50,6 +50,23 @@ const MIGRATION_SQL = readdirSync(MIGRATIONS_DIR)
 
 export async function createTestDb(): Promise<PGlite> {
   const db = new PGlite();
+  // Minimal stand-in for Supabase's real `auth` schema/`auth.users` table
+  // — created BEFORE the migration chain runs, since
+  // `20260923000000_auth_user_provisioning.sql`'s trigger targets
+  // `auth.users` directly and the migration chain would otherwise fail to
+  // apply here at all (a bare PGlite instance has no `auth` schema —
+  // verified directly: `pg_namespace` has zero rows for `nspname =
+  // 'auth'` on a fresh instance). Deliberately minimal — one column,
+  // `id uuid primary key`, the only thing that migration's trigger reads
+  // — and NOT a claim about Supabase's real `auth.users` shape; see
+  // `supabase/tests/auth-user-provisioning.integration.test.ts`'s own doc
+  // comment for exactly what this does and does not represent/prove.
+  await db.exec(`
+    create schema auth;
+    create table auth.users (
+      id uuid primary key
+    );
+  `);
   await db.exec(MIGRATION_SQL);
   return db;
 }
