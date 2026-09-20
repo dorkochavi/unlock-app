@@ -88,6 +88,27 @@ Read only when the current slice needs product-level context.
 
 ---
 
+### Strategic sequencing and V1 boundary
+
+`docs/UNLOCK_ROADMAP.md`
+
+Contains:
+- strategic Product Run sequencing toward V1 (current sequence: Run 004–009)
+- strategic milestones
+
+`docs/UNLOCK_V1_SCOPE.md`
+
+Contains:
+- the V1 product boundary
+- V1 Definition of Done
+
+Neither is an execution plan or a substitute for `docs/CHATGPT_PLAN.md`.
+
+`docs/ROADMAP.md` (no `UNLOCK_` prefix) is an older historical/phase-based sequencing
+reference. It is NOT the active product roadmap — use `docs/UNLOCK_ROADMAP.md` instead.
+
+---
+
 ### What is still undecided
 
 `docs/OPEN_QUESTIONS.md`
