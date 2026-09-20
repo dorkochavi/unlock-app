@@ -1,26 +1,54 @@
-# UNLOCK — ChatGPT Execution Plan
+# UNLOCK - ChatGPT Execution Plan
 
-PLAN_VERSION: 002
-RUN_ID: 2026-09-20-003
-BASE_HEAD: fd9162e
-RUN_GOAL: Formalize Development OS V1.1 from the first real Run, reconcile hosted-state truth after the successful manual Supabase/QA gate, and leave the repository ready for the next product Run without changing product behavior.
+PLAN_VERSION: 006
+RUN_ID: 2026-09-20-006
+BASE_HEAD: a03efa4
+RUN_GOAL: Deliver manual Question Authoring + immutable publish/re-publish V1 on top of the completed Course + Topic authoring foundation.
 EXPECTED_STOP: COMPLETE
 
 ---
 
-## Run-Start Contract
+# 0. Why This Plan Replaces the Previous Draft
 
-This Plan is authored against committed baseline:
+This Plan is grounded in:
 
-`fd9162e`
+- `docs/RUNS/2026-09-20-005.md`
+- `docs/DEV_STATUS.md`
+- the actual pushed Git baseline `a03efa4`
 
-Expected Run-start state:
+Run 005 is COMPLETE as **Course Authoring & Topics V1**.
+
+Important current truths carried forward:
+
+- `questions.current_version_id` is already nullable by design and can represent a pre-first-publish Question.
+- Run 005 decided against a separate `QuestionDraft` table for V1; draft authoring should use nullable `draft_*` state on `questions`, unless repository reality reveals a direct integrity conflict.
+- immutable `Question` / `QuestionVersion` history already exists in the learning model.
+- `topics` now exists as a flat, Course-scoped, archive-not-delete model.
+- Question↔Topic association is intentionally not implemented yet and belongs to Run 006.
+- existing learner Today reads the exact persisted `QuestionVersion`; grading-only data is excluded from learner-safe projections.
+- historical Attempts already point to exact QuestionVersions and replay uses persisted correctness.
+- Run 005's new migrations are PGlite-verified but not yet applied to hosted Supabase.
+- Run 005's instructor UI exists under `/instructor/**`.
+- Structured Import remains Run 007 scope.
+
+This Run must extend the existing model, not rebuild it.
+
+---
+
+# 1. Run-Start Contract
+
+Plan authored against:
+
+`a03efa4`
+
+Expected preferred state:
 
 - `HEAD == BASE_HEAD`
+- `origin/feature/project-foundation == a03efa4`
 - `docs/CHATGPT_PLAN.md` may be the only expected uncommitted modification
-- no other staged, unstaged, or untracked changes are expected
+- no unexplained staged/unstaged/untracked work
 
-`docs/CHATGPT_PLAN.md` is user/ChatGPT-owned during execution:
+`docs/CHATGPT_PLAN.md` is Dor/ChatGPT-owned:
 
 - read it
 - execute it
@@ -28,447 +56,720 @@ Expected Run-start state:
 - do not stage it
 - do not discard it
 
-If repository reality differs materially from the above, diagnose before executing.
-
 Do not push.
 Do not deploy.
 Do not run `supabase db push`.
 Do not mutate hosted Supabase.
 Do not request or expose secrets.
 
-This is a workflow/documentation Run. Do not change product behavior or application runtime code.
+---
+
+# 2. Current-State Reconciliation Before Product Work
+
+`docs/DEV_STATUS.md` was committed before Dor pushed Run 004 + Run 005, so its repository-state section is now stale even though its product-state sections are useful.
+
+Before implementing Question work:
+
+- verify actual Git state;
+- update only the stale current-state repository facts in `docs/DEV_STATUS.md`:
+  - pushed HEAD is now `a03efa4`;
+  - Run 004 + Run 005 are pushed;
+  - remove the obsolete manual action saying they still need to be pushed;
+- preserve historical Run Report 005 as immutable history; do NOT edit it merely because the later push occurred.
+
+This reconciliation may be folded into the first focused documentation/code commit or committed separately if cleaner.
+
+Do not turn DEV_STATUS into a changelog.
 
 ---
 
-## Run Context
+# 3. Product Boundary
 
-The first Development OS Run (`2026-09-20-002`) validated the basic operating model:
+This Run is:
 
-- ChatGPT authored the Plan.
-- Claude executed against a fixed committed baseline.
-- `CHATGPT_PLAN.md` remained uncommitted during execution.
-- Claude respected scope containment and remote-safety boundaries.
-- risk-based reviewers were used correctly.
-- a no-op implementation slice remained a no-op instead of producing unnecessary code.
-- `DEV_STATUS` and an immutable Run Report were produced at handoff.
-- the executed Plan, `DEV_STATUS`, and Run Report were committed together afterward as the Run handoff checkpoint.
+> **Question Authoring & Publishing V1**
 
-That Run also exposed four workflow improvements that should now become durable repository rules:
+The successful end state is:
 
-1. formal `BASE_HEAD` semantics;
-2. checkpoint must not accidentally terminate an unfinished Run;
-3. explicit Run Completion Protocol;
-4. stricter `DEV_STATUS` snapshot discipline.
+> An authorized OWNER or active INSTRUCTOR can manually create a valid SINGLE_CHOICE or MULTIPLE_CHOICE Question in a Course, associate it with a valid Topic from that same Course, save/edit its draft, explicitly publish it as an immutable QuestionVersion, and later edit/re-publish without changing any historical version or Attempt reference.
 
-After that Run, Dor manually completed the remote gate:
+This Run MAY include:
 
-- `20260924000000_daily_plan_answer_attempts.sql` is now applied to hosted Supabase;
-- `20260925000000_daily_plan_new_material_v1.sql` is now applied to hosted Supabase;
-- `npx supabase migration list` showed local/remote parity through `20260925000000`;
-- hosted/browser QA confirmed:
-  - real login;
-  - hosted Today read;
-  - hosted Today answer submission;
-  - Today completion state;
-  - `AUTHORIZED_ONLY` self-join fails closed with `403`;
-  - a clean `OPEN` QA Course self-join succeeds and redirects to `/today`.
+- additive Question draft persistence
+- Question↔Topic association
+- manual authoring API/UI
+- server-side validation
+- explicit publish
+- atomic current-version update
+- immutable re-publish
+- minimal instructor preview if naturally supported
+- migrations/tests required for the above
 
-The QA Course was created manually in hosted Supabase solely to verify OPEN join behavior. Do not invent broader product semantics from that seed.
+This Run MUST NOT include:
+
+- Structured Import / JSON / CSV / XLSX
+- PDF ingestion
+- AI question generation
+- learner Progress
+- instructor Insights
+- confidence capture
+- Exam Urgency ranking
+- generic LMS features
+- production deployment
+- hosted Supabase mutation
 
 ---
 
-# S1 — Formalize BASE_HEAD Semantics
+# 4. Carried-Forward Decisions vs. Things S1 Must Confirm
+
+## Accepted from Run 005
+
+- no separate `QuestionDraft` table for V1 unless the repository reveals a hard integrity conflict;
+- one active editable draft per Question is sufficient for V1;
+- draft state should live on nullable `draft_*` fields on `questions`;
+- Topic remains flat and Course-scoped;
+- archived Topics are preserved, not hard-deleted;
+- authoring uses `canAuthorCourse` policy for Course-content authoring;
+- cross-Course identifiers must fail closed without leaking which Course owns an entity.
+
+## Target for Run 006, to be confirmed against current schema
+
+- a Question should be associated with one Topic in the same Course for V1 authoring;
+- the DB should enforce same-Course association where practical;
+- learner eligibility should continue to be driven by an actual published/current QuestionVersion, not draft existence.
+
+Do not silently place Topic semantics on `question_versions` vs `questions` until S1 determines which location preserves history and current learner behavior correctly.
+
+---
+
+# 5. Session / Context Rule
+
+Run 005 proved that Product Run size and Claude session size are separate concerns.
+
+Run 006 remains one Product Run, but may span more than one Claude session.
+
+A session rollover is allowed only at a SAFE RESUME POINT:
+
+- current Slice complete
+- focused commit exists
+- required tests complete
+- required reviewers complete
+- `scratch/development_checkpoint.md` current
+- no background task/reviewer pending
+- exact next Slice/action recorded
+
+If context is roughly 450k+ and meaningful work remains, prefer a clean rollover.
+
+If rollover is appropriate:
+
+- do not mark Run COMPLETE
+- stop with `SESSION_ROLLOVER_READY`
+- report current HEAD + next Slice
+- do not `/clear` autonomously
+
+---
+
+# S1 — Grounded Question / QuestionVersion Reality Audit
+
+MODE: INVESTIGATE / DESIGN-CONSTRAIN
+
+## Goal
+
+Understand exactly what already exists so Run 006 extends rather than duplicates the learning model.
+
+## Startup context
+
+Read:
+
+- `CLAUDE.md`
+- `docs/CHATGPT_PLAN.md`
+- `docs/DEV_STATUS.md`
+- `docs/UNLOCK_ROADMAP.md`
+- `scratch/development_checkpoint.md`
+
+This Plan explicitly authorizes a targeted read of:
+
+- `docs/RUNS/2026-09-20-005.md`
+
+only if needed to verify the carried-forward Question-draft decisions above.
+
+Do not read other historical Run Reports.
+
+## Inspect
+
+At minimum:
+
+- initial/current `questions` schema
+- `question_versions`
+- all QuestionVersion immutability constraints/triggers/policies if any
+- `answer_attempts` exact version linkage
+- `questions.current_version_id`
+- existing question type enum/vocabulary
+- current answer option and correct-answer representation
+- learner-safe QuestionVersion projection
+- Today question loading
+- answer grading
+- any existing Question repository/application services
+- existing transaction / UnitOfWork patterns
+- Run-005 Topic schema and authoring guards
+- instructor Course page patterns
+
+## Determine explicitly
+
+1. What is already implemented for Question creation/versioning?
+2. Which exact `draft_*` columns are required?
+3. Where should `topic_id` live:
+   - Question,
+   - QuestionVersion,
+   - or both?
+4. What must be historical vs current metadata?
+5. How can DB constraints enforce Question/Topic same-Course integrity?
+6. What makes a Question learner-eligible today?
+7. What exact publish transaction is needed?
+8. Which grading validation already exists?
+9. Can existing published questions remain fully backward compatible after migration?
+10. Does archived Topic behavior need any Question-authoring restriction?
+
+## Compatibility requirement
+
+Existing seeded/published Questions must continue to work after migration without being forced through the new draft UI.
+
+## Exit
+
+Write grounded findings to `scratch/development_checkpoint.md`.
+
+If the existing repository directly conflicts with a carried-forward decision, stop only the dependent work and report `PLAN_CONFLICT`.
+
+No commit required for investigation alone.
+
+---
+
+# S2 — Question Draft + Topic Persistence Foundation
 
 MODE: IMPLEMENT
 
 ## Goal
 
-Make the Run-start baseline contract explicit and durable so future Plans do not suffer from the tracked-Plan / `BASE_HEAD` circularity.
+Add the minimum durable persistence/domain layer needed for manual authoring without making draft content learner-visible.
 
-## Relevant context
+## Expected direction
 
-Read only what is needed, starting with:
+Unless S1 finds a direct conflict, add additive nullable draft state to `questions`.
 
-- `CLAUDE.md`
-- `.claude/skills/implement-slice/SKILL.md`
-- `.claude/skills/checkpoint/SKILL.md`
+Likely conceptual fields:
 
-Use `docs/CONTEXT_MAP.md` only if needed to locate another workflow file that currently defines Plan-start validation.
+- `draft_question_type`
+- `draft_prompt`
+- `draft_answer_options`
+- `draft_correct_answer`
+- `draft_explanation`
+- Topic reference as determined by S1
 
-## Must
+Exact names/types must follow existing schema conventions.
 
-Establish this semantic contract:
+## Required capabilities
 
-`BASE_HEAD` means:
+Application/repository support for authorized authoring:
 
-> the committed repository baseline the current Plan was authored against.
+- create draft Question in a Course
+- read Question authoring state
+- update draft
+- list authorable Questions for the Course as required by UI
+- distinguish:
+  - never-published draft
+  - published Question with current version
+  - published Question with newer draft edits
 
-Valid Run-start state A — preferred/default:
+## Topic integrity
 
-- `HEAD == BASE_HEAD`
-- `docs/CHATGPT_PLAN.md` may be the only expected uncommitted modification
-- that Plan modification is not treated as unexplained dirty state
+A Question draft must not reference a Topic from another Course.
 
-Valid Run-start state B — supported alternative:
+Follow Run 005's non-leaking pattern:
 
-- `HEAD` is exactly one dedicated Plan-only commit above `BASE_HEAD`
-- that commit's only changed path is `docs/CHATGPT_PLAN.md`
+- authorize the Course first
+- resolve related identifiers after authorization
+- wrong-Course Topic must not reveal its true Course
 
-Any other mismatch:
+Where practical, add a DB-level same-Course constraint in addition to application checks.
 
-- diagnose before execution
-- do not silently continue
-- if repository reality contradicts the Plan materially, surface `PLAN_CONFLICT`
+## Existing-content compatibility
 
-During execution:
+Migration must preserve all existing published Question/QuestionVersion behavior.
 
-- Claude never rewrites `docs/CHATGPT_PLAN.md`
+Do not require draft columns to be populated for historical/published Questions.
 
-At Run completion:
+## Draft validation
 
-- the executed Plan may later be committed by Dor together with `DEV_STATUS` and the immutable Run Report as the handoff checkpoint
-- Claude does not need to create a Plan-only commit before execution
+There are two useful levels:
 
-## Do not
+### Save-draft validation
 
-- do not introduce a second planning source
-- do not add ROADMAP/BACKLOG/TODO management files
-- do not rewrite unrelated Git/workflow guidance
-- do not change product code
+Allow work-in-progress where reasonable, but never accept structurally dangerous/invalid encodings.
 
-## Verification
+### Publish-ready validation
 
-Targeted read-back / grep demonstrating that all active workflow instructions describing `BASE_HEAD` are consistent with the new semantics.
+Strict correctness rules belong in S4 publish validation.
 
-`git diff --check`
+Do not make the draft UI unusable by requiring a half-written Question to already be publishable unless the chosen UX explicitly saves only complete drafts.
+
+S1/S2 should make this distinction deliberately rather than accidentally.
+
+## Authorization
+
+Use the existing Run-005 Course-content authoring policy:
+
+- OWNER: allowed when active for authoring
+- INSTRUCTOR: allowed when active for authoring
+- LEARNER: denied
+- revoked/archived authoring membership: fail closed per `canAuthorCourse`
+
+Archived Course authoring should remain non-editable consistent with Run 005's terminal archive semantics.
+
+## Tests
+
+Cover:
+
+- migration/backward compatibility
+- draft create/read/update
+- existing published Question compatibility
+- auth roles
+- archived/revoked behavior
+- cross-Course Topic rejection
+- malformed identifiers
+- PGlite repository/constraint behavior
+
+Because schema changes are expected:
+
+`npm run test:schema`
 
 ## Review
 
-Use `unlock-reviewer` if the change spans more than one permanent workflow source.
+Required:
+
+- `unlock-db-reviewer`
+- `unlock-security-reviewer`
+- `unlock-reviewer`
 
 ## Exit
 
-Complete when no active workflow instruction requires literal `HEAD == BASE_HEAD` while rejecting the expected uncommitted Plan case.
+Draft persistence is safe, backward-compatible, Course/Topic-scoped, and not learner-eligible by itself.
+
+Focused commit expected.
 
 ---
 
-# S2 — Make Checkpoint Non-Terminating and Add Run Completion Protocol
+# S3 — Publish-Ready Validation Contract
 
 MODE: IMPLEMENT
 
 ## Goal
 
-Prevent a successful checkpoint from accidentally becoming the end of an unfinished Run, and formalize exactly how a Run reaches a stop token.
+Create one authoritative validation contract used by publish and reusable by the UI.
 
-## Relevant context
+Do not duplicate grading rules across client/API/repository layers.
 
-Start with:
+## Supported types
 
-- `.claude/skills/checkpoint/SKILL.md`
-- `.claude/skills/implement-slice/SKILL.md`
-- `CLAUDE.md`
+- SINGLE_CHOICE
+- MULTIPLE_CHOICE
 
-Read `.claude/skills/review-commit/SKILL.md` only if it currently owns part of final-Run sequencing.
+No free-text grading.
 
-## Must
+## Publish-ready invariants
 
-### A. Checkpoint continuation rule
+Common:
 
-Make explicit:
+- non-empty prompt
+- supported type
+- valid same-Course Topic
+- meaningful option count
+- no empty normalized options
+- stable option identifiers/order
+- no duplicate option identifiers
+- correct-answer references only valid options
 
-- checkpoint is a verification operation, not inherently a Run stop
-- after checkpoint completes, inspect the active Plan
-- if required Plan work remains and there is no blocker/gate, continue automatically
-- do not end the turn merely because checkpoint verdict is READY / green
-- stop only when:
-  - the Plan is actually complete, or
-  - an explicit stop/gate is reached, or
-  - a real blocker / `PLAN_CONFLICT` requires Dor
+SINGLE_CHOICE:
 
-### B. Run Completion Protocol
+- exactly one correct option
 
-Define a compact canonical end-of-Run sequence, preserving risk-based behavior:
+MULTIPLE_CHOICE:
 
-1. complete all executable slices;
-2. run required final verification/checkpoint;
-3. run risk-appropriate reviewer(s);
-4. address blocking/relevant findings;
-5. update `docs/DEV_STATUS.md` with durable current truth only;
-6. create immutable `docs/RUNS/<RUN_ID>.md`;
-7. verify final Git state and `git diff --check`;
-8. report the explicit Plan stop token/status;
-9. stop.
+- at least one correct option
+- may contain multiple correct options
 
-If a Run ends at a manual gate, the Run Report must contain the exact manual handoff and distinguish:
+Preserve the existing answer representation if it is already canonical for learner grading.
 
-- locally verified;
-- hosted/externally verified;
-- still unverified.
+Do not invent a second grading vocabulary merely for authoring.
 
-## Do not
+## Tests
 
-- do not require a reviewer for trivial copy/CSS-only work
-- do not turn checkpoint into a commit operation
-- do not let Run Reports become normal working memory
-- do not create a second lifecycle document if `CLAUDE.md` / skills are the correct home
+Pin all validation behavior at domain/application level.
 
-## Verification
+Include edge cases around:
 
-Read back the final instructions as if executing a Run with:
+- duplicate options
+- removed option still marked correct
+- switching SINGLE ↔ MULTIPLE
+- empty/whitespace content
+- malformed correct-answer payload
+- Topic archived between draft creation and publish, if relevant to the chosen policy
 
-- green checkpoint;
-- one remaining S4 documentation task;
-- no blocker.
+## Review
 
-The rules must unambiguously require continuation rather than stopping.
-
-`git diff --check`
+- `unlock-reviewer`
+- `unlock-security-reviewer` if validation crosses trust boundaries
 
 ## Exit
 
-Complete when the first Run's observed failure mode — "checkpoint green, work still remains, Claude stops anyway" — is explicitly prohibited by active workflow guidance.
+There is exactly one server-authoritative publish-ready validation path.
+
+Focused commit expected if implementation is substantial.
 
 ---
 
-# S3 — Tighten DEV_STATUS Snapshot Discipline
+# S4 — Manual Question Authoring API + UI
 
 MODE: IMPLEMENT
 
 ## Goal
 
-Keep `docs/DEV_STATUS.md` as a compact current-state snapshot and prevent Run-history/detail from accumulating there.
+Allow a non-developer instructor to create and edit Question drafts through UNLOCK.
 
-## Relevant context
+## Product surface
 
-Start with:
+Extend the existing:
 
-- `CLAUDE.md`
-- `docs/DEV_STATUS.md`
-- any existing permanent rule/skill that tells Claude how to maintain `DEV_STATUS`
+`/instructor/courses/[courseId]`
 
-Do not read old Run Reports unless this Plan explicitly references one for a concrete fact. The current Plan already provides the first Run's relevant lesson.
+Do not create a generic LMS admin product.
 
-## Must
+A separate Question edit route/page is allowed if it makes the Course page materially simpler.
 
-Durably encode:
+## Required UX
 
-`DEV_STATUS` should contain:
+Instructor can:
 
-- current capabilities;
-- current migration/deployment state;
-- current verification state;
-- current known gaps/blockers;
-- current test baseline when useful;
-- current manual action still required, if any.
+- see Questions for the Course
+- see Topic association
+- see state:
+  - Draft
+  - Published
+  - Published with draft changes, if applicable
+- create Question
+- choose Topic
+- choose SINGLE_CHOICE / MULTIPLE_CHOICE
+- enter prompt
+- add/edit/remove options
+- select correct option(s)
+- enter optional explanation if existing QuestionVersion supports it
+- save draft
+- reopen/edit draft
 
-`DEV_STATUS` should not contain:
+## Important UX rule
 
-- chronological Run narration;
-- long reviewer summaries;
-- detailed per-scenario test inventories when a short current-state statement suffices;
-- completed execution history already preserved in Git / `docs/RUNS`;
-- duplicated ADR reasoning;
-- next-task queue content.
+Do not tell the instructor that saved draft changes are live for learners.
 
-Preferred compression pattern:
+Published content and draft edits must be visually distinguishable.
 
-Instead of:
+## Archived Course
 
-> long paragraph listing every scenario audited in Run X...
+Do not allow normal authoring controls for terminal ARCHIVED Course.
 
-Prefer:
+## Preview
 
-> demo journey locally verified at unit/application/PGlite layers; browser/hosted status: ...
+Optional only if cheap and safe.
 
-Then point to the Run Report only when historical detail is genuinely useful.
+If added, preview must create:
 
-Apply this discipline to the current `docs/DEV_STATUS.md` itself:
+- no Attempt
+- no Today resolution
+- no learning evidence
+- no mastery/misconception/scheduler change
 
-- remove obvious diary-style detail introduced by Run `2026-09-20-002`
-- preserve all current factual truth
-- do not delete useful current verification state
+## API/security
 
-## Do not
+- authenticated identity server-derived
+- auth-before-DB
+- Course authorization before entity existence leaks
+- malformed UUID handling consistent with current routes
+- client never supplies authoritative user id
 
-- do not make `DEV_STATUS` so terse that current operational truth disappears
-- do not move current blockers into historical reports
-- do not copy ADR detail into `DEV_STATUS`
+## Tests
 
-## Verification
+Use current route/application/UI conventions.
 
-Review `DEV_STATUS` section by section and confirm every paragraph answers "what is true now?" rather than "what happened in a previous Run?"
+Full unit suite before commit.
 
-`git diff --check`
+## Review
+
+Required:
+
+- `unlock-reviewer`
+- `unlock-security-reviewer`
 
 ## Exit
 
-Complete when `DEV_STATUS` is materially more snapshot-like without losing current operational truth.
+Instructor can manually create and edit Question drafts without SQL/seed scripts.
+
+Focused commit expected.
 
 ---
 
-# S4 — Reconcile Hosted Supabase / Browser State
+# S5 — Atomic Immutable Publish + Re-publish
 
 MODE: IMPLEMENT
 
 ## Goal
 
-Update repository current-state documentation so it no longer says migrations 24/25 or the post-Slice-6 learner flow are awaiting the manual remote gate.
+Publish a valid draft into the existing immutable QuestionVersion model.
 
-## Relevant context
+## Core transaction
 
-Use:
+Publishing must be atomic.
 
-- `docs/DEV_STATUS.md`
-- `supabase/README.md` only if it contains a current migration-state list/status that is now stale
-- `docs/DATABASE.md` only if it explicitly tracks hosted-applied-vs-local state and is now stale
+At minimum:
 
-Do not broad-sweep historical design documents. Historical files may accurately describe their own earlier state.
+1. authorize actor/Course
+2. load authoritative Question draft
+3. validate publish-ready state server-side
+4. create new immutable QuestionVersion
+5. set `questions.current_version_id` to that new version
+6. commit
 
-## Must
+If additional draft-state bookkeeping is needed, keep it in the same transaction where integrity requires it.
 
-Record current durable facts:
+A partial failure must not:
 
-- hosted migration chain is applied through `20260925000000_daily_plan_new_material_v1.sql`
-- migrations 24 and 25 are no longer "committed but NOT remotely applied"
-- local/remote migration parity through `20260925000000` was manually confirmed
-- hosted/browser verification now includes:
-  - login;
-  - Today read;
-  - Today answer submission;
-  - Today completion state;
-  - `AUTHORIZED_ONLY` self-join fail-closed (`403`);
-  - clean OPEN Course self-join success and redirect to `/today`
+- create an orphan current pointer
+- leave a current version half-published
+- mutate an old QuestionVersion
 
-Be precise about what was NOT manually proven if still applicable.
+## First publish
 
-Do not claim the entire product is production-ready.
+Never-published draft:
 
-Do not claim browser automation exists.
+- current_version_id is null before publish
+- new immutable QuestionVersion created
+- current_version_id points to it
 
-Do not convert the manually created QA Course into a product requirement.
+## Re-publish
 
-If `supabase/README.md` has a migration list, update it minimally to match the current committed/applied chain.
+Published Question with edited draft:
 
-## Hosted QA note
+- insert a NEW QuestionVersion
+- update current_version_id to new version
+- old version remains byte-for-byte unchanged
+- historical Attempt references remain valid
 
-The earlier malformed/non-UUID Course path behavior remains a known low-priority API validation gap:
+## Historical integrity
 
-- literal `/join/[courseId]` leads the API to PostgreSQL UUID parsing and a generic `500`
-- this is not a blocker for valid Course IDs
-- do not fix it in this workflow-only Run unless an existing documentation statement becomes false
+Explicitly prove:
 
-## Verification
+- no update-in-place path exists for published QuestionVersion content
+- old Attempt → QuestionVersion linkage survives
+- replay remains based on persisted historical Attempt correctness
+- learner retrieval resolves current published version
+- draft-only Question does not enter learner content/Today merely because it exists
 
-Use targeted grep for stale current-state claims such as:
+## Topic/history semantics
 
-- `NOT yet applied remotely`
-- `committed but NOT yet applied`
-- `through auth provisioning`
-- current-hosted claims ending at migration `20260923000000`
-- hosted answer/join described as unverified
+If S1 decides Topic is versioned historical metadata, publish must snapshot it appropriately.
 
-Classify hits:
-- active/current truth → update
-- clearly historical body → leave intact
+If Topic is current Question metadata only, document why that does not invalidate historical interpretation.
 
-`git diff --check`
+Do not leave this ambiguous.
+
+## UI
+
+Add explicit Publish / Re-publish action.
+
+Show:
+
+- draft-only
+- published
+- unpublished changes pending, when applicable
+
+A successful draft save is not a publish.
+
+## Tests
+
+Required:
+
+- first publish
+- re-publish
+- prior version unchanged
+- current pointer updated
+- rollback on failure
+- invalid draft cannot publish
+- unauthorized publish denied
+- draft-only learner exclusion
+- current published learner retrieval
+- historical Attempt reference preserved
+
+Run:
+
+`npm run test:schema`
+
+## Review
+
+Required:
+
+- `unlock-db-reviewer`
+- `unlock-security-reviewer`
+- `unlock-reviewer`
 
 ## Exit
 
-Complete when active current-state documentation matches the post-manual-gate hosted reality.
+Question authoring reaches immutable learner-ready publication safely.
+
+Focused commit expected.
 
 ---
 
-# S5 — Development OS V1.1 Consistency Review and Handoff
+# S6 — Integrated Verification + Run Handoff
 
 MODE: VERIFY
 
 ## Goal
 
-Prove the workflow changes are coherent, scoped, and ready to become the operating model for the next product Run.
+Prove Run 006 as one coherent vertical and stop before Structured Import.
 
-## Must
+## Required local/test walkthrough
 
-Perform a narrow consistency review across changed workflow/current-state files.
+authorized instructor
+→ open Course
+→ choose Topic
+→ create SINGLE_CHOICE draft
+→ save/edit
+→ publish
+→ edit again
+→ re-publish
+→ verify old version unchanged
+→ create MULTIPLE_CHOICE
+→ verify multi-correct validation
+→ publish
+→ verify draft-only Question is not learner-eligible
+→ verify current published QuestionVersion remains compatible with learner read/grading architecture
 
-Specifically verify:
+Do not manufacture hosted fixtures.
 
-- one fact, one home still holds;
-- `CHATGPT_PLAN` remains the execution queue;
-- `DEV_STATUS` remains current truth;
-- `docs/RUNS/**` remains restricted historical archive;
-- `BASE_HEAD` semantics are consistent everywhere active;
-- checkpoint continuation rule is unambiguous;
-- Run Completion Protocol has one canonical meaning;
-- no new competing management file was created;
-- no product/runtime code changed;
-- no remote mutation occurred during this Run.
+## Final checks
+
+Run as applicable:
+
+- targeted tests
+- full unit suite
+- schema/Postgres suite
+- typecheck
+- lint
+- `git diff --check`
+
+## Final reviewers
 
 Run:
 
-- `git diff --check`
-- targeted workflow grep(s)
-- final `git status -sb`
+- `unlock-reviewer`
+- `unlock-security-reviewer`
+- `unlock-db-reviewer`
 
-Do not run the full unit or schema suite solely for documentation/workflow edits unless an unexpected source/schema change occurred.
-
-## Review
-
-Run `unlock-reviewer` as the final Development OS V1.1 review.
-
-Address meaningful workflow/documentation findings before handoff.
+Fix meaningful findings.
 
 ## DEV_STATUS
 
-Ensure it reflects the post-hosted-QA current state and does not narrate this Run.
+Update current truth only:
+
+- manual Question authoring status
+- Question↔Topic semantics
+- draft/publish semantics
+- immutable re-publish semantics
+- latest tests
+- new migrations and hosted/local status
+- Structured Import remains not implemented
+- next work requires a new Plan
+
+Also ensure repository-state facts remain current.
+
+## CONTEXT_MAP
+
+Update only if new durable paths should be discoverable.
 
 ## Run Report
 
 Create:
 
-`docs/RUNS/2026-09-20-003.md`
-
-Target 50–150 lines.
+`docs/RUNS/2026-09-20-006.md`
 
 Include:
 
-- what V1.1 changed;
-- exact `BASE_HEAD` semantics adopted;
-- checkpoint continuation rule;
-- Run Completion Protocol;
-- DEV_STATUS discipline;
-- hosted-state reconciliation;
-- files changed;
-- verification/reviewer outcomes;
-- any deferred low-risk issue;
-- final Git state.
+- delivered scope
+- grounded S1 findings
+- schema/migrations
+- draft model
+- Topic association model
+- validation model
+- publish transaction
+- immutability proof
+- authorization behavior
+- tests
+- reviewer findings
+- local vs hosted boundary
+- manual actions
+- deferred Run 007 scope
+- final Git state
+- any session rollover(s)
 
-Do not read or summarize old Run Reports to produce it.
+## Metrics
 
-## Final stop
+Record only reliable session/run telemetry.
 
-When complete, report:
+Do not invent token totals/cost.
+
+## Scope confirmation
+
+Confirm no implementation of:
+
+- Structured Import
+- PDF/AI ingestion
+- Progress
+- Insights
+- Exam Urgency ranking
+- production deployment
+
+## Completion
+
+Final status:
 
 `COMPLETE`
 
 Do not push.
-Do not stage or modify `docs/CHATGPT_PLAN.md`.
 
 ---
 
 # Definition of Done
 
-This Run is complete only when all of the following are true:
+Run 006 is COMPLETE only when:
 
-- Development OS V1.1 semantics are durable in active repo guidance;
-- the `BASE_HEAD` circularity is formally resolved;
-- checkpoint can no longer be interpreted as an automatic Run terminator;
-- Run Completion Protocol is explicit;
-- `DEV_STATUS` discipline is explicit and current file is compacted accordingly;
-- hosted Supabase state is reconciled through migration `20260925000000`;
-- hosted/browser QA truth is recorded precisely;
-- no product/runtime behavior changed;
-- final reviewer has no blocker;
-- `git diff --check` is clean;
-- `docs/RUNS/2026-09-20-003.md` exists;
-- final status is reported as `COMPLETE`.
+- current-state DEV_STATUS repository facts are reconciled to pushed HEAD `a03efa4` at Run start/current state
+- existing published Questions remain backward compatible
+- draft state exists without creating a separate QuestionDraft table unless a documented PLAN_CONFLICT required it
+- Question↔Topic same-Course integrity is enforced
+- authoring authorization reuses the intended Course-content policy
+- SINGLE_CHOICE authoring works
+- MULTIPLE_CHOICE authoring works
+- server-authoritative publish-ready validation exists
+- instructor can create/edit drafts through UI
+- draft-only Question is not learner-eligible
+- saving draft is distinct from publishing
+- first publish creates a new immutable QuestionVersion
+- re-publish creates another immutable QuestionVersion
+- old versions are never rewritten
+- historical Attempt→QuestionVersion references remain valid
+- publish is atomic
+- current learner retrieval uses the intended current published version
+- relevant schema/Postgres tests are green
+- unit/typecheck/lint/diff checks are green
+- reviewers have no unresolved blocker
+- `docs/DEV_STATUS.md` reflects current truth
+- `docs/RUNS/2026-09-20-006.md` exists
+- Structured Import remains deferred to Run 007
+- final status is COMPLETE

@@ -19,25 +19,14 @@ Branch:
 
 Pushed HEAD:
 
-`f10daaa` — `define unlock v1 scope and product roadmap` (confirmed against
-`origin/feature/project-foundation`; this is also Run 004's `BASE_HEAD`)
+`a03efa4` — `close Run 2026-09-20-005 as Course Authoring & Topics V1
+(COMPLETE)` (confirmed equal to `origin/feature/project-foundation`; this is
+also Run 006's `BASE_HEAD`).
 
-Current local HEAD (not yet pushed):
-
-`01c6029` — `update DEV_STATUS with Run 005 S3+S4 current truth`, plus one
-further documentation-only Run-closure commit on top of it (this file's own
-edit) — see `git log --oneline -1` for its exact SHA.
-
-Local HEAD is ahead of pushed HEAD by all of Run 004 (`3568275`
-learner shell/nav + My Courses + Course View, `cb22a97` malformed-courseId
-500 fix, `0e8a597` mobile tap-target/truncation pass, `60b6dea` Playwright
-E2E harness, `0e812a1` Run 004 handoff — see `docs/RUNS/2026-09-20-004.md`),
-plus Run 005 — COMPLETE (`6090862` Run 004 handoff metadata fix, `f09bb19`
-S2 Course lifecycle + authoring authorization, `d1fa3eb` S2 Run-report
-follow-up, `fd87f9e` S3 Instructor Course Management UI V1, `2368e54` S4
-Flat Topic Model + Topic Authoring V1, `01c6029` DEV_STATUS update, and the
-final Run-closure documentation commit — see `docs/RUNS/2026-09-20-005.md`
-for the full Run Report).
+Run 004 (`3568275`..`0e812a1`, learner shell/nav + My Courses + Course View
++ Playwright E2E harness — see `docs/RUNS/2026-09-20-004.md`) and Run 005
+(`6090862`..`a03efa4`, Course Authoring & Topics V1, COMPLETE — see
+`docs/RUNS/2026-09-20-005.md`) are both fully pushed.
 
 Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
 
@@ -46,13 +35,6 @@ Last pushed application-feature baseline (product code, pre-Development-OS-V1 do
 Remote:
 
 `origin/feature/project-foundation`
-
-Development OS V1 is committed and pushed (`0135495`); the subsequent
-active-documentation consistency pass (`d67371a`) and the Run
-`2026-09-20-002` handoff (`fd9162e`) were pushed at the time, and `f10daaa`
-(defining V1 scope/roadmap) was pushed after that — `f10daaa` is the actual
-current pushed HEAD, not `fd9162e`. Run 004 (`3568275`..`0e812a1`) and Run 005-in-progress
-(`6090862`..`2368e54`) are committed locally and not yet pushed.
 
 ---
 
@@ -523,7 +505,7 @@ end-to-end — see "Not yet executed" above.
 
 ## Current Test Baseline
 
-At local HEAD after Run 005 S4 (pushed HEAD remains `f10daaa`; see Repository State):
+At pushed HEAD `a03efa4` (Run 005 close; see Repository State) — Run 006 S2 is in progress on top of this baseline, not yet committed at the time these counts were last confirmed:
 
 - Unit tests: `778 / 778`
 - Schema/Postgres (PGlite): `224 / 224`
@@ -602,9 +584,8 @@ Database / Migration State).
 
 1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
 2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
-3. Push Run 004 + Run 005 (complete) when ready — not yet pushed.
-4. Apply `20260926000000_course_lifecycle_v1.sql` and `20260927000000_topics_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
-5. Production deployment remains outstanding.
+3. Apply `20260926000000_course_lifecycle_v1.sql` and `20260927000000_topics_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
+4. Production deployment remains outstanding.
 
 Do not perform hosted mutations automatically.
 
@@ -618,20 +599,12 @@ Pushed product/application baseline:
 
 Current pushed HEAD:
 
-`f10daaa`
+`a03efa4`
 
-Current local HEAD: Run 004 (`3568275`..`0e812a1`) plus Run 005 — **COMPLETE**
-(Slices S1-S4 committed on top of Run 004's `6090862` handoff-metadata-fix
-commit, closed intentionally after S4 — see `git log` for exact SHAs and
-`docs/RUNS/2026-09-20-005.md` for the full Run Report and scope-closure
-rationale).
-
-Run 005 is closed. Next execution requires a NEW, dedicated
-`docs/CHATGPT_PLAN.md` for Run 006 (Question Authoring & Publishing V1),
-written against this Run's actual committed baseline, per
-`docs/UNLOCK_ROADMAP.md`'s updated Product Run sequence. Do not resume this
-Run's original S5-S10 plan text — it no longer reflects the authorized
-scope.
+Run 005 is closed and pushed (Slices S1-S4 — see `docs/RUNS/2026-09-20-005.md`
+for the full Run Report and scope-closure rationale). Run 006 (Question
+Authoring & Publishing V1, `docs/CHATGPT_PLAN.md`) is in progress on top of
+`a03efa4`; see that Plan for current Slice status.
 
 Do not infer next work from historical run context beyond what
 `docs/UNLOCK_ROADMAP.md` and `docs/DEV_STATUS.md` currently state. See
