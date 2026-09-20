@@ -64,6 +64,8 @@ function buildAttempt(
     responseTimeSeconds: null,
     todaySessionId: null,
     todaySessionItemId: null,
+    dailyPlanId: null,
+    dailyPlanItemId: null,
     learningSessionId: null,
     assistanceUsed: "NONE",
     attemptNumberForPresentedItem: 1,

@@ -265,6 +265,50 @@ export interface TodaySessionRepository {
   ): Promise<void>;
 }
 
+/**
+ * Minimal DailyPlanItem shape `submitAnswer` needs to authorize and resolve
+ * a DailyPlan-attached Attempt (ADR-016) — deliberately NOT the fuller
+ * `DailyPlanItem` from `application/dailyPlan/ports.ts` (position,
+ * actionType, tier, reasons, ...). Matches this file's existing convention
+ * of not cross-importing that module's types (see that file's own doc
+ * comment for why the two modules deliberately do not share a
+ * transaction/port dependency) — the real Postgres implementation
+ * (`PostgresDailyPlanRepository`) already satisfies this shape structurally,
+ * so no new infrastructure class is needed for it.
+ */
+export interface DailyPlanAnswerTarget {
+  id: string;
+  dailyPlanId: string;
+  userId: string;
+  courseId: string;
+  questionId: string;
+  questionVersionId: string;
+  status: "pending" | "completed" | "skipped";
+}
+
+export type ResolveDailyPlanAnswerItemResult =
+  | { outcome: "RESOLVED" }
+  | { outcome: "ALREADY_RESOLVED" }
+  | { outcome: "NOT_FOUND" };
+
+export interface DailyPlanAnswerRepository {
+  findItemById(itemId: string): Promise<DailyPlanAnswerTarget | null>;
+
+  /**
+   * Resolves a `pending` DailyPlanItem as COMPLETED. Same single-use
+   * enforcement as `application/dailyPlan/ports.ts`'s `DailyPlanRepository
+   * .markCompleted` (in fact the same real implementation backs both) —
+   * `submitAnswer`'s own pending check (before grading, see submit-answer.ts)
+   * is what actually prevents reaching this call for an already-resolved
+   * item under normal operation; this repository-level guarantee is
+   * defense-in-depth, not the primary enforcement point.
+   */
+  markCompleted(
+    itemId: string,
+    completedAt: Date,
+  ): Promise<ResolveDailyPlanAnswerItemResult>;
+}
+
 export interface TransactionalRepositories {
   /**
    * Postgres transaction-scoped advisory lock keyed by
@@ -278,6 +322,7 @@ export interface TransactionalRepositories {
   answerCorrectness: AnswerCorrectnessChecker;
   questionVersions: QuestionVersionRepository;
   todaySessions: TodaySessionRepository;
+  dailyPlanItems: DailyPlanAnswerRepository;
 }
 
 export interface UnitOfWork {

@@ -38,9 +38,11 @@ import {
   insertQuestionVersion,
   insertUser,
   pgliteConnectionProvider,
+  seedDailyPlanWithItem,
   seedQuestionChain,
   seedTodaySessionWithItem,
   setCurrentVersion,
+  setDailyPlanItemResolved,
 } from "./db-harness";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -125,6 +127,8 @@ function makeCommand(
     responseTimeSeconds: 10,
     todaySessionId: null,
     todaySessionItemId: null,
+    dailyPlanId: null,
+    dailyPlanItemId: null,
     learningSessionId: randomUUID(),
     assistanceUsed: "NONE",
     attemptNumberForPresentedItem: 1,
@@ -445,6 +449,269 @@ describe("submitAnswer against real Postgres infrastructure", () => {
     expect(result.attempt.learningSessionId).not.toBe(
       "client-claimed-value-should-be-ignored",
     );
+  });
+});
+
+describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (ADR-016, Night-Run Slice 1)", () => {
+  it("owner answering a real, pending DailyPlanItem is ACCEPTED: real Attempt + progress rows, item resolved to completed", async () => {
+    const chain = await seedQuestionChain(db);
+    const { dailyPlanId, dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
+
+    const result = await submitAnswer(
+      makeCommand(chain, {
+        todaySessionId: null,
+        todaySessionItemId: null,
+        dailyPlanItemId,
+        selectedAnswer: "A",
+      }),
+      makeContext(),
+      uow,
+    );
+
+    expect(result.kind).toBe("ACCEPTED");
+    if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+    expect(result.attempt.dailyPlanId).toBe(dailyPlanId);
+    expect(result.attempt.dailyPlanItemId).toBe(dailyPlanItemId);
+    expect(result.attempt.learningSessionId).toBe(dailyPlanId);
+    expect(result.attempt.isCorrect).toBe(true);
+
+    const itemRow = await db.query<{
+      status: string;
+      resolved_at: string | null;
+      completed_at: string | null;
+    }>(
+      "select status, resolved_at, completed_at from daily_plan_items where id = $1",
+      [dailyPlanItemId],
+    );
+    expect(itemRow.rows[0]).toMatchObject({ status: "completed" });
+    expect(itemRow.rows[0].resolved_at).not.toBeNull();
+    expect(itemRow.rows[0].completed_at).not.toBeNull();
+
+    const attemptRow = await db.query<{
+      daily_plan_id: string | null;
+      daily_plan_item_id: string | null;
+      today_session_id: string | null;
+      today_session_item_id: string | null;
+    }>(
+      "select daily_plan_id, daily_plan_item_id, today_session_id, today_session_item_id from attempts where id = $1",
+      [result.attempt.id],
+    );
+    expect(attemptRow.rows[0].daily_plan_id).toBe(dailyPlanId);
+    expect(attemptRow.rows[0].daily_plan_item_id).toBe(dailyPlanItemId);
+    expect(attemptRow.rows[0].today_session_id).toBeNull();
+    expect(attemptRow.rows[0].today_session_item_id).toBeNull();
+
+    const progressRow = await db.query<{ attempt_count: number }>(
+      "select attempt_count from user_question_progress where user_id = $1 and question_id = $2",
+      [chain.userId, chain.questionId],
+    );
+    expect(progressRow.rows[0].attempt_count).toBe(1);
+  });
+
+  it("a dailyPlanItemId owned by a DIFFERENT user is rejected, and creates no real Attempt row", async () => {
+    const chain = await seedQuestionChain(db);
+    const otherUserId = await insertUser(db);
+    const { dailyPlanItemId } = await seedDailyPlanWithItem(db, {
+      ...chain,
+      userId: otherUserId,
+    });
+
+    const result = await submitAnswer(
+      makeCommand(chain, {
+        todaySessionId: null,
+        todaySessionItemId: null,
+        dailyPlanItemId,
+      }),
+      makeContext(),
+      uow,
+    );
+
+    expect(result.kind).toBe("DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED");
+    const attemptRows = await db.query(
+      "select id from attempts where user_id = $1",
+      [chain.userId],
+    );
+    expect(attemptRows.rows).toHaveLength(0);
+  });
+
+  it("a genuinely new submissionId against an already-COMPLETED real DailyPlanItem is DAILY_PLAN_ITEM_ALREADY_RESOLVED — no second Attempt, no progress row created", async () => {
+    const chain = await seedQuestionChain(db);
+    const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
+    await setDailyPlanItemResolved(db, dailyPlanItemId, "completed", NOW);
+
+    const result = await submitAnswer(
+      makeCommand(chain, {
+        submissionId: randomUUID(),
+        todaySessionId: null,
+        todaySessionItemId: null,
+        dailyPlanItemId,
+      }),
+      makeContext(),
+      uow,
+    );
+
+    expect(result.kind).toBe("DAILY_PLAN_ITEM_ALREADY_RESOLVED");
+    if (result.kind === "DAILY_PLAN_ITEM_ALREADY_RESOLVED") {
+      expect(result.status).toBe("completed");
+    }
+    const attemptRows = await db.query(
+      "select id from attempts where user_id = $1",
+      [chain.userId],
+    );
+    expect(attemptRows.rows).toHaveLength(0);
+    const progressRows = await db.query(
+      "select user_id from user_question_progress where user_id = $1 and question_id = $2",
+      [chain.userId, chain.questionId],
+    );
+    expect(progressRows.rows).toHaveLength(0);
+  });
+
+  it("a genuinely new submissionId against an already-SKIPPED real DailyPlanItem is DAILY_PLAN_ITEM_ALREADY_RESOLVED with status skipped", async () => {
+    const chain = await seedQuestionChain(db);
+    const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
+    await setDailyPlanItemResolved(db, dailyPlanItemId, "skipped", NOW);
+
+    const result = await submitAnswer(
+      makeCommand(chain, {
+        submissionId: randomUUID(),
+        todaySessionId: null,
+        todaySessionItemId: null,
+        dailyPlanItemId,
+      }),
+      makeContext(),
+      uow,
+    );
+
+    expect(result.kind).toBe("DAILY_PLAN_ITEM_ALREADY_RESOLVED");
+    if (result.kind === "DAILY_PLAN_ITEM_ALREADY_RESOLVED") {
+      expect(result.status).toBe("skipped");
+    }
+  });
+
+  it("a real RETRY of the same submissionId against an item it already completed is an idempotent ACCEPTED, not ALREADY_RESOLVED, and never creates a second Attempt row", async () => {
+    const chain = await seedQuestionChain(db);
+    const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
+    const command = makeCommand(chain, {
+      todaySessionId: null,
+      todaySessionItemId: null,
+      dailyPlanItemId,
+    });
+
+    const first = await submitAnswer(command, makeContext(), uow);
+    expect(first.kind).toBe("ACCEPTED");
+
+    const retry = await submitAnswer(command, makeContext(), uow);
+    expect(retry.kind).toBe("ACCEPTED");
+    if (retry.kind === "ACCEPTED" && first.kind === "ACCEPTED") {
+      expect(retry.wasIdempotentRetry).toBe(true);
+      expect(retry.attempt.id).toBe(first.attempt.id);
+    }
+
+    const attemptRows = await db.query(
+      "select id from attempts where user_id = $1 and question_id = $2",
+      [chain.userId, chain.questionId],
+    );
+    expect(attemptRows.rows).toHaveLength(1);
+  });
+
+  it("manual practice against a user who also has a real pending DailyPlanItem never resolves it (Manual Practice separation, .claude/rules/learning-engine.md)", async () => {
+    const chain = await seedQuestionChain(db);
+    const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
+
+    const result = await submitAnswer(
+      makeCommand(chain, {
+        todaySessionId: null,
+        todaySessionItemId: null,
+        dailyPlanItemId: null,
+        learningSessionId: "manual-practice-token",
+      }),
+      makeContext(),
+      uow,
+    );
+
+    expect(result.kind).toBe("ACCEPTED");
+    const itemRow = await db.query<{ status: string }>(
+      "select status from daily_plan_items where id = $1",
+      [dailyPlanItemId],
+    );
+    expect(itemRow.rows[0].status).toBe("pending");
+  });
+
+  it("the migration's mutual-exclusivity CHECK prevents an Attempt from claiming both a TodaySessionItem and a DailyPlanItem", async () => {
+    const chain = await seedQuestionChain(db);
+    const { todaySessionItemId, todaySessionId } = await seedTodaySessionWithItem(db, chain);
+    const { dailyPlanItemId, dailyPlanId } = await seedDailyPlanWithItem(db, chain);
+
+    await expect(
+      db.query(
+        `insert into attempts (
+           id, submission_id, user_id, course_id, question_id, question_version_id,
+           today_session_id, today_session_item_id, daily_plan_id, daily_plan_item_id,
+           learning_session_id, answered_at, is_correct, selected_answer,
+           attempt_number_for_presented_item, engine_version
+         )
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+        [
+          randomUUID(),
+          randomUUID(),
+          chain.userId,
+          chain.courseId,
+          chain.questionId,
+          chain.questionVersionId,
+          todaySessionId,
+          todaySessionItemId,
+          dailyPlanId,
+          dailyPlanItemId,
+          null,
+          NOW,
+          true,
+          JSON.stringify("A"),
+          1,
+          "test-engine-v1",
+        ],
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("deleting a DailyPlan an Attempt references only nulls the pointer columns — it never erases the Attempt or corrupts its ownership (mirrors test 10b's TodaySessionItem precedent, db-reviewer finding)", async () => {
+    const chain = await seedQuestionChain(db);
+    const { dailyPlanId, dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
+
+    const result = await submitAnswer(
+      makeCommand(chain, {
+        todaySessionId: null,
+        todaySessionItemId: null,
+        dailyPlanItemId,
+      }),
+      makeContext(),
+      uow,
+    );
+    expect(result.kind).toBe("ACCEPTED");
+    if (result.kind !== "ACCEPTED") throw new Error("unreachable");
+
+    // Deleting the parent plan cascades to daily_plan_items (its own FK to
+    // daily_plans is ON DELETE CASCADE), which must in turn SET NULL only
+    // daily_plan_id/daily_plan_item_id on the Attempt — never delete the
+    // Attempt, and never touch its user_id. Both composite FKs
+    // (attempts_daily_plan_item_user_fkey and
+    // attempts_daily_plan_item_plan_fkey) declare this explicitly; this is
+    // the real-engine proof, not just a code-review claim.
+    await db.query("delete from daily_plans where id = $1", [dailyPlanId]);
+
+    const attemptRow = await db.query<{
+      id: string;
+      user_id: string;
+      daily_plan_id: string | null;
+      daily_plan_item_id: string | null;
+    }>(
+      "select id, user_id, daily_plan_id, daily_plan_item_id from attempts where id = $1",
+      [result.attempt.id],
+    );
+
+    expect(attemptRow.rows).toHaveLength(1);
+    expect(attemptRow.rows[0].user_id).toBe(chain.userId);
+    expect(attemptRow.rows[0].daily_plan_id).toBeNull();
+    expect(attemptRow.rows[0].daily_plan_item_id).toBeNull();
   });
 });
 

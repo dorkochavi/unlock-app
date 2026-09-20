@@ -102,6 +102,8 @@ describe("createProductionSubmitAnswerContext", () => {
         responseTimeSeconds: 10,
         todaySessionId: null,
         todaySessionItemId: null,
+        dailyPlanId: null,
+        dailyPlanItemId: null,
         learningSessionId: null,
         assistanceUsed: "NONE",
         attemptNumberForPresentedItem: 1,

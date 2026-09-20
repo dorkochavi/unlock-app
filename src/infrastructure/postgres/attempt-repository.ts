@@ -15,9 +15,13 @@ const INSERT_SQL = `
     today_session_id, today_session_item_id, learning_session_id,
     answered_at, is_correct, selected_answer, confidence_level,
     response_time_seconds, assistance_used, attempt_number_for_presented_item,
-    suspicious_timing, answer_was_revealed_before_response, engine_version
+    suspicious_timing, answer_was_revealed_before_response, engine_version,
+    daily_plan_id, daily_plan_item_id
   )
-  values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+  values (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+    $18, $19, $20, $21
+  )
   on conflict (user_id, submission_id) do nothing
   returning *
 `;

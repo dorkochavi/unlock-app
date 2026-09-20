@@ -269,3 +269,63 @@ export async function seedTodaySessionWithItem(
   );
   return { todaySessionId, todaySessionItemId };
 }
+
+/**
+ * A real DailyPlan with one real item, via raw SQL (not through
+ * `PostgresDailyPlanRepository`, so callers exercising that repository
+ * itself — via the `dailyPlanItems` port in `submitAnswer` — don't create a
+ * circular test dependency on it). Mirrors `seedTodaySessionWithItem`
+ * exactly, for `submit-answer.test.ts`'s DailyPlan-attached scenarios
+ * (ADR-016, Night-Run Slice 1).
+ */
+export async function seedDailyPlanWithItem(
+  db: SqlExecutor,
+  args: {
+    userId: string;
+    courseId: string;
+    questionId: string;
+    questionVersionId: string;
+    plannedForDate?: string;
+  },
+): Promise<{ dailyPlanId: string; dailyPlanItemId: string }> {
+  const dailyPlanId = randomUUID();
+  await db.query(
+    `insert into daily_plans
+       (id, user_id, planned_for_date, status, engine_version)
+     values ($1, $2, $3, 'prepared', 'test-engine-v1')`,
+    [dailyPlanId, args.userId, args.plannedForDate ?? "2026-01-10"],
+  );
+  const dailyPlanItemId = randomUUID();
+  await db.query(
+    `insert into daily_plan_items
+       (id, daily_plan_id, user_id, course_id, position, question_id,
+        question_version_id, action_type, tier)
+     values ($1, $2, $3, $4, 0, $5, $6, 'REVIEW_DUE', 'DUE_REVIEW')`,
+    [
+      dailyPlanItemId,
+      dailyPlanId,
+      args.userId,
+      args.courseId,
+      args.questionId,
+      args.questionVersionId,
+    ],
+  );
+  return { dailyPlanId, dailyPlanItemId };
+}
+
+/** Test-only direct mutation — sets a DailyPlanItem's status/resolution
+ * timestamps to simulate an already-resolved item without going through
+ * `submitAnswer`/the Skip flow. */
+export async function setDailyPlanItemResolved(
+  db: SqlExecutor,
+  dailyPlanItemId: string,
+  status: "completed" | "skipped",
+  resolvedAt: Date,
+): Promise<void> {
+  await db.query(
+    `update daily_plan_items
+        set status = $2, resolved_at = $3, completed_at = $4
+      where id = $1`,
+    [dailyPlanItemId, status, resolvedAt, status === "completed" ? resolvedAt : null],
+  );
+}

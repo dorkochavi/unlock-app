@@ -24,6 +24,8 @@ import type {
   Attempt,
   AttemptReplayRecord,
   AttemptRepository,
+  DailyPlanAnswerRepository,
+  DailyPlanAnswerTarget,
   QuestionVersionRepository,
   TodaySession,
   TodaySessionItem,
@@ -48,6 +50,7 @@ interface InMemoryState {
   createdAtByAttemptId: Map<string, Date>;
   progress: Map<string, UserQuestionProgress>;
   todaySessions: Map<string, TodaySession>;
+  dailyPlanItems: Map<string, DailyPlanAnswerTarget>;
   correctAnswersByVersion: Map<string, string | number | null>;
   currentVersionByQuestion: Map<string, string>;
   /** questionVersionId -> the Question/Course it actually belongs to. */
@@ -81,6 +84,7 @@ export class InMemoryLearningDatabase implements UnitOfWork {
     createdAtByAttemptId: new Map(),
     progress: new Map(),
     todaySessions: new Map(),
+    dailyPlanItems: new Map(),
     correctAnswersByVersion: new Map(),
     currentVersionByQuestion: new Map(),
     versionContext: new Map(),
@@ -120,6 +124,21 @@ export class InMemoryLearningDatabase implements UnitOfWork {
   /** Test setup helper — not part of any port. */
   setQuestionCourse(questionId: string, courseId: string): void {
     this.state.questionCourse.set(questionId, courseId);
+  }
+
+  /**
+   * Test setup helper — not part of any port. Registers a DailyPlanItem
+   * directly (unlike TodaySession, this fake has no `createIfNotExists`
+   * orchestration to seed through — `submitAnswer`'s `dailyPlanItems` port
+   * only ever needs `findItemById`/`markCompleted`).
+   */
+  seedDailyPlanItem(item: DailyPlanAnswerTarget): void {
+    this.state.dailyPlanItems.set(item.id, { ...item });
+  }
+
+  /** Test-only inspection helper — not part of any port. */
+  getDailyPlanItem(itemId: string): DailyPlanAnswerTarget | null {
+    return this.state.dailyPlanItems.get(itemId) ?? null;
   }
 
   /** Test setup helper — not part of any port. */
@@ -281,6 +300,25 @@ export class InMemoryLearningDatabase implements UnitOfWork {
       },
     };
 
+    const dailyPlanItems: DailyPlanAnswerRepository = {
+      findItemById: async (itemId) => {
+        const item = this.state.dailyPlanItems.get(itemId);
+        return item ? { ...item } : null;
+      },
+      markCompleted: async (itemId, completedAt) => {
+        const item = this.state.dailyPlanItems.get(itemId);
+        if (item === undefined) {
+          return { outcome: "NOT_FOUND" };
+        }
+        if (item.status !== "pending") {
+          return { outcome: "ALREADY_RESOLVED" };
+        }
+        item.status = "completed";
+        void completedAt; // not separately modeled on this minimal fake shape
+        return { outcome: "RESOLVED" };
+      },
+    };
+
     return {
       acquireLearnerQuestionLock: async (userId, questionId) => {
         this.lockCalls.push({ userId, questionId });
@@ -290,6 +328,7 @@ export class InMemoryLearningDatabase implements UnitOfWork {
       answerCorrectness,
       questionVersions,
       todaySessions,
+      dailyPlanItems,
     };
   }
 }

@@ -102,6 +102,20 @@ export interface Attempt {
   todaySessionItemId: string | null;
 
   /**
+   * ADR-016. The DailyPlan/DailyPlanItem this Attempt resolves, or null for
+   * manual practice or a legacy TodaySession-attached Attempt. Mutually
+   * exclusive with todaySessionItemId (enforced by a DB CHECK,
+   * `20260924000000_daily_plan_answer_attempts.sql`) — a given Attempt
+   * belongs to at most one of the two planned-item systems. Same ownership
+   * discipline as todaySessionId/todaySessionItemId: for a DailyPlan-
+   * attached Attempt, the APPLICATION derives both fields from the
+   * persisted DailyPlanItem, never a client-supplied value — see
+   * `submit-answer.ts`'s `resolveLearningSessionId`.
+   */
+  dailyPlanId: string | null;
+  dailyPlanItemId: string | null;
+
+  /**
    * Stable identity of the continuous learning session/occasion this
    * Attempt belongs to (e.g. a Today session id, or a client-generated
    * token for manual practice), or null when genuinely unknown.

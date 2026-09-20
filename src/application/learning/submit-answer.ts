@@ -122,6 +122,7 @@ import { rebuildUserQuestionProgress } from "../../domain/learning/rebuild";
 import { OutOfOrderRetrievalError } from "../../domain/learning/retrieval-qualification";
 import type { Attempt, UserQuestionProgress } from "../../domain/learning/types";
 import type {
+  DailyPlanAnswerTarget,
   TodaySessionItem,
   TransactionalRepositories,
   UnitOfWork,
@@ -175,6 +176,23 @@ export type SubmitAnswerResult =
       todaySessionItemId: string;
     }
   | {
+      /** ADR-016. Mirrors TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED exactly. */
+      kind: "DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED";
+      dailyPlanItemId: string;
+    }
+  | {
+      /**
+       * ADR-016 §19: the DailyPlanItem was already COMPLETED or SKIPPED —
+       * a genuinely new submissionId arriving for an already-resolved item
+       * (not a retry of the same submissionId, which short-circuits earlier
+       * via the idempotency fast path). No Attempt is created and no
+       * grading/progress-update work runs for this outcome.
+       */
+      kind: "DAILY_PLAN_ITEM_ALREADY_RESOLVED";
+      dailyPlanItemId: string;
+      status: "completed" | "skipped";
+    }
+  | {
       kind: "QUESTION_VERSION_CONSISTENCY_VIOLATION";
       questionVersionId: string;
     }
@@ -207,6 +225,7 @@ const CANONICAL_COMMAND_IDENTITY_FIELDS: Array<keyof SubmitAnswerCommand> = [
   "responseTimeSeconds",
   "todaySessionId",
   "todaySessionItemId",
+  "dailyPlanItemId",
   "assistanceUsed",
   "attemptNumberForPresentedItem",
   "answerWasRevealedBeforeResponse",
@@ -256,6 +275,7 @@ function findConflictingFields(
   }
   if (
     command.todaySessionItemId === null &&
+    command.dailyPlanItemId === null &&
     command.learningSessionId !== existing.learningSessionId
   ) {
     conflicts.push("learningSessionId");
@@ -268,13 +288,24 @@ function findConflictingFields(
  * actually gets — see the module doc comment's "learningSessionId
  * ownership" section for why this cannot simply trust
  * `command.learningSessionId`.
+ *
+ * A DailyPlan-attached Attempt (ADR-016) is treated identically: the
+ * `dailyPlanId` of the persisted DailyPlanItem the Attempt resolves IS the
+ * one continuous session concept for it (a DailyPlan is already one
+ * per-user-per-local-day plan, matching `TodaySession`'s own role here) —
+ * `command.learningSessionId` is ignored for this case too, for the same
+ * reason.
  */
 function resolveLearningSessionId(
   command: SubmitAnswerCommand,
   todaySessionItem: TodaySessionItem | null,
+  dailyPlanItem: DailyPlanAnswerTarget | null,
 ): string | null {
   if (todaySessionItem !== null) {
     return todaySessionItem.todaySessionId;
+  }
+  if (dailyPlanItem !== null) {
+    return dailyPlanItem.dailyPlanId;
   }
   return command.learningSessionId;
 }
@@ -295,6 +326,25 @@ class TodaySessionItemOwnershipViolation extends Error {
       "submitAnswer: todaySessionItemId not found, or does not belong to this user/question/version",
     );
     this.name = "TodaySessionItemOwnershipViolation";
+  }
+}
+
+class DailyPlanItemOwnershipViolation extends Error {
+  constructor(public readonly dailyPlanItemId: string) {
+    super(
+      "submitAnswer: dailyPlanItemId not found, or does not belong to this user/question/version",
+    );
+    this.name = "DailyPlanItemOwnershipViolation";
+  }
+}
+
+class DailyPlanItemAlreadyResolvedError extends Error {
+  constructor(
+    public readonly dailyPlanItemId: string,
+    public readonly status: "completed" | "skipped",
+  ) {
+    super(`submitAnswer: dailyPlanItemId ${dailyPlanItemId} is already ${status}`);
+    this.name = "DailyPlanItemAlreadyResolvedError";
   }
 }
 
@@ -366,6 +416,19 @@ export async function submitAnswer(
       return {
         kind: "TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED",
         todaySessionItemId: error.todaySessionItemId,
+      };
+    }
+    if (error instanceof DailyPlanItemOwnershipViolation) {
+      return {
+        kind: "DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED",
+        dailyPlanItemId: error.dailyPlanItemId,
+      };
+    }
+    if (error instanceof DailyPlanItemAlreadyResolvedError) {
+      return {
+        kind: "DAILY_PLAN_ITEM_ALREADY_RESOLVED",
+        dailyPlanItemId: error.dailyPlanItemId,
+        status: error.status,
       };
     }
     if (error instanceof QuestionVersionConsistencyViolation) {
@@ -473,6 +536,36 @@ async function submitAnswerInTransaction(
     }
   }
 
+  // DailyPlanItem ownership + pending-status validation (ADR-016). Unlike
+  // the TodaySessionItem block above, this ALSO verifies `status ===
+  // "pending"` here, before any grading/Attempt-creation work — a
+  // DailyPlanItem resolves at most once (`.claude/rules/learning-engine.md`
+  // "Item resolution"), so a genuinely new submissionId arriving for an
+  // already-resolved item must be rejected cleanly, before it can create a
+  // second Attempt or a second progress update for the same plan slot. A
+  // real RETRY of the same submissionId never reaches this block at all —
+  // it already short-circuited via the idempotency fast path above.
+  let dailyPlanItem: DailyPlanAnswerTarget | null = null;
+  if (command.dailyPlanItemId !== null) {
+    dailyPlanItem = await repos.dailyPlanItems.findItemById(
+      command.dailyPlanItemId,
+    );
+    if (
+      dailyPlanItem === null ||
+      dailyPlanItem.userId !== command.userId ||
+      dailyPlanItem.questionId !== command.questionId ||
+      dailyPlanItem.questionVersionId !== command.questionVersionId
+    ) {
+      throw new DailyPlanItemOwnershipViolation(command.dailyPlanItemId);
+    }
+    if (dailyPlanItem.status !== "pending") {
+      throw new DailyPlanItemAlreadyResolvedError(
+        command.dailyPlanItemId,
+        dailyPlanItem.status,
+      );
+    }
+  }
+
   const suspiciousTiming = context.determineSuspiciousTiming({
     responseTimeSeconds: command.responseTimeSeconds,
     questionId: command.questionId,
@@ -486,7 +579,18 @@ async function submitAnswerInTransaction(
 
   const candidateAttempt: Attempt = {
     ...command,
-    learningSessionId: resolveLearningSessionId(command, todaySessionItem),
+    // ADR-016: APPLICATION-derived from the persisted DailyPlanItem when
+    // one is being resolved, never independently trusted from
+    // `command.dailyPlanId` — the exact same discipline `learningSessionId`
+    // already gets, extended to this field too since a DailyPlanItem
+    // uniquely determines its own parent plan.
+    dailyPlanId:
+      dailyPlanItem !== null ? dailyPlanItem.dailyPlanId : command.dailyPlanId,
+    learningSessionId: resolveLearningSessionId(
+      command,
+      todaySessionItem,
+      dailyPlanItem,
+    ),
     id: context.generateId(),
     isCorrect,
     suspiciousTiming,
@@ -570,6 +674,25 @@ async function submitAnswerInTransaction(
       command.answeredAt,
       attempt.id,
     );
+  }
+  if (command.dailyPlanItemId !== null) {
+    const resolution = await repos.dailyPlanItems.markCompleted(
+      command.dailyPlanItemId,
+      command.answeredAt,
+    );
+    if (resolution.outcome !== "RESOLVED") {
+      // Unreachable under normal operation: the pending check above ran
+      // under the SAME (userId, questionId) advisory lock this call is
+      // still holding, and a DailyPlanItem's `(daily_plan_id, question_id)`
+      // is unique, so nothing else could have resolved this exact item
+      // between the two checks. Surfaced loudly rather than silently
+      // treated as success, per docs/ARCHITECTURE.md §21.
+      throw new Error(
+        `submitAnswer: dailyPlanItemId ${command.dailyPlanItemId} could not ` +
+          `be marked completed (${resolution.outcome}) despite passing the ` +
+          `pending check earlier in the same transaction`,
+      );
+    }
   }
 
   return {

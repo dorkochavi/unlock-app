@@ -33,6 +33,8 @@ function buildAttempt(overrides: Partial<Attempt> & Pick<Attempt, "userId" | "co
     responseTimeSeconds: 4.5,
     todaySessionId: null,
     todaySessionItemId: null,
+    dailyPlanId: null,
+    dailyPlanItemId: null,
     learningSessionId: randomToken("session"),
     assistanceUsed: "NONE",
     attemptNumberForPresentedItem: 1,

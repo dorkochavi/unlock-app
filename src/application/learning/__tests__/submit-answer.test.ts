@@ -120,6 +120,8 @@ function makeCommand(
     responseTimeSeconds: 10,
     todaySessionId: null,
     todaySessionItemId: null,
+    dailyPlanId: null,
+    dailyPlanItemId: null,
     learningSessionId: null,
     assistanceUsed: "NONE",
     attemptNumberForPresentedItem: 1,
@@ -1004,5 +1006,303 @@ describe("submitAnswer", () => {
     );
 
     expect(result.kind).toBe("ACCEPTED");
+  });
+
+  describe("DailyPlanItem answer submission (ADR-016, Night-Run Slice 1)", () => {
+    it("owner answering a pending DailyPlanItem is ACCEPTED, resolves the item, and derives dailyPlanId/learningSessionId from the item", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "pending",
+      });
+
+      const result = await submitAnswer(
+        makeCommand({
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "item-1",
+          // A malicious/buggy caller claiming an unrelated plan/session
+          // identity here must be ignored — both are APPLICATION-derived
+          // from the persisted item, never trusted from the command.
+          dailyPlanId: "someone-elses-plan",
+          learningSessionId: "someone-elses-session-token",
+        }),
+        makeContext(),
+        db,
+      );
+
+      expect(result.kind).toBe("ACCEPTED");
+      if (result.kind === "ACCEPTED") {
+        expect(result.attempt.dailyPlanId).toBe("plan-1");
+        expect(result.attempt.dailyPlanItemId).toBe("item-1");
+        expect(result.attempt.learningSessionId).toBe("plan-1");
+        expect(result.attempt.todaySessionId).toBeNull();
+        expect(result.attempt.todaySessionItemId).toBeNull();
+      }
+      expect(db.getDailyPlanItem("item-1")?.status).toBe("completed");
+    });
+
+    it("a dailyPlanItemId owned by a DIFFERENT user is DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED, and creates no Attempt", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "someone-else",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "pending",
+      });
+
+      const result = await submitAnswer(
+        makeCommand({
+          userId: "user-1",
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "item-1",
+        }),
+        makeContext(),
+        db,
+      );
+
+      expect(result.kind).toBe("DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED");
+      expect(db.hasAttempt("user-1", "sub-1")).toBe(false);
+      expect(db.getDailyPlanItem("item-1")?.status).toBe("pending");
+    });
+
+    it("a nonexistent dailyPlanItemId is DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+
+      const result = await submitAnswer(
+        makeCommand({
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "does-not-exist",
+        }),
+        makeContext(),
+        db,
+      );
+
+      expect(result.kind).toBe("DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED");
+    });
+
+    it("a dailyPlanItemId that is real/owned but frozen for a DIFFERENT questionVersionId is rejected", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setQuestionVersion("qv-2", "question-1", "course-1");
+      db.setCorrectAnswer("qv-1", "A");
+      db.setCorrectAnswer("qv-2", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1", // frozen at generation time
+        status: "pending",
+      });
+
+      const result = await submitAnswer(
+        makeCommand({
+          questionVersionId: "qv-2", // claims a DIFFERENT version than the item was frozen with
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "item-1",
+        }),
+        makeContext(),
+        db,
+      );
+
+      expect(result.kind).toBe("DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED");
+    });
+
+    it("a genuinely NEW submissionId for an already-COMPLETED DailyPlanItem is DAILY_PLAN_ITEM_ALREADY_RESOLVED — no second Attempt, no progress mutation", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "completed",
+      });
+
+      const result = await submitAnswer(
+        makeCommand({
+          submissionId: "sub-new",
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "item-1",
+        }),
+        makeContext(),
+        db,
+      );
+
+      expect(result.kind).toBe("DAILY_PLAN_ITEM_ALREADY_RESOLVED");
+      if (result.kind === "DAILY_PLAN_ITEM_ALREADY_RESOLVED") {
+        expect(result.status).toBe("completed");
+      }
+      expect(db.hasAttempt("user-1", "sub-new")).toBe(false);
+    });
+
+    it("a genuinely NEW submissionId for an already-SKIPPED DailyPlanItem is DAILY_PLAN_ITEM_ALREADY_RESOLVED with status skipped", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "skipped",
+      });
+
+      const result = await submitAnswer(
+        makeCommand({
+          submissionId: "sub-new",
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "item-1",
+        }),
+        makeContext(),
+        db,
+      );
+
+      expect(result.kind).toBe("DAILY_PLAN_ITEM_ALREADY_RESOLVED");
+      if (result.kind === "DAILY_PLAN_ITEM_ALREADY_RESOLVED") {
+        expect(result.status).toBe("skipped");
+      }
+    });
+
+    it("a genuine RETRY of the same submissionId against an item it already completed is an idempotent ACCEPTED, not ALREADY_RESOLVED", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "pending",
+      });
+      const context = makeContext();
+      const command = makeCommand({
+        submissionId: "sub-1",
+        todaySessionId: null,
+        todaySessionItemId: null,
+        dailyPlanItemId: "item-1",
+      });
+
+      const first = await submitAnswer(command, context, db);
+      expect(first.kind).toBe("ACCEPTED");
+      if (first.kind === "ACCEPTED") {
+        expect(first.wasIdempotentRetry).toBe(false);
+      }
+
+      const retry = await submitAnswer(command, context, db);
+      expect(retry.kind).toBe("ACCEPTED");
+      if (retry.kind === "ACCEPTED") {
+        expect(retry.wasIdempotentRetry).toBe(true);
+        expect(retry.attempt.id).toBe(
+          first.kind === "ACCEPTED" ? first.attempt.id : undefined,
+        );
+      }
+    });
+
+    it("reusing a submissionId for a DIFFERENT dailyPlanItemId is IDEMPOTENCY_KEY_CONFLICT naming dailyPlanItemId", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "pending",
+      });
+      db.seedDailyPlanItem({
+        id: "item-2",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "pending",
+      });
+      const context = makeContext();
+
+      await submitAnswer(
+        makeCommand({
+          submissionId: "sub-shared",
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "item-1",
+        }),
+        context,
+        db,
+      );
+
+      const result = await submitAnswer(
+        makeCommand({
+          submissionId: "sub-shared",
+          todaySessionId: null,
+          todaySessionItemId: null,
+          dailyPlanItemId: "item-2",
+        }),
+        context,
+        db,
+      );
+
+      expect(result.kind).toBe("IDEMPOTENCY_KEY_CONFLICT");
+      if (result.kind === "IDEMPOTENCY_KEY_CONFLICT") {
+        expect(result.conflictingFields).toContain("dailyPlanItemId");
+      }
+    });
+
+    it("manual practice (no dailyPlanItemId) never touches DailyPlanItem state", async () => {
+      const db = new InMemoryLearningDatabase();
+      seedDefaultQuestion(db);
+      db.setCorrectAnswer("qv-1", "A");
+      db.seedDailyPlanItem({
+        id: "item-1",
+        dailyPlanId: "plan-1",
+        userId: "user-1",
+        courseId: "course-1",
+        questionId: "question-1",
+        questionVersionId: "qv-1",
+        status: "pending",
+      });
+
+      const result = await submitAnswer(
+        makeCommand({ todaySessionId: null, todaySessionItemId: null, dailyPlanItemId: null }),
+        makeContext(),
+        db,
+      );
+
+      expect(result.kind).toBe("ACCEPTED");
+      // Manual Practice must not resolve a matching Today/DailyPlan item
+      // (.claude/rules/learning-engine.md "Manual Practice").
+      expect(db.getDailyPlanItem("item-1")?.status).toBe("pending");
+    });
   });
 });

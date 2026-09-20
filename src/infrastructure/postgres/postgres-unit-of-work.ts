@@ -9,6 +9,7 @@ import type {
 import { PostgresAnswerCorrectnessChecker } from "./answer-correctness-checker";
 import { PostgresAttemptRepository } from "./attempt-repository";
 import type { ConnectionProvider } from "./connection-provider";
+import { PostgresDailyPlanRepository } from "./daily-plan-repository";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
 import { PostgresUserQuestionProgressRepository } from "./progress-repository";
 import type { TransactionExecutor } from "./sql-executor";
@@ -91,6 +92,13 @@ export class PostgresUnitOfWork implements UnitOfWork {
           answerCorrectness: new PostgresAnswerCorrectnessChecker(db),
           questionVersions: new PostgresQuestionVersionRepository(db),
           todaySessions: new PostgresTodaySessionRepository(db),
+          // Same real class `PostgresDailyPlanRepository` used by
+          // `PostgresDailyPlanUnitOfWork` for DailyPlan generation —
+          // `DailyPlanAnswerRepository`'s narrower shape
+          // (`application/learning/ports.ts`) is structurally satisfied by
+          // it directly (extra fields on its return values are harmless),
+          // so no separate infrastructure class is needed here.
+          dailyPlanItems: new PostgresDailyPlanRepository(db),
         };
         const result = await fn(repos);
         await db.query("commit");
