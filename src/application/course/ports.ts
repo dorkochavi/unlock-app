@@ -6,11 +6,12 @@
  * learning/ports.ts` already follows). No Postgres/Supabase types leak into
  * any of these signatures.
  *
- * No `UnitOfWork`/transaction wrapper exists here, deliberately: unlike
- * `submitAnswer` (ADR-010), no operation in this slice needs multiple
- * statements to be atomic together. `joinCourse` is race-free by a single
- * `INSERT ... ON CONFLICT DO NOTHING` (mirroring `TodaySessionRepository
- * .createIfNotExists`); `setJoinPolicy`/`setArchived`/`revoke` are each a
+ * No `UnitOfWork`/transaction wrapper exists for MOST operations here,
+ * deliberately: unlike `submitAnswer` (ADR-010), most operations in this
+ * module need only one statement to be atomic. `joinCourse` is race-free by
+ * a single `INSERT ... ON CONFLICT DO NOTHING` (mirroring
+ * `TodaySessionRepository.createIfNotExists`); `setJoinPolicy`/
+ * `setArchived`/`revoke`/`updateCourseMetadata`/`setCourseStatus` are each a
  * single conditional `UPDATE`. The narrow read-then-write window in
  * `setCourseJoinPolicy`/`revokeCourseMembership` (checking the actor's
  * management role, then writing) is an accepted, non-corrupting race for
@@ -18,8 +19,13 @@
  * in-flight write — not a data-integrity concern, since every constraint
  * this migration cares about (valid role/join_policy values, one
  * membership per user/Course) is enforced by the database regardless.
+ * `createCourse` (Run 005 S2) IS the one genuine exception — it writes
+ * across two repositories (`courses` + the creator's OWNER
+ * `course_memberships`) that must commit or roll back together, so it is
+ * the only operation routed through `CourseUnitOfWork` below rather than
+ * `CourseRepositories` directly (Run 005 S2 DB review finding).
  */
-import type { CourseJoinPolicy, CourseMembership, CourseRole } from "../../domain/course/types";
+import type { CourseJoinPolicy, CourseMembership, CourseRole, CourseStatus } from "../../domain/course/types";
 
 export type { CourseMembership };
 
@@ -87,9 +93,49 @@ export interface CourseSummary {
   title: string;
 }
 
+/**
+ * Full authoring-only view of a Course — id/title/status/joinPolicy/examDate
+ * plus timestamps. NEVER the same projection as `CourseSummary` (learner
+ * join-page) or the learner-facing Course View read: this record is only
+ * ever returned to an already-authorized OWNER/INSTRUCTOR caller (Run 005
+ * S2 "Authorization").
+ */
+export interface CourseAuthoringRecord {
+  id: string;
+  title: string;
+  status: CourseStatus;
+  joinPolicy: CourseJoinPolicy;
+  /** `YYYY-MM-DD`, or `null` if unset (`row-validation.ts`'s `readDateOnlyString` convention). */
+  examDate: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateCourseInput {
+  ownerUserId: string;
+  title: string;
+  examDate: string | null;
+}
+
+export interface UpdateCourseMetadataInput {
+  title?: string;
+  examDate?: string | null;
+}
+
 export interface CourseRepository {
   /** `null` if the Course does not exist. */
   getJoinPolicy(courseId: string): Promise<CourseJoinPolicy | null>;
+
+  /**
+   * `null` if the Course does not exist. Narrow read used only by
+   * `joinCourse` (Run 005 S2 "Join behavior") to decide learner self-join
+   * eligibility — deliberately not the full `CourseAuthoringRecord`, which
+   * carries admin-only fields this join-eligibility check has no reason to
+   * touch.
+   */
+  getJoinEligibility(
+    courseId: string,
+  ): Promise<{ status: CourseStatus; joinPolicy: CourseJoinPolicy } | null>;
 
   /** `null` if the Course does not exist. Public-safe read — see `CourseSummary`. */
   getCourseSummary(courseId: string): Promise<CourseSummary | null>;
@@ -115,11 +161,52 @@ export interface CourseRepository {
     courseId: string,
     joinPolicy: CourseJoinPolicy,
   ): Promise<CourseJoinPolicy | null>;
+
+  /** New Courses always start DRAFT (Run 005 S3 "Do not auto-publish a Course merely because it was created"). */
+  createCourse(input: CreateCourseInput): Promise<CourseAuthoringRecord>;
+
+  /** `null` if the Course does not exist. Authoring-only — see `CourseAuthoringRecord`. */
+  getCourseForAuthoring(courseId: string): Promise<CourseAuthoringRecord | null>;
+
+  /**
+   * Updates only the fields present in `input` (`title`/`examDate` each
+   * independently optional — `examDate: null` explicitly clears it, `undefined`/absent
+   * leaves it unchanged). Returns `null` if the Course does not exist.
+   */
+  updateCourseMetadata(
+    courseId: string,
+    input: UpdateCourseMetadataInput,
+  ): Promise<CourseAuthoringRecord | null>;
+
+  /**
+   * Unconditional status write — the *legality* of the transition (Run 005
+   * S2 "invalid transition behavior") is an application-layer concern
+   * (`publish-course.ts`/`archive-course.ts`), not this port's. Returns
+   * `null` if the Course does not exist.
+   */
+  setCourseStatus(
+    courseId: string,
+    status: CourseStatus,
+  ): Promise<CourseAuthoringRecord | null>;
 }
 
-export type { CourseJoinPolicy, CourseRole };
+export type { CourseJoinPolicy, CourseRole, CourseStatus };
 
 export interface CourseRepositories {
   memberships: CourseMembershipRepository;
   courses: CourseRepository;
+}
+
+/**
+ * Transaction boundary for Course use cases that must write across more
+ * than one repository atomically — currently only `createCourse`
+ * (`courses` insert + the creator's OWNER `course_memberships` insert; Run
+ * 005 S2 DB review finding). Every other write in this module is a single
+ * UPDATE statement and is therefore already atomic without this — do not
+ * route them through a transaction merely for uniformity. Mirrors
+ * `src/application/learning/ports.ts`'s `UnitOfWork` shape, narrowed to
+ * this module's own `CourseRepositories`.
+ */
+export interface CourseUnitOfWork {
+  runInTransaction<T>(fn: (repos: CourseRepositories) => Promise<T>): Promise<T>;
 }

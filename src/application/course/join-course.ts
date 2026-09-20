@@ -14,7 +14,7 @@
  * §6) — this function never branches on "the caller knows the courseId,"
  * only on the Course's actual persisted `joinPolicy`.
  */
-import { canSelfJoin } from "../../domain/course/types";
+import { canSelfJoinCourse } from "../../domain/course/types";
 import type { CourseMembership, CourseRepositories } from "./ports";
 
 export interface JoinCourseCommand {
@@ -32,16 +32,17 @@ export async function joinCourse(
   command: JoinCourseCommand,
   repos: CourseRepositories,
 ): Promise<JoinCourseResult> {
-  const joinPolicy = await repos.courses.getJoinPolicy(command.courseId);
-  if (joinPolicy === null) {
+  const eligibility = await repos.courses.getJoinEligibility(command.courseId);
+  if (eligibility === null) {
     return { outcome: "COURSE_NOT_FOUND" };
   }
 
-  if (!canSelfJoin(joinPolicy)) {
-    // AUTHORIZED_ONLY: self-join must NOT silently self-authorize
-    // (ADR-015 §5). No separate eligibility mechanism is decided or
-    // implemented by this slice, so there is no further check to run —
-    // this is a deliberate dead end, not an omission.
+  if (!canSelfJoinCourse(eligibility)) {
+    // AUTHORIZED_ONLY join_policy, or a non-PUBLISHED Course (DRAFT/
+    // ARCHIVED — Run 005 S2 "Join behavior"): self-join must NOT silently
+    // self-authorize (ADR-015 §5). No separate eligibility mechanism is
+    // decided or implemented, so there is no further check to run — this
+    // is a deliberate dead end, not an omission.
     return { outcome: "NOT_AUTHORIZED" };
   }
 

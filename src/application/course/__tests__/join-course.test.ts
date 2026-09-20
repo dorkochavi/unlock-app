@@ -119,6 +119,46 @@ describe("joinCourse", () => {
     expect(result.membership.role).toBe("INSTRUCTOR");
   });
 
+  it("does not permit self-join against a DRAFT course even when OPEN (Run 005 S2)", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "OPEN", "Test Course", "DRAFT");
+
+    const result = await joinCourse(
+      { actorUserId: "user-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("NOT_AUTHORIZED");
+    const membership = await db.repos().memberships.findMembership("user-1", "course-1");
+    expect(membership).toBeNull();
+  });
+
+  it("does not permit self-join against an ARCHIVED course even when OPEN (Run 005 S2)", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "OPEN", "Test Course", "ARCHIVED");
+
+    const result = await joinCourse(
+      { actorUserId: "user-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("NOT_AUTHORIZED");
+    const membership = await db.repos().memberships.findMembership("user-1", "course-1");
+    expect(membership).toBeNull();
+  });
+
+  it("permits self-join against a PUBLISHED OPEN course (Run 005 S2 default)", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "OPEN", "Test Course", "PUBLISHED");
+
+    const result = await joinCourse(
+      { actorUserId: "user-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("JOINED");
+  });
+
   // Open Question #43: not a decided product rule — pins the current
   // conservative behavior. A revoked membership's row already exists, so
   // `createMembership`'s ON-CONFLICT-DO-NOTHING path returns it unchanged

@@ -96,14 +96,26 @@ export async function insertUser(db: SqlExecutor): Promise<string> {
   return id;
 }
 
+/**
+ * Defaults `status` to PUBLISHED (Run 005 S2's own migration backfill
+ * decision for pre-existing rows — most existing tests in this suite exist
+ * to prove behavior unrelated to Course lifecycle and need an ordinarily-
+ * usable Course, not a DRAFT/ARCHIVED one). Pass `status`/`examDate` to
+ * seed a specific lifecycle state for Run 005 S2's own repository tests.
+ */
 export async function insertCourse(
   db: SqlExecutor,
   ownerUserId: string,
+  overrides: {
+    status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+    examDate?: string | null;
+  } = {},
 ): Promise<string> {
   const id = randomUUID();
   await db.query(
-    "insert into courses (id, owner_user_id, title) values ($1, $2, 'Test Course')",
-    [id, ownerUserId],
+    `insert into courses (id, owner_user_id, title, status, exam_date)
+     values ($1, $2, 'Test Course', $3, $4)`,
+    [id, ownerUserId, overrides.status ?? "PUBLISHED", overrides.examDate ?? null],
   );
   return id;
 }

@@ -85,10 +85,13 @@ async function insertUser(): Promise<string> {
   return id;
 }
 
+/** Defaults `status` to PUBLISHED — Run 005 S2's own migration backfill
+ *  decision for pre-existing rows; this file's own tests are unrelated to
+ *  Course lifecycle and just need an ordinarily-usable Course. */
 async function insertCourse(ownerUserId: string): Promise<string> {
   const id = randomUUID();
   await db.query(
-    "insert into courses (id, owner_user_id, title) values ($1, $2, 'Test Course')",
+    "insert into courses (id, owner_user_id, title, status) values ($1, $2, 'Test Course', 'PUBLISHED')",
     [id, ownerUserId],
   );
   return id;
@@ -776,7 +779,7 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
 
     await expect(
       db.query(
-        "insert into courses (id, owner_user_id, title, join_policy) values ($1, $2, 'Test Course', $3)",
+        "insert into courses (id, owner_user_id, title, status, join_policy) values ($1, $2, 'Test Course', 'DRAFT', $3)",
         [id, userId, "SOMETHING_ELSE"],
       ),
     ).rejects.toThrow(/violates check constraint/);
@@ -1320,6 +1323,58 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
         questionVersionId: otherQuestionVersionId,
       }),
     ).rejects.toThrow(/violates foreign key constraint/);
+  });
+
+  // -------------------------------------------------------------------------
+  // courses.status / courses.exam_date — Run 005 S2
+  // -------------------------------------------------------------------------
+
+  it("48. rejects an invalid courses.status value", async () => {
+    const userId = await insertUser();
+    const id = randomUUID();
+
+    await expect(
+      db.query(
+        "insert into courses (id, owner_user_id, title, status) values ($1, $2, 'Test Course', $3)",
+        [id, userId, "SOMETHING_ELSE"],
+      ),
+    ).rejects.toThrow(/violates check constraint/);
+  });
+
+  it("49. rejects an insert that omits courses.status — no column default is left behind (matches question_type's precedent)", async () => {
+    const userId = await insertUser();
+    const id = randomUUID();
+
+    await expect(
+      db.query(
+        "insert into courses (id, owner_user_id, title) values ($1, $2, 'Test Course')",
+        [id, userId],
+      ),
+    ).rejects.toThrow(/null value in column "status"/);
+  });
+
+  it("50. courses.exam_date accepts and round-trips both null and a real date, independent of status", async () => {
+    const userId = await insertUser();
+    const withDate = randomUUID();
+    const withoutDate = randomUUID();
+
+    await db.query(
+      "insert into courses (id, owner_user_id, title, status, exam_date) values ($1, $2, 'Exam Course', 'DRAFT', $3)",
+      [withDate, userId, "2026-11-12"],
+    );
+    await db.query(
+      "insert into courses (id, owner_user_id, title, status) values ($1, $2, 'No Exam Course', 'DRAFT')",
+      [withoutDate, userId],
+    );
+
+    const result = await db.query<{ id: string; exam_date: string | null }>(
+      "select id, exam_date from courses where id = any($1::uuid[]) order by id",
+      [[withDate, withoutDate]],
+    );
+    const withDateRow = result.rows.find((r) => r.id === withDate);
+    const withoutDateRow = result.rows.find((r) => r.id === withoutDate);
+    expect(withDateRow?.exam_date).not.toBeNull();
+    expect(withoutDateRow?.exam_date).toBeNull();
   });
 
   it("RLS is enabled (not just declared) on every V1 table", async () => {

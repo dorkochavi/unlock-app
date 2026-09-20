@@ -145,6 +145,44 @@ join link / QR
 
 ---
 
+### Course Authoring (Run 005, in progress)
+
+Implemented (Slice S2 — Course Lifecycle + Instructor Authorization Foundation):
+
+- `courses.status`: `DRAFT` / `PUBLISHED` / `ARCHIVED` (migration
+  `20260926000000_course_lifecycle_v1.sql`; existing rows backfilled to
+  `PUBLISHED`, no column default left behind — new Courses must state
+  status explicitly, matching `question_versions.question_type`'s
+  established precedent).
+- `courses.exam_date`: optional instructor-set date, metadata only — no
+  Exam Urgency ranking behavior exists yet (out of Run 005 scope).
+- authoring authorization: `canAuthorCourse` (OWNER/active INSTRUCTOR only;
+  fails closed on revoked OR archived management membership — deliberately
+  stricter than the pre-existing `isManagementRole` alone; a known,
+  currently-dormant asymmetry with `setCourseJoinPolicy`, which only checks
+  `revokedAt`, is tracked for reconciliation before that use case is ever
+  wired to a live route).
+- application use cases: `createCourse` (new Course starts DRAFT +
+  AUTHORIZED_ONLY, grants creator OWNER membership, both writes atomic via
+  a dedicated `CourseUnitOfWork`/`PostgresCourseUnitOfWork` transaction),
+  `getCourseForAuthoring`, `updateCourseMetadata`, `publishCourse`
+  (DRAFT -> PUBLISHED only), `archiveCourse` (DRAFT or PUBLISHED ->
+  ARCHIVED; ARCHIVED is terminal in V1, no un-archive path).
+- API: `POST /api/courses`, `GET`/`PATCH /api/courses/:courseId/manage`,
+  `POST /api/courses/:courseId/publish`, `POST /api/courses/:courseId/archive`
+  — all authenticated, auth-before-DB, authorization-before-existence
+  (an unauthorized caller never learns whether a `courseId` exists).
+- learner self-join (`joinCourse`) is now lifecycle-aware: a DRAFT or
+  ARCHIVED Course is never joinable even when `join_policy = OPEN`
+  (`canSelfJoinCourse`, replacing the plain `canSelfJoin` check inside
+  `joinCourse` specifically).
+
+No instructor-facing UI exists yet for any of this (Slice S3). Flat Topics,
+manual question authoring, QuestionVersion publish lifecycle, and
+Structured Import remain fully unimplemented (Slices S4-S8).
+
+---
+
 ### Learning Evidence / Engine
 
 Implemented:
@@ -280,6 +318,13 @@ Implemented relevant APIs include:
 - `GET /api/courses/mine` (authenticated, My Courses)
 - `GET /api/courses/:courseId/context` (authenticated, membership-gated Course View)
 
+Run 005 instructor-authoring APIs (S2; no UI yet — see Course Authoring above):
+
+- `POST /api/courses` (create, DRAFT)
+- `GET`/`PATCH /api/courses/:courseId/manage` (authoring read / metadata update)
+- `POST /api/courses/:courseId/publish`
+- `POST /api/courses/:courseId/archive`
+
 This list is a current capability summary, not an exhaustive API specification.
 Use the API docs / source for full contracts.
 
@@ -311,6 +356,14 @@ confirmed local/remote parity through this migration.
 Hosted Supabase now supports the answer/New Material flows.
 
 Claude must not run `supabase db push` without explicit user authorization.
+
+### Committed locally, NOT yet applied to hosted Supabase
+
+10. `20260926000000_course_lifecycle_v1.sql` (Run 005 S2) — adds
+    `courses.status`/`courses.exam_date`. PGlite-verified only (full
+    `npm run test:schema` suite green plus a dedicated atomicity/rollback
+    suite for the new `PostgresCourseUnitOfWork`); not yet pushed to the
+    real hosted project.
 
 ---
 
@@ -400,10 +453,10 @@ end-to-end — see "Not yet executed" above.
 
 ## Current Test Baseline
 
-At local HEAD `0e812a1` (pushed HEAD remains `f10daaa`):
+At local HEAD after Run 005 S2 (pushed HEAD remains `f10daaa`; see Repository State):
 
-- Unit tests: `638 / 638`
-- Schema/Postgres (PGlite): `197 / 197`
+- Unit tests: `713 / 713`
+- Schema/Postgres (PGlite): `214 / 214`
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -466,9 +519,11 @@ Read the specific ADR only when a task requires its details.
 
 ## Current Blockers
 
-No known code blocker at local HEAD `0e812a1` (pushed HEAD remains `f10daaa`).
+No known code blocker.
 
-No remote migration gate remains: the full migration chain is applied to hosted Supabase. Run 004 added no new migration.
+No remote migration gate remains for previously-applied migrations. Run 005 S2 adds one new
+migration (`20260926000000_course_lifecycle_v1.sql`) that is committed locally and
+PGlite-verified only — not yet applied to hosted Supabase (see Database / Migration State).
 
 ---
 
@@ -476,8 +531,9 @@ No remote migration gate remains: the full migration chain is applied to hosted 
 
 1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
 2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
-3. Push Run 004 (`3568275`..`0e812a1`) when ready — not yet pushed.
-4. Production deployment remains outstanding.
+3. Push Run 004 + Run 005 (in progress) when ready — not yet pushed.
+4. Apply `20260926000000_course_lifecycle_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
+5. Production deployment remains outstanding.
 
 Do not perform hosted mutations automatically.
 
@@ -493,16 +549,15 @@ Current pushed HEAD:
 
 `f10daaa`
 
-Current local HEAD (Run 004 complete, not yet pushed):
+Current local HEAD: Run 004 (`3568275`..`0e812a1`) plus Run 005 in progress (Slice S2 committed
+on top of Run 004's `6090862` handoff-metadata-fix commit — see `git log` for the exact SHA).
 
-`0e812a1`
-
-Next execution work must come from a new:
-
-`docs/CHATGPT_PLAN.md`
+Next execution work continues Run 005 at Slice S3 (Instructor Course Management UI V1) per
+`docs/CHATGPT_PLAN.md`.
 
 Do not infer the next slice from historical run context. See
-`docs/RUNS/2026-09-20-004.md` for Run 004's full handoff.
+`docs/RUNS/2026-09-20-004.md` for Run 004's full handoff and
+`docs/RUNS/2026-09-20-005.md` for Run 005's in-progress state.
 
 ---
 

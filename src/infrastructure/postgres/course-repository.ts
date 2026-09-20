@@ -2,12 +2,39 @@
  * PostgreSQL implementation of `CourseRepository`
  * (`src/application/course/ports.ts`), backed by `courses.join_policy`.
  */
-import { COURSE_JOIN_POLICIES } from "../../domain/course/types";
-import type { CourseRepository, CourseSummary } from "../../application/course/ports";
-import { readEnum, readString } from "./row-validation";
+import { COURSE_JOIN_POLICIES, COURSE_STATUSES } from "../../domain/course/types";
+import type {
+  CourseAuthoringRecord,
+  CourseRepository,
+  CourseSummary,
+  CreateCourseInput,
+  UpdateCourseMetadataInput,
+} from "../../application/course/ports";
+import type { CourseStatus } from "../../domain/course/types";
+import {
+  readDate,
+  readDateOnlyString,
+  readEnum,
+  readString,
+} from "./row-validation";
 import type { TransactionExecutor } from "./sql-executor";
 
 const TABLE = "courses";
+
+function mapAuthoringRow(row: Record<string, unknown>): CourseAuthoringRecord {
+  return {
+    id: readString(row, TABLE, "id"),
+    title: readString(row, TABLE, "title"),
+    status: readEnum(row, TABLE, "status", COURSE_STATUSES),
+    joinPolicy: readEnum(row, TABLE, "join_policy", COURSE_JOIN_POLICIES),
+    examDate: row.exam_date === null ? null : readDateOnlyString(row, TABLE, "exam_date"),
+    createdAt: readDate(row, TABLE, "created_at"),
+    updatedAt: readDate(row, TABLE, "updated_at"),
+  };
+}
+
+const AUTHORING_COLUMNS =
+  "id, title, status, join_policy, exam_date, created_at, updated_at";
 
 export class PostgresCourseRepository implements CourseRepository {
   constructor(private readonly db: TransactionExecutor) {}
@@ -77,5 +104,85 @@ export class PostgresCourseRepository implements CourseRepository {
     return result.rows.length === 1
       ? readEnum(result.rows[0], TABLE, "join_policy", COURSE_JOIN_POLICIES)
       : null;
+  }
+
+  /** Narrow read for `joinCourse`'s eligibility check — see port doc comment. */
+  async getJoinEligibility(courseId: string) {
+    const result = await this.db.query(
+      "select status, join_policy from courses where id = $1",
+      [courseId],
+    );
+    if (result.rows.length !== 1) {
+      return null;
+    }
+    return {
+      status: readEnum(result.rows[0], TABLE, "status", COURSE_STATUSES),
+      joinPolicy: readEnum(result.rows[0], TABLE, "join_policy", COURSE_JOIN_POLICIES),
+    };
+  }
+
+  async createCourse(input: CreateCourseInput): Promise<CourseAuthoringRecord> {
+    const result = await this.db.query(
+      `insert into courses (owner_user_id, title, exam_date, status)
+        values ($1, $2, $3, 'DRAFT')
+        returning ${AUTHORING_COLUMNS}`,
+      [input.ownerUserId, input.title, input.examDate],
+    );
+    return mapAuthoringRow(result.rows[0]);
+  }
+
+  async getCourseForAuthoring(courseId: string): Promise<CourseAuthoringRecord | null> {
+    const result = await this.db.query(
+      `select ${AUTHORING_COLUMNS} from courses where id = $1`,
+      [courseId],
+    );
+    return result.rows.length === 1 ? mapAuthoringRow(result.rows[0]) : null;
+  }
+
+  /**
+   * Dynamic `SET` clause: only fields actually present in `input` are
+   * written (`title`/`examDate` each independently optional). `examDate`
+   * explicitly `null` clears it; `undefined`/absent leaves it unchanged —
+   * distinguished by `!== undefined`, never by truthiness, so a caller can
+   * always tell "clear this field" from "don't touch this field." Fully
+   * parameterized regardless of which fields are present — no value is ever
+   * interpolated into the SQL text itself.
+   */
+  async updateCourseMetadata(
+    courseId: string,
+    input: UpdateCourseMetadataInput,
+  ): Promise<CourseAuthoringRecord | null> {
+    const setClauses: string[] = ["updated_at = now()"];
+    const values: unknown[] = [courseId];
+
+    if (input.title !== undefined) {
+      values.push(input.title);
+      setClauses.push(`title = $${values.length}`);
+    }
+    if (input.examDate !== undefined) {
+      values.push(input.examDate);
+      setClauses.push(`exam_date = $${values.length}`);
+    }
+
+    const result = await this.db.query(
+      `update courses set ${setClauses.join(", ")}
+        where id = $1
+        returning ${AUTHORING_COLUMNS}`,
+      values,
+    );
+    return result.rows.length === 1 ? mapAuthoringRow(result.rows[0]) : null;
+  }
+
+  async setCourseStatus(
+    courseId: string,
+    status: CourseStatus,
+  ): Promise<CourseAuthoringRecord | null> {
+    const result = await this.db.query(
+      `update courses set status = $2, updated_at = now()
+        where id = $1
+        returning ${AUTHORING_COLUMNS}`,
+      [courseId, status],
+    );
+    return result.rows.length === 1 ? mapAuthoringRow(result.rows[0]) : null;
   }
 }

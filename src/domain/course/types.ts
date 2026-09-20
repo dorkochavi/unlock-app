@@ -27,6 +27,16 @@ export const COURSE_JOIN_POLICIES = ["AUTHORIZED_ONLY", "OPEN"] as const;
 export type CourseJoinPolicy = (typeof COURSE_JOIN_POLICIES)[number];
 
 /**
+ * Run 005 S2. DRAFT: instructor setup/editing state, not intended for
+ * learner onboarding/normal participation. PUBLISHED: available according
+ * to join policy and normal learner flows. ARCHIVED: no longer active for
+ * normal learner participation; historical data remains preserved. Do not
+ * infer delete semantics from ARCHIVED.
+ */
+export const COURSE_STATUSES = ["DRAFT", "PUBLISHED", "ARCHIVED"] as const;
+export type CourseStatus = (typeof COURSE_STATUSES)[number];
+
+/**
  * The single explicit User<->Course relationship (ADR-015 §1). `revokedAt`
  * and `archivedAt` are independent facts, never conflated (ADR-015 §7):
  *
@@ -79,4 +89,37 @@ export function isActiveMembership(membership: CourseMembership): boolean {
  */
 export function canSelfJoin(joinPolicy: CourseJoinPolicy): boolean {
   return joinPolicy === "OPEN";
+}
+
+/**
+ * Run 005 S2: learner self-join additionally requires the Course itself to
+ * be PUBLISHED — a DRAFT Course is instructor setup/editing state, and an
+ * ARCHIVED Course is no longer active for normal learner participation
+ * (Run 005 CHATGPT_PLAN.md "Course lifecycle" / "Join behavior"), regardless
+ * of `join_policy`. `join_policy` alone (`canSelfJoin`) still governs OPEN
+ * vs AUTHORIZED_ONLY for an otherwise-eligible PUBLISHED Course.
+ */
+export function canSelfJoinCourse(course: {
+  status: CourseStatus;
+  joinPolicy: CourseJoinPolicy;
+}): boolean {
+  return course.status === "PUBLISHED" && canSelfJoin(course.joinPolicy);
+}
+
+/**
+ * Run 005 S2: default Run-005 authoring authorization (Run 005
+ * CHATGPT_PLAN.md S1 "Important authorization decision") — OWNER and active
+ * INSTRUCTOR may author Course/Topic/Question content; LEARNER may not;
+ * revoked OR archived management memberships fail closed. Deliberately
+ * stricter than `isManagementRole` alone (existing management actions like
+ * `setCourseJoinPolicy` only check `revokedAt`, not `archivedAt` — Run 005's
+ * authoring surface is new product scope with its own explicit fail-closed
+ * requirement, not a retroactive change to that earlier behavior).
+ */
+export function canAuthorCourse(membership: CourseMembership): boolean {
+  return (
+    hasAccess(membership) &&
+    membership.archivedAt === null &&
+    isManagementRole(membership.role)
+  );
 }

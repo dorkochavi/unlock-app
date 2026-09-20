@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canAuthorCourse,
   canSelfJoin,
+  canSelfJoinCourse,
   COURSE_JOIN_POLICIES,
   COURSE_ROLES,
+  COURSE_STATUSES,
   type CourseMembership,
   hasAccess,
   isActiveMembership,
@@ -109,5 +112,61 @@ describe("canSelfJoin", () => {
     for (const policy of COURSE_JOIN_POLICIES) {
       expect(typeof canSelfJoin(policy)).toBe("boolean");
     }
+  });
+});
+
+describe("canSelfJoinCourse", () => {
+  it("allows self-join for a PUBLISHED OPEN course", () => {
+    expect(canSelfJoinCourse({ status: "PUBLISHED", joinPolicy: "OPEN" })).toBe(true);
+  });
+
+  it("blocks self-join for a DRAFT course even when OPEN", () => {
+    expect(canSelfJoinCourse({ status: "DRAFT", joinPolicy: "OPEN" })).toBe(false);
+  });
+
+  it("blocks self-join for an ARCHIVED course even when OPEN", () => {
+    expect(canSelfJoinCourse({ status: "ARCHIVED", joinPolicy: "OPEN" })).toBe(false);
+  });
+
+  it("blocks self-join for a PUBLISHED AUTHORIZED_ONLY course", () => {
+    expect(canSelfJoinCourse({ status: "PUBLISHED", joinPolicy: "AUTHORIZED_ONLY" })).toBe(false);
+  });
+
+  it("covers every status/join-policy combination exhaustively", () => {
+    for (const status of COURSE_STATUSES) {
+      for (const policy of COURSE_JOIN_POLICIES) {
+        expect(typeof canSelfJoinCourse({ status, joinPolicy: policy })).toBe("boolean");
+      }
+    }
+  });
+});
+
+describe("canAuthorCourse", () => {
+  it("allows an active OWNER", () => {
+    expect(canAuthorCourse(membership({ role: "OWNER" }))).toBe(true);
+  });
+
+  it("allows an active INSTRUCTOR", () => {
+    expect(canAuthorCourse(membership({ role: "INSTRUCTOR" }))).toBe(true);
+  });
+
+  it("blocks a LEARNER", () => {
+    expect(canAuthorCourse(membership({ role: "LEARNER" }))).toBe(false);
+  });
+
+  it("fails closed for a revoked OWNER", () => {
+    expect(
+      canAuthorCourse(
+        membership({ role: "OWNER", revokedAt: new Date("2026-02-01T00:00:00Z") }),
+      ),
+    ).toBe(false);
+  });
+
+  it("fails closed for an archived INSTRUCTOR, even though isManagementRole alone would allow it", () => {
+    expect(
+      canAuthorCourse(
+        membership({ role: "INSTRUCTOR", archivedAt: new Date("2026-02-01T00:00:00Z") }),
+      ),
+    ).toBe(false);
   });
 });
