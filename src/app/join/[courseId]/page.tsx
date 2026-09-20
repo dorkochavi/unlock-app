@@ -188,7 +188,7 @@ export default function JoinCoursePage() {
               type="button"
               onClick={handleJoin}
               disabled={joining}
-              className="w-full rounded-md bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+              className="w-full rounded-md bg-zinc-900 px-4 py-3 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
             >
               {joining ? messages.join.joining : messages.join.joinAction}
             </button>

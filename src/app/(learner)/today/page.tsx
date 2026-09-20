@@ -462,7 +462,7 @@ function TodayAnswerCard({
                 onClick={() => toggleOption(option.id)}
                 disabled={feedback !== null || busy}
                 aria-pressed={isSelected}
-                className={`w-full rounded-md border px-3 py-2 text-start text-sm transition disabled:opacity-60 ${
+                className={`w-full rounded-md border px-3 py-3 text-start text-sm transition disabled:opacity-60 ${
                   isSelected
                     ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                     : "border-zinc-200 dark:border-zinc-800"
@@ -487,7 +487,7 @@ function TodayAnswerCard({
             type="button"
             onClick={handleSubmit}
             disabled={selected.length === 0 || busy}
-            className="w-full rounded-md bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+            className="w-full rounded-md bg-zinc-900 px-4 py-3 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
           >
             {submitting ? messages.today.submitting : messages.today.submit}
           </button>
@@ -516,7 +516,7 @@ function TodayAnswerCard({
           <button
             type="button"
             onClick={onContinue}
-            className="w-full rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
+            className="w-full rounded-md border border-zinc-300 px-4 py-3 font-medium dark:border-zinc-700"
           >
             {messages.today.continueAction}
           </button>
