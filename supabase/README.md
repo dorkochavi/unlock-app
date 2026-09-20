@@ -2,7 +2,7 @@
 
 Status: **ACTIVE infrastructure reference.**
 
-The repository now has working Supabase Auth/server-client wiring, `auth.users -> public.users` provisioning, production PostgreSQL connection wiring, learner-facing Auth UI, DailyPlan Today API/UI, DailyPlan answer/Skip routes, and OPEN-course onboarding. Hosted Supabase has the foundational migration chain applied through auth provisioning; the newest DailyPlan answer-linkage and New Material migrations may still require explicit manual hosted application. `docs/DEV_STATUS.md` is authoritative for remote-vs-local state.
+The repository now has working Supabase Auth/server-client wiring, `auth.users -> public.users` provisioning, production PostgreSQL connection wiring, learner-facing Auth UI, DailyPlan Today API/UI, DailyPlan answer/Skip routes, and OPEN-course onboarding. Hosted Supabase has the full committed migration chain applied, through the DailyPlan answer-linkage and New Material migrations. `docs/DEV_STATUS.md` is authoritative for remote-vs-local state.
 
 RLS remains enabled with zero application allow-policies, so ordinary PostgREST roles fail closed. Current server routes use trusted server-side database access plus application authorization. ADR-015 defines the CourseMembership authorization model; translating it into future RLS allow-policies is separate work.
 

@@ -27,6 +27,26 @@ At the beginning of a substantial development run:
 3. Compare the current repository state with the `BASE_HEAD` and assumptions in
    `docs/CHATGPT_PLAN.md`.
 
+   `BASE_HEAD` means: the committed repository baseline the current Plan was
+   authored against.
+
+   There are exactly two valid Run-start states:
+
+   - **State A (preferred/default):** `HEAD == BASE_HEAD`, and
+     `docs/CHATGPT_PLAN.md` is the only uncommitted modification. This is
+     expected, not unexplained dirty state — the Plan document is normally
+     authored/edited on top of a committed baseline and is not committed
+     until Run handoff (Section 21).
+   - **State B (supported alternative):** `HEAD` is exactly one dedicated
+     Plan-only commit above `BASE_HEAD`, and that commit's only changed path
+     is `docs/CHATGPT_PLAN.md`.
+
+   Any other relationship between `HEAD` and `BASE_HEAD` — including HEAD
+   differing for a reason other than earlier Slice commits in the same Run —
+   must be diagnosed before editing code. Do not silently continue. If
+   repository reality contradicts the Plan materially, report `PLAN_CONFLICT`
+   (Section 10).
+
 4. Read additional context only when the current slice requires it.
 
 Never assume implementation state from an earlier conversation.
@@ -582,8 +602,24 @@ It should NOT contain:
 - detailed commit history
 - old superseded state
 - workflow instructions already defined here
+- duplicated ADR reasoning
+- next-task queue content (that belongs in `docs/CHATGPT_PLAN.md`)
 
 Historical detail belongs in `docs/RUNS/` and Git.
+
+Preferred compression pattern — instead of narrating what a specific Run
+audited:
+
+> Every non-UI "Must verify" item for the join → Today → answer flow was
+> individually re-confirmed against actual existing test bodies in Run X:
+> repeated-join idempotency, AUTHORIZED_ONLY fail-closed, ...
+
+prefer a short current-state statement:
+
+> Demo journey locally verified at unit/application/PGlite layers;
+> browser/hosted status: see Verification State.
+
+Point to the Run Report only when historical detail is genuinely useful.
 
 When updating DEV_STATUS:
 replace stale state rather than appending another historical section.
@@ -744,13 +780,48 @@ A normal substantial development run follows:
    - DEV_STATUS update if durable state changed
    - checkpoint update
    - focused local commit when authorized
-7. At the Plan's stopping point:
-   - final verification
-   - final DEV_STATUS refresh
-   - create current Run Report if requested
-   - update checkpoint to STOP / replanning
-   - report status to the user
+7. At the Plan's stopping point, follow the Run Completion Protocol below.
 8. Do NOT continue beyond the Plan's explicit stopping point.
+
+### Checkpoint Continuation Rule
+
+`/checkpoint` is a read-only verification operation. It is not itself a Run
+stop condition, whether invoked inline during a Slice or standalone.
+
+After a checkpoint completes:
+
+- inspect the active Plan
+- if required Plan work remains and there is no blocker/gate, continue
+  automatically to that work
+- do not end the turn merely because the checkpoint verdict is
+  `READY FOR REVIEW`, `READY FOR COMMIT`, or `READY FOR HANDOFF`
+
+Stop only when:
+
+- the Plan is actually complete, or
+- an explicit stop/gate defined by the Plan is reached, or
+- a real blocker or `PLAN_CONFLICT` requires Dor
+
+### Run Completion Protocol
+
+This is the one canonical end-of-Run sequence:
+
+1. complete all executable slices;
+2. run required final verification/checkpoint;
+3. run risk-appropriate reviewer(s);
+4. address blocking/relevant findings;
+5. update `docs/DEV_STATUS.md` with durable current truth only;
+6. create immutable `docs/RUNS/<RUN_ID>.md`;
+7. verify final Git state and `git diff --check`;
+8. report the explicit Plan stop token/status;
+9. stop.
+
+If a Run ends at a manual gate rather than full Plan completion, the Run
+Report must contain the exact manual handoff and distinguish:
+
+- locally verified;
+- hosted/externally verified;
+- still unverified.
 
 Do not intentionally run `/clear` in the middle of an autonomous run.
 

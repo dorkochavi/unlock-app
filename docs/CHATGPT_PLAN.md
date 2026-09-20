@@ -1,548 +1,474 @@
-# UNLOCK — Current Execution Plan
+# UNLOCK — ChatGPT Execution Plan
 
-PLAN_VERSION: 001
-RUN_ID: 2026-09-20-002
-BASE_HEAD: d67371a
-RUN_GOAL: Establish a trustworthy demo-ready local vertical slice, verify the two pending DailyPlan migrations are safe to apply remotely, and stop at an explicit hosted-migration/manual-action gate with a precise QA checklist.
-EXPECTED_STOP: MANUAL_REMOTE_GATE
-
----
-
-## Run Intent
-
-This is the first real execution Run under Development OS V1.
-
-The product baseline at `BASE_HEAD` already contains:
-
-- Supabase Auth foundation
-- CourseMembership and OPEN-course onboarding
-- learner timezone persistence
-- DailyPlan persistence and generation
-- Today read API
-- Today answer submission
-- Today Skip
-- ADR-017 New Material fallback
-- interactive Hebrew/RTL Today UI
-- OPEN Course join flow
-- local unit and PostgreSQL/PGlite coverage
-
-Two committed migrations are not yet applied to hosted Supabase:
-
-- `20260924000000_daily_plan_answer_attempts.sql`
-- `20260925000000_daily_plan_new_material_v1.sql`
-
-This Run must NOT mutate hosted Supabase.
-
-The purpose of this Run is to make the codebase and demo journey as trustworthy as possible locally, then hand Dor a precise manual remote action and hosted QA sequence.
+PLAN_VERSION: 002
+RUN_ID: 2026-09-20-003
+BASE_HEAD: fd9162e
+RUN_GOAL: Formalize Development OS V1.1 from the first real Run, reconcile hosted-state truth after the successful manual Supabase/QA gate, and leave the repository ready for the next product Run without changing product behavior.
+EXPECTED_STOP: COMPLETE
 
 ---
 
-## Run-Start Note
+## Run-Start Contract
 
-`docs/CHATGPT_PLAN.md` replaces the bootstrap Plan after `BASE_HEAD`.
+This Plan is authored against committed baseline:
 
-It may therefore appear as an intentional working-tree modification at Run start.
+`fd9162e`
 
-Treat that modification as expected and owned by Dor/ChatGPT.
+Expected Run-start state:
 
-Do NOT:
+- `HEAD == BASE_HEAD`
+- `docs/CHATGPT_PLAN.md` may be the only expected uncommitted modification
+- no other staged, unstaged, or untracked changes are expected
 
-- rewrite this Plan
-- re-scope it
-- stage it into Slice commits
-- discard it
-- treat it as unrelated dirt
+`docs/CHATGPT_PLAN.md` is user/ChatGPT-owned during execution:
 
-All other unexpected working-tree changes must be diagnosed before implementation.
+- read it
+- execute it
+- do not rewrite it
+- do not stage it
+- do not discard it
 
----
+If repository reality differs materially from the above, diagnose before executing.
 
-# Global Constraints
+Do not push.
+Do not deploy.
+Do not run `supabase db push`.
+Do not mutate hosted Supabase.
+Do not request or expose secrets.
 
-## Remote Safety
-
-Do NOT:
-
-- push
-- run `supabase link`
-- run `supabase db push`
-- apply hosted migrations
-- mutate hosted Supabase data/schema
-- expose or request secrets
-- deploy
-
-Remote mutation is a manual Dor action after this Run stops.
-
-Read-only inspection is allowed only when already supported by the repository/tooling and not dependent on new credentials or linking.
+This is a workflow/documentation Run. Do not change product behavior or application runtime code.
 
 ---
 
-## Scope Containment
+## Run Context
 
-This Run is about:
+The first Development OS Run (`2026-09-20-002`) validated the basic operating model:
 
-1. migration readiness,
-2. local demo-path verification,
-3. narrow demo blockers,
-4. handoff quality.
+- ChatGPT authored the Plan.
+- Claude executed against a fixed committed baseline.
+- `CHATGPT_PLAN.md` remained uncommitted during execution.
+- Claude respected scope containment and remote-safety boundaries.
+- risk-based reviewers were used correctly.
+- a no-op implementation slice remained a no-op instead of producing unnecessary code.
+- `DEV_STATUS` and an immutable Run Report were produced at handoff.
+- the executed Plan, `DEV_STATUS`, and Run Report were committed together afterward as the Run handoff checkpoint.
 
-Do not perform opportunistic refactors.
+That Run also exposed four workflow improvements that should now become durable repository rules:
 
-Do not redesign:
+1. formal `BASE_HEAD` semantics;
+2. checkpoint must not accidentally terminate an unfinished Run;
+3. explicit Run Completion Protocol;
+4. stricter `DEV_STATUS` snapshot discipline.
 
-- mastery taxonomy
-- misconception taxonomy
-- FSRS mapping
-- ranking calibration
-- DailyPlan sizing calibration
-- CourseMembership semantics
-- revoked-member rejoin behavior
-- analytics architecture
-- RLS architecture
-- multi-Course UX beyond what is required to preserve the current single-Course demo path
+After that Run, Dor manually completed the remote gate:
 
-If unrelated defects are found:
+- `20260924000000_daily_plan_answer_attempts.sql` is now applied to hosted Supabase;
+- `20260925000000_daily_plan_new_material_v1.sql` is now applied to hosted Supabase;
+- `npx supabase migration list` showed local/remote parity through `20260925000000`;
+- hosted/browser QA confirmed:
+  - real login;
+  - hosted Today read;
+  - hosted Today answer submission;
+  - Today completion state;
+  - `AUTHORIZED_ONLY` self-join fails closed with `403`;
+  - a clean `OPEN` QA Course self-join succeeds and redirects to `/today`.
 
-- record them in the Run Report if useful,
-- do not fix them unless they block this Run's accepted demo path or create a security/data-integrity issue.
-
----
-
-## Product Invariants
-
-Preserve:
-
-- one DailyPlan per learner per learner-local day
-- active LEARNER memberships only for automatic DailyPlan participation
-- Global Today and Course Today as views of one plan
-- persisted learner timezone as local-day source of truth
-- same-day plan reuse
-- Manual Practice separate from Today
-- Manual Practice does not resolve Today
-- Skip resolves the item without creating learning evidence
-- Skip does not replenish the plan
-- Attempts remain immutable
-- QuestionVersion remains historical content authority
-- Today is frozen by default
-- New Material fallback only when ordinary NBA candidate set is empty
-- New Material fallback selects at most 3 unseen Questions deterministically
-- planning unseen material does not create fake progress/evidence
-- OWNER/INSTRUCTOR membership must never be silently downgraded to LEARNER
-- AUTHORIZED_ONLY self-join fails closed
-- revoked membership is not silently restored
+The QA Course was created manually in hosted Supabase solely to verify OPEN join behavior. Do not invent broader product semantics from that seed.
 
 ---
 
-# S1 — Pending Hosted Migration Readiness
+# S1 — Formalize BASE_HEAD Semantics
 
-MODE: INVESTIGATE
+MODE: IMPLEMENT
 
 ## Goal
 
-Determine whether the two committed-but-not-hosted migrations are safe and internally complete for manual hosted application.
+Make the Run-start baseline contract explicit and durable so future Plans do not suffer from the tracked-Plan / `BASE_HEAD` circularity.
 
-Relevant context:
+## Relevant context
+
+Read only what is needed, starting with:
+
+- `CLAUDE.md`
+- `.claude/skills/implement-slice/SKILL.md`
+- `.claude/skills/checkpoint/SKILL.md`
+
+Use `docs/CONTEXT_MAP.md` only if needed to locate another workflow file that currently defines Plan-start validation.
+
+## Must
+
+Establish this semantic contract:
+
+`BASE_HEAD` means:
+
+> the committed repository baseline the current Plan was authored against.
+
+Valid Run-start state A — preferred/default:
+
+- `HEAD == BASE_HEAD`
+- `docs/CHATGPT_PLAN.md` may be the only expected uncommitted modification
+- that Plan modification is not treated as unexplained dirty state
+
+Valid Run-start state B — supported alternative:
+
+- `HEAD` is exactly one dedicated Plan-only commit above `BASE_HEAD`
+- that commit's only changed path is `docs/CHATGPT_PLAN.md`
+
+Any other mismatch:
+
+- diagnose before execution
+- do not silently continue
+- if repository reality contradicts the Plan materially, surface `PLAN_CONFLICT`
+
+During execution:
+
+- Claude never rewrites `docs/CHATGPT_PLAN.md`
+
+At Run completion:
+
+- the executed Plan may later be committed by Dor together with `DEV_STATUS` and the immutable Run Report as the handoff checkpoint
+- Claude does not need to create a Plan-only commit before execution
+
+## Do not
+
+- do not introduce a second planning source
+- do not add ROADMAP/BACKLOG/TODO management files
+- do not rewrite unrelated Git/workflow guidance
+- do not change product code
+
+## Verification
+
+Targeted read-back / grep demonstrating that all active workflow instructions describing `BASE_HEAD` are consistent with the new semantics.
+
+`git diff --check`
+
+## Review
+
+Use `unlock-reviewer` if the change spans more than one permanent workflow source.
+
+## Exit
+
+Complete when no active workflow instruction requires literal `HEAD == BASE_HEAD` while rejecting the expected uncommitted Plan case.
+
+---
+
+# S2 — Make Checkpoint Non-Terminating and Add Run Completion Protocol
+
+MODE: IMPLEMENT
+
+## Goal
+
+Prevent a successful checkpoint from accidentally becoming the end of an unfinished Run, and formalize exactly how a Run reaches a stop token.
+
+## Relevant context
+
+Start with:
+
+- `.claude/skills/checkpoint/SKILL.md`
+- `.claude/skills/implement-slice/SKILL.md`
+- `CLAUDE.md`
+
+Read `.claude/skills/review-commit/SKILL.md` only if it currently owns part of final-Run sequencing.
+
+## Must
+
+### A. Checkpoint continuation rule
+
+Make explicit:
+
+- checkpoint is a verification operation, not inherently a Run stop
+- after checkpoint completes, inspect the active Plan
+- if required Plan work remains and there is no blocker/gate, continue automatically
+- do not end the turn merely because checkpoint verdict is READY / green
+- stop only when:
+  - the Plan is actually complete, or
+  - an explicit stop/gate is reached, or
+  - a real blocker / `PLAN_CONFLICT` requires Dor
+
+### B. Run Completion Protocol
+
+Define a compact canonical end-of-Run sequence, preserving risk-based behavior:
+
+1. complete all executable slices;
+2. run required final verification/checkpoint;
+3. run risk-appropriate reviewer(s);
+4. address blocking/relevant findings;
+5. update `docs/DEV_STATUS.md` with durable current truth only;
+6. create immutable `docs/RUNS/<RUN_ID>.md`;
+7. verify final Git state and `git diff --check`;
+8. report the explicit Plan stop token/status;
+9. stop.
+
+If a Run ends at a manual gate, the Run Report must contain the exact manual handoff and distinguish:
+
+- locally verified;
+- hosted/externally verified;
+- still unverified.
+
+## Do not
+
+- do not require a reviewer for trivial copy/CSS-only work
+- do not turn checkpoint into a commit operation
+- do not let Run Reports become normal working memory
+- do not create a second lifecycle document if `CLAUDE.md` / skills are the correct home
+
+## Verification
+
+Read back the final instructions as if executing a Run with:
+
+- green checkpoint;
+- one remaining S4 documentation task;
+- no blocker.
+
+The rules must unambiguously require continuation rather than stopping.
+
+`git diff --check`
+
+## Exit
+
+Complete when the first Run's observed failure mode — "checkpoint green, work still remains, Claude stops anyway" — is explicitly prohibited by active workflow guidance.
+
+---
+
+# S3 — Tighten DEV_STATUS Snapshot Discipline
+
+MODE: IMPLEMENT
+
+## Goal
+
+Keep `docs/DEV_STATUS.md` as a compact current-state snapshot and prevent Run-history/detail from accumulating there.
+
+## Relevant context
+
+Start with:
+
+- `CLAUDE.md`
+- `docs/DEV_STATUS.md`
+- any existing permanent rule/skill that tells Claude how to maintain `DEV_STATUS`
+
+Do not read old Run Reports unless this Plan explicitly references one for a concrete fact. The current Plan already provides the first Run's relevant lesson.
+
+## Must
+
+Durably encode:
+
+`DEV_STATUS` should contain:
+
+- current capabilities;
+- current migration/deployment state;
+- current verification state;
+- current known gaps/blockers;
+- current test baseline when useful;
+- current manual action still required, if any.
+
+`DEV_STATUS` should not contain:
+
+- chronological Run narration;
+- long reviewer summaries;
+- detailed per-scenario test inventories when a short current-state statement suffices;
+- completed execution history already preserved in Git / `docs/RUNS`;
+- duplicated ADR reasoning;
+- next-task queue content.
+
+Preferred compression pattern:
+
+Instead of:
+
+> long paragraph listing every scenario audited in Run X...
+
+Prefer:
+
+> demo journey locally verified at unit/application/PGlite layers; browser/hosted status: ...
+
+Then point to the Run Report only when historical detail is genuinely useful.
+
+Apply this discipline to the current `docs/DEV_STATUS.md` itself:
+
+- remove obvious diary-style detail introduced by Run `2026-09-20-002`
+- preserve all current factual truth
+- do not delete useful current verification state
+
+## Do not
+
+- do not make `DEV_STATUS` so terse that current operational truth disappears
+- do not move current blockers into historical reports
+- do not copy ADR detail into `DEV_STATUS`
+
+## Verification
+
+Review `DEV_STATUS` section by section and confirm every paragraph answers "what is true now?" rather than "what happened in a previous Run?"
+
+`git diff --check`
+
+## Exit
+
+Complete when `DEV_STATUS` is materially more snapshot-like without losing current operational truth.
+
+---
+
+# S4 — Reconcile Hosted Supabase / Browser State
+
+MODE: IMPLEMENT
+
+## Goal
+
+Update repository current-state documentation so it no longer says migrations 24/25 or the post-Slice-6 learner flow are awaiting the manual remote gate.
+
+## Relevant context
+
+Use:
 
 - `docs/DEV_STATUS.md`
-- `.claude/rules/postgres.md`
-- `.claude/rules/testing.md`
-- ADR-016
-- ADR-017
-- `docs/PERSISTENCE_SCHEMA_V1.md`
-- the two pending migration files
-- directly related schema/PostgreSQL tests only
+- `supabase/README.md` only if it contains a current migration-state list/status that is now stale
+- `docs/DATABASE.md` only if it explicitly tracks hosted-applied-vs-local state and is now stale
+
+Do not broad-sweep historical design documents. Historical files may accurately describe their own earlier state.
 
 ## Must
 
-Verify both migrations are:
+Record current durable facts:
 
-- forward-only
-- chronologically ordered
-- additive or otherwise explicitly safe
-- compatible with the already-applied hosted migration baseline documented in DEV_STATUS
-- independent of uncommitted local schema assumptions
-- covered by the real committed migration test harness
-- consistent with DailyPlan/Attempt invariants
-- free from accidental mutation of accepted historical migrations
+- hosted migration chain is applied through `20260925000000_daily_plan_new_material_v1.sql`
+- migrations 24 and 25 are no longer "committed but NOT remotely applied"
+- local/remote migration parity through `20260925000000` was manually confirmed
+- hosted/browser verification now includes:
+  - login;
+  - Today read;
+  - Today answer submission;
+  - Today completion state;
+  - `AUTHORIZED_ONLY` self-join fail-closed (`403`);
+  - clean OPEN Course self-join success and redirect to `/today`
 
-For `20260924000000_daily_plan_answer_attempts.sql`, verify especially:
+Be precise about what was NOT manually proven if still applicable.
 
-- DailyPlan linkage on Attempt is nullable where intended
-- ownership/identity constraints are coherent
-- DailyPlan linkage and legacy TodaySession linkage cannot conflict
-- deleting a DailyPlan/DailyPlanItem does not destroy immutable Attempt evidence
-- idempotency/Attempt immutability remains intact
+Do not claim the entire product is production-ready.
 
-For `20260925000000_daily_plan_new_material_v1.sql`, verify especially:
+Do not claim browser automation exists.
 
-- accepted reason/action vocabulary is widened only as required
-- existing rows remain valid
-- no fake learner evidence/progress is introduced
-- ADR-017 fallback semantics are not encoded incorrectly at the schema layer
+Do not convert the manually created QA Course into a product requirement.
 
-## Tests
+If `supabase/README.md` has a migration list, update it minimally to match the current committed/applied chain.
 
-Because this Slice directly depends on migrations/schema:
+## Hosted QA note
 
-- run the relevant targeted PostgreSQL/schema tests first
-- run `npm run test:schema` once after DB-relevant inspection stabilizes
-- if it passes and no DB-relevant file changes afterward, do not rerun it merely for ceremony
-- run `git diff --check`
+The earlier malformed/non-UUID Course path behavior remains a known low-priority API validation gap:
 
-Do not change migrations merely to make tests aesthetically cleaner.
+- literal `/join/[courseId]` leads the API to PostgreSQL UUID parsing and a generic `500`
+- this is not a blocker for valid Course IDs
+- do not fix it in this workflow-only Run unless an existing documentation statement becomes false
 
-## Review
+## Verification
 
-Required:
+Use targeted grep for stale current-state claims such as:
 
-- `unlock-db-reviewer`
+- `NOT yet applied remotely`
+- `committed but NOT yet applied`
+- `through auth provisioning`
+- current-hosted claims ending at migration `20260923000000`
+- hosted answer/join described as unverified
 
-Use `unlock-security-reviewer` only if the migration review exposes a genuine authorization/trust-boundary issue.
+Classify hits:
+- active/current truth → update
+- clearly historical body → leave intact
 
-## Exit
-
-S1 is COMPLETE only when:
-
-- migration readiness is explicitly assessed,
-- no unresolved DB blocker remains,
-- verification level is stated honestly,
-- exact manual hosted action is identified for the final handoff,
-- no hosted mutation occurred.
-
-If a migration is unsafe:
-
-- classify the problem,
-- implement the narrow local forward-only correction if product semantics are already clear,
-- add a new migration rather than rewriting accepted migration history,
-- rerun DB verification,
-- continue only when safe.
-
-If a new product decision is required:
-
-- emit `PLAN_CONFLICT`,
-- do not invent it.
-
----
-
-# S2 — Demo Journey Verification
-
-MODE: IMPLEMENT
-
-## Goal
-
-Verify the current local learner journey as one coherent vertical slice:
-
-`OPEN Course link → authentication/login return → join → Today → answer → feedback → continue → Skip → Done for today`
-
-This Slice is about real product wiring, not isolated helpers.
-
-Relevant context:
-
-- `docs/CONTEXT_MAP.md`
-- ADR-015
-- ADR-016
-- ADR-017
-- `.claude/rules/api.md`
-- `.claude/rules/auth.md`
-- `.claude/rules/learning-engine.md`
-- current join/Today routes and UI
-- nearest existing tests
-
-## First inspect
-
-Determine whether the repository already has a browser/E2E harness.
-
-If a usable existing harness exists:
-
-- use it.
-
-If no usable browser harness exists:
-
-- do NOT add a heavyweight new E2E framework solely for this Run,
-- instead add the smallest meaningful route/application integration coverage needed to protect the demo journey,
-- produce a precise manual browser QA script in the Run Report.
-
-## Must verify
-
-### Join path
-
-- public safe Course lookup works for an OPEN Course
-- unauthenticated learner can be routed through login and safely returned
-- redirect remains local/safe
-- authenticated learner can join OPEN Course
-- repeated join is idempotent
-- OWNER/INSTRUCTOR is not downgraded
-- AUTHORIZED_ONLY fails closed
-- revoked membership is not silently restored
-
-### Today path
-
-- authenticated active LEARNER can open Today
-- learner-local date is derived from persisted timezone
-- same-day reopen returns persisted DailyPlan
-- safe learner-facing QuestionVersion content is returned
-- correct-answer/grading-only data is not leaked before submission
-- SINGLE_CHOICE and MULTIPLE_CHOICE selection behavior remains valid where supported
-
-### Answer path
-
-- one submission creates one immutable Attempt
-- retry with the same submission identity is idempotent
-- answer resolves the intended DailyPlanItem
-- feedback maps to the server outcome
-- resolved items do not silently reopen
-
-### Skip path
-
-- Skip resolves only the intended DailyPlanItem
-- Skip creates no Attempt
-- Skip does not mutate mastery/progress
-- Skip does not replenish Today
-
-### Completion
-
-- when all items are resolved, Today reaches a real completion state
-- no endless auto-generation occurs
-- extra/manual practice remains outside the DailyPlan
-
-### New learner / New Material
-
-Where the ordinary NBA candidate set is empty:
-
-- unseen fallback can create a useful DailyPlan
-- selection is deterministic
-- at most 3 unseen Questions are used
-- no fake UserQuestionProgress is created merely by planning
-
-## Tests
-
-Use the narrowest meaningful coverage.
-
-Expected baseline:
-
-- targeted tests during implementation
-- full unit suite
-- typecheck
-- lint
-- `git diff --check`
-
-Do NOT rerun `test:schema` in this Slice unless DB-relevant code changes after S1.
-
-## Review
-
-Risk-based:
-
-- `unlock-security-reviewer` if auth/join/redirect/ownership code changes
-- `unlock-db-reviewer` if persistence/transaction/schema code changes
-- `unlock-reviewer` for the completed vertical-slice change if implementation is non-trivial
+`git diff --check`
 
 ## Exit
 
-The local demo journey is either:
-
-- verified and protected by appropriate tests, or
-- blocked by a concrete defect that is carried into S3.
-
-Do not claim browser E2E if no real browser E2E occurred.
-
-Commit focused changes for this Slice.
+Complete when active current-state documentation matches the post-manual-gate hosted reality.
 
 ---
 
-# S3 — Narrow Demo Blocker Hardening
+# S5 — Development OS V1.1 Consistency Review and Handoff
 
-MODE: IMPLEMENT
-
-## Goal
-
-Fix only defects discovered during S2 that materially block or undermine the learner demo journey.
-
-This is not a general cleanup Slice.
-
-## Allowed examples
-
-- broken join → login → return behavior
-- learner-facing data leakage
-- incorrect DailyPlan item progression
-- retry/idempotency breakage
-- Skip incorrectly creating evidence
-- completion state not reachable
-- Hebrew/RTL issue that makes the demo unusable
-- loading/error state that traps the learner
-- route error mapping that breaks the intended journey
-- malformed state that causes the accepted demo path to crash
-
-## Explicitly out of scope unless it blocks the journey
-
-- broad UI redesign
-- design-system work
-- generalized error-framework refactor
-- malformed/non-UUID route handling pattern-wide cleanup
-- analytics
-- rate limiting
-- RLS redesign
-- revoked-member rejoin semantics
-- Learning Engine calibration
-- multi-Course Global Today polish
-- unrelated tech debt
-
-## Tests
-
-For every real bug fixed:
-
-- add the narrowest regression test that would have failed before the fix.
-
-Then run:
-
-- affected targeted tests
-- full unit suite
-- typecheck
-- lint
-- `git diff --check`
-
-Run `test:schema` only if this Slice actually changes DB-relevant behavior after S1.
-
-## Review
-
-Choose reviewers by actual diff risk.
-
-A security/data-integrity defect requires the corresponding specialist reviewer.
-
-A non-trivial completed Slice should receive `unlock-reviewer`.
-
-## Exit
-
-- all demo-blocking local defects discovered in S2 are resolved,
-- no unrelated scope expansion occurred,
-- focused commit exists,
-- current DEV_STATUS reflects durable reality only.
-
----
-
-# S4 — Release Gate and Handoff
-
-MODE: IMPLEMENT
+MODE: VERIFY
 
 ## Goal
 
-Produce a precise, honest handoff for Dor to perform the remote step and then hosted QA.
-
-No hosted mutation occurs in this Slice.
+Prove the workflow changes are coherent, scoped, and ready to become the operating model for the next product Run.
 
 ## Must
 
-Update `docs/DEV_STATUS.md` with current reality only.
+Perform a narrow consistency review across changed workflow/current-state files.
+
+Specifically verify:
+
+- one fact, one home still holds;
+- `CHATGPT_PLAN` remains the execution queue;
+- `DEV_STATUS` remains current truth;
+- `docs/RUNS/**` remains restricted historical archive;
+- `BASE_HEAD` semantics are consistent everywhere active;
+- checkpoint continuation rule is unambiguous;
+- Run Completion Protocol has one canonical meaning;
+- no new competing management file was created;
+- no product/runtime code changed;
+- no remote mutation occurred during this Run.
+
+Run:
+
+- `git diff --check`
+- targeted workflow grep(s)
+- final `git status -sb`
+
+Do not run the full unit or schema suite solely for documentation/workflow edits unless an unexpected source/schema change occurred.
+
+## Review
+
+Run `unlock-reviewer` as the final Development OS V1.1 review.
+
+Address meaningful workflow/documentation findings before handoff.
+
+## DEV_STATUS
+
+Ensure it reflects the post-hosted-QA current state and does not narrate this Run.
+
+## Run Report
 
 Create:
 
-`docs/RUNS/2026-09-20-002.md`
+`docs/RUNS/2026-09-20-003.md`
 
-The Run Report must include:
+Target 50–150 lines.
 
-- PLAN_VERSION
-- BASE_HEAD
-- END_HEAD
-- completed Slices
-- commits
-- tests
-- reviewer outcomes
-- discoveries
-- blockers
-- manual actions
-- hosted verification still pending
-- recommended next Run
+Include:
 
-## Manual Remote Action Section
+- what V1.1 changed;
+- exact `BASE_HEAD` semantics adopted;
+- checkpoint continuation rule;
+- Run Completion Protocol;
+- DEV_STATUS discipline;
+- hosted-state reconciliation;
+- files changed;
+- verification/reviewer outcomes;
+- any deferred low-risk issue;
+- final Git state.
 
-Provide Dor with the exact safest sequence needed to:
+Do not read or summarize old Run Reports to produce it.
 
-1. confirm local branch is clean and pushed when Dor chooses,
-2. apply the pending hosted Supabase migrations manually,
-3. confirm migration application,
-4. perform hosted browser QA.
+## Final stop
 
-Do not request secrets.
+When complete, report:
 
-Do not perform the remote action.
+`COMPLETE`
 
-## Hosted QA Checklist
-
-Prepare a concise manual checklist covering at least:
-
-- existing learner login
-- OPEN Course join
-- join retry
-- redirect back to intended local path
-- Today first open
-- same-day reopen
-- answer one item
-- refresh/retry safety
-- Skip one item
-- completion
-- New Material path for a learner with no ordinary NBA candidates
-- confirmation that Attempts/progress appear only when real answers occur
-- confirmation that Skip does not create learning evidence
-
-Clearly separate:
-
-- locally verified
-- PGlite/PostgreSQL verified
-- hosted verification still required
-
-## Final Verification
-
-Run the checkpoint skill.
-
-Expected final checks:
-
-- relevant targeted tests
-- full unit suite
-- typecheck
-- lint
-- `git diff --check`
-- schema result from S1 may be reused if no DB-relevant code changed afterward
-
-Use `unlock-reviewer` for final non-trivial Run review.
-
-## Exit
-
-The Run stops at:
-
-`MANUAL_REMOTE_GATE`
-
-The handoff must make it possible for Dor to perform the remote migration/application step without guessing.
-
-Nothing is pushed by Claude.
+Do not push.
+Do not stage or modify `docs/CHATGPT_PLAN.md`.
 
 ---
 
-# Definition of Done for This Run
+# Definition of Done
 
-The Run is complete only when:
+This Run is complete only when all of the following are true:
 
-- pending hosted migrations have been reviewed as safe or corrected safely,
-- local demo journey has been verified coherently,
-- demo-blocking local defects discovered during the Run are fixed,
-- appropriate regression coverage exists,
-- required reviewers have no unresolved BLOCKER,
-- checkpoint is clean,
-- DEV_STATUS is current,
-- `docs/RUNS/2026-09-20-002.md` exists,
-- working tree is clean except for the intentionally user-owned `docs/CHATGPT_PLAN.md` replacement if it remains uncommitted,
-- no hosted mutation occurred,
-- Dor has an explicit remote migration + hosted QA handoff.
-
----
-
-# Expected Next Run
-
-Do not execute this section during the current Run.
-
-After Dor manually applies the hosted migrations, the next Run should focus on:
-
-- real hosted Supabase verification,
-- browser QA against hosted data/auth,
-- fixing only real-environment defects,
-- demo polish and final Ruppin readiness.
-
-The next Run must receive a new `CHATGPT_PLAN.md` from Dor/ChatGPT.
+- Development OS V1.1 semantics are durable in active repo guidance;
+- the `BASE_HEAD` circularity is formally resolved;
+- checkpoint can no longer be interpreted as an automatic Run terminator;
+- Run Completion Protocol is explicit;
+- `DEV_STATUS` discipline is explicit and current file is compacted accordingly;
+- hosted Supabase state is reconciled through migration `20260925000000`;
+- hosted/browser QA truth is recorded precisely;
+- no product/runtime behavior changed;
+- final reviewer has no blocker;
+- `git diff --check` is clean;
+- `docs/RUNS/2026-09-20-003.md` exists;
+- final status is reported as `COMPLETE`.

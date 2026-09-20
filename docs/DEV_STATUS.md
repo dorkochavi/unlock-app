@@ -19,7 +19,7 @@ Branch:
 
 Pushed HEAD:
 
-`d67371a` — `align active docs with current implementation`
+`fd9162e` — `complete run 2026-09-20-002 handoff`
 
 Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
 
@@ -29,7 +29,7 @@ Remote:
 
 `origin/feature/project-foundation`
 
-Development OS V1 is committed and pushed (`0135495`); the subsequent active-documentation consistency pass is committed and pushed (`d67371a`).
+Development OS V1 is committed and pushed (`0135495`); the subsequent active-documentation consistency pass (`d67371a`) and the Run `2026-09-20-002` handoff (`fd9162e`) are also committed and pushed.
 
 ---
 
@@ -229,13 +229,12 @@ Use the API docs / source for full contracts.
 
 ### Applied to hosted Supabase
 
-The original hosted migration chain through:
+The full committed migration chain through:
 
-`20260923000000_auth_user_provisioning.sql`
+`20260925000000_daily_plan_new_material_v1.sql`
 
-has been applied and previously verified against the real hosted Supabase project.
-
-This includes the original seven hosted migrations:
+is applied to the real hosted Supabase project. `npx supabase migration list`
+confirmed local/remote parity through this migration.
 
 1. `20260917203000_initial_schema.sql`
 2. `20260918000000_question_answer_model_v1.sql`
@@ -244,21 +243,12 @@ This includes the original seven hosted migrations:
 5. `20260921000000_daily_plan_v1.sql`
 6. `20260922000000_daily_plan_item_state_consistency.sql`
 7. `20260923000000_auth_user_provisioning.sql`
+8. `20260924000000_daily_plan_answer_attempts.sql` — links Attempts to
+   DailyPlan / DailyPlanItem; supports Today answer submission.
+9. `20260925000000_daily_plan_new_material_v1.sql` — extends DailyPlanItem
+   constraints for New Material V1.
 
-### Committed but NOT yet applied remotely
-
-The following later migrations are committed and locally tested but still require explicit user-authorized remote application:
-
-- `20260924000000_daily_plan_answer_attempts.sql`
-  - links Attempts to DailyPlan / DailyPlanItem safely
-  - supports Today answer submission
-
-- `20260925000000_daily_plan_new_material_v1.sql`
-  - extends DailyPlanItem constraints for New Material V1
-
-Migration readiness for both has been reviewed (Run `2026-09-20-002`, `unlock-db-reviewer`) and approved for hosted application as written — forward-only, additive, no unresolved DB blocker. See `docs/RUNS/2026-09-20-002.md` for the review detail. They are still NOT applied to hosted Supabase.
-
-Do NOT assume hosted Supabase supports the newer answer/new-material flows until these migrations are explicitly applied remotely.
+Hosted Supabase now supports the answer/New Material flows.
 
 Claude must not run `supabase db push` without explicit user authorization.
 
@@ -272,7 +262,7 @@ Previously verified:
 
 - hosted Supabase connectivity
 - real `DATABASE_URL`
-- original migration chain through auth provisioning
+- full migration chain through New Material V1
 - real Auth user provisioning
 - real learner login
 - persisted learner timezone
@@ -283,6 +273,10 @@ Previously verified:
 - correct learner-local planned date after the PostgreSQL DATE read-back fix
 - unauthenticated auth-before-DB behavior on protected routes
 - Hebrew / RTL rendering
+- hosted Today answer submission
+- hosted Today completion state
+- `AUTHORIZED_ONLY` self-join failing closed with `403`
+- a clean `OPEN` Course self-join succeeding and redirecting to `/today`
 
 ### Locally verified after Slices 1–6
 
@@ -306,25 +300,25 @@ Verified through unit / route / PGlite integration coverage as applicable:
 
 ### Not yet manually verified against current hosted schema
 
-Because the two newer migrations have not been applied remotely, the following current capabilities have NOT yet been exercised end-to-end against the hosted project:
-
-- real hosted Today answer submission
-- real hosted Today Skip after the new answer-linkage migration
+- real hosted Today Skip
 - hosted New Material fallback
-- real OPEN-course join through the complete QR/link → login → join → Today browser flow
-- full learner completion flow using the current post-Slice-6 product state
 
-These require an explicitly authorized remote migration/application and manual QA step.
+Neither is a demo blocker; both remain to be exercised manually against the
+hosted project.
 
-### Demo-journey coverage audit (Run 2026-09-20-002)
+### Demo-journey coverage
 
-Every non-UI "Must verify" item for the join → Today → answer → Skip → completion learner journey was individually re-confirmed against actual existing test bodies (not inferred from names): repeated-join idempotency, AUTHORIZED_ONLY fail-closed, revoked-membership fail-closed, same-day DailyPlan reuse, grading-data non-leakage before submission, answer/Skip retry idempotency, resolved-item immutability, and New Material's deterministic-up-to-3/no-fake-evidence behavior are all directly proven at unit/application/PGlite layers. No demo-blocking defect was found; no code changed. The only unproven layer is pure browser-level UI wiring (redirect navigation, feedback rendering) — no automated browser harness exists in this repo, and the current Plan directs manual QA rather than adding one. See `docs/RUNS/2026-09-20-002.md` for the manual browser QA script.
+Demo journey (join → Today → answer → Skip → completion, plus New Material
+fallback) is verified at unit/application/PGlite layers with no defect found;
+see `docs/RUNS/2026-09-20-002.md` for the underlying test-body audit. Browser-
+level UI wiring beyond the hosted QA items above (no automated browser harness
+exists in this repo) remains manual-QA-only.
 
 ---
 
 ## Current Test Baseline
 
-At HEAD `d67371a` (confirmed unchanged as of Run `2026-09-20-002`; last pushed application baseline remains `66df9f9`):
+At pushed HEAD `fd9162e` (last pushed application baseline remains `66df9f9`):
 
 - Unit tests: `592 / 592`
 - Schema/Postgres (PGlite): `194 / 194`
@@ -344,7 +338,7 @@ Current known items include:
 
 - production deployment is not yet complete.
 - final learner-facing visual/demo polish remains.
-- full current learner loop still needs manual browser QA after remote migrations are applied.
+- hosted Today Skip and hosted New Material fallback still need manual browser QA (see Verification State).
 - revoked CourseMembership rejoin policy remains intentionally unresolved.
 - malformed/non-UUID course path parameters currently follow a broader existing API pattern that can produce a generic `500` rather than a cleaner `404`/validation response; this is low-priority and not specific to the join feature.
 - auth middleware is not currently implemented; existing Route Handler auth is sufficient for the current sequential request model, but middleware may need reassessment if authenticated Server Components or real multi-tab refresh races become relevant.
@@ -389,31 +383,18 @@ Read the specific ADR only when a task requires its details.
 
 ## Current Blockers
 
-No known code blocker at pushed HEAD `d67371a` (last pushed application-feature baseline: `66df9f9`).
+No known code blocker at pushed HEAD `fd9162e` (last pushed application-feature baseline: `66df9f9`).
 
-Remote end-to-end verification is intentionally blocked until the user explicitly authorizes application of the committed-but-not-remote migrations.
+No remote migration gate remains: the full migration chain is applied to hosted Supabase.
 
 ---
 
 ## Manual Actions Required
 
-Before hosted end-to-end QA of the newest learning flows:
+1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
+2. Production deployment remains outstanding.
 
-1. ~~Review the committed migration state.~~ Complete — reviewed and approved, Run `2026-09-20-002`.
-2. User explicitly authorizes and performs the remote Supabase migration push.
-3. Verify hosted migration success.
-4. Manually exercise the real learner flow:
-   - login
-   - OPEN course join
-   - timezone handling
-   - Today generation
-   - answer
-   - Skip
-   - progress through Today
-   - completion
-   - New Material behavior where applicable
-
-Do not perform these hosted mutations automatically.
+Do not perform hosted mutations automatically.
 
 ---
 
@@ -423,11 +404,9 @@ Pushed product/application baseline:
 
 `66df9f9`
 
-Current HEAD (unchanged by Run `2026-09-20-002` — an investigation/verification Run with zero code changes):
+Current pushed HEAD:
 
-`d67371a`
-
-Run `2026-09-20-002` is complete through its explicit `MANUAL_REMOTE_GATE` stop point: migration readiness reviewed and approved, demo journey verified with no defects found. Full detail: `docs/RUNS/2026-09-20-002.md`.
+`fd9162e`
 
 Next execution work must come from a new:
 

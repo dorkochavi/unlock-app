@@ -62,11 +62,17 @@ Determine:
 - current HEAD
 - ahead/behind state
 - staged/unstaged/untracked files
-- whether repository state is compatible with the Plan's BASE_HEAD and already-completed Slice commits
+- whether repository state matches one of the two valid Run-start states
+  defined in `CLAUDE.md` Section 1 (BASE_HEAD Semantics)
 
-If HEAD differs from BASE_HEAD because earlier Slices in the same Run created expected focused commits, that is normal.
+`HEAD == BASE_HEAD` with only `docs/CHATGPT_PLAN.md` uncommitted (State A) is
+the expected default. It is not unexplained dirty state.
 
-If HEAD differs for an unexplained reason:
+If HEAD differs from BASE_HEAD because earlier Slices in the same Run created
+expected focused commits, that is normal.
+
+If HEAD differs for an unexplained reason, or matches neither valid Run-start
+state:
 
 - investigate before editing
 - do not reset

@@ -77,8 +77,17 @@ Determine:
 - staged files
 - unstaged files
 - untracked files
-- whether current HEAD is compatible with the Run's expected state
+- whether current HEAD is compatible with one of the two valid Run-start
+  states defined in `CLAUDE.md` Section 1 (BASE_HEAD Semantics)
 - whether unexpected files exist
+
+An uncommitted `docs/CHATGPT_PLAN.md` modification alone (State A) is expected
+and is not an unexpected file or a blocker.
+
+If HEAD differs from `BASE_HEAD` because earlier Slices in the same Run
+already created expected focused commits, that is normal mid-Run state, not a
+mismatch to diagnose — `CLAUDE.md` Section 1's two Run-start states describe
+how a Run begins, not every valid HEAD position during it.
 
 Do not touch unexpected files.
 
@@ -358,12 +367,17 @@ Use the strongest status justified by the actual Slice state.
 
 Do not commit or push.
 
+A green verdict here is not itself a Run stop condition. See `CLAUDE.md`
+Section 21 (Checkpoint Continuation Rule / Run Completion Protocol) for
+whether the Run continues, stops, or proceeds to commit/review/handoff.
+
 ---
 
 ## Final Rules
 
 - Read-only means read-only.
 - Current work comes from `CHATGPT_PLAN`, not DEV_STATUS.
+- A checkpoint verdict reports state; it does not decide Run continuation.
 - Do not modify the Plan.
 - Do not modify DEV_STATUS.
 - Do not stage.
