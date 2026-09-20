@@ -21,6 +21,15 @@ Pushed HEAD:
 
 `fd9162e` — `complete run 2026-09-20-002 handoff`
 
+Current local HEAD (not yet pushed):
+
+`60b6dea` — `add Playwright browser E2E harness with golden-path and error-path specs (Run 004 S7)`
+
+Local HEAD is 4 commits ahead of pushed HEAD: `3568275` (Run 004 S2-S4:
+learner shell/nav, My Courses, Course View), `cb22a97` (S5: malformed-courseId
+500 fix), `0e8a597` (S6: mobile tap-target/truncation pass), `60b6dea` (S7:
+Playwright E2E harness). See `docs/RUNS/2026-09-20-004.md` for the full Run.
+
 Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
 
 `66df9f9` — `add open-course learner onboarding`
@@ -29,7 +38,7 @@ Remote:
 
 `origin/feature/project-foundation`
 
-Development OS V1 is committed and pushed (`0135495`); the subsequent active-documentation consistency pass (`d67371a`) and the Run `2026-09-20-002` handoff (`fd9162e`) are also committed and pushed.
+Development OS V1 is committed and pushed (`0135495`); the subsequent active-documentation consistency pass (`d67371a`) and the Run `2026-09-20-002` handoff (`fd9162e`) are also committed and pushed. Run 004 (`3568275`..`60b6dea`) is committed locally and not yet pushed.
 
 ---
 
@@ -56,6 +65,46 @@ Security baseline:
 - database/service credentials remain server-only
 - raw SQL/errors/stack traces are not returned to clients
 - external/protocol-relative login redirects are rejected
+
+---
+
+### Learner Navigation / Shell (Run 004)
+
+Implemented:
+
+- shared mobile-first learner shell (`src/app/(learner)/layout.tsx` +
+  `learner-nav.tsx`) via a Next.js route group — a bottom Today/Courses tab
+  bar with active-state highlighting.
+- the route group changes no existing URL: `/today` kept its exact path
+  (pure file move, zero content diff).
+- `/`, `/login`, `/join/[courseId]` deliberately remain outside the shell
+  (pre-authentication/pre-product entry points).
+- RTL/Hebrew-first behavior preserved via the existing global `dir="rtl"`,
+  no hand-coded left/right logic in the nav.
+
+---
+
+### My Courses / Course View (Run 004)
+
+Implemented:
+
+- `GET /api/courses/mine` — authenticated learner's own active Courses
+  (reuses `CourseMembershipRepository.listActiveForUser` unchanged; role is
+  passed through, never downgraded/hidden for an OWNER/INSTRUCTOR's own
+  membership).
+- `/courses` (My Courses) — course list with a real, translated empty state
+  for a zero-course learner; no fabricated exam/progress/analytics data.
+- `GET /api/courses/:courseId/context` — authenticated, membership-gated
+  Course View read: fails closed to `NOT_AUTHORIZED` (no membership) or
+  `ACCESS_REVOKED` (revoked membership); never the same route as the
+  public unauthenticated `GET /api/courses/:courseId` join-page lookup.
+- `/courses/[courseId]` (Course View) — course title + the caller's own
+  membership role, with a link back to `/today`. Does not create a second
+  Today/plan system. No Manual Practice link (no such learner-facing flow
+  exists anywhere in this repo yet).
+- batched `CourseRepository.getCourseSummaries(courseIds)` (`= any($1::uuid[])`)
+  to avoid N+1 course-title lookups; same learner-safe `{id, title}`
+  projection as the existing single-course method.
 
 ---
 
@@ -208,8 +257,10 @@ Implemented application-facing paths include:
 
 - `/`
 - `/login`
-- `/today`
+- `/today` (now under the `(learner)` route group; URL unchanged)
 - `/join/[courseId]`
+- `/courses` (My Courses)
+- `/courses/[courseId]` (Course View)
 
 Implemented relevant APIs include:
 
@@ -217,8 +268,10 @@ Implemented relevant APIs include:
 - `POST /api/daily-plan/items/:itemId/answer`
 - `POST /api/daily-plan/items/:itemId/skip`
 - `POST /api/user/timezone`
-- `GET /api/courses/:courseId`
+- `GET /api/courses/:courseId` (public, unauthenticated join-page title lookup)
 - `POST /api/courses/:courseId/join`
+- `GET /api/courses/mine` (authenticated, My Courses)
+- `GET /api/courses/:courseId/context` (authenticated, membership-gated Course View)
 
 This list is a current capability summary, not an exhaustive API specification.
 Use the API docs / source for full contracts.
@@ -278,25 +331,45 @@ Previously verified:
 - `AUTHORIZED_ONLY` self-join failing closed with `403`
 - a clean `OPEN` Course self-join succeeding and redirecting to `/today`
 
-### Locally verified after Slices 1–6
+### Locally verified after Run 004 (Slices 2-7)
 
-Verified through unit / route / PGlite integration coverage as applicable:
+My Courses and Course View (membership listing/exclusion, role preservation,
+cross-user isolation, not-found/non-member/revoked outcomes), the
+`getCourseSummaries` batched query, auth-before-DB ordering on both new
+routes, and the malformed/non-UUID `courseId` fix across all three affected
+routes are each verified at unit / route-wiring / PGlite-integration layers
+as applicable — see `docs/RUNS/2026-09-20-004.md` for the per-Slice test
+inventory. Every pre-existing Slice 1-6 item below remains independently
+re-confirmed unaffected by this Run's diff.
 
-- Today answer submission
-- DailyPlanItem ownership
-- answer idempotency
-- Attempt → DailyPlan linkage
-- Manual Practice / Today separation
-- Today Skip semantics
-- New Material discovery and fallback
+Previously verified (pre-Run-004), still current:
+
+- Today answer submission, DailyPlanItem ownership, answer idempotency, Attempt → DailyPlan linkage
+- Manual Practice / Today separation, Today Skip semantics, New Material discovery and fallback
 - no fake progress for unseen material
-- OPEN course join
-- OWNER / INSTRUCTOR role preservation
-- revoked membership fail-closed behavior
-- safe login redirect allowlist
-- join route auth-before-DB ordering
-- public course-summary projection
+- OPEN course join, OWNER / INSTRUCTOR role preservation, revoked membership fail-closed behavior
+- safe login redirect allowlist, join route auth-before-DB ordering, public course-summary projection
 - joinCourse against real Postgres repositories in PGlite
+
+### Browser-verified (real hosted-configured `next dev`, read-only)
+
+- malformed and well-formed-but-nonexistent join-link course ids each show
+  the controlled not-found UI state, not a 5xx (`e2e/join-errors.spec.ts`,
+  2/2 passed against this repo's own hosted-project `.env.local`, no
+  mutation performed).
+
+### Not yet executed: golden-path browser E2E
+
+`e2e/golden-path.spec.ts` (login → join OPEN course → Today → answer →
+feedback → continue → reload-safe state) is written and wired but was not
+executed in Run 004: it requires a real pre-existing hosted learner account
+and OPEN Course, and this repository's development environment has no local
+Supabase/Docker stack to provide that safely — only the real hosted Ruppin
+project is configured. Autonomously creating a hosted user/Course/membership
+to manufacture that fixture is out of bounds (`CLAUDE.md` §20). See
+`e2e/README.md` for the exact command to run it once a human decides how to
+provide real fixtures. This is a documented Plan-level blocker, not a
+silently skipped requirement.
 
 ### Not yet manually verified against current hosted schema
 
@@ -310,21 +383,24 @@ hosted project.
 
 Demo journey (join → Today → answer → Skip → completion, plus New Material
 fallback) is verified at unit/application/PGlite layers with no defect found;
-see `docs/RUNS/2026-09-20-002.md` for the underlying test-body audit. Browser-
-level UI wiring beyond the hosted QA items above (no automated browser harness
-exists in this repo) remains manual-QA-only.
+see `docs/RUNS/2026-09-20-002.md` for the underlying test-body audit. The
+malformed/nonexistent join-link path is now also verified at the real
+browser level (above). The full golden path (login through completion) has a
+Playwright harness in place (`e2e/`) but has not yet been executed
+end-to-end — see "Not yet executed" above.
 
 ---
 
 ## Current Test Baseline
 
-At pushed HEAD `fd9162e` (last pushed application baseline remains `66df9f9`):
+At local HEAD `60b6dea` (pushed HEAD remains `fd9162e`):
 
-- Unit tests: `592 / 592`
-- Schema/Postgres (PGlite): `194 / 194`
+- Unit tests: `638 / 638`
+- Schema/Postgres (PGlite): `197 / 197`
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
+- Browser E2E: `join-errors.spec.ts` 2/2 passed against a real hosted-configured `next dev`; `golden-path.spec.ts` written, not yet executed (see Verification State)
 
 These values are development checkpoints, not permanent numeric requirements.
 
@@ -340,7 +416,7 @@ Current known items include:
 - final learner-facing visual/demo polish remains.
 - hosted Today Skip and hosted New Material fallback still need manual browser QA (see Verification State).
 - revoked CourseMembership rejoin policy remains intentionally unresolved.
-- malformed/non-UUID course path parameters currently follow a broader existing API pattern that can produce a generic `500` rather than a cleaner `404`/validation response; this is low-priority and not specific to the join feature.
+- full golden-path browser E2E (login through Today completion) is written but not yet executed; needs a human decision on how to safely provide a real fixture learner/course (see Verification State).
 - auth middleware is not currently implemented; existing Route Handler auth is sufficient for the current sequential request model, but middleware may need reassessment if authenticated Server Components or real multi-tab refresh races become relevant.
 - real multi-connection PostgreSQL concurrency is not fully proven by PGlite; concurrency claims must remain scoped to what has actually been tested or reasoned under PostgreSQL semantics.
 - PGlite DATE parsing is not identical to real `node-postgres` DATE parsing on all host timezones; dedicated row-validation tests cover the production `pg` convention.
@@ -383,16 +459,18 @@ Read the specific ADR only when a task requires its details.
 
 ## Current Blockers
 
-No known code blocker at pushed HEAD `fd9162e` (last pushed application-feature baseline: `66df9f9`).
+No known code blocker at local HEAD `60b6dea` (pushed HEAD remains `fd9162e`).
 
-No remote migration gate remains: the full migration chain is applied to hosted Supabase.
+No remote migration gate remains: the full migration chain is applied to hosted Supabase. Run 004 added no new migration.
 
 ---
 
 ## Manual Actions Required
 
 1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
-2. Production deployment remains outstanding.
+2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
+3. Push Run 004 (`3568275`..`60b6dea`) when ready — not yet pushed.
+4. Production deployment remains outstanding.
 
 Do not perform hosted mutations automatically.
 
@@ -408,13 +486,16 @@ Current pushed HEAD:
 
 `fd9162e`
 
+Current local HEAD (Run 004 complete, not yet pushed):
+
+`60b6dea`
+
 Next execution work must come from a new:
 
 `docs/CHATGPT_PLAN.md`
 
-Do not infer the next slice from historical run context.
-
-The Development OS V1 transition is complete.
+Do not infer the next slice from historical run context. See
+`docs/RUNS/2026-09-20-004.md` for Run 004's full handoff.
 
 ---
 

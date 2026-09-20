@@ -353,9 +353,17 @@ Learner onboarding UI:
 
 - `src/app/join/[courseId]/`
 
+Learner course-list/course-context UI (Run 004):
+
+- `src/app/(learner)/courses/` — My Courses (`/courses`) and Course View
+  (`/courses/[courseId]`)
+
 Course APIs:
 
-- `src/app/api/courses/`
+- `src/app/api/courses/` — includes `mine/` (My Courses) and
+  `[courseId]/context/` (authenticated, membership-gated Course View; not
+  the same route as the public unauthenticated `[courseId]/` join-page
+  lookup)
 
 Relevant Claude rule:
 
