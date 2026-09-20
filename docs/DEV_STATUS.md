@@ -19,16 +19,18 @@ Branch:
 
 Pushed HEAD:
 
-`fd9162e` — `complete run 2026-09-20-002 handoff`
+`f10daaa` — `define unlock v1 scope and product roadmap` (confirmed against
+`origin/feature/project-foundation`; this is also Run 004's `BASE_HEAD`)
 
 Current local HEAD (not yet pushed):
 
-`60b6dea` — `add Playwright browser E2E harness with golden-path and error-path specs (Run 004 S7)`
+`0e812a1` — `Run 004 handoff: update DEV_STATUS, CONTEXT_MAP, and add Run Report`
 
-Local HEAD is 4 commits ahead of pushed HEAD: `3568275` (Run 004 S2-S4:
-learner shell/nav, My Courses, Course View), `cb22a97` (S5: malformed-courseId
-500 fix), `0e8a597` (S6: mobile tap-target/truncation pass), `60b6dea` (S7:
-Playwright E2E harness). See `docs/RUNS/2026-09-20-004.md` for the full Run.
+Local HEAD is 5 commits ahead of pushed HEAD — all of Run 004: `3568275`
+(S2-S4: learner shell/nav, My Courses, Course View), `cb22a97` (S5:
+malformed-courseId 500 fix), `0e8a597` (S6: mobile tap-target/truncation
+pass), `60b6dea` (S7: Playwright E2E harness), `0e812a1` (S8: this Run's
+own handoff). See `docs/RUNS/2026-09-20-004.md` for the full Run.
 
 Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
 
@@ -38,7 +40,12 @@ Remote:
 
 `origin/feature/project-foundation`
 
-Development OS V1 is committed and pushed (`0135495`); the subsequent active-documentation consistency pass (`d67371a`) and the Run `2026-09-20-002` handoff (`fd9162e`) are also committed and pushed. Run 004 (`3568275`..`60b6dea`) is committed locally and not yet pushed.
+Development OS V1 is committed and pushed (`0135495`); the subsequent
+active-documentation consistency pass (`d67371a`) and the Run
+`2026-09-20-002` handoff (`fd9162e`) were pushed at the time, and `f10daaa`
+(defining V1 scope/roadmap) was pushed after that — `f10daaa` is the actual
+current pushed HEAD, not `fd9162e`. Run 004 (`3568275`..`0e812a1`) is
+committed locally and not yet pushed.
 
 ---
 
@@ -393,7 +400,7 @@ end-to-end — see "Not yet executed" above.
 
 ## Current Test Baseline
 
-At local HEAD `60b6dea` (pushed HEAD remains `fd9162e`):
+At local HEAD `0e812a1` (pushed HEAD remains `f10daaa`):
 
 - Unit tests: `638 / 638`
 - Schema/Postgres (PGlite): `197 / 197`
@@ -459,7 +466,7 @@ Read the specific ADR only when a task requires its details.
 
 ## Current Blockers
 
-No known code blocker at local HEAD `60b6dea` (pushed HEAD remains `fd9162e`).
+No known code blocker at local HEAD `0e812a1` (pushed HEAD remains `f10daaa`).
 
 No remote migration gate remains: the full migration chain is applied to hosted Supabase. Run 004 added no new migration.
 
@@ -469,7 +476,7 @@ No remote migration gate remains: the full migration chain is applied to hosted 
 
 1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
 2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
-3. Push Run 004 (`3568275`..`60b6dea`) when ready — not yet pushed.
+3. Push Run 004 (`3568275`..`0e812a1`) when ready — not yet pushed.
 4. Production deployment remains outstanding.
 
 Do not perform hosted mutations automatically.
@@ -484,11 +491,11 @@ Pushed product/application baseline:
 
 Current pushed HEAD:
 
-`fd9162e`
+`f10daaa`
 
 Current local HEAD (Run 004 complete, not yet pushed):
 
-`60b6dea`
+`0e812a1`
 
 Next execution work must come from a new:
 
