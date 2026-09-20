@@ -5,12 +5,25 @@ import { useRouter } from "next/navigation";
 
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { getMessages } from "@/messages";
+import { resolveSafeNextPath } from "@/lib/safe-redirect";
 
 type Mode = "sign-in" | "sign-up";
 
 export default function LoginPage() {
   const messages = getMessages();
   const router = useRouter();
+  // Read `next` directly from the browser's own location rather than
+  // `useSearchParams()` — this page is entirely client-rendered, and this
+  // avoids Next.js's Suspense-boundary requirement for that hook with no
+  // behavioral difference. Validated through an explicit allowlist
+  // (`resolveSafeNextPath`) — never trusted as a raw redirect target.
+  const [nextPath] = useState(() =>
+    resolveSafeNextPath(
+      typeof window === "undefined"
+        ? null
+        : new URLSearchParams(window.location.search).get("next"),
+    ),
+  );
   const [mode, setMode] = useState<Mode>("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +55,7 @@ export default function LoginPage() {
           setError(messages.auth.invalidCredentials);
           return;
         }
-        router.push("/today");
+        router.push(nextPath);
         router.refresh();
         return;
       }
@@ -53,7 +66,7 @@ export default function LoginPage() {
         return;
       }
       if (data.session) {
-        router.push("/today");
+        router.push(nextPath);
         router.refresh();
         return;
       }

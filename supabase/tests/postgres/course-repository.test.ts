@@ -47,4 +47,22 @@ describe("PostgresCourseRepository", () => {
     const repo = new PostgresCourseRepository(db);
     expect(await repo.setJoinPolicy(randomUUID(), "OPEN")).toBeNull();
   });
+
+  it("getCourseSummary returns exactly {id, title} against the real schema — never owner_user_id/join_policy/timestamps", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const repo = new PostgresCourseRepository(db);
+
+    const summary = await repo.getCourseSummary(courseId);
+
+    expect(summary).not.toBeNull();
+    expect(summary?.id).toBe(courseId);
+    expect(typeof summary?.title).toBe("string");
+    expect(Object.keys(summary ?? {}).sort()).toEqual(["id", "title"]);
+  });
+
+  it("getCourseSummary returns null for an unknown course", async () => {
+    const repo = new PostgresCourseRepository(db);
+    expect(await repo.getCourseSummary(randomUUID())).toBeNull();
+  });
 });

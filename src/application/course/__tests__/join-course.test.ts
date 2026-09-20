@@ -73,6 +73,52 @@ describe("joinCourse", () => {
     expect(active).toHaveLength(1);
   });
 
+  it("does not downgrade a pre-existing OWNER membership on self-join against an OPEN course", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "OPEN");
+    db.seedMembership({
+      id: "owner-membership",
+      userId: "user-1",
+      courseId: "course-1",
+      role: "OWNER",
+      joinedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+      archivedAt: null,
+    });
+
+    const result = await joinCourse(
+      { actorUserId: "user-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("ALREADY_MEMBER");
+    if (result.outcome !== "ALREADY_MEMBER") throw new Error("unreachable");
+    expect(result.membership.role).toBe("OWNER");
+  });
+
+  it("does not overwrite a pre-existing INSTRUCTOR membership on self-join against an OPEN course", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "OPEN");
+    db.seedMembership({
+      id: "instructor-membership",
+      userId: "user-1",
+      courseId: "course-1",
+      role: "INSTRUCTOR",
+      joinedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+      archivedAt: null,
+    });
+
+    const result = await joinCourse(
+      { actorUserId: "user-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("ALREADY_MEMBER");
+    if (result.outcome !== "ALREADY_MEMBER") throw new Error("unreachable");
+    expect(result.membership.role).toBe("INSTRUCTOR");
+  });
+
   // Open Question #43: not a decided product rule — pins the current
   // conservative behavior. A revoked membership's row already exists, so
   // `createMembership`'s ON-CONFLICT-DO-NOTHING path returns it unchanged

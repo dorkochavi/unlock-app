@@ -25,10 +25,16 @@ function nextMembershipId(): string {
 export class InMemoryCourseDatabase {
   private memberships = new Map<string, CourseMembership>();
   private joinPolicies = new Map<string, CourseJoinPolicy>();
+  private courseTitles = new Map<string, string>();
 
   /** Test setup helper — not part of any port. */
-  seedCourse(courseId: string, joinPolicy: CourseJoinPolicy = "AUTHORIZED_ONLY"): void {
+  seedCourse(
+    courseId: string,
+    joinPolicy: CourseJoinPolicy = "AUTHORIZED_ONLY",
+    title = "Test Course",
+  ): void {
     this.joinPolicies.set(courseId, joinPolicy);
+    this.courseTitles.set(courseId, title);
   }
 
   /** Test setup helper — not part of any port. */
@@ -79,6 +85,10 @@ export class InMemoryCourseDatabase {
     };
 
     const courses: CourseRepository = {
+      getCourseSummary: async (courseId) => {
+        const title = this.courseTitles.get(courseId);
+        return title === undefined ? null : { id: courseId, title };
+      },
       getJoinPolicy: async (courseId) => {
         return this.joinPolicies.get(courseId) ?? null;
       },

@@ -76,9 +76,23 @@ export interface CourseMembershipRepository {
   ): Promise<CourseMembership | null>;
 }
 
+/**
+ * Deliberately minimal — `id`/`title` only. Never `owner_user_id`,
+ * `join_policy`, or any other admin-only field (Night-Run Slice 6 §6G:
+ * "Do not expose admin-only metadata"). Used for the public join-page
+ * display only, before the actual join decision is made.
+ */
+export interface CourseSummary {
+  id: string;
+  title: string;
+}
+
 export interface CourseRepository {
   /** `null` if the Course does not exist. */
   getJoinPolicy(courseId: string): Promise<CourseJoinPolicy | null>;
+
+  /** `null` if the Course does not exist. Public-safe read — see `CourseSummary`. */
+  getCourseSummary(courseId: string): Promise<CourseSummary | null>;
 
   /**
    * Returns `null` if the Course does not exist; otherwise the join policy
