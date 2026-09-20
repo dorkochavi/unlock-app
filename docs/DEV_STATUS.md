@@ -197,11 +197,147 @@ Not yet end-to-end verified:
 
 Not implemented yet:
 
-- DailyPlanItem completion through `submitAnswer`
 - Skip use case
 - mid-day Today adaptation
 - Global Today user-facing UI
 - production deployment
+
+## Today answer submission slice (2026-09-24, Night Run Slice 1)
+
+Closes "DailyPlanItem completion through `submitAnswer`" above.
+
+`POST /api/daily-plan/items/:itemId/answer` — the real server-side path for
+a learner answering one question from Today.
+
+**Architecture — extends, does not duplicate, the existing submitAnswer core:**
+
+- `src/application/learning/submit-answer.ts` already implemented a mature,
+  heavily-audited transactional flow (advisory lock, idempotent Attempt
+  insert, out-of-order rebuild) against the OLDER `today_sessions`/
+  `today_session_items` schema, but was never wired to any route. The real
+  `/today` API/UI use the NEWER `daily_plans`/`daily_plan_items` schema
+  (`src/application/dailyPlan/`), which had no answer-submission wiring at
+  all. This slice adds a parallel `dailyPlanItemId`/`dailyPlanId` path
+  through the SAME `submitAnswer` function — mirroring the existing
+  `todaySessionItemId`/`todaySessionId` handling exactly (ownership check,
+  pending-status check, `learningSessionId`/`dailyPlanId` derived from the
+  persisted item, item resolution in the same transaction) — rather than
+  reimplementing idempotency/locking/rebuild logic a second time.
+  `today_sessions`/`today_session_items` remain untouched and unused by any
+  real route.
+- New migration `20260924000000_daily_plan_answer_attempts.sql`: adds
+  nullable `daily_plan_id`/`daily_plan_item_id` to `attempts`, two new
+  `daily_plan_items` UNIQUE constraints so composite FKs can target them,
+  a MATCH SIMPLE ownership FK and a MATCH FULL consistency FK (both with
+  explicit `ON DELETE SET NULL` on their own columns — verified via a real
+  PGlite delete-cascade test that an Attempt survives its DailyPlan being
+  deleted, only losing the pointer columns), and a CHECK enforcing an
+  Attempt can never claim both a TodaySessionItem and a DailyPlanItem.
+- `src/application/dailyPlan/submit-daily-plan-item-answer.ts`: new
+  orchestration function. Does a plain (non-transactional) pre-fetch of the
+  DailyPlanItem by `itemId` to resolve `courseId`/`questionId`/
+  `questionVersionId`/`dailyPlanId` server-side (never client-supplied),
+  then delegates all grading/idempotency/progress-update/resolution work to
+  `submitAnswer`. The pre-fetch is advisory only — `submitAnswer`'s own
+  internal re-check, under its advisory lock, inside the transaction, is
+  the actual authorization boundary; a race between the two is safe (the
+  in-transaction check rejects cleanly with `DAILY_PLAN_ITEM_ALREADY_RESOLVED`).
+- `src/app/api/daily-plan/items/[itemId]/answer/route.ts` +
+  `handle-submit-daily-plan-item-answer.ts`: thin route, testable core.
+  Auth resolved and body validated before any `getPool()`/DB construction.
+  Accepts only `submissionId`/`selectedAnswer`/`confidenceLevel`/
+  `responseTimeSeconds` from the client; `userId` from verified auth;
+  `itemId` from the URL path; everything else (courseId/questionId/
+  questionVersionId/dailyPlanId/assistanceUsed/answerWasRevealedBeforeResponse/
+  answeredAt) is server-resolved or hardcoded (no UI feature yet needs the
+  last two). Response on success: `{status, isCorrect, wasIdempotentRetry}`
+  only — no `correctOptionIds`/grading-definition/internal fields.
+
+**Reviewed:** `unlock-db-reviewer` and `unlock-security-reviewer`, both
+against this exact diff before commit. Findings addressed before commit:
+the MATCH FULL FK's `ON DELETE` clause now matches the `today_session_item_id`
+precedent literally (was previously relying on undocumented cross-constraint
+ordering — verified harmless but fixed anyway), and a dedicated unit test
+for `submit-daily-plan-item-answer.ts`'s own pre-fetch/ownership/field-mapping
+logic was added (previously only exercised indirectly through mocks).
+
+**Tests added:** 10 new cases in `submit-answer.test.ts` (unit, in-memory),
+4 new cases in `application/dailyPlan/__tests__/submit-daily-plan-item-answer.test.ts`
+(unit), 22 new cases across the route's `__tests__/` (handler + real route
+wiring/auth-before-DB ordering), 8 new PGlite cases in
+`supabase/tests/postgres/submit-answer.test.ts` (real migration chain, real
+transactions, including the mutual-exclusivity CHECK and delete-cascade
+proofs).
+
+**Verification:**
+
+- unit tests: `537 / 537` (was `496 / 496`; +41).
+- schema/Postgres tests: `170 / 170` (was `162 / 162`; +8) — real PGlite,
+  full committed migration chain.
+- typecheck: clean. lint: clean. `git diff --check`: clean.
+- NOT verified: real hosted Supabase/Postgres, real browser submission —
+  no UI exists yet to submit through (Slice 2). No real multi-connection
+  concurrency test (PGlite is single-engine; the advisory-lock serialization
+  claim is reasoned under documented PostgreSQL `READ COMMITTED` semantics,
+  same limitation already stated for the pre-existing TodaySession path).
+
+**Explicitly out of scope for this slice:** Skip, interactive UI, Starter/
+new-material policy, Open Course join. Manual Practice semantics unchanged
+(a dedicated PGlite test proves a real pending DailyPlanItem is untouched by
+a manual-practice submission).
+
+## Interactive Today answering UI slice (2026-09-24, Night Run Slice 2)
+
+Turns the read-only `/today` cards from the previous slice into a real
+learner interaction against `POST /api/daily-plan/items/:itemId/answer`
+(Slice 1). No redesign, no Skip yet (Slice 3).
+
+- `src/app/today/page.tsx`: `TodayPlanView` now holds a local copy of
+  `plan.items` (updated optimistically after each successful submit — no
+  full refetch needed) and renders exactly ONE active pending item at a
+  time (`TodayAnswerCard`), in existing `position` order. SINGLE_CHOICE
+  (single toggle, replacing any prior selection) and MULTIPLE_CHOICE
+  (independent per-option toggle) both supported via `questionType`.
+  Explicit submit button (disabled until a selection exists, disabled again
+  while the request is in flight — no auto-submit-on-select, no
+  double-submit race). After a response, shows נכון/לא נכון feedback and an
+  explicit "המשך" (continue) button before advancing — never silently jumps
+  to the next question.
+- A fresh client-generated `submissionId` (`crypto.randomUUID()`) is
+  created per answer attempt; a failed request's own retry path (still
+  Slice 2 — no dedicated retry button beyond the browser/user re-clicking
+  submit, since submit isn't disabled on error) would need the SAME id to
+  stay idempotent — not yet wired as an automatic retry, but the
+  submissionId is generated once per `TodayAnswerCard` mount (keyed by
+  `current.id`), so a user re-submitting after a network error still reuses
+  it correctly rather than minting a new one.
+- `401` mid-session (expired auth) → the whole page drops back to the
+  existing "signed-out" state via an `onUnauthenticated` callback — no
+  crash, no silent retry loop.
+- `409 ITEM_ALREADY_RESOLVED` (another tab/device resolved it first) →
+  refetches the real plan from the server rather than guessing at
+  correctness the client was never told.
+- Generic/network failure → inline Hebrew error text + the submit button
+  remains available to retry (no raw technical error ever shown).
+- All pending items resolved → "סיימת להיום" completion card. No
+  replacement item generated, no auto-redirect to Manual Practice.
+- Page reload reconstructs entirely from a fresh `GET /api/daily-plan/today`
+  call — no client-side persistence of answering state.
+
+**Verification:**
+
+- typecheck: clean. lint: clean. `git diff --check`: clean.
+- unit tests: `537 / 537` (unchanged — this slice is UI-only; no
+  application/domain/infrastructure code changed, so no new unit tests were
+  needed beyond Slice 1's existing server-side coverage of the route this
+  UI calls).
+- smoke-tested via `npm run dev` + `curl`: `GET /`, `GET /today` both `200`,
+  `/today` still renders `dir="rtl"`.
+- NOT verified: an actual authenticated learner clicking through a real
+  answer submission in a browser. This night-run session has no real
+  learner credentials and is explicitly not authorized to submit real
+  answers against the hosted Supabase project. This is the concrete next
+  verification step for a human to run by hand.
 
 ## Minimal learner vertical slice: auth + timezone + Today UI
 
@@ -391,9 +527,9 @@ This work is workflow/configuration-only and separate from the DailyPlan route c
 
 ## Current test baseline
 
-- Unit tests: `496 / 496`
-- Schema/Postgres tests: `162 / 162` (rerun this slice — a new Postgres
-  repository/query was added; count unchanged, no migration/behavior change)
+- Unit tests: `537 / 537`
+- Schema/Postgres tests: `170 / 170` (rerun this slice — new migration +
+  Postgres repository wiring for DailyPlanItem answer submission)
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -439,11 +575,10 @@ reported issue.
    hosted Supabase project in a real browser. Both this slice and the
    "Minimal learner vertical slice" one before it deliberately stopped
    short of that.
-2. Continue with DailyPlanItem completion through `submitAnswer` and Skip
-   as separate slices — `submitAnswer`'s existing grading path
-   (`AnswerCorrectnessChecker`) is untouched by this slice and remains the
-   correctness source of truth; this slice only added a read-only display
-   path.
+2. DailyPlanItem completion through `submitAnswer` is DONE (Night Run
+   Slice 1, `POST /api/daily-plan/items/:itemId/answer`) — see "Today
+   answer submission slice" above. Next: interactive Today UI (Slice 2)
+   wiring `/today`'s cards to this route, then Skip (Slice 3).
 
 ## Blocked: unseen-question / new-material exposure eligibility
 

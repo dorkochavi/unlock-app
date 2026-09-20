@@ -42,6 +42,43 @@ async function persistDetectedTimezone(): Promise<boolean> {
   return response.ok;
 }
 
+type SubmitAnswerOutcome =
+  | { outcome: "ACCEPTED"; isCorrect: boolean }
+  | { outcome: "UNAUTHENTICATED" }
+  | { outcome: "ALREADY_RESOLVED" }
+  | { outcome: "ERROR" };
+
+async function submitDailyPlanItemAnswer(
+  itemId: string,
+  body: { submissionId: string; selectedAnswer: string | string[] | null },
+): Promise<SubmitAnswerOutcome> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/daily-plan/items/${itemId}/answer`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { outcome: "ERROR" };
+  }
+  if (response.status === 401) {
+    return { outcome: "UNAUTHENTICATED" };
+  }
+  if (response.status === 409) {
+    return { outcome: "ALREADY_RESOLVED" };
+  }
+  if (!response.ok) {
+    return { outcome: "ERROR" };
+  }
+  try {
+    const json = (await response.json()) as { isCorrect: boolean };
+    return { outcome: "ACCEPTED", isCorrect: json.isCorrect };
+  } catch {
+    return { outcome: "ERROR" };
+  }
+}
+
 export default function TodayPage() {
   const messages = getMessages();
   const [state, setState] = useState<ViewState>({ kind: "loading" });
@@ -166,16 +203,59 @@ export default function TodayPage() {
           </div>
         ) : null}
 
-        {state.kind === "ready" ? <TodayPlanView plan={state.plan} /> : null}
+        {state.kind === "ready" ? (
+          <TodayPlanView
+            plan={state.plan}
+            onUnauthenticated={() => setState({ kind: "signed-out" })}
+          />
+        ) : null}
       </main>
     </div>
   );
 }
 
-function TodayPlanView({ plan }: { plan: DailyPlanDto }) {
-  const messages = getMessages();
+function progressLabel(template: string, resolved: number, total: number): string {
+  return template.replace("{resolved}", String(resolved)).replace("{total}", String(total));
+}
 
-  if (plan.items.length === 0) {
+function generateSubmissionId(): string {
+  // crypto.randomUUID() is available in every browser this app targets
+  // (secure context, modern evergreen browsers) — no polyfill needed.
+  return crypto.randomUUID();
+}
+
+type Feedback = { itemId: string; isCorrect: boolean };
+
+/**
+ * Stateful Today answering session (Night-Run Slice 2). Reuses the exact
+ * `DailyPlanItemDto[]` the server already returned — no separate fetch, no
+ * client-side ranking/selection logic (all of that stays server-side, per
+ * `.claude/rules/learning-engine.md`). This component only tracks:
+ * - a local COPY of item resolution status (updated optimistically after a
+ *   successful submit, so the just-answered item stops being "the active
+ *   one" without a full page refetch);
+ * - the in-progress selection/submission state for whichever ONE item is
+ *   currently active.
+ *
+ * A page reload discards all of this local state and reconstructs from the
+ * server's real `GET /api/daily-plan/today` response, per Slice 2's own
+ * "page reload must reconstruct state from server" requirement — nothing
+ * here is persisted client-side.
+ */
+function TodayPlanView({
+  plan,
+  onUnauthenticated,
+}: {
+  plan: DailyPlanDto;
+  onUnauthenticated: () => void;
+}) {
+  const messages = getMessages();
+  const [items, setItems] = useState<DailyPlanItemDto[]>(plan.items);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [alreadyResolvedNotice, setAlreadyResolvedNotice] = useState(false);
+
+  if (items.length === 0) {
     return (
       <div className="text-center">
         <p className="mb-2 text-lg">{messages.today.emptyTitle}</p>
@@ -184,46 +264,183 @@ function TodayPlanView({ plan }: { plan: DailyPlanDto }) {
     );
   }
 
+  const total = items.length;
+  const resolvedCount = items.filter((item) => item.status !== "pending").length;
+  const current = items.find((item) => item.status === "pending") ?? null;
+  const activeFeedback = feedback !== null && feedback.itemId === current?.id ? feedback : null;
+
+  async function handleAnswer(itemId: string, selectedAnswer: string | string[] | null) {
+    setSubmitError(null);
+    const result = await submitDailyPlanItemAnswer(itemId, {
+      submissionId: generateSubmissionId(),
+      selectedAnswer,
+    });
+
+    if (result.outcome === "UNAUTHENTICATED") {
+      onUnauthenticated();
+      return;
+    }
+    if (result.outcome === "ALREADY_RESOLVED") {
+      // Another tab/device already resolved this exact item — the local
+      // copy is stale. Refetch the real plan rather than guessing at
+      // correctness we were never told.
+      setAlreadyResolvedNotice(true);
+      const refreshed = await fetchTodayPlan();
+      if (refreshed.outcome === "READY") {
+        setItems(refreshed.plan.items);
+      } else if (refreshed.outcome === "UNAUTHENTICATED") {
+        onUnauthenticated();
+      }
+      setAlreadyResolvedNotice(false);
+      return;
+    }
+    if (result.outcome === "ERROR") {
+      setSubmitError(messages.today.submitError);
+      return;
+    }
+
+    setItems((previous) =>
+      previous.map((item) => (item.id === itemId ? { ...item, status: "completed" } : item)),
+    );
+    setFeedback({ itemId, isCorrect: result.isCorrect });
+  }
+
   return (
     <div className="w-full max-w-2xl">
-      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">{plan.plannedForDate}</p>
-      <h2 className="mb-4 text-lg font-medium">{messages.today.itemsHeading}</h2>
-      <ol className="flex flex-col gap-3">
-        {plan.items.map((item) => (
-          <TodayItemCard key={item.id} item={item} />
-        ))}
-      </ol>
+      <div className="mb-4 flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">
+        <span>{plan.plannedForDate}</span>
+        <span>{progressLabel(messages.today.progressLabel, resolvedCount, total)}</span>
+      </div>
+
+      {alreadyResolvedNotice ? (
+        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
+          {messages.today.alreadyResolvedError}
+        </p>
+      ) : null}
+
+      {current === null ? (
+        <div className="rounded-lg border border-zinc-200 p-6 text-center dark:border-zinc-800">
+          <p className="mb-2 text-lg font-medium">{messages.today.completionTitle}</p>
+          <p className="text-zinc-600 dark:text-zinc-400">{messages.today.completionBody}</p>
+        </div>
+      ) : (
+        <TodayAnswerCard
+          key={current.id}
+          item={current}
+          feedback={activeFeedback}
+          submitError={submitError}
+          onSubmit={(selectedAnswer) => handleAnswer(current.id, selectedAnswer)}
+          onContinue={() => setFeedback(null)}
+        />
+      )}
     </div>
   );
 }
 
-function TodayItemCard({ item }: { item: DailyPlanItemDto }) {
+function TodayAnswerCard({
+  item,
+  feedback,
+  submitError,
+  onSubmit,
+  onContinue,
+}: {
+  item: DailyPlanItemDto;
+  feedback: Feedback | null;
+  submitError: string | null;
+  onSubmit: (selectedAnswer: string | string[] | null) => Promise<void>;
+  onContinue: () => void;
+}) {
   const messages = getMessages();
+  const isMultiple = item.questionType === "MULTIPLE_CHOICE";
+  const [selected, setSelected] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
   const actionLabel =
     messages.today.actionType[item.actionType as keyof typeof messages.today.actionType] ??
     item.actionType;
-  const statusLabel =
-    messages.today.status[item.status as keyof typeof messages.today.status] ?? item.status;
+
+  function toggleOption(optionId: string) {
+    if (feedback !== null || submitting) return;
+    if (isMultiple) {
+      setSelected((previous) =>
+        previous.includes(optionId)
+          ? previous.filter((id) => id !== optionId)
+          : [...previous, optionId],
+      );
+    } else {
+      setSelected([optionId]);
+    }
+  }
+
+  async function handleSubmit() {
+    if (selected.length === 0 || submitting) return;
+    setSubmitting(true);
+    const selectedAnswer = isMultiple ? selected : (selected[0] ?? null);
+    await onSubmit(selectedAnswer);
+    setSubmitting(false);
+  }
 
   return (
-    <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+    <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
       <p className="mb-3 font-medium">{item.prompt}</p>
-      <ul className="mb-3 flex flex-col gap-1">
-        {item.answerOptions.map((option) => (
-          <li
-            key={option.id}
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800"
-          >
-            {option.content}
-          </li>
-        ))}
+      <ul className="mb-3 flex flex-col gap-2">
+        {item.answerOptions.map((option) => {
+          const isSelected = selected.includes(option.id);
+          return (
+            <li key={option.id}>
+              <button
+                type="button"
+                onClick={() => toggleOption(option.id)}
+                disabled={feedback !== null || submitting}
+                aria-pressed={isSelected}
+                className={`w-full rounded-md border px-3 py-2 text-start text-sm transition disabled:opacity-60 ${
+                  isSelected
+                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                    : "border-zinc-200 dark:border-zinc-800"
+                }`}
+              >
+                {option.content}
+              </button>
+            </li>
+          );
+        })}
       </ul>
-      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-        <span>{actionLabel}</span>
-        <span>
-          {messages.today.statusLabel}: {statusLabel}
-        </span>
-      </div>
-    </li>
+
+      <div className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">{actionLabel}</div>
+
+      {submitError ? (
+        <p className="mb-3 text-sm text-red-600 dark:text-red-400">{submitError}</p>
+      ) : null}
+
+      {feedback === null ? (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={selected.length === 0 || submitting}
+          className="w-full rounded-md bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+        >
+          {submitting ? messages.today.submitting : messages.today.submit}
+        </button>
+      ) : (
+        <div>
+          <p
+            className={`mb-3 font-medium ${
+              feedback.isCorrect
+                ? "text-green-700 dark:text-green-400"
+                : "text-red-700 dark:text-red-400"
+            }`}
+          >
+            {feedback.isCorrect ? messages.today.correct : messages.today.incorrect}
+          </p>
+          <button
+            type="button"
+            onClick={onContinue}
+            className="w-full rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
+          >
+            {messages.today.continueAction}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -49,6 +49,16 @@ export const he = {
       completed: "הושלם",
       skipped: "דולג",
     },
+    progressLabel: "{resolved} מתוך {total}",
+    submit: "שליחה",
+    submitting: "שולח...",
+    correct: "נכון!",
+    incorrect: "לא נכון",
+    continueAction: "המשך",
+    submitError: "לא ניתן היה לשלוח את התשובה. נסו שוב.",
+    alreadyResolvedError: "השאלה כבר נענתה במקום אחר. מרעננים את התוכנית...",
+    completionTitle: "סיימת להיום",
+    completionBody: "אפשר לחזור מחר לפריטים חדשים, או לתרגל תרגול חופשי בינתיים.",
   },
 } as const;
 
