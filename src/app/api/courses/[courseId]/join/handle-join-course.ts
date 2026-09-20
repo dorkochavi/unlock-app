@@ -7,6 +7,10 @@
  * ## HTTP mapping
  *
  * - `UNAUTHENTICATED` -> 401, `{error: {code: "UNAUTHENTICATED"}}`.
+ * - malformed/non-UUID `courseId` -> 404, `{error: {code: "COURSE_NOT_FOUND"}}`
+ *   (Run 004 Slice 5: rejected here, before `join` ever reaches Postgres —
+ *   a malformed id previously fell through to a raw `invalid input syntax
+ *   for type uuid` failure, surfaced as a generic 500).
  * - `COURSE_NOT_FOUND` -> 404, `{error: {code: "COURSE_NOT_FOUND"}}`.
  * - `NOT_AUTHORIZED` (AUTHORIZED_ONLY Course, self-join not allowed,
  *   ADR-015 §5) -> 403, `{error: {code: "NOT_AUTHORIZED"}}`.
@@ -27,6 +31,7 @@
  * - `JOINED` -> 200, `{status: "JOINED", role: "LEARNER"}`.
  * - An unexpected thrown error -> 500, `{error: {code: "INTERNAL_ERROR"}}`.
  */
+import { isUuid } from "../../../../../lib/uuid";
 import type { JoinCourseResult } from "../../../../../application/course/join-course";
 import type { RequireAuthenticatedUserResult } from "../../../../../infrastructure/supabase/require-authenticated-user";
 
@@ -62,6 +67,10 @@ export async function handleJoinCourse(
 
   if (authResult.outcome === "UNAUTHENTICATED") {
     return unauthenticatedResponse();
+  }
+
+  if (!isUuid(deps.courseId)) {
+    return { status: 404, body: { error: { code: "COURSE_NOT_FOUND" } } };
   }
 
   let result: JoinCourseResult;

@@ -23,7 +23,7 @@ function membership(overrides: Partial<{ role: "OWNER" | "INSTRUCTOR" | "LEARNER
   return {
     id: "membership-1",
     userId: "supabase-user-1",
-    courseId: "course-1",
+    courseId: "123e4567-e89b-12d3-a456-426614174000",
     role: overrides.role ?? "LEARNER",
     joinedAt: new Date("2026-01-01T00:00:00.000Z"),
     revokedAt: overrides.revokedAt ?? null,
@@ -38,7 +38,34 @@ describe("handleJoinCourse", () => {
     );
     const join = vi.fn();
 
-    const response = await handleJoinCourse({ authenticate, courseId: "course-1", join });
+    const response = await handleJoinCourse({ authenticate, courseId: "123e4567-e89b-12d3-a456-426614174000", join });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ error: { code: "UNAUTHENTICATED" } });
+    expect(join).not.toHaveBeenCalled();
+  });
+
+  it("malformed/non-UUID courseId: 404 COURSE_NOT_FOUND, join never called (no raw Postgres UUID-parse failure)", async () => {
+    const join = vi.fn();
+
+    const response = await handleJoinCourse({
+      authenticate: authenticated(),
+      courseId: "not-a-uuid",
+      join,
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: { code: "COURSE_NOT_FOUND" } });
+    expect(join).not.toHaveBeenCalled();
+  });
+
+  it("unauthenticated AND malformed courseId: 401 UNAUTHENTICATED, never 404 — auth ordering pinned regardless of courseId validity", async () => {
+    const authenticate = vi.fn(
+      async (): Promise<RequireAuthenticatedUserResult> => ({ outcome: "UNAUTHENTICATED" }),
+    );
+    const join = vi.fn();
+
+    const response = await handleJoinCourse({ authenticate, courseId: "not-a-uuid", join });
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ error: { code: "UNAUTHENTICATED" } });
@@ -52,13 +79,13 @@ describe("handleJoinCourse", () => {
 
     await handleJoinCourse({
       authenticate: authenticated("the-real-authenticated-user"),
-      courseId: "course-from-url",
+      courseId: "123e4567-e89b-12d3-a456-426614174001",
       join,
     });
 
     expect(join).toHaveBeenCalledWith({
       actorUserId: "the-real-authenticated-user",
-      courseId: "course-from-url",
+      courseId: "123e4567-e89b-12d3-a456-426614174001",
     });
   });
 
@@ -67,7 +94,7 @@ describe("handleJoinCourse", () => {
 
     const response = await handleJoinCourse({
       authenticate: authenticated(),
-      courseId: "course-1",
+      courseId: "123e4567-e89b-12d3-a456-426614174000",
       join,
     });
 
@@ -80,7 +107,7 @@ describe("handleJoinCourse", () => {
 
     const response = await handleJoinCourse({
       authenticate: authenticated(),
-      courseId: "course-1",
+      courseId: "123e4567-e89b-12d3-a456-426614174000",
       join,
     });
 
@@ -95,7 +122,7 @@ describe("handleJoinCourse", () => {
 
     const response = await handleJoinCourse({
       authenticate: authenticated(),
-      courseId: "course-1",
+      courseId: "123e4567-e89b-12d3-a456-426614174000",
       join,
     });
 
@@ -113,7 +140,7 @@ describe("handleJoinCourse", () => {
 
     const response = await handleJoinCourse({
       authenticate: authenticated(),
-      courseId: "course-1",
+      courseId: "123e4567-e89b-12d3-a456-426614174000",
       join,
     });
 
@@ -131,7 +158,7 @@ describe("handleJoinCourse", () => {
 
     const response = await handleJoinCourse({
       authenticate: authenticated(),
-      courseId: "course-1",
+      courseId: "123e4567-e89b-12d3-a456-426614174000",
       join,
     });
 
@@ -149,7 +176,7 @@ describe("handleJoinCourse", () => {
 
     const response = await handleJoinCourse({
       authenticate: authenticated(),
-      courseId: "course-1",
+      courseId: "123e4567-e89b-12d3-a456-426614174000",
       join,
     });
 
@@ -165,7 +192,7 @@ describe("handleJoinCourse", () => {
 
     const response = await handleJoinCourse({
       authenticate: authenticated(),
-      courseId: "course-1",
+      courseId: "123e4567-e89b-12d3-a456-426614174000",
       join,
     });
 
@@ -183,7 +210,7 @@ describe("handleJoinCourse", () => {
     const join = vi.fn();
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const response = await handleJoinCourse({ authenticate, courseId: "course-1", join });
+    const response = await handleJoinCourse({ authenticate, courseId: "123e4567-e89b-12d3-a456-426614174000", join });
 
     expect(response.status).toBe(500);
     expect(join).not.toHaveBeenCalled();

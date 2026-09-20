@@ -8,13 +8,25 @@ import { describe, expect, it, vi } from "vitest";
 import type { CourseSummary } from "../../../../../application/course/ports";
 import { handleGetCourseSummary } from "../handle-get-course-summary";
 
+const VALID_UUID = "123e4567-e89b-12d3-a456-426614174000";
+
 describe("handleGetCourseSummary", () => {
+  it("malformed/non-UUID courseId: 404 COURSE_NOT_FOUND, getSummary never called (no raw Postgres UUID-parse failure)", async () => {
+    const getSummary = vi.fn(async (): Promise<CourseSummary | null> => null);
+
+    const response = await handleGetCourseSummary({ courseId: "not-a-uuid", getSummary });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: { code: "COURSE_NOT_FOUND" } });
+    expect(getSummary).not.toHaveBeenCalled();
+  });
+
   it("found: 200 with only {id, title} — no owner/join-policy/timestamp fields", async () => {
     const getSummary = vi.fn(
       async (): Promise<CourseSummary | null> => ({ id: "course-1", title: "Advanced Calculus" }),
     );
 
-    const response = await handleGetCourseSummary({ courseId: "course-1", getSummary });
+    const response = await handleGetCourseSummary({ courseId: VALID_UUID, getSummary });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ course: { id: "course-1", title: "Advanced Calculus" } });
@@ -27,7 +39,7 @@ describe("handleGetCourseSummary", () => {
   it("not found: 404 COURSE_NOT_FOUND", async () => {
     const getSummary = vi.fn(async (): Promise<CourseSummary | null> => null);
 
-    const response = await handleGetCourseSummary({ courseId: "does-not-exist", getSummary });
+    const response = await handleGetCourseSummary({ courseId: VALID_UUID, getSummary });
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: { code: "COURSE_NOT_FOUND" } });
@@ -39,7 +51,7 @@ describe("handleGetCourseSummary", () => {
     });
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const response = await handleGetCourseSummary({ courseId: "course-1", getSummary });
+    const response = await handleGetCourseSummary({ courseId: VALID_UUID, getSummary });
 
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ error: { code: "INTERNAL_ERROR" } });
@@ -51,8 +63,8 @@ describe("handleGetCourseSummary", () => {
   it("uses the courseId passed in, never anything else", async () => {
     const getSummary = vi.fn(async (): Promise<CourseSummary | null> => null);
 
-    await handleGetCourseSummary({ courseId: "the-exact-id", getSummary });
+    await handleGetCourseSummary({ courseId: VALID_UUID, getSummary });
 
-    expect(getSummary).toHaveBeenCalledWith("the-exact-id");
+    expect(getSummary).toHaveBeenCalledWith(VALID_UUID);
   });
 });

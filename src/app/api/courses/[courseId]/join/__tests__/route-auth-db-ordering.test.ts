@@ -62,7 +62,7 @@ describe("POST /api/courses/:courseId/join — real route wiring: auth before DB
   it("A. unauthenticated: 401, getPool/repository construction never reached", async () => {
     mocks.requireAuthenticatedUser.mockResolvedValue({ outcome: "UNAUTHENTICATED" });
 
-    const response = await POST(makeRequest(), makeParams("course-1"));
+    const response = await POST(makeRequest(), makeParams("123e4567-e89b-12d3-a456-426614174000"));
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -70,6 +70,33 @@ describe("POST /api/courses/:courseId/join — real route wiring: auth before DB
     expect(mocks.getPool).not.toHaveBeenCalled();
     expect(mocks.PostgresCourseMembershipRepository).not.toHaveBeenCalled();
     expect(mocks.PostgresCourseRepository).not.toHaveBeenCalled();
+    expect(mocks.joinCourse).not.toHaveBeenCalled();
+  });
+
+  it("A1. unauthenticated AND malformed courseId: 401, never 404 — auth ordering pinned regardless of courseId validity", async () => {
+    mocks.requireAuthenticatedUser.mockResolvedValue({ outcome: "UNAUTHENTICATED" });
+
+    const response = await POST(makeRequest(), makeParams("not-a-uuid"));
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body).toEqual({ error: { code: "UNAUTHENTICATED" } });
+    expect(mocks.getPool).not.toHaveBeenCalled();
+    expect(mocks.joinCourse).not.toHaveBeenCalled();
+  });
+
+  it("A2. authenticated with malformed courseId: 404, getPool/repository construction never reached", async () => {
+    mocks.requireAuthenticatedUser.mockResolvedValue({
+      outcome: "AUTHENTICATED",
+      userId: "supabase-user-1",
+    });
+
+    const response = await POST(makeRequest(), makeParams("not-a-uuid"));
+    const body = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(body).toEqual({ error: { code: "COURSE_NOT_FOUND" } });
+    expect(mocks.getPool).not.toHaveBeenCalled();
     expect(mocks.joinCourse).not.toHaveBeenCalled();
   });
 
@@ -85,7 +112,7 @@ describe("POST /api/courses/:courseId/join — real route wiring: auth before DB
       membership: { role: "LEARNER" },
     });
 
-    const response = await POST(makeRequest(), makeParams("course-1"));
+    const response = await POST(makeRequest(), makeParams("123e4567-e89b-12d3-a456-426614174000"));
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -97,7 +124,7 @@ describe("POST /api/courses/:courseId/join — real route wiring: auth before DB
 
     const [command] = mocks.joinCourse.mock.calls[0];
     expect(command.actorUserId).toBe("supabase-user-1");
-    expect(command.courseId).toBe("course-1");
+    expect(command.courseId).toBe("123e4567-e89b-12d3-a456-426614174000");
   });
 
   it("C. authenticated but DB construction throws: 500 INTERNAL_ERROR, no raw error/secret leaked", async () => {
@@ -112,7 +139,7 @@ describe("POST /api/courses/:courseId/join — real route wiring: auth before DB
     });
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const response = await POST(makeRequest(), makeParams("course-1"));
+    const response = await POST(makeRequest(), makeParams("123e4567-e89b-12d3-a456-426614174000"));
     const body = await response.json();
 
     expect(response.status).toBe(500);
@@ -129,7 +156,7 @@ describe("POST /api/courses/:courseId/join — real route wiring: auth before DB
     );
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const response = await POST(makeRequest(), makeParams("course-1"));
+    const response = await POST(makeRequest(), makeParams("123e4567-e89b-12d3-a456-426614174000"));
     const body = await response.json();
 
     expect(response.status).toBe(500);

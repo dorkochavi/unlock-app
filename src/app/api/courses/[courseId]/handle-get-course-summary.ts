@@ -9,10 +9,15 @@
  *
  * ## HTTP mapping
  *
+ * - malformed/non-UUID `courseId` -> 404, `{error: {code: "COURSE_NOT_FOUND"}}`
+ *   (Run 004 Slice 5: rejected here, before `getSummary` ever reaches
+ *   Postgres — a malformed id previously fell through to a raw `invalid
+ *   input syntax for type uuid` failure, surfaced as a generic 500).
  * - `COURSE_NOT_FOUND` -> 404, `{error: {code: "COURSE_NOT_FOUND"}}`.
  * - found -> 200, `{course: {id, title}}`.
  * - unexpected thrown error -> 500, `{error: {code: "INTERNAL_ERROR"}}`.
  */
+import { isUuid } from "../../../../lib/uuid";
 import type { CourseSummary } from "../../../../application/course/ports";
 
 export interface HandleGetCourseSummaryDependencies {
@@ -28,6 +33,10 @@ export interface RouteJsonResponse {
 export async function handleGetCourseSummary(
   deps: HandleGetCourseSummaryDependencies,
 ): Promise<RouteJsonResponse> {
+  if (!isUuid(deps.courseId)) {
+    return { status: 404, body: { error: { code: "COURSE_NOT_FOUND" } } };
+  }
+
   let summary: CourseSummary | null;
   try {
     summary = await deps.getSummary(deps.courseId);
