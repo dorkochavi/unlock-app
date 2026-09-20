@@ -13,6 +13,11 @@
 # testing
 /coverage
 
+# Playwright E2E (Run 004 Slice 7) — generated reports/artifacts, not source
+/playwright-report/
+/test-results/
+/blob-report/
+
 # next.js
 /.next/
 /out/
