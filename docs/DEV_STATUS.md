@@ -17,7 +17,11 @@ Branch:
 
 `feature/project-foundation`
 
-Last pushed application baseline:
+Pushed HEAD:
+
+`d67371a` — `align active docs with current implementation`
+
+Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
 
 `66df9f9` — `add open-course learner onboarding`
 
@@ -25,7 +29,7 @@ Remote:
 
 `origin/feature/project-foundation`
 
-Current Development OS V1 documentation work is being edited after that pushed baseline and is expected to remain uncommitted until the documentation refactor is reviewed as a whole.
+Development OS V1 is committed and pushed (`0135495`); the subsequent active-documentation consistency pass is committed and pushed (`d67371a`).
 
 ---
 
@@ -252,6 +256,8 @@ The following later migrations are committed and locally tested but still requir
 - `20260925000000_daily_plan_new_material_v1.sql`
   - extends DailyPlanItem constraints for New Material V1
 
+Migration readiness for both has been reviewed (Run `2026-09-20-002`, `unlock-db-reviewer`) and approved for hosted application as written — forward-only, additive, no unresolved DB blocker. See `docs/RUNS/2026-09-20-002.md` for the review detail. They are still NOT applied to hosted Supabase.
+
 Do NOT assume hosted Supabase supports the newer answer/new-material flows until these migrations are explicitly applied remotely.
 
 Claude must not run `supabase db push` without explicit user authorization.
@@ -310,11 +316,15 @@ Because the two newer migrations have not been applied remotely, the following c
 
 These require an explicitly authorized remote migration/application and manual QA step.
 
+### Demo-journey coverage audit (Run 2026-09-20-002)
+
+Every non-UI "Must verify" item for the join → Today → answer → Skip → completion learner journey was individually re-confirmed against actual existing test bodies (not inferred from names): repeated-join idempotency, AUTHORIZED_ONLY fail-closed, revoked-membership fail-closed, same-day DailyPlan reuse, grading-data non-leakage before submission, answer/Skip retry idempotency, resolved-item immutability, and New Material's deterministic-up-to-3/no-fake-evidence behavior are all directly proven at unit/application/PGlite layers. No demo-blocking defect was found; no code changed. The only unproven layer is pure browser-level UI wiring (redirect navigation, feedback rendering) — no automated browser harness exists in this repo, and the current Plan directs manual QA rather than adding one. See `docs/RUNS/2026-09-20-002.md` for the manual browser QA script.
+
 ---
 
 ## Current Test Baseline
 
-At pushed application HEAD `66df9f9`:
+At HEAD `d67371a` (confirmed unchanged as of Run `2026-09-20-002`; last pushed application baseline remains `66df9f9`):
 
 - Unit tests: `592 / 592`
 - Schema/Postgres (PGlite): `194 / 194`
@@ -379,7 +389,7 @@ Read the specific ADR only when a task requires its details.
 
 ## Current Blockers
 
-No known code blocker at pushed HEAD `66df9f9`.
+No known code blocker at pushed HEAD `d67371a` (last pushed application-feature baseline: `66df9f9`).
 
 Remote end-to-end verification is intentionally blocked until the user explicitly authorizes application of the committed-but-not-remote migrations.
 
@@ -389,7 +399,7 @@ Remote end-to-end verification is intentionally blocked until the user explicitl
 
 Before hosted end-to-end QA of the newest learning flows:
 
-1. Review the committed migration state.
+1. ~~Review the committed migration state.~~ Complete — reviewed and approved, Run `2026-09-20-002`.
 2. User explicitly authorizes and performs the remote Supabase migration push.
 3. Verify hosted migration success.
 4. Manually exercise the real learner flow:
@@ -413,24 +423,19 @@ Pushed product/application baseline:
 
 `66df9f9`
 
-Completed development queue through:
+Current HEAD (unchanged by Run `2026-09-20-002` — an investigation/verification Run with zero code changes):
 
-- Today answer submission
-- interactive Today answering
-- Skip
-- Starter/New Material V1 decision
-- New Material fallback implementation
-- OPEN course learner onboarding
+`d67371a`
 
-The previous autonomous Night Run is complete through Slice 6.
+Run `2026-09-20-002` is complete through its explicit `MANUAL_REMOTE_GATE` stop point: migration readiness reviewed and approved, demo journey verified with no defects found. Full detail: `docs/RUNS/2026-09-20-002.md`.
 
-Next execution work must come from the new:
+Next execution work must come from a new:
 
 `docs/CHATGPT_PLAN.md`
 
 Do not infer the next slice from historical run context.
 
-The current repository is transitioning to Development OS V1 before additional product slices are started.
+The Development OS V1 transition is complete.
 
 ---
 
