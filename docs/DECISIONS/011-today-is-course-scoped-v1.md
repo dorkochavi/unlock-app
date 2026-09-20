@@ -13,22 +13,21 @@ ADR's model of one independent `TodaySession` per `(user_id, course_id,
 planned_for_date)`. See "Supersession detail," below, for exactly which
 clauses of this ADR are superseded and which still hold.
 
-**What is NOT superseded, and NOT yet true:** no migration exists for
-`DailyPlan`/`DailyPlanItem`. `today_sessions`/`today_session_items` (as
-this ADR specifies and `docs/PERSISTENCE_SCHEMA_V1.md` documents) remain
-the actual, implemented V1 schema today. This ADR's Decision and
-Consequences sections below are left intact as the historical record of
-why that schema looks the way it does; they are superseded as the
-*target* going forward, not erased as *history*, and not yet superseded as
-the *implemented* reality.
+**Current implementation note:** ADR-016's `DailyPlan`/`DailyPlanItem`
+architecture is now implemented and is the active Today path. The legacy
+`today_sessions`/`today_session_items` schema remains intact for compatibility
+and historical code/tests, but it is no longer the current Today architecture.
+This ADR's Decision and Consequences sections below remain intact as the
+historical record of why the legacy schema looks the way it does; they must not
+be read as current product architecture.
 
 ## Supersession detail
 
 | ADR-011 clause | Status under ADR-016 |
 |---|---|
-| One `TodaySession` per `(user_id, course_id, planned_for_date)`; `UNIQUE (user_id, course_id, planned_for_date)` | **Superseded as target architecture.** ADR-016 §1 replaces this with one `DailyPlan` per `(user_id, planned_for_date)`; `courseId` moves to the item level. Still the implemented schema today (no migration yet). |
+| One `TodaySession` per `(user_id, course_id, planned_for_date)`; `UNIQUE (user_id, course_id, planned_for_date)` | **Superseded and implemented beyond.** ADR-016 §1 replaces this with one `DailyPlan` per `(user_id, planned_for_date)`; `courseId` moves to the item level. The legacy TodaySession schema still exists, but DailyPlan is now the active Today architecture. |
 | A learner with two active Courses may have two separate `TodaySession` rows for the same date | **Superseded as target architecture.** Under ADR-016 §1, a learner has one `DailyPlan` regardless of how many active Courses contribute items to it. |
-| Global, cross-course Today explicitly deferred beyond V1, "not implemented, not designed further" | **Superseded.** ADR-016 accepts Global Today as a product-and-architecture direction; it is DECIDED, though implementation (`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`) remains pending and multi-Course Global Today is not a hard Ruppin-demo requirement (ADR-016 §20). |
+| Global, cross-course Today explicitly deferred beyond V1, "not implemented, not designed further" | **Superseded.** ADR-016 accepts one cross-Course-capable DailyPlan architecture. The DailyPlan foundation, generation, Today read path, answer flow, Skip flow, and New Material fallback are implemented; richer multi-Course presentation remains product/UI scope rather than a persistence-architecture blocker. |
 | `TodaySessionKey` as a plain `{ userId, courseId, plannedForDate }` object, no `scope` union | **Superseded as target architecture.** The target key becomes `{ userId, plannedForDate }` at the DailyPlan level, with `courseId` recoverable per `DailyPlanItem`, not per session. |
 | Domain grounding: a `Question` belongs to exactly one Course (`docs/DATABASE.md` §7); `UserQuestionProgress` keyed by `(user_id, question_id)` | **Not superseded — still valid**, and is exactly what makes it possible for a `DailyPlanItem` to carry a recoverable `courseId` without duplicating progress data. |
 | Today composition/ranking/interleaving logic (`docs/LEARNING_ENGINE.md` §34, §36) is unaffected by session-identity choice | **Not superseded — still valid.** `src/domain/learning/next-best-action.ts`, `next-best-action-ranking.ts`, and `today-planner.ts` carry no `courseId` concept either before or after this change. |
@@ -123,4 +122,4 @@ and not required for the first vertical slice (`docs/ARCHITECTURE.md` §38's
 - `docs/DECISIONS/010-answer-submission-transaction-model.md`
 - `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md` (ADR-016, ACCEPTED — partially supersedes this ADR; see "Supersession detail" above)
 - `docs/DATABASE.md` (§17, §18, §51)
-- `docs/PERSISTENCE_SCHEMA_V1.md` (still the implemented schema this ADR describes; not yet migrated to ADR-016's target)
+- `docs/PERSISTENCE_SCHEMA_V1.md` (documents both the legacy TodaySession schema this ADR originally described and the implemented DailyPlan successor from ADR-016)

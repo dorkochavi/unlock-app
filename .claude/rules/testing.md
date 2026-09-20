@@ -12,7 +12,20 @@ paths:
 
 These rules apply whenever writing, reviewing, or running tests and verification commands.
 
-## General philosophy
+This file defines testing policy.
+
+It does NOT define:
+- the current development task
+- the current Run
+- the current Slice
+- product behavior
+- the execution queue
+
+Current work comes from `docs/CHATGPT_PLAN.md`.
+
+---
+
+## General Philosophy
 
 Tests should protect accepted behavior and architecture, not merely mirror the current implementation.
 
@@ -25,10 +38,13 @@ Prefer tests that prove:
 - deterministic learning behavior
 - persistence constraints
 - important failure paths
+- regressions discovered during real development
 
 Avoid tests whose only purpose is increasing test count.
 
-## Test pyramid for this repository
+---
+
+## Test Pyramid for This Repository
 
 Use the narrowest useful test layer.
 
@@ -37,39 +53,41 @@ Prefer:
 1. pure unit tests for deterministic domain/application logic
 2. fake/injected-dependency tests for API/control-flow wiring
 3. PGlite/Postgres-compatible integration tests for repositories, transactions, and migrations
-4. real Supabase/browser E2E only when behavior genuinely depends on the real environment
+4. real Supabase/browser verification only when behavior genuinely depends on the real environment
 
 Do not use real network calls in ordinary unit tests.
 
-## Development loop
+Do not escalate to a more expensive test layer when a narrower layer proves the required contract.
+
+---
+
+## Development Loop
 
 During implementation:
 
 - run targeted tests first
 - run typecheck when signatures/types change
 - run lint after code stabilizes
+- use the nearest meaningful regression/integration test for the area being changed
 
 Do not run the entire repository suite after every tiny edit unless there is a specific reason.
 
-Before a local commit:
+Before a Slice is considered complete:
 
-- run targeted tests for changed behavior
-- run `npm run typecheck`
-- run `npm run lint`
-- run `git diff --check`
+- targeted tests for changed behavior must pass
+- `npm run typecheck` must pass when applicable
+- `npm run lint` must pass
+- `git diff --check` must pass
+- the full unit suite should pass
+- `npm run test:schema` must pass when the Slice is DB-relevant under the policy below
 
-Before a push/checkpoint:
+The current `CHATGPT_PLAN.md` may require additional verification for a specific Slice.
 
-- run full unit suite
-- run full schema/Postgres suite only when relevant (see "When to run `npm run test:schema`" below)
-- run typecheck
-- run lint
-- run `git diff --check`
-- inspect `git status`
+---
 
-## Current commands
+## Current Commands
 
-Use the repository's existing scripts unless package.json changes.
+Use the repository's existing scripts unless `package.json` changes.
 
 Typical verification commands:
 
@@ -87,11 +105,13 @@ Typical verification commands:
 
 Do not invent new scripts merely to avoid using an existing one.
 
-## When to run `npm run test:schema`
+---
 
-`npm run test:schema` is not a default checkpoint step. It is a targeted suite, run only when relevant.
+## When to Run `npm run test:schema`
 
-Run it when the current slice changes or directly depends on:
+`npm run test:schema` is NOT a default checkpoint step.
+
+Run it only when the current Slice changes or directly depends on:
 
 - Supabase/PostgreSQL migrations
 - database schema
@@ -100,24 +120,80 @@ Run it when the current slice changes or directly depends on:
 - database row mappers / serialization
 - persistence constraints
 - transaction behavior
+- UnitOfWork behavior
 - database-specific integration behavior
 
-Do not run it when the only changes since the last successful `test:schema` run in this slice are:
+Do not run it when the only changes since the last successful relevant run are:
 
 - documentation
 - UI-only code
 - styling
-- unrelated client-side changes
+- unrelated client-side code
 - workflow/config documentation
-- other changes that do not affect persistence/database behavior
+- other work that does not affect database behavior
 
-If `test:schema` already passed earlier in the same slice and no DB-relevant code changed afterward, do not run it again just to close the checkpoint — report the earlier result instead.
+If `test:schema` already passed earlier in the same Slice and no DB-relevant code changed afterward, do not run it again merely to close the Slice.
 
-This does not weaken migration/Postgres safety elsewhere in this file or in `.claude/rules/postgres.md` — it only avoids redundant reruns when nothing DB-relevant changed.
+Report the existing result instead.
+
+If a later edit changes DB-relevant behavior, the earlier result is no longer sufficient.
+
+This policy avoids redundant six-minute schema runs without weakening database safety.
+
+---
+
+## Test Selection by Risk
+
+### Domain / Learning Logic
+
+Prefer:
+
+- focused unit tests
+- explicit time
+- deterministic fixtures
+- positive and negative evidence
+- state-transition tests
+- replay/rebuild tests where relevant
+
+### Application Use Cases
+
+Prefer:
+
+- injected fake repositories
+- ownership/authorization edge cases
+- explicit failure outcomes
+- idempotency behavior
+- orchestration order where meaningful
+
+### API Routes
+
+Prefer:
+
+- handler/use-case tests
+- real route-wiring tests when wiring itself is security-relevant
+- auth-before-database tests
+- validation-before-persistence tests
+
+### PostgreSQL / Persistence
+
+Prefer:
+
+- committed migrations
+- real repository code
+- PGlite integration
+- constraint tests
+- rollback tests
+- canonical persisted-state checks
+
+### Browser / Hosted Environment
+
+Use only when the behavior cannot be meaningfully proven locally, or when the Plan explicitly requires real-environment verification.
+
+---
 
 ## Determinism
 
-Tests must avoid dependence on:
+Tests must avoid unnecessary dependence on:
 
 - wall-clock timing
 - machine timezone
@@ -129,7 +205,7 @@ When time matters:
 
 - inject an explicit `Date`
 - use a fake clock where useful
-- assert the exact time value passed across boundaries
+- assert exact time propagation across boundaries
 
 When randomness matters:
 
@@ -137,20 +213,24 @@ When randomness matters:
 - use fixed IDs when appropriate
 - do not depend on UUID lexical ordering unless that ordering is part of the behavior under test
 
-## Known schema test caveat
+---
 
-A pre-existing schema test has historically been timing-sensitive when multiple rows receive the same `created_at` timestamp and ordering falls back to random UUID `id`.
+## Known Schema-Test Caveat
 
-If a schema test fails around canonical Attempt replay ordering:
+Canonical Attempt replay ordering has historically been sensitive when multiple rows receive identical ordering timestamps and ordering falls back to random UUID `id`.
+
+If a test fails around canonical Attempt replay ordering:
 
 - inspect whether `answered_at` and `created_at` tied
-- do not immediately attribute the failure to unrelated changes
-- do not "fix" production ordering semantics casually
-- identify whether the test itself is relying on an unstable timestamp distinction
+- do not immediately attribute the failure to unrelated work
+- do not casually change production ordering semantics
+- determine whether the test itself relies on an unstable timestamp distinction
 
-Treat this as a known diagnostic clue, not as permission to ignore failures.
+This is a diagnostic clue, not permission to ignore the failure.
 
-## PGlite limitations
+---
+
+## PGlite Limitations
 
 PGlite is valuable but must not be overstated.
 
@@ -170,11 +250,14 @@ PGlite does NOT prove:
 - real GoTrue signup behavior
 - real browser cookie behavior
 - real network failures
-- real connection-pool behavior under deployment load
+- production connection-pool behavior
+- all `node-postgres` type-decoding behavior on every host timezone
 
-State these distinctions honestly in tests/docs.
+State these distinctions honestly.
 
-## Supabase-managed auth schema tests
+---
+
+## Supabase-Managed Auth Schema Tests
 
 A minimal test-only `auth.users` stand-in may exist so application migrations can run under PGlite.
 
@@ -182,42 +265,48 @@ Rules:
 
 - keep the stand-in minimal
 - label it explicitly as test-only
-- do not expand it to imitate the entire Supabase Auth schema without a real need
-- do not claim a passing stand-in test proves hosted Supabase behavior
-- real Auth trigger behavior must later be exercised against a real Supabase project
+- do not imitate the entire Supabase Auth schema without a concrete need
+- do not claim passing PGlite auth-schema tests prove hosted Supabase behavior
+- real Auth behavior should be separately verified when the feature requires it
 
-## Route tests
+---
+
+## Route Tests
 
 For Next.js Route Handlers:
 
 - keep route files thin
-- extract testable control flow when appropriate
-- prefer fake-only wiring tests over real network/database tests
+- extract testable control flow when useful
+- prefer fake-only wiring tests over unnecessary real network/database tests
 - explicitly test security-relevant ordering when ordering matters
 
-Examples of ordering worth testing:
+Ordering worth protecting may include:
 
 - authentication before database construction
 - authorization before mutation
 - validation before persistence
 - transaction start before atomic writes
 
-If real route wiring itself contains important behavior, do not assume handler tests automatically cover it.
+If real route wiring contains important behavior, handler tests alone are not sufficient.
 
-## Auth tests
+---
 
-Auth tests should prove:
+## Auth Tests
 
-- `auth.getUser()` is used for trusted identity
-- `getSession()` is not used as the authorization source
-- unauthenticated paths short-circuit correctly
-- database/application work does not run when auth fails
-- client-provided identity cannot override authenticated identity
-- raw auth/runtime errors do not leak into client responses
+Auth tests should protect relevant boundaries such as:
 
-Do not use real Supabase network calls in unit tests.
+- `auth.getUser()` as trusted identity
+- `getSession()` not being treated as authoritative authorization identity
+- unauthenticated short-circuit behavior
+- no database/application work when authentication fails
+- client identity cannot override authenticated identity
+- raw auth/runtime errors do not leak to clients
 
-## Database tests
+Do not use real Supabase network calls in ordinary unit tests.
+
+---
+
+## Database Tests
 
 For repository/transaction/schema changes:
 
@@ -225,46 +314,58 @@ For repository/transaction/schema changes:
 - test constraints at the database layer
 - test rollback behavior for atomic operations
 - test persisted canonical state after failures
-- avoid mocking SQL when the actual repository can be exercised under PGlite
+- avoid mocking SQL when the real repository can reasonably run under PGlite
+- verify transaction-bound repositories share the intended connection when that is part of the contract
 
-If a concurrency property depends on multiple real connections, document the limitation instead of pretending a single-engine test proves it.
+If a concurrency property depends on multiple real connections, document the limitation rather than pretending a single-engine test proves it.
 
-## Learning-engine tests
+---
+
+## Learning Engine Tests
 
 For learning behavior:
 
 - inject explicit time
-- test both positive and negative evidence
+- test positive and negative evidence
 - test replay/rebuild consistency where relevant
 - test state reversibility where relevant
-- separate invariant tests from policy-calibration tests
-- do not encode arbitrary calibration numbers as permanent invariants unless the product decision is actually frozen
+- separate invariants from calibration
+- do not encode provisional calibration numbers as permanent invariants unless the product decision is actually frozen
+- verify Manual Practice / Today separation where relevant
+- preserve immutable Attempt semantics
 
-## Regression tests
+---
+
+## Regression Tests
 
 When a real bug is discovered:
 
-- prefer adding a narrow regression test that would have failed before the fix
-- make the test explain the behavioral contract
+- prefer a narrow regression test that would have failed before the fix
+- make the test express the behavioral contract
 - avoid overly broad snapshots
-- do not add redundant tests simply because a bug existed
+- do not add redundant tests merely because a bug once existed
 
-The auth-before-DB DailyPlan route bug is an example:
-a small wiring-order test is more valuable than another handler outcome test.
+A regression test should make the failure hard to accidentally reintroduce.
 
-## Test counts
+---
 
-Test counts are useful only as local regression checkpoints.
+## Test Counts
 
-Do not treat exact counts as product requirements.
+Test counts are local regression checkpoints.
+
+They are not product requirements.
 
 When reporting counts:
 
 - state total passing tests
-- state how many were added when useful
-- do not rewrite behavior merely to preserve a historical count
+- state newly-added cases when useful
+- do not alter behavior merely to preserve an old count
 
-## Failure handling
+Canonical current counts belong in `docs/DEV_STATUS.md`, not in this rule file.
+
+---
+
+## Failure Handling
 
 Never ignore a failing test without understanding it.
 
@@ -272,49 +373,84 @@ When a test fails:
 
 1. identify whether the failure is deterministic
 2. identify the first failing assertion/setup point
-3. determine whether the change caused it
+3. determine whether the current change caused it
 4. distinguish:
    - production bug
    - test bug
-   - environment issue
+   - environment/configuration issue
    - known flaky behavior
+   - unclear failure requiring investigation
 5. report uncertainty honestly
 
-Do not automatically weaken assertions to make the suite green.
+Do not weaken assertions merely to make the suite green.
 
-## Documentation claims
+If the failure is unrelated and non-blocking, report it rather than opportunistically expanding the Slice unless repository safety requires otherwise.
 
-Only claim something is verified if the relevant test/environment actually verifies it.
+---
 
-Use wording such as:
+## Verification Claims
 
-- "unit-tested"
-- "PGlite integration-tested"
-- "reviewed by inspection"
-- "not yet tested against real Supabase"
-- "reasoned under PostgreSQL READ COMMITTED semantics"
+Only claim what the executed verification actually proves.
 
-Do not collapse these into a vague claim like "fully tested."
+Use precise language such as:
 
-## Commit and push verification
+- unit-tested
+- route-wiring tested
+- PGlite integration-tested
+- reviewed by inspection
+- reasoned under PostgreSQL semantics
+- real PostgreSQL tested
+- real Supabase tested
+- browser E2E tested
 
-A commit may be created after the requested verification passes.
+Do not collapse these into vague phrases such as:
 
-A push is a stronger checkpoint.
+- fully tested
+- production verified
+- end-to-end verified
 
-Before push, normally verify:
+unless they are literally accurate.
 
-- worktree state understood
-- relevant local commits understood
-- full required test suites pass
-- no accidental/untracked artifact is being included
-- `git diff --check` is clean
-- branch/ahead status is understood
+---
 
-Do not push unless explicitly instructed.
+## Checkpoint and Commit Verification
 
-## Git safety
+A focused Slice commit may be created only after the required verification and review for that Slice are complete.
 
-Follow the repository-wide Git safety rules in `CLAUDE.md`.
+Before committing, understand:
 
-If an unexpected file appears during testing, report it rather than assuming it is disposable or deleting it.
+- intended changed files
+- staged files
+- unstaged files
+- untracked files
+- verification results
+- reviewer findings
+- whether any blocker remains
+
+A push is a separate manual action.
+
+Before the user pushes, the repository should normally have:
+
+- understood worktree state
+- understood local commits
+- required suites passing
+- no accidental generated/secrets/scratch artifacts staged
+- clean `git diff --check`
+- understood branch/ahead status
+
+Claude must not push unless the repository rules explicitly change and the user explicitly instructs it.
+
+---
+
+## Git Safety
+
+Follow repository-wide Git safety rules in `CLAUDE.md`.
+
+If an unexpected file appears during testing:
+
+- do not delete it
+- do not stage it
+- report it
+- determine whether it belongs to the current Slice
+
+Do not use destructive Git commands.

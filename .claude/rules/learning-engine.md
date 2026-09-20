@@ -1,3 +1,7 @@
+
+### `.claude/rules/learning-engine.md`
+
+```text
 ---
 paths:
   - "src/domain/**"
@@ -9,258 +13,386 @@ paths:
 
 # UNLOCK — Learning Engine and DailyPlan Rules
 
-These rules apply whenever working on learning-state logic, Next Best Action, mastery, misconception handling, Today planning, DailyPlan generation, or answer processing.
+These rules apply whenever working on:
 
-## Architectural boundary
+- learning-state logic
+- Next Best Action
+- mastery
+- misconception handling
+- memory scheduling
+- Today planning
+- DailyPlan generation
+- answer processing
+- New Material fallback
+
+This file contains accepted invariants and implementation constraints.
+
+It does NOT define the current Slice or unresolved calibration.
+
+Current execution comes from `docs/CHATGPT_PLAN.md`.
+
+Unresolved calibration belongs in `docs/OPEN_QUESTIONS.md`.
+
+---
+
+## Architectural Boundary
 
 - The Learning Engine must remain deterministic for the same persisted state, policy, and explicit time inputs.
 - Do not introduce LLM calls into real-time answer evaluation or Today ranking.
-- AI may assist content generation or analysis elsewhere, but it is not the source of truth for learning-state transitions.
+- AI may assist content generation or analysis elsewhere, but it is not the source of truth for learner-state transitions.
 - Keep domain/application learning logic independent from Next.js, Supabase Auth, HTTP, and UI concerns.
+- Do not hide learning policy inside routes or persistence infrastructure.
 
-## Immutable evidence
+---
+
+## Immutable Evidence
 
 - Attempts are immutable historical evidence.
 - Never mutate or overwrite an Attempt to "correct" downstream state.
-- Derived learning state must be rebuildable from persisted historical evidence.
-- Question/QuestionVersion snapshots preserve what the learner actually answered against.
-- Do not silently reinterpret a historical Attempt using a newer QuestionVersion.
+- Derived learning state should remain rebuildable from persisted evidence.
+- QuestionVersion preserves the exact content state associated with the learning event.
+- Do not reinterpret a historical Attempt using a newer QuestionVersion.
 
-## Explicit time
+---
+
+## Explicit Time
 
 - Prefer explicit `Date` / `now` inputs at application boundaries.
-- Do not introduce hidden `Date.now()` or `new Date()` calls inside deterministic learning logic when an explicit clock value is available.
-- Timezone-sensitive local-day decisions belong at the appropriate application boundary, not inside low-level ranking primitives.
+- Do not use hidden wall-clock calls inside deterministic learning logic when explicit time is available.
+- Timezone-sensitive learner-day decisions belong at the application boundary rather than low-level ranking primitives.
+
+---
 
 ## Mastery
 
-Accepted target progression:
+Accepted target learner-facing progression:
 
 `UNKNOWN → EMERGING → DEVELOPING → STRONG → MASTERED`
 
 Product semantics:
 
-- mastery is cumulative and evidence-based
+- mastery is evidence-based
+- mastery is cumulative
 - mastery is reversible
 - `MASTERED` is not terminal
-- spaced successful retrieval matters more than same-session repetition
-- a confident wrong answer is stronger negative evidence than an ordinary wrong answer
-- exposure to new material is weak evidence and must not be treated as mastery
+- spaced successful retrieval matters more than immediate same-session repetition
+- confident wrong evidence is materially negative
+- New Material exposure must not create strong mastery
 
-Current implementation enums may differ from the target progression.
+Current implementation enums may differ.
 
-Do not silently migrate or rename mastery states as part of unrelated work.
-Any reconciliation between current implementation and target model requires an explicit slice.
+Do not silently migrate or rename mastery states during unrelated work.
+
+Exact internal representation and threshold calibration remain explicit calibration work.
+
+---
 
 ## Misconception
 
-Accepted conceptual progression:
+Accepted target conceptual progression:
 
 `NONE → SUSPECTED → ACTIVE → RESOLVED`
 
-Current implementation may contain additional internal states.
+Current implementation may contain additional internal states until explicitly reconciled.
 
 Rules:
 
-- one ordinary wrong answer does not automatically mean ACTIVE misconception
-- high-confidence wrong evidence is stronger, but does not by itself necessarily imply ACTIVE
-- repeated pattern evidence across relevant questions is meaningful
-- resolving misconception requires successful retrieval evidence, not merely elapsed time
-- do not silently simplify the implemented state machine during unrelated work
+- one ordinary wrong answer does not automatically create ACTIVE misconception
+- high-confidence wrong is stronger evidence
+- repeated relevant error patterns matter
+- misconception resolution requires convincing successful evidence
+- elapsed time alone does not resolve misconception
+- do not silently rewrite the current implemented state machine during unrelated work
 
-## Memory and scheduling
+Exact thresholds remain calibration work.
+
+---
+
+## Memory and Scheduling
 
 - FSRS-backed scheduling is the current memory scheduling foundation.
-- Strong knowledge must eventually return as forgetting risk rises.
-- Do not permanently suppress strong knowledge simply because weaker material exists.
-- Memory Need may eventually rise enough to cross nominal ranking tier boundaries.
-- Do not add artificial maintenance quotas merely to force strong material into Today.
+- Previously strong knowledge must be able to become relevant again as forgetting risk rises.
+- Do not permanently suppress strong knowledge merely because weaker material exists.
+- Memory Need may rise enough to cross nominal ranking boundaries.
+- Do not introduce maintenance quotas solely to force strong material into Today.
+- Exact Evidence → FSRS rating mapping and retention calibration remain explicitly unresolved/calibrated behavior.
+
+---
 
 ## Next Best Action
 
-DailyPlan ranking is based on learning need, not fairness between courses.
+DailyPlan candidate ranking is based on learning need.
 
-Candidate reasoning may include:
+It is not a fairness scheduler between Courses.
+
+Candidate reasoning may include accepted/available signals such as:
 
 - memory/forgetting risk
 - learning gap
-- exam urgency
 - misconception evidence
-- coverage need
-- recency / novelty
+- mastery/weakness evidence
+- exam urgency when available
+- other explicitly accepted contextual signals
 
 Rules:
 
-- do not add per-course quotas
+- do not add per-Course quotas
 - do not add fairness balancing
-- do not guarantee every active course representation
-- exam proximity amplifies urgency but is not required for eligibility
-- courses without exams must still participate through learning need
-- ranking happens globally across eligible learner courses
+- do not guarantee every eligible Course representation
+- exam proximity amplifies need rather than acting as an eligibility gate
+- Courses without exams must still participate through ordinary learning need
+- ranking occurs globally across eligible learner Courses
 
-Exact long-term weights/calibration remain product calibration work unless explicitly assigned.
+Do not invent exact weights or calibration.
 
-## New material exposure
+---
 
-New-material exposure is an extension of the same starter/unseen-material mechanism family.
+## New Material V1
 
-Rules:
+New Material behavior is governed by ADR-017.
 
-- exposure is not mastery
-- Today may expose new material using representative questions
-- poor exposure performance can later motivate focused Manual Practice
-- do not claim Today itself fully teaches unseen material
-- exposure should consume DailyPlan budget
-- avoid flooding Today with too many unrelated new topics
+For V1:
 
-Exact novelty-budget calibration remains adjustable unless explicitly frozen.
+- unseen means no prior real Attempt exists for the Question
+- missing UserQuestionProgress alone does not prove unseen
+- ordinary evidence-driven NBA candidates always take precedence
+- New Material activates only when there are zero ordinary candidates
+- do not mix unseen filler into an already non-empty ordinary DailyPlan
+- select at most 3 unseen Questions
+- selection must be deterministic
+- do not introduce per-Course fairness during New Material fallback
+- placing a Question into DailyPlan is not learning evidence
+- do not fabricate UserQuestionProgress merely because unseen material was planned
+- the first real learner interaction creates evidence through the normal answer path
+- New Material exposure is not mastery
 
-## DailyPlan identity
+Do not broaden ADR-017 semantics during unrelated work.
 
-- One DailyPlan exists per user per local calendar day.
-- Global Today and Course Today are views of the same DailyPlan.
+---
+
+## DailyPlan Identity
+
+- One DailyPlan exists per learner per learner-local calendar day.
+- Global Today and Course Today are views over the same DailyPlan.
 - Course Today must not create a second independent plan.
-- Plan generation may include items from multiple eligible courses.
+- A plan may contain items from multiple eligible Courses.
 - Persist the plan once created.
-- Reopening Today on the same local day should return the persisted plan rather than fully regenerate it.
+- Reopening Today during the same learner-local day should return the persisted plan.
 
-## Eligible courses
+The persisted IANA learner timezone is authoritative for learner-local day calculation.
 
-For automatic personal DailyPlan generation:
+---
 
-- only active `LEARNER` memberships are eligible
-- `OWNER` and `INSTRUCTOR` memberships are management roles and do not automatically participate as the user's own learning courses
-- archived memberships do not participate automatically
-- revoked memberships do not participate automatically
+## Eligible Courses
 
-Do not infer learner participation from course ownership.
+For automatic DailyPlan generation:
 
-## DailyPlan size
+- only active `LEARNER` CourseMemberships participate
+- `OWNER` does not automatically participate
+- `INSTRUCTOR` does not automatically participate
+- archived memberships do not participate
+- revoked memberships do not participate
 
-Current product direction:
+Do not infer learner participation from Course ownership.
 
-- minimum useful size around 5
-- typical range around 8–12
-- hard cap 15
-- do not force-fill merely to hit a number
+Manual access and automatic Today participation are separate concerns.
 
-Current runtime implementation may only enforce part of this policy.
+---
 
-Do not silently add floor/fill behavior during unrelated changes.
+## DailyPlan Size
 
-## Frozen plan semantics
+DailyPlan size is dynamic and driven by meaningful learning need.
 
-Today is frozen by default after first generation for that local day.
+Accepted invariants:
+
+- do not force-fill merely to reach a cosmetic target
+- preserve a real finish line
+- do not add replacement items when an item is skipped
+- New Material V1 may contribute up to 3 fallback items only under ADR-017 conditions
+- plan size may vary between learners/days
+
+Exact:
+
+- minimum
+- typical range
+- maximum
+- launch tuning
+
+remain calibration unless explicitly frozen by a future decision.
+
+Do not encode provisional values as permanent invariants.
+
+---
+
+## Frozen Plan Semantics
+
+Today is frozen by default after generation for that learner-local day.
 
 Rules:
 
-- completed items never change
-- skipped items do not reappear in the same plan
-- do not fully rerank the remaining plan after ordinary answers
-- limited future adaptation may be introduced only through an explicit slice
+- completed items remain resolved
+- skipped items remain resolved
+- ordinary answers do not trigger full same-day reranking
+- Manual Practice does not trigger same-day DailyPlan regeneration
+- limited future mid-day adaptation requires an explicit product decision
 - adaptation must not create endless plan growth
 
-Current V1 decision:
+Do not silently introduce same-day dynamic replenishment.
 
-- Manual Practice updates learning state
-- Manual Practice does NOT trigger same-day DailyPlan adaptation
-- Manual Practice does NOT resolve a matching DailyPlanItem
+---
 
-## Item resolution
+## Item Resolution
 
 A DailyPlanItem resolves once.
 
-Valid resolution paths currently include:
+Current resolution states include:
 
-- COMPLETED
-- SKIPPED
+- `COMPLETED`
+- `SKIPPED`
 
 Rules:
 
-- completed/skipped items must not be silently reopened
-- an intentional re-answer belongs to Manual Practice
-- technical retry of the same submission should remain idempotent where supported
-- do not treat skip as incorrect learning evidence
-- skip resolves the Today item for that day but does not imply successful learning
+- resolved items must not silently reopen
+- deliberate re-answering belongs to Manual Practice
+- technical retries should be idempotent where the path supports idempotency
+- Skip is not incorrect evidence
+- Skip does not create mastery failure
+- Skip does not create misconception evidence
+- Skip does not create a replacement item
+- Skip resolves the Today item for that day without implying learning success
 
-## Finish line
+---
+
+## Finish Line
 
 Today must have a real finish line.
 
-When all plan items are resolved:
+When all DailyPlan items are resolved:
 
-- Today is done for that day
-- extra practice is optional
-- extra practice is outside the DailyPlan
-- do not automatically replenish skipped/completed items merely to keep the session going
+- Today is complete for that learner-local day
+- additional practice is optional
+- additional practice exists outside that DailyPlan
+- completed/skipped items are not automatically replenished
+
+Do not design Today as an endless question feed.
+
+---
 
 ## Manual Practice
 
 Manual Practice is separate from Today.
 
-It may:
+Manual Practice may:
 
+- create valid Attempts
 - update learning state
 - affect future DailyPlan generation
 - allow intentional re-answering
 
-It must not, in V1:
+Manual Practice must not automatically:
 
-- automatically mark a matching Today item completed
-- remove a Today item
-- trigger same-day plan adaptation
+- complete a matching DailyPlanItem
+- skip/remove a DailyPlanItem
+- resolve Today because the same Question was answered elsewhere
+- trigger same-day DailyPlan regeneration
 
-unless an explicit product decision changes this.
+unless a future accepted decision explicitly changes this contract.
 
-## Exam urgency
+---
 
-- Exam date is an urgency amplifier, not an eligibility gate.
-- Meaningful urgency ramp begins roughly around 14 days before the exam.
-- Urgency becomes especially strong in the final few days.
-- Exact formula is calibration work unless explicitly assigned.
-- Do not hardcode arbitrary urgency weights inside route/UI code.
+## Exam Urgency
 
-## Engine versioning
+Accepted product direction:
 
-- Persist/retain engine version information where the existing architecture expects it.
-- Changes that materially alter learning-state derivation or Today planning may require a new engine version.
-- Do not change engine version casually for formatting, route, UI, or infrastructure work.
-- If replay/rebuild semantics change, review versioning implications explicitly.
+- an exam date may amplify learning urgency
+- an exam is not required for a Course/question to be eligible
+- the system must not fabricate an exam date
+- exam urgency should interact with actual learning need
+- urgency does not replace the broader Learning Engine
+
+Exact:
+
+- date hierarchy
+- urgency curve
+- thresholds
+- weights
+- time windows
+
+remain calibration/open decisions unless explicitly resolved.
+
+Do not encode illustrative timing such as "14 days" as an invariant without an accepted decision.
+
+---
+
+## Engine Versioning
+
+- Retain engine-version information where current architecture expects it.
+- Material changes to learner-state derivation or Today planning may require a new engine version.
+- Do not change engine version for UI, formatting, route wiring, or unrelated infrastructure work.
+- If replay/rebuild semantics materially change, review engine-version implications explicitly.
+- Exact versioning granularity remains an Open Question.
+
+---
 
 ## Testing
 
-For learning-engine changes:
+For Learning Engine / DailyPlan changes:
 
 - prefer deterministic unit tests
 - inject explicit time
 - test positive and negative evidence
-- test reversible state transitions where relevant
+- test reversible transitions where relevant
 - test replay/rebuild consistency where relevant
-- avoid tests that rely on wall-clock timing
-- distinguish policy calibration tests from invariant tests
+- test Manual Practice / Today separation where relevant
+- test New Material fallback conditions where relevant
+- test deterministic selection/order when relevant
+- avoid wall-clock-dependent tests
+- distinguish product invariants from calibration tests
 
-Do not rewrite tests merely to match a changed implementation if the previous tests captured an accepted product invariant.
+Do not rewrite accepted-invariant tests merely to accommodate an accidental implementation change.
 
-## Scope discipline
+---
 
-Do not combine unrelated learning-model migrations into infrastructure/UI work.
+## Scope Discipline
+
+Do not combine unrelated learning-model work with infrastructure/UI changes.
 
 Examples:
 
-- API route work should not rename mastery states
-- Auth work should not change ranking weights
-- UI work should not alter misconception transitions
-- Postgres runtime work should not change Today semantics
+- API work must not rename mastery states
+- Auth work must not change ranking behavior
+- UI work must not redefine misconception transitions
+- PostgreSQL runtime work must not change Today semantics
+- New Material work must not silently redefine DailyPlan size calibration
+- onboarding work must not alter learner-state rules
 
-If you discover a mismatch between implementation and accepted product semantics:
+If repository reality conflicts with the current Plan:
 
-1. report it
-2. identify the affected files
-3. explain whether it blocks the current task
-4. do not silently fix it unless explicitly instructed
+1. determine whether the accepted intent can be preserved with a narrow adaptation
+2. if yes, adapt minimally
+3. if a new product/architecture decision is required, report `PLAN_CONFLICT`
+4. do not silently invent the decision
 
-## Git safety
+---
 
-Follow the repository-wide Git safety rules in `CLAUDE.md`.
+## Source of Truth Discipline
 
-Do not rewrite accepted historical learning-engine migrations or commits casually. Preserve accepted history unless an explicit migration/history-rewrite task requires otherwise.
+When product/learning semantics are unclear:
+
+1. inspect the current relevant Slice
+2. inspect accepted ADRs
+3. inspect the narrow relevant canonical learning document
+4. inspect `docs/OPEN_QUESTIONS.md`
+5. do not use historical Run Reports as a decision source
+
+Accepted ADRs override older conflicting prose.
+
+---
+
+## Git Safety
+
+Follow repository-wide Git safety rules in `CLAUDE.md`.
+
+Do not rewrite accepted historical Learning Engine migrations/commits casually.
+
+New behavioral changes should preserve accepted history and use forward evolution.

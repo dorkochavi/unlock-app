@@ -1,23 +1,22 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED** — six forward-only migrations exist,
-`supabase/migrations/20260917203000_initial_schema.sql` (the initial schema:
-PostgreSQL via Supabase, ADR-013),
-`supabase/migrations/20260918000000_question_answer_model_v1.sql` (adds
-`question_versions.question_type`, ADR-014),
-`supabase/migrations/20260919000000_course_membership_v1.sql` (adds
-`courses.join_policy` and `course_memberships`, ADR-015),
-`supabase/migrations/20260920000000_user_timezone_v1.sql` (adds
-`users.timezone`, `docs/OPEN_QUESTIONS.md` #35),
-`supabase/migrations/20260921000000_daily_plan_v1.sql` (adds `daily_plans`/
-`daily_plan_items`, ADR-016 §1/§19 — persistence foundation only, additive
-alongside the still-intact `today_sessions`/`today_session_items`), and
-`supabase/migrations/20260922000000_daily_plan_item_state_consistency.sql`
-(adds a CHECK constraint tying `daily_plan_items.status` to
-`resolved_at`/`completed_at`). All six are verified against a real
-PostgreSQL engine
-(`supabase/tests/schema.integration.test.ts`, `npm run test:schema`),
-applied in filename order; no later migration edits an earlier one. This
+Status: **IMPLEMENTED LOCALLY** — nine forward-only migrations exist:
+
+1. `20260917203000_initial_schema.sql` — initial PostgreSQL/Supabase schema (ADR-013)
+2. `20260918000000_question_answer_model_v1.sql` — Question answer model (ADR-014)
+3. `20260919000000_course_membership_v1.sql` — CourseMembership / join policy (ADR-015)
+4. `20260920000000_user_timezone_v1.sql` — persisted learner timezone
+5. `20260921000000_daily_plan_v1.sql` — `daily_plans` / `daily_plan_items` (ADR-016)
+6. `20260922000000_daily_plan_item_state_consistency.sql` — DailyPlanItem state/timestamp constraint
+7. `20260923000000_auth_user_provisioning.sql` — Auth user → `public.users` provisioning
+8. `20260924000000_daily_plan_answer_attempts.sql` — DailyPlan-linked Attempts / answer flow persistence
+9. `20260925000000_daily_plan_new_material_v1.sql` — New Material action/tier persistence support (ADR-017)
+
+The first seven migrations have been applied to the hosted Supabase project.
+The final two are committed/local and remain pending explicit remote application.
+The full local migration chain is exercised by the repository's
+Postgres-compatible/PGlite schema integration suite. No later migration edits
+an earlier accepted migration. This
 document remains the design-contract companion to those migrations and to
 `docs/DATABASE.md` (conceptual data model) and
 `docs/DECISIONS/009-question-versioning.md` / `010-answer-submission-transaction-model.md`
@@ -66,9 +65,12 @@ reverse.
 
 ## `users`
 
-Conceptual mapping for Supabase Auth (not implemented): a `public.users`
-profile row with `id` equal to the corresponding `auth.users.id` (1:1,
-`id` is both PK and the FK target). No Supabase code is written here.
+Supabase Auth identity is mapped 1:1 to `public.users`: the profile row uses
+the same UUID as `auth.users.id`. New Auth users are provisioned through
+`supabase/migrations/20260923000000_auth_user_provisioning.sql`.
+The hosted provisioning path has been verified for real Auth user creation;
+the PGlite test harness still uses only a minimal test-only `auth.users`
+stand-in and must not be confused with hosted Auth behavior.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
@@ -303,7 +305,9 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
 | `question_version_id` | uuid | no | see composite FK below |
 | `today_session_id` | uuid | yes | **found missing during migration-writing**: `src/domain/learning/types.ts`'s `Attempt.todaySessionId` and ADR-010's canonical command-identity field list already treat this as its own independently client-supplied, independently compared field, distinct from `today_session_item_id` — this document's original draft omitted the column entirely. See composite FK below for how it's kept consistent with `today_session_item_id` whenever both are present |
 | `today_session_item_id` | uuid | yes | see composite FK below; null = manual practice / no Today context |
-| `learning_session_id` | text | yes | **ADR-012 §5**: stable, intrinsic identity of the continuous learning session/occasion this Attempt belongs to. Ownership is split by origin: for a Today-attached Attempt (`today_session_item_id` not null) this is APPLICATION-derived from that item's `today_session_id`, never the client's claim; for manual practice (`today_session_item_id` null) the client supplies and owns a stable token, and it participates in the idempotency command-identity comparison only in that case. This is what replaced the earlier, insufficient idea of persisting the `isSameLearningSession` boolean itself — see the Replay/Rebuild Contract section below |
+| `daily_plan_id` | uuid | yes | current DailyPlan linkage; server-derived for DailyPlan answer submission, never authoritative client identity |
+| `daily_plan_item_id` | uuid | yes | current DailyPlanItem linkage; nullable for Manual Practice/legacy TodaySession flow; constrained so a single Attempt cannot claim both legacy TodaySessionItem and DailyPlanItem origins |
+| `learning_session_id` | text | yes | **ADR-012 §5**: stable identity of the continuous learning occasion. For a persisted-plan Attempt (legacy TodaySessionItem or current DailyPlanItem), the application derives the learning-session identity from authoritative persisted context rather than trusting a client claim. Manual Practice may supply its own stable token under the existing contract. |
 | `answered_at` | timestamptz | no | client-captured event time |
 | `is_correct` | boolean | no | server-computed from `selected_answer` vs. the referenced `QuestionVersion`'s correct answer — **not** independently client-supplied |
 | `selected_answer` | jsonb | yes | matches the domain type's `string \| number \| null` |
@@ -351,7 +355,13 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
     column left: without it, nothing stopped an Attempt from claiming a
     real `today_session_item_id` while independently claiming a
     *different* `today_session_id` than that item's actual session.
-    Verified against a real PostgreSQL engine, test "5b".
+    Verified against the repository's PostgreSQL-compatible integration path.
+  - `daily_plan_id` / `daily_plan_item_id` are added by
+    `20260924000000_daily_plan_answer_attempts.sql` for the current Today path.
+    The migration enforces ownership/parent consistency and mutually exclusive
+    planned-item origin: an Attempt cannot simultaneously claim the legacy
+    TodaySessionItem path and the DailyPlanItem path. DailyPlan deletion clears
+    only the planning pointers so immutable Attempt evidence survives.
 - **Mutable columns**: none. Entirely append-only.
 - **Delete behavior**: never deleted or updated by application code.
 - **Timestamps**: `answered_at` (event time, client) vs. `created_at`
@@ -515,27 +525,22 @@ decided).
 | `id` | uuid | no | PK |
 | `user_id` | uuid | no | FK → `users.id`, `ON DELETE RESTRICT` |
 | `course_id` | uuid | no | FK → `courses.id`, `ON DELETE RESTRICT` |
-| `planned_for_date` | date | no | caller-supplied logical date; no timezone/day-boundary logic here or anywhere in the domain/persistence layer (`docs/OPEN_QUESTIONS.md` #3 remains open) |
+| `planned_for_date` | date | no | legacy caller-supplied logical date for the TodaySession path. Current DailyPlan Today derives its date from persisted learner timezone at the application boundary; this legacy column does not define the current day-boundary policy. |
 | `status` | text | no | candidate values per `docs/DATABASE.md` §17 (`prepared`/`started`/`completed`/`expired`/`abandoned`) — **exact state machine DEFERRED**, see audit findings #14/#15 |
 | `engine_version` | text | no | planner version |
 | `generated_at` | timestamptz | no | default `now()` |
 | `started_at` | timestamptz | yes | |
 | `completed_at` | timestamptz | yes | |
 
-- **`course_id` and uniqueness — DECIDED for V1**, see
-  `docs/DECISIONS/011-today-is-course-scoped-v1.md`: UNLOCK V1 Today is
-  course-scoped. `course_id uuid NOT NULL REFERENCES courses(id)` +
-  `UNIQUE (user_id, course_id, planned_for_date)`. A learner with multiple
-  active Courses may have multiple `today_sessions` rows for the same
-  date, one per Course. This remains the actual implemented schema today.
-  At the product/architecture level this is now partially superseded by
-  `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
-  (ACCEPTED): one DailyPlan/DailyPlanItem per user per local day, with
-  Course Today and Global Today as filtered views of that same plan —
-  DECIDED, and a persistence FOUNDATION now exists (`daily_plans`/
-  `daily_plan_items` below), but no application code generates a real plan
-  into it yet; `today_sessions`/`today_session_items` remain the only
-  tables any application code actually writes to today.
+- **Legacy identity and uniqueness**: this table remains implemented exactly
+  as ADR-011 defined it: `course_id NOT NULL` plus
+  `UNIQUE (user_id, course_id, planned_for_date)`.
+  ADR-016 supersedes this as the current Today product architecture.
+  Current Today generation/orchestration persists one `DailyPlan` per
+  learner-local day and reads Course Today / Global Today as views over the
+  same `daily_plan_items`. The legacy TodaySession tables remain intact and
+  usable by the older path; they are compatibility/history infrastructure,
+  not the primary current planner persistence.
 - `getOrCreateTodaySession` is implemented as `INSERT ... ON CONFLICT DO
   NOTHING RETURNING` against this key, with a fallback `SELECT` — race-free
   by Postgres's own unique-index insert semantics (verified by hand-tracing
@@ -623,16 +628,13 @@ The frozen plan, one row per planned Question within a session — ADR-010's
 
 ## `daily_plans`
 
-**IMPLEMENTED (persistence foundation only) — ADR-016 §1.** Added by
-`supabase/migrations/20260921000000_daily_plan_v1.sql`. The accepted
-TARGET architecture superseding `today_sessions`' per-Course key: one row
-per `(user_id, planned_for_date)`, read by both Global Today and every
-Course Today view as a filtered read over the same `daily_plan_items`. No
-application code generates a real plan into this table yet — see
-`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 5/6 for what remains.
-`today_sessions`/`today_session_items` remain fully intact and unmodified
-(`docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md` §13's recommendation, followed
-exactly: additive only, no drop, no data migration).
+**IMPLEMENTED AND USED BY CURRENT TODAY FLOW — ADR-016 §1.** Added by
+`supabase/migrations/20260921000000_daily_plan_v1.sql` and used by the current
+DailyPlan generation/orchestration path. One row exists per
+`(user_id, planned_for_date)`; Global Today and Course Today are views over
+the same persisted `daily_plan_items`. `today_sessions`/`today_session_items`
+remain fully intact as the legacy path; the migration was additive and did
+not drop or rewrite them.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
@@ -660,11 +662,13 @@ exactly: additive only, no drop, no data migration).
 
 ## `daily_plan_items`
 
-**IMPLEMENTED (persistence foundation only) — ADR-016 §1/§19.** Added by
-`supabase/migrations/20260921000000_daily_plan_v1.sql`; its status/
-timestamp CHECK constraint (below) was added by a second, forward-only
-migration, `supabase/migrations/20260922000000_daily_plan_item_state_consistency.sql`.
-The direct successor to `today_session_items`, with
+**IMPLEMENTED AND USED BY CURRENT TODAY FLOW — ADR-016 §1/§19.** Added by
+`supabase/migrations/20260921000000_daily_plan_v1.sql`; its status/timestamp
+CHECK constraint was added by
+`20260922000000_daily_plan_item_state_consistency.sql`. Current answer/Skip
+flows resolve these rows, and ADR-017 New Material values are supported by
+`20260925000000_daily_plan_new_material_v1.sql`. The direct successor to
+`today_session_items`, with
 one structural difference: `course_id` is a genuinely independent, per-item
 fact, not a value forced equal to a single parent session's Course — this
 is exactly what lets Global Today and Course Today share one underlying
@@ -679,8 +683,8 @@ plan (ADR-016 §1).
 | `position` | int | no | `CHECK (position >= 0)`, 0-based |
 | `question_id` | uuid | no | see composite FK below |
 | `question_version_id` | uuid | no | resolved by the application layer at plan-persistence time, unchanged from `today_session_items`' rule |
-| `action_type` | text | no | matches `NextBestActionType` exactly, unchanged |
-| `tier` | text | no | matches `NextBestActionPriorityTier` exactly, unchanged |
+| `action_type` | text | no | ordinary Next Best Action values plus the accepted `NEW_LEARNING` value used by ADR-017 New Material fallback |
+| `tier` | text | no | ordinary priority tiers plus the accepted `NEW_MATERIAL` tier used by ADR-017 fallback |
 | `other_applicable_types` | jsonb | no | array, default `[]` |
 | `reasons` | jsonb | no | array, default `[]` |
 | `status` | text | no | `pending`/`completed`/`skipped`, default `pending` |
@@ -734,11 +738,14 @@ plan (ADR-016 §1).
 - **Delete behavior**: cascades from `daily_plans`.
 - **Source of truth**: frozen decision output for the plan-shape columns;
   none for `status`/`resolved_at`/`completed_at`.
-- **Not yet added**: any `attempts` FK to this table.
-  `attempts.today_session_id`/`today_session_item_id` remain the only
-  Today-linkage columns on `attempts` — wiring `submitAnswer` to
-  `daily_plan_items` is deliberately out of scope for this foundation slice
-  (`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 6).
+- **Attempt linkage is implemented** by
+  `20260924000000_daily_plan_answer_attempts.sql`: `attempts` can reference
+  `daily_plan_id` / `daily_plan_item_id` for current Today answer submission.
+  The server derives those identities from the authenticated learner and
+  persisted item. The migration prevents one Attempt from claiming both
+  legacy TodaySessionItem and DailyPlanItem origins, and preserves immutable
+  Attempt evidence if a DailyPlan is later deleted by clearing only the
+  planning pointers.
 
 ---
 
@@ -755,6 +762,10 @@ plan (ADR-016 §1).
 | No duplicate Attempt for the same logical command | `UNIQUE (user_id, submission_id)` + application-level field comparison on conflict | ADR-010 (prior session) |
 | No duplicate TodaySessionItem position/Question within a session | `UNIQUE` constraints (`today_session_items`) | ADR-010 / this session |
 | TodaySession uniqueness (one session per user/Course/date) | `UNIQUE (user_id, course_id, planned_for_date)` | ADR-011 (course-scoped V1 decision) |
+| DailyPlan uniqueness (one plan per user/local date) | `UNIQUE (user_id, planned_for_date)` | ADR-016 |
+| DailyPlanItem state/timestamps remain consistent | `daily_plan_items_status_timestamps_check` | `20260922000000_daily_plan_item_state_consistency.sql` |
+| Attempt cannot claim both legacy TodaySessionItem and current DailyPlanItem origins | Attempt CHECK / FK constraints | `20260924000000_daily_plan_answer_attempts.sql` |
+| DailyPlan-linked Attempt ownership/parent identity is constrained | composite DailyPlan/DailyPlanItem linkage constraints | `20260924000000_daily_plan_answer_attempts.sql` |
 | QuestionVersion actually belongs to the Question/Course it's claimed for | composite FK (schema) **+** an equivalent application-layer check in `submitAnswer` (`resolveVersionContext`), since in-memory/test callers and any pre-insert validation can't rely on a DB constraint firing | this session's correctness pass |
 
 Trigger-based enforcement was considered and rejected wherever a composite
@@ -877,11 +888,6 @@ reasoning, stated explicitly rather than assumed.
 - `Question.verification_state`'s exact enum (`docs/DATABASE.md` §24 lists
   candidates, not final values).
 - `Material.material_type`'s exact enum (no candidate list exists yet).
-- The concrete `CourseMembership`/`join_policy` migration implementing the
-  now-decided User↔Course model (`docs/OPEN_QUESTIONS.md` #1,
-  `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`)
-  — the product/architecture decision itself is no longer open, only its
-  implementation in this schema.
 - Deletion/retirement mechanics for `questions`/`courses`/`materials`
   (`docs/DATABASE.md` §37/§38) — this schema only ensures deletion cannot
   silently destroy `attempts`/`question_versions` history, not what a

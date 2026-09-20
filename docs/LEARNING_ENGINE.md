@@ -132,8 +132,11 @@ selected_answer
 confidence_level
 response_time_seconds
 
-today_session_id nullable
-today_session_item_id nullable
+daily_plan_id nullable
+daily_plan_item_id nullable
+
+today_session_id nullable          # legacy TodaySession compatibility path only
+today_session_item_id nullable     # legacy TodaySession compatibility path only
 
 assistance_used
 attempt_number_for_presented_item
@@ -165,7 +168,7 @@ create immutable Attempt
 ↓
 update UserQuestionProgress
 ↓
-update TodaySessionItem
+resolve DailyPlanItem when the Attempt comes from Today
 ↓
 commit
 ```
@@ -493,7 +496,7 @@ thresholds together are what a production composition root should use to
 construct `MasteryPolicy` — see
 `docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` §7a/§7b.
 
-**Not yet implemented / not yet migrated.** The currently-implemented
+**Implementation reconciliation remains pending.** The currently-implemented
 `mastery_category` enum (`supabase/migrations/20260917203000_initial_schema.sql`,
 `src/domain/learning/`) is `not_started`/`learning`/`strengthening`/
 `mastered` — a different, 4-value shape than the accepted 5-value
@@ -605,7 +608,7 @@ score of 3. These values may be used as an engineering starting point but
 must not be treated as immutable product invariants — see
 `docs/OPEN_QUESTIONS.md` #13.
 
-**Not yet implemented / not yet migrated.** The currently-implemented
+**Implementation reconciliation remains pending.** The currently-implemented
 `misconception_state` enum (`supabase/migrations/20260917203000_initial_schema.sql`)
 has 5 values, including `recovering`, a different shape than this accepted
 4-value model. This is a DECIDED-but-not-IMPLEMENTED gap; reconciling the
@@ -919,33 +922,43 @@ Possible dimensions:
 
 ---
 
-# 31. Starter / Calibration
+# 31. Starter / New Material Calibration
 
-Replace:
+Do not use a naive rule such as:
 
 ```text
 attempts < N
 → newest Questions
 ```
 
-with:
+The broader product principle remains:
 
 ```text
 insufficient evidence
-→ calibration session
+→ representative calibration / New Material exposure
 ```
 
-Calibration objective:
+For the currently accepted V1 fallback behavior, ADR-017 is authoritative:
 
-> reduce uncertainty across the Course with the smallest useful sample.
+- a Question is unseen only when the learner has no prior real Attempt for it;
+- missing `UserQuestionProgress` alone does not prove that a Question is unseen;
+- ordinary evidence-driven NBA candidates take precedence;
+- New Material fallback activates only when there are zero ordinary NBA candidates;
+- do not mix unseen filler into a non-empty ordinary DailyPlan;
+- select at most 3 unseen Questions;
+- selection is deterministic;
+- do not introduce per-Course fairness quotas;
+- planning unseen material is not learning evidence;
+- do not fabricate `UserQuestionProgress` merely because material was planned;
+- the first real learner response enters the normal Attempt/evidence pipeline.
 
-Likely V1:
-- multiple Topics;
-- limited repetition;
-- unseen Questions;
-- representative coverage.
+The calibration objective remains:
 
-Exact size remains a product decision.
+> reduce uncertainty using the smallest useful amount of real learner evidence.
+
+This V1 fallback is intentionally narrower than a future rich Starter/diagnostic
+experience. Broader Topic sampling, coverage strategy, and calibration policy may
+evolve later without weakening ADR-017's evidence semantics.
 
 ---
 
@@ -1022,24 +1035,29 @@ Today Planner should apply interleaving based on learner state.
 Flow:
 
 ```text
-eligible learning actions
+eligible ordinary learning actions
 ↓
 NBA ranking
 ↓
-session constraints
+DailyPlan composition constraints
 ↓
-topic / action diversity
+if zero ordinary candidates: ADR-017 New Material fallback
 ↓
-interleaving rules
-↓
-persist Today Session + Items
+persist one DailyPlan + DailyPlanItems
 ```
 
-Today remains stable during the day.
+Today remains frozen by default during the learner-local day.
 
-Quiz executes the prepared Today plan.
+Global Today and Course Today are views over the same persisted DailyPlan rather
+than independently generated plans.
+
+Quiz executes the prepared DailyPlan.
 
 Quiz must not independently re-plan Today.
+
+Manual Practice is separate: it may update learning state for future planning,
+but it does not resolve a matching DailyPlanItem and does not trigger same-day
+DailyPlan regeneration in V1.
 
 ---
 

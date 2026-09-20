@@ -1,806 +1,468 @@
 # UNLOCK — Development Status
 
-> Short-lived operational state for development sessions.
-> This file is NOT an ADR, product specification, or historical changelog.
-> Keep it short and update it only when the active development checkpoint changes.
+> Current-state snapshot for development sessions.
+>
+> This file describes what is true NOW.
+> It is NOT a changelog, Run Report, ADR, product specification, or workflow manual.
+>
+> Historical execution detail belongs in Git and `docs/RUNS/`.
+> Product decisions belong in `docs/DECISIONS/`.
+> Current work belongs in `docs/CHATGPT_PLAN.md`.
 
-## Branch
+---
+
+## Repository State
+
+Branch:
 
 `feature/project-foundation`
 
-## Last pushed commit
+Last pushed application baseline:
 
-`e784dd5` — improve claude development workflow
+`66df9f9` — `add open-course learner onboarding`
 
-The branch was pushed successfully to:
+Remote:
 
 `origin/feature/project-foundation`
 
-No known unpushed commits currently exist.
+Current Development OS V1 documentation work is being edited after that pushed baseline and is expected to remain uncommitted until the documentation refactor is reviewed as a whole.
 
-The last commit touching application code (`src/`, `supabase/`) is `450af9a` — fix daily plan route auth ordering. `e784dd5` is a workflow/documentation/configuration-only commit (`CLAUDE.md`, `AGENTS.md`, `docs/CONTEXT_MAP.md`, `docs/DEV_STATUS.md`, `.claude/**`, `.cursor/**`) and did not touch `src/` or `supabase/`.
+---
 
-## Current active checkpoint
+## Current Product Capabilities
 
-The DailyPlan Today API route foundation is implemented, reviewed, fixed, verified, and pushed.
+### Authentication / User
 
-The previous auth-before-database ordering bug is CLOSED.
+Implemented:
 
-Current route order:
+- Supabase browser/server authentication clients.
+- Trusted server identity through `supabase.auth.getUser()`.
+- `auth.users -> public.users` provisioning.
+- Email/password login and signup UI at `/login`.
+- Safe internal login return-path support through `next`.
+- Persisted learner IANA timezone.
+- Browser timezone detection only when the server reports that no timezone is persisted.
+- Auth-before-database route ordering on authenticated API paths.
+- Stable generic `INTERNAL_ERROR` boundary for unexpected server failures.
+- Hebrew-first / RTL application shell.
 
-1. create request time once with `new Date()`
-2. create the request-scoped Supabase server client
-3. resolve trusted identity using `requireAuthenticatedUser()`
-4. if unauthenticated → return `401`
-5. only after successful authentication, construct PostgreSQL / DailyPlan runtime
-6. invoke DailyPlan generation
-7. map outcomes into stable HTTP responses
+Security baseline:
 
-An unauthenticated request does NOT call `getPool()` and does NOT require `DATABASE_URL`.
+- authoritative `userId` is never accepted from the client
+- database/service credentials remain server-only
+- raw SQL/errors/stack traces are not returned to clients
+- external/protocol-relative login redirects are rejected
 
-Unexpected route-level infrastructure/configuration failures return:
+---
 
-    {
-      "error": {
-        "code": "INTERNAL_ERROR"
-      }
-    }
+### Courses / Membership
 
-Raw infrastructure errors, SQL, connection strings, stack traces, credentials, and environment values are not exposed to the client.
+Implemented:
 
-A dedicated regression test imports and calls the real production `GET()` route wiring and fails if database construction is moved back before authentication.
+- Course persistence.
+- `CourseMembership` model.
+- roles:
+  - `OWNER`
+  - `INSTRUCTOR`
+  - `LEARNER`
+- OPEN vs AUTHORIZED_ONLY join policy.
+- OWNER membership remains canonical authorization.
+- only active LEARNER memberships automatically participate in DailyPlan generation.
+- public-safe course summary lookup returning only learner-safe identifying information.
+- authenticated OPEN-course join API.
+- `/join/[courseId]` learner onboarding page.
+- repeat OPEN join is idempotent.
+- existing OWNER / INSTRUCTOR membership is preserved and never downgraded by self-join.
+- revoked membership currently fails closed; automatic rejoin semantics remain intentionally undecided.
 
-## Real-environment verification milestone
+Ruppin demo onboarding path now exists conceptually as:
 
-A real hosted Supabase project has been verified end-to-end for
-`GET /api/daily-plan/today`.
+join link / QR
+→ login if required
+→ return to join page
+→ join OPEN course
+→ `/today`
 
-Verified against the real hosted project:
+---
 
-- hosted Supabase project connectivity
-- all 7 committed migrations applied successfully against the real project
-- real `auth.users -> public.users` provisioning for a real OWNER user
-- real `auth.users -> public.users` provisioning for a real LEARNER user
-  (persisted timezone `Asia/Jerusalem`)
-- real browser login (Supabase Auth password grant) against the real
-  LEARNER, followed by a real authenticated `GET /api/daily-plan/today`
-  request through the real Next.js route
-- real DailyPlan persistence: `outcome: "READY"`, 3 items, all
-  `actionType: "REVIEW_DUE"` / `tier: "DUE_REVIEW"`
-- same-day idempotency: repeating the authenticated request returned the
-  identical persisted `plan.id` (`93fc85be-ffa7-4151-b10a-f79fc7d19bc1`) and
-  the identical 3 `DailyPlanItem` ids on a second call, confirming the
-  local-date plan key is stable across repeated requests on the same local
-  day
+### Learning Evidence / Engine
 
-### Real bug found and fixed during this verification: PostgreSQL DATE read-back
+Implemented:
 
-The first authenticated call returned `plannedForDate: "2026-09-18"` for a
-request whose correct learner-local calendar date (`Asia/Jerusalem`) was
-`2026-09-19`. Investigation confirmed this was a **read-back-only** bug,
-not a persistence or timezone-derivation bug:
+- immutable Attempt model.
+- immutable Question / QuestionVersion history.
+- persisted correctness.
+- deterministic learning-state processing.
+- learning-state rebuild / replay.
+- FSRS-backed memory scheduling.
+- retrieval qualification.
+- misconception tracking.
+- mastery/evidence processing.
+- Next Best Action candidate generation.
+- deterministic ranking/planning foundation.
+- production learning-policy composition.
+- Manual Practice path remains separate from Today.
+- replay/rebuild uses persisted Attempt correctness rather than re-grading historical responses.
 
-- `node-postgres`'s default type parser for `date` columns (OID 1082)
-  constructs the returned `Date` from the column's LOCAL calendar
-  components (server-process OS timezone), never UTC midnight.
-- `readDateOnlyString` (`src/infrastructure/postgres/row-validation.ts`)
-  converted that `Date` back to a string via `.toISOString().slice(0, 10)`
-  — UTC — which is off by one calendar day whenever the server process's
-  own OS timezone has a nonzero UTC offset (confirmed: this environment
-  runs under `Asia/Jerusalem`, UTC+3).
-- `deriveLocalDateString` (the write-side local-date derivation) and the
-  `(user_id, planned_for_date)` DailyPlan lookup key were already correct
-  throughout — the persisted `planned_for_date` value was always
-  `2026-09-19`.
-- Confirmed empirically after the fix: re-running the same authenticated
-  request returned the SAME `plan.id` and the SAME 3 `DailyPlanItem` ids as
-  the original (buggy-display) call, now correctly reported as
-  `plannedForDate: "2026-09-19"`. If the persisted row had actually been
-  `2026-09-18`, the corrected lookup for `2026-09-19` could not have
-  returned the identical plan/item ids. No remote data was modified,
-  deleted, or regenerated.
+Real-time learning-state decisions do not depend on LLM calls.
 
-Fix: `readDateOnlyString`'s `Date`-instance branch now reads back via local
-getters (`getFullYear`/`getMonth`/`getDate`) instead of `toISOString()` —
-the exact inverse of how `pg` constructed the value, correct at any process
-UTC offset. This is a shared helper also used by `today-session-mapper.ts`'s
-`planned_for_date`, so the same latent bug there is fixed by the same
-change.
+---
 
-The DATE read-back fix and its regression tests were committed as `b502ca9`
-— `src/infrastructure/postgres/row-validation.ts` and
-`src/infrastructure/postgres/__tests__/row-validation.test.ts` (the latter
-covers the exact reported scenario, `now=2026-09-19T16:56:17.843Z`,
-`Asia/Jerusalem` -> `plannedForDate=2026-09-19`, across positive/negative/
-zero process UTC offsets via `process.env.TZ`).
+### DailyPlan / Today
 
-### PGlite DailyPlan integration coverage gap — CLOSED
+Implemented:
 
-`supabase/tests/postgres/daily-plan-repository.test.ts` and
-`supabase/tests/postgres/daily-plan-unit-of-work.test.ts` already provided
-substantial PGlite integration coverage for `PostgresDailyPlanRepository`
-and the full generation pipeline (create/persist, read-back, idempotency,
-resolve-once semantics, LEARNER-only course pooling). This slice closed the
-two remaining specific gaps:
+- one persisted DailyPlan per user per learner-local calendar day.
+- persisted DailyPlanItem rows.
+- global multi-course DailyPlan generation.
+- active LEARNER membership filtering.
+- deterministic item ordering.
+- frozen same-day plan semantics.
+- `getOrCreateDailyPlanForToday({ userId, now })`.
+- PostgreSQL DailyPlan repository and UnitOfWork.
+- `GET /api/daily-plan/today`.
+- learner-facing question content:
+  - question type
+  - prompt
+  - answer options
+- learner-facing read path does NOT select or return grading-only data such as:
+  - `correct_answer`
+  - `correctOptionIds`
+  - explanation/grading definition
+- exact persisted QuestionVersion is used for learner content and grading.
 
-- item ordering: added a test proving `findByKey` orders items by the
-  `position` column itself (not insertion/id order), by inserting rows
-  directly out of position order.
-- `plannedForDate` round-trip at a year boundary (`2025-12-31`), in
-  addition to the existing mid-month case.
+Today answer submission:
 
-**New finding, not fixed in this slice (test-double fidelity, not a
-production risk):** PGlite's own `date`-column type parser constructs the
-returned `Date` from UTC calendar components, while real `pg`'s default
-OID-1082 parser constructs it from LOCAL calendar components (the
-convention `readDateOnlyString`'s fix above is calibrated for). Verified
-directly: under a negative-process-UTC-offset (e.g. `America/Los_Angeles`),
-a PGlite-style UTC-midnight `Date` read back via `readDateOnlyString`'s
-local-getter branch is off by one day, while a real-`pg`-style
-local-midnight `Date` is not. This does not affect production (which only
-ever talks to real `pg`, never PGlite), and does not manifest in this
-repo's actual dev/CI environments (UTC or non-negative offsets), but it
-means the PGlite-based repository tests cannot, by themselves, prove
-`readDateOnlyString`'s `Date`-branch correctness on a negative-offset host
-— `row-validation.test.ts`'s own `process.env.TZ`-parametrized tests
-already carry that proof for the real-`pg` convention. Documented in
-`daily-plan-repository.test.ts`'s file-level doc comment; no code changed.
+- `POST /api/daily-plan/items/:itemId/answer`
+- authenticated ownership enforcement
+- authoritative question/course/version/plan identity derived server-side
+- correctness evaluated server-side
+- immutable Attempt persisted
+- learning state updated through the existing learning-engine pipeline
+- exact DailyPlanItem resolved as completed
+- retry/idempotency protections prevent duplicate Attempts for the same submission
+- Manual Practice does NOT resolve matching Today items
 
-## Current implementation state
+Today Skip:
 
-Implemented and approved:
+- `POST /api/daily-plan/items/:itemId/skip`
+- resolves exact DailyPlanItem as `skipped`
+- creates no Attempt
+- creates no incorrect-answer evidence
+- does not update mastery/misconception/scheduler state
+- creates no replacement item
 
-- immutable Attempts model
-- Question / QuestionVersion persistence model
-- FSRS-backed memory scheduling
-- learning-state rebuild/replay foundation
-- Next Best Action candidate generation
-- Today ranking/planning foundation
-- CourseMembership model and join policy
-- persisted user timezone
-- production learning policy composition
-- DailyPlan / DailyPlanItem persistence
-- global multi-course DailyPlan generation core
-- public `getOrCreateDailyPlanForToday({ userId, now })`
-- LEARNER-only automatic DailyPlan eligibility
-- PostgresDailyPlanUnitOfWork
-- DailyPlan production composition
-- pg runtime adapter / Pool foundation
-- Supabase browser/server auth client factories
-- trusted userId through `auth.getUser()`
-- `auth.users -> public.users` provisioning migration
+Today learner UI:
+
+- one active pending item at a time
+- SINGLE_CHOICE interaction
+- MULTIPLE_CHOICE interaction
+- explicit submit
+- correct / incorrect feedback
+- explicit continue after answered items
+- progress display
+- Skip action
+- resolved-state reconstruction after reload
+- handling of stale/already-resolved items through server refetch
+- loading/error/auth-expiry states
+- completion state when no pending items remain
+
+---
+
+### Starter / New Material V1
+
+Accepted decision:
+
+`docs/DECISIONS/017-starter-new-material-v1.md`
+
+Implemented:
+
+- unseen = no prior real Attempt for the Question
+- absence of UserQuestionProgress alone is NOT used as proof of unseen
+- ordinary review/repair/relearning/strengthening candidates are generated first
+- New Material activates only when there are ZERO ordinary candidates
+- no review + new-material mixing in V1
+- up to 3 unseen questions are selected
+- selection is deterministic
+- placement into Today is not learning evidence
+- UserQuestionProgress is not fabricated when unseen material is planned
+- first actual Attempt creates evidence normally
+
+Persisted DailyPlan vocabulary now supports:
+
+- action type: `NEW_LEARNING`
+- tier: `NEW_MATERIAL`
+- reason: `UNSEEN_MATERIAL`
+
+The normal Next Best Action ranking model remains unchanged; New Material is a separate fallback path.
+
+---
+
+## Current API / Learner Entry Points
+
+Implemented application-facing paths include:
+
+- `/`
+- `/login`
+- `/today`
+- `/join/[courseId]`
+
+Implemented relevant APIs include:
+
 - `GET /api/daily-plan/today`
-- auth-before-DB route ordering
-- stable route-level `INTERNAL_ERROR` boundary
-- real route-wiring regression coverage for auth-before-DB ordering
-- safe learner-facing question content (prompt/options/type) on
-  `GET /api/daily-plan/today` and `/today` — see "Learner-facing question
-  content slice" below
+- `POST /api/daily-plan/items/:itemId/answer`
+- `POST /api/daily-plan/items/:itemId/skip`
+- `POST /api/user/timezone`
+- `GET /api/courses/:courseId`
+- `POST /api/courses/:courseId/join`
 
-Real-environment-verified (see "Real-environment verification milestone"
-above):
+This list is a current capability summary, not an exhaustive API specification.
+Use the API docs / source for full contracts.
 
-- hosted Supabase project
-- real Supabase Auth login/session
-- migration chain against a real Supabase project
-- real `auth.users -> public.users` signup provisioning
+---
+
+## Database / Migration State
+
+### Applied to hosted Supabase
+
+The original hosted migration chain through:
+
+`20260923000000_auth_user_provisioning.sql`
+
+has been applied and previously verified against the real hosted Supabase project.
+
+This includes the original seven hosted migrations:
+
+1. `20260917203000_initial_schema.sql`
+2. `20260918000000_question_answer_model_v1.sql`
+3. `20260919000000_course_membership_v1.sql`
+4. `20260920000000_user_timezone_v1.sql`
+5. `20260921000000_daily_plan_v1.sql`
+6. `20260922000000_daily_plan_item_state_consistency.sql`
+7. `20260923000000_auth_user_provisioning.sql`
+
+### Committed but NOT yet applied remotely
+
+The following later migrations are committed and locally tested but still require explicit user-authorized remote application:
+
+- `20260924000000_daily_plan_answer_attempts.sql`
+  - links Attempts to DailyPlan / DailyPlanItem safely
+  - supports Today answer submission
+
+- `20260925000000_daily_plan_new_material_v1.sql`
+  - extends DailyPlanItem constraints for New Material V1
+
+Do NOT assume hosted Supabase supports the newer answer/new-material flows until these migrations are explicitly applied remotely.
+
+Claude must not run `supabase db push` without explicit user authorization.
+
+---
+
+## Verification State
+
+### Verified against real hosted Supabase / browser
+
+Previously verified:
+
+- hosted Supabase connectivity
 - real `DATABASE_URL`
-- real browser → API → PostgreSQL DailyPlan request
-- same-day DailyPlan idempotency against real persisted state
+- original migration chain through auth provisioning
+- real Auth user provisioning
+- real learner login
+- persisted learner timezone
+- authenticated browser → API → PostgreSQL Today request
+- populated Today plan retrieval
+- learner-facing question prompt/options rendering
+- same-day DailyPlan idempotency
+- correct learner-local planned date after the PostgreSQL DATE read-back fix
+- unauthenticated auth-before-DB behavior on protected routes
+- Hebrew / RTL rendering
 
-Not yet end-to-end verified:
+### Locally verified after Slices 1–6
 
-- login/signup UI (implemented, unverified against a real signup — see
-  "Minimal learner vertical slice" below for what WAS verified)
-- Today UI (implemented; unauthenticated path verified against the real
-  hosted project — see below)
+Verified through unit / route / PGlite integration coverage as applicable:
 
-Not implemented yet:
+- Today answer submission
+- DailyPlanItem ownership
+- answer idempotency
+- Attempt → DailyPlan linkage
+- Manual Practice / Today separation
+- Today Skip semantics
+- New Material discovery and fallback
+- no fake progress for unseen material
+- OPEN course join
+- OWNER / INSTRUCTOR role preservation
+- revoked membership fail-closed behavior
+- safe login redirect allowlist
+- join route auth-before-DB ordering
+- public course-summary projection
+- joinCourse against real Postgres repositories in PGlite
 
-- mid-day Today adaptation
-- Global Today user-facing UI
-- production deployment
+### Not yet manually verified against current hosted schema
 
-## Today answer submission slice (2026-09-24, Night Run Slice 1)
+Because the two newer migrations have not been applied remotely, the following current capabilities have NOT yet been exercised end-to-end against the hosted project:
 
-Closes "DailyPlanItem completion through `submitAnswer`" above.
+- real hosted Today answer submission
+- real hosted Today Skip after the new answer-linkage migration
+- hosted New Material fallback
+- real OPEN-course join through the complete QR/link → login → join → Today browser flow
+- full learner completion flow using the current post-Slice-6 product state
 
-`POST /api/daily-plan/items/:itemId/answer` — the real server-side path for
-a learner answering one question from Today.
+These require an explicitly authorized remote migration/application and manual QA step.
 
-**Architecture — extends, does not duplicate, the existing submitAnswer core:**
+---
 
-- `src/application/learning/submit-answer.ts` already implemented a mature,
-  heavily-audited transactional flow (advisory lock, idempotent Attempt
-  insert, out-of-order rebuild) against the OLDER `today_sessions`/
-  `today_session_items` schema, but was never wired to any route. The real
-  `/today` API/UI use the NEWER `daily_plans`/`daily_plan_items` schema
-  (`src/application/dailyPlan/`), which had no answer-submission wiring at
-  all. This slice adds a parallel `dailyPlanItemId`/`dailyPlanId` path
-  through the SAME `submitAnswer` function — mirroring the existing
-  `todaySessionItemId`/`todaySessionId` handling exactly (ownership check,
-  pending-status check, `learningSessionId`/`dailyPlanId` derived from the
-  persisted item, item resolution in the same transaction) — rather than
-  reimplementing idempotency/locking/rebuild logic a second time.
-  `today_sessions`/`today_session_items` remain untouched and unused by any
-  real route.
-- New migration `20260924000000_daily_plan_answer_attempts.sql`: adds
-  nullable `daily_plan_id`/`daily_plan_item_id` to `attempts`, two new
-  `daily_plan_items` UNIQUE constraints so composite FKs can target them,
-  a MATCH SIMPLE ownership FK and a MATCH FULL consistency FK (both with
-  explicit `ON DELETE SET NULL` on their own columns — verified via a real
-  PGlite delete-cascade test that an Attempt survives its DailyPlan being
-  deleted, only losing the pointer columns), and a CHECK enforcing an
-  Attempt can never claim both a TodaySessionItem and a DailyPlanItem.
-- `src/application/dailyPlan/submit-daily-plan-item-answer.ts`: new
-  orchestration function. Does a plain (non-transactional) pre-fetch of the
-  DailyPlanItem by `itemId` to resolve `courseId`/`questionId`/
-  `questionVersionId`/`dailyPlanId` server-side (never client-supplied),
-  then delegates all grading/idempotency/progress-update/resolution work to
-  `submitAnswer`. The pre-fetch is advisory only — `submitAnswer`'s own
-  internal re-check, under its advisory lock, inside the transaction, is
-  the actual authorization boundary; a race between the two is safe (the
-  in-transaction check rejects cleanly with `DAILY_PLAN_ITEM_ALREADY_RESOLVED`).
-- `src/app/api/daily-plan/items/[itemId]/answer/route.ts` +
-  `handle-submit-daily-plan-item-answer.ts`: thin route, testable core.
-  Auth resolved and body validated before any `getPool()`/DB construction.
-  Accepts only `submissionId`/`selectedAnswer`/`confidenceLevel`/
-  `responseTimeSeconds` from the client; `userId` from verified auth;
-  `itemId` from the URL path; everything else (courseId/questionId/
-  questionVersionId/dailyPlanId/assistanceUsed/answerWasRevealedBeforeResponse/
-  answeredAt) is server-resolved or hardcoded (no UI feature yet needs the
-  last two). Response on success: `{status, isCorrect, wasIdempotentRetry}`
-  only — no `correctOptionIds`/grading-definition/internal fields.
+## Current Test Baseline
 
-**Reviewed:** `unlock-db-reviewer` and `unlock-security-reviewer`, both
-against this exact diff before commit. Findings addressed before commit:
-the MATCH FULL FK's `ON DELETE` clause now matches the `today_session_item_id`
-precedent literally (was previously relying on undocumented cross-constraint
-ordering — verified harmless but fixed anyway), and a dedicated unit test
-for `submit-daily-plan-item-answer.ts`'s own pre-fetch/ownership/field-mapping
-logic was added (previously only exercised indirectly through mocks).
+At pushed application HEAD `66df9f9`:
 
-**Tests added:** 10 new cases in `submit-answer.test.ts` (unit, in-memory),
-4 new cases in `application/dailyPlan/__tests__/submit-daily-plan-item-answer.test.ts`
-(unit), 22 new cases across the route's `__tests__/` (handler + real route
-wiring/auth-before-DB ordering), 8 new PGlite cases in
-`supabase/tests/postgres/submit-answer.test.ts` (real migration chain, real
-transactions, including the mutual-exclusivity CHECK and delete-cascade
-proofs).
-
-**Verification:**
-
-- unit tests: `537 / 537` (was `496 / 496`; +41).
-- schema/Postgres tests: `170 / 170` (was `162 / 162`; +8) — real PGlite,
-  full committed migration chain.
-- typecheck: clean. lint: clean. `git diff --check`: clean.
-- NOT verified: real hosted Supabase/Postgres, real browser submission —
-  no UI exists yet to submit through (Slice 2). No real multi-connection
-  concurrency test (PGlite is single-engine; the advisory-lock serialization
-  claim is reasoned under documented PostgreSQL `READ COMMITTED` semantics,
-  same limitation already stated for the pre-existing TodaySession path).
-
-**Explicitly out of scope for this slice:** Skip, interactive UI, Starter/
-new-material policy, Open Course join. Manual Practice semantics unchanged
-(a dedicated PGlite test proves a real pending DailyPlanItem is untouched by
-a manual-practice submission).
-
-## Interactive Today answering UI slice (2026-09-24, Night Run Slice 2)
-
-Turns the read-only `/today` cards from the previous slice into a real
-learner interaction against `POST /api/daily-plan/items/:itemId/answer`
-(Slice 1). No redesign, no Skip yet (Slice 3).
-
-- `src/app/today/page.tsx`: `TodayPlanView` now holds a local copy of
-  `plan.items` (updated optimistically after each successful submit — no
-  full refetch needed) and renders exactly ONE active pending item at a
-  time (`TodayAnswerCard`), in existing `position` order. SINGLE_CHOICE
-  (single toggle, replacing any prior selection) and MULTIPLE_CHOICE
-  (independent per-option toggle) both supported via `questionType`.
-  Explicit submit button (disabled until a selection exists, disabled again
-  while the request is in flight — no auto-submit-on-select, no
-  double-submit race). After a response, shows נכון/לא נכון feedback and an
-  explicit "המשך" (continue) button before advancing — never silently jumps
-  to the next question.
-- A fresh client-generated `submissionId` (`crypto.randomUUID()`) is
-  created per answer attempt; a failed request's own retry path (still
-  Slice 2 — no dedicated retry button beyond the browser/user re-clicking
-  submit, since submit isn't disabled on error) would need the SAME id to
-  stay idempotent — not yet wired as an automatic retry, but the
-  submissionId is generated once per `TodayAnswerCard` mount (keyed by
-  `current.id`), so a user re-submitting after a network error still reuses
-  it correctly rather than minting a new one.
-- `401` mid-session (expired auth) → the whole page drops back to the
-  existing "signed-out" state via an `onUnauthenticated` callback — no
-  crash, no silent retry loop.
-- `409 ITEM_ALREADY_RESOLVED` (another tab/device resolved it first) →
-  refetches the real plan from the server rather than guessing at
-  correctness the client was never told.
-- Generic/network failure → inline Hebrew error text + the submit button
-  remains available to retry (no raw technical error ever shown).
-- All pending items resolved → "סיימת להיום" completion card. No
-  replacement item generated, no auto-redirect to Manual Practice.
-- Page reload reconstructs entirely from a fresh `GET /api/daily-plan/today`
-  call — no client-side persistence of answering state.
-
-**Verification:**
-
-- typecheck: clean. lint: clean. `git diff --check`: clean.
-- unit tests: `537 / 537` (unchanged — this slice is UI-only; no
-  application/domain/infrastructure code changed, so no new unit tests were
-  needed beyond Slice 1's existing server-side coverage of the route this
-  UI calls).
-- smoke-tested via `npm run dev` + `curl`: `GET /`, `GET /today` both `200`,
-  `/today` still renders `dir="rtl"`.
-- NOT verified: an actual authenticated learner clicking through a real
-  answer submission in a browser. This night-run session has no real
-  learner credentials and is explicitly not authorized to submit real
-  answers against the hosted Supabase project. This is the concrete next
-  verification step for a human to run by hand.
-
-## Skip slice (2026-09-24, Night Run Slice 3)
-
-Closes "Skip use case" above. Implements the already-decided Skip semantics
-end to end: `SKIPPED` is not an incorrect answer, creates no Attempt, no
-correctness evidence, no scheduler/mastery/misconception mutation, and gets
-no replacement item (`.claude/rules/learning-engine.md` "Item resolution").
-
-- `src/application/dailyPlan/skip-daily-plan-item.ts`: new, deliberately
-  much smaller than `submitAnswer` — needs neither the advisory lock nor a
-  transaction, since it never reads-then-writes `UserQuestionProgress`. The
-  single `UPDATE ... WHERE status = 'pending' RETURNING` inside
-  `DailyPlanRepository.markSkipped` (already existed, unchanged) is already
-  atomic on its own. Ownership check (`item.userId !== command.userId`) →
-  `ITEM_NOT_FOUND_OR_NOT_OWNED`, never leaking whether the item exists.
-  Already-resolved (by either a prior skip or a prior answer) →
-  `ALREADY_RESOLVED` with the real status, never a silent no-op.
-- `src/application/learning/ports.ts`: `DailyPlanAnswerRepository` gained
-  `markSkipped` (mirrors `markCompleted` exactly); `ResolveDailyPlanAnswerItemResult`'s
-  `ALREADY_RESOLVED` case now also carries the item's real `status`, so a
-  caller (skip) can distinguish "already completed" from "already skipped."
-  `PostgresDailyPlanRepository` already implemented this real method — no
-  infrastructure change needed.
-- `POST /api/daily-plan/items/:itemId/skip` (`route.ts` +
-  `handle-skip-daily-plan-item.ts`): no request body at all — Skip has no
-  learner-controlled data. Auth resolved before any `getPool()`/DB
-  construction. Response on success: `{status: "SKIPPED"}` only.
-- `/today` UI: a visually secondary "דלג" button (underlined, not the
-  primary button) alongside submit. On Skip: resolves the item locally
-  (immediately advances to the next pending item — no correctness feedback,
-  no explicit continue step, unlike answering). On the last item: the same
-  completion state as answering everything.
-
-**Tests added:** 6 unit cases (`skip-daily-plan-item.test.ts`, fake
-repository), 11 route cases (`handle-skip-daily-plan-item.test.ts` +
-`route-auth-db-ordering.test.ts`), 6 PGlite cases
-(`supabase/tests/postgres/skip-daily-plan-item.test.ts`) proving: owner can
-skip; a different user cannot; no Attempt/no UserQuestionProgress row is
-ever created; duplicate skip is idempotent (same `resolved_at`, not a second
-mutation); a skipped item cannot then be answered (`submitAnswer` itself
-rejects it as `DAILY_PLAN_ITEM_ALREADY_RESOLVED`); no replacement item is
-ever created and the plan's item set is unchanged.
-
-**Verification:**
-
-- unit tests: `554 / 554` (was `537 / 537`; +17).
-- schema/Postgres tests: run once this slice (new PGlite test file
-  exercising the already-existing `PostgresDailyPlanRepository.markSkipped`
-  — no migration, no infrastructure code change).
-- typecheck: clean. lint: clean. `git diff --check`: clean.
-- smoke-tested via `npm run dev` + `curl`: `GET /`, `GET /today` both `200`.
-- NOT verified: a real authenticated learner clicking Skip in a browser —
-  same limitation as the answer-submission UI (Slice 2): no real learner
-  credentials, not authorized to create hosted data.
-
-**Explicitly out of scope for this slice:** Starter/new-material policy,
-Open Course join, session/completion UX polish (Slice 7).
-
-## Minimal learner vertical slice: auth + timezone + Today UI
-
-Added in this slice (2026-09-19):
-
-- `POST /api/user/timezone` (+ `handle-set-user-timezone.ts` testable core,
-  mirroring `handle-get-daily-plan-today.ts`'s DI/auth-before-DB shape
-  exactly): persists the caller's own IANA timezone via the existing
-  `setUserTimezone` application use case + `PostgresUserRepository`. Auth
-  resolved and body validated before any `getPool()`/DB construction,
-  covered by a dedicated route-wiring ordering test (mirroring
-  `daily-plan/today`'s own `route-auth-db-ordering.test.ts`).
-- `/login` — client-side sign-in/sign-up (email+password) using
-  `createSupabaseBrowserClient()` directly (`supabase.auth
-  .signInWithPassword`/`.signUp`), redirecting to `/today` on a session, or
-  showing a "check your email" message when Supabase Auth requires email
-  confirmation (session not immediately returned).
-- `/today` — client component: calls `GET /api/daily-plan/today`; on `401`
-  shows a sign-in prompt; on `422 TIMEZONE_NOT_SET` detects the browser's
-  IANA timezone (`Intl.DateTimeFormat().resolvedOptions().timeZone`), POSTs
-  it to `/api/user/timezone` (ONLY reached because the server just said
-  none is persisted — an already-set timezone is never overwritten), then
-  retries once; on `200` renders plan items by `actionType`/tier
-  reasons/status (Hebrew labels, no raw ids); loading/empty/error states
-  included; a sign-out button calls `supabase.auth.signOut()`.
-- `/` now links to `/today`.
-- Hebrew/RTL throughout, using the existing `src/messages/he.ts` /
-  `src/lib/locale.ts` convention (extended with `auth`/`today` keys).
-
-Exposing question prompt/options in the Today API/UI was explicitly
-deferred out of this slice (no dedicated, `correct_answer`-free read path
-existed yet) — see "Learner-facing question content slice" below for how
-this was closed in a later slice.
-
-**Verification level, stated honestly:**
-
-- unit-tested: `handle-set-user-timezone.ts` (7 cases) and the route
-  auth-before-DB ordering test (5 cases) — all fake/mocked, no real
-  network.
-- typecheck/lint: clean.
-- smoke-tested against the REAL hosted Supabase project
-  (`.env.local`, already configured from an earlier session) via `npm run
-  dev` + `curl` only — deliberately NOT interactive/form-submission
-  testing, to avoid creating or modifying any real hosted data (this
-  autonomous session was not authorized to modify hosted Supabase data).
-  Confirmed: `/`, `/login`, `/today` all return `200` and render their
-  expected Hebrew content; `html[dir="rtl"][lang="he"]` confirmed; a real
-  unauthenticated `GET /api/daily-plan/today` returns real `401
-  UNAUTHENTICATED` (no `DATABASE_URL`/DB touch); a real unauthenticated
-  `POST /api/user/timezone` returns real `401 UNAUTHENTICATED` the same
-  way.
-- NOT verified: an actual real sign-up/sign-in round trip, real timezone
-  persistence via the browser flow, or a real populated Today plan
-  rendering in a browser — none of these were exercised because doing so
-  would create/modify real hosted data, outside this session's
-  authorization. This is the concrete next verification step for a human
-  (or an explicitly-authorized session) to run by hand.
-- NOT interactive-browser-tested (no click-through/visual QA) — verified
-  via `curl` HTTP status/content checks only.
-
-## Learner-facing question content slice (2026-09-20)
-
-Closes the gap noted above: `/today` now renders each `DailyPlanItem`'s
-real question `prompt` and `answerOptions` (plus `questionType`), never
-`correct_answer` or any other grading-only field.
-
-**Architecture — a dedicated, narrowly-projected read path, not a reuse of
-the grading mapper:**
-
-- `LearnerQuestionContent` / `LearnerQuestionContentRepository`
-  (`src/application/learning/ports.ts`) — a new, SEPARATE port from
-  `AnswerCorrectnessChecker`/`QuestionVersionRepository`. The shape has no
-  `correctOptionIds`/`explanation` field to forget to strip.
-- `PostgresLearnerQuestionContentRepository`
-  (`src/infrastructure/postgres/learner-question-content-repository.ts`)
-  issues exactly `select id, question_type, prompt, answer_options from
-  question_versions where id = any($1)` — `correct_answer` and
-  `explanation` are never named in the column list, so neither value is
-  ever fetched from the database. This is the actual enforcement point, not
-  "select then strip in application code." A dedicated unit test
-  (`__tests__/learner-question-content-repository.test.ts`) asserts the
-  literal SQL text never matches `correct_answer`/`explanation`/`select *`.
-- `learner-question-content-mapper.ts` reuses
-  `question-answer-definition-mapper.ts`'s exported `readAnswerOptions`
-  (the same option-shape validation, which itself never touches
-  `correct_answer`) rather than duplicating it.
-- Resolves by the exact persisted `questionVersionId`, never "the
-  Question's current version" (same discipline as
-  `PostgresAnswerCorrectnessChecker`).
-- `GET /api/daily-plan/today` is enriched, not replaced:
-  `handleGetDailyPlanToday` (`handle-get-daily-plan-today.ts`) calls a new
-  injected `loadLearnerQuestionContent` dependency AFTER a plan is already
-  known to exist for the authenticated caller, using only the
-  `questionVersionId`s already present on that plan's own items — no new
-  arbitrary-lookup endpoint, no client-supplied id. Skipped entirely when a
-  plan has no items (no extra round trip). A content-load failure, or
-  content missing for any item's exact `questionVersionId` (should be
-  unreachable — QuestionVersion rows are immutable and never deleted), both
-  map to the existing generic `500 INTERNAL_ERROR` — never a silent
-  substitution.
-- `daily-plan-dto.ts`'s `toDailyPlanDto`/`toDailyPlanItemDto` now take a
-  `contentByVersionId` map and merge by exact id, preserving `DailyPlanItem`
-  order; `toDailyPlanItemDto` throws if an entry is missing (a second,
-  independent guard beyond the handler's own check).
-- `route.ts` wires the real `PostgresLearnerQuestionContentRepository`
-  using the same lazily-constructed pool, reached only inside the
-  already-authenticated closure (auth-before-DB ordering unchanged).
-- `/today` (`src/app/today/page.tsx`) renders `prompt` and `answerOptions`
-  as the primary content per item, with action type/status moved to a
-  smaller secondary row. Still read-only: no click/submit handlers added.
-
-No schema/migration change: `answer_options`/`question_type`/`prompt`
-already existed as columns; only the query's column list is new.
-
-**Tests added:** `learner-question-content-mapper.test.ts` (7 cases,
-including a leak regression asserting the mapper never forwards
-`correct_answer`/`explanation` even if a row carries them),
-`learner-question-content-repository.test.ts` (5 cases, including the SQL
-projection regression), `daily-plan-dto.test.ts` (extended, +4 cases:
-content merge by exact id, missing-content throw, ordering with
-out-of-order content, and a full-serialization leak check),
-`handle-get-daily-plan-today.test.ts` (extended, +6 cases: content
-merge/ordering, dedup of repeated `questionVersionId`s, content-load
-failure, missing-content failure, full-response leak check,
-SINGLE_CHOICE/MULTIPLE_CHOICE shapes), `route-auth-db-ordering.test.ts`
-(+1 case: real wiring reaches the new repository only post-auth).
-
-**Verification:**
-
-- unit tests: `496 / 496` (was `474 / 474`; +22 from this slice).
-- typecheck: clean.
-- lint: clean.
-- `git diff --check`: clean.
-- `npm run test:schema`: `162 / 162` — run once this slice since a new
-  Postgres repository/query was added (unchanged count: no migration, no
-  existing repository behavior touched).
-- smoke-tested against the REAL hosted Supabase project via the
-  already-running `npm run dev` + `curl`: `GET /`, `GET /today` return
-  `200`; `/today` still renders `html[lang="he"][dir="rtl"]`; unauthenticated
-  `GET /api/daily-plan/today` returns real `401 UNAUTHENTICATED` (auth
-  still resolved before any DB/content-loading work). No real hosted data
-  was created, modified, or deleted.
-- NOT verified: an authenticated real learner's populated `/today` actually
-  rendering prompt/options in a browser — this session had no real learner
-  session/credentials to sign in with, and did not attempt to create or
-  guess one. This is the concrete next verification step for a human (or
-  an explicitly-authorized session with real credentials) to run by hand,
-  GET-only, without submitting any answer.
-
-**Explicitly out of scope for this slice (unchanged):** answer submission,
-Skip, Today redesign, AI generation, any remote Supabase data/schema
-change.
-
-## Recent development-workflow work
-
-The Claude/Cursor development workflow was committed and pushed as `e784dd5` — improve claude development workflow.
-
-It included:
-
-- updated `CLAUDE.md`
-- updated `AGENTS.md`
-- updated `docs/CONTEXT_MAP.md`
-- this `docs/DEV_STATUS.md`
-- `.claude/settings.json`
-- `.claude/rules/**`
-- `.claude/agents/**`
-- `.claude/skills/checkpoint/**`
-- `.claude/skills/implement-slice/**`
-- `.claude/skills/review-commit/**`
-- targeted alignment updates under `.cursor/rules/**`
-
-This work is workflow/configuration-only and separate from the DailyPlan route commits. No application/source changes (`src/`, `supabase/`) were included.
-
-## Accepted product decisions relevant to current work
-
-- One `DailyPlan` per user per local calendar day.
-- Persisted user timezone is authoritative for determining the local day.
-- Global Today and Course Today are views of the same DailyPlan.
-- Only active `LEARNER` memberships participate automatically in DailyPlan generation.
-- `OWNER` and `INSTRUCTOR` roles do not automatically participate as learners.
-- Manual Practice is separate from Today.
-- Today plans are frozen by default after generation.
-- No per-course quota or fairness balancing.
-- User identity must NEVER be supplied by the client.
-- Server routes derive `userId` only from verified authentication.
-- DailyPlan / DailyPlanItem supersede the older Today Session persistence naming.
-
-## Current test baseline
-
-- Unit tests: `562 / 562`
-- Schema/Postgres tests: `186 / 186` (rerun this slice — new migration +
-  new `PostgresUnseenQuestionRepository`)
+- Unit tests: `592 / 592`
+- Schema/Postgres (PGlite): `194 / 194`
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
 
-These numbers are regression checkpoints for the current development state, not permanent requirements.
+These values are development checkpoints, not permanent numeric requirements.
 
-Verification level for the DailyPlan Today route:
+Future test counts may increase or decrease legitimately as the suite evolves.
 
-- unit-tested
-- real route wiring regression-tested with mocked infrastructure seams
-- supporting persistence/schema behavior tested with the existing schema/Postgres-compatible suite
-- reviewed by inspection
-- real-Supabase tested (see "Real-environment verification milestone" above)
-- real hosted-PostgreSQL verified through the route, including same-day idempotency
-- real browser Auth login tested (via a temporary local test page, since removed)
-- NOT yet tested through a permanent product login/Today UI (none exists yet)
+---
 
-## Auth session middleware — assessed, not implemented
+## Known Gaps / Limitations
 
-Reviewed whether a `middleware.ts` is required now that a real UI exists
-(`@supabase/ssr`'s own README, "Known patterns and limitations"). Finding:
-the real limitation `middleware.ts` mitigates is a narrow one — two
-*concurrent* requests sharing the same expired session cookie both attempt
-a (single-use) refresh token, and the second fails until the browser syncs
-the first response's updated cookie. This repo's current call pattern
-(`/today` makes one `fetch` to `GET /api/daily-plan/today`, then
-conditionally one more to `POST /api/user/timezone`, sequentially, not in
-parallel) does not exercise this race in the common case; two browser tabs
-opened simultaneously with the same stale session still could. Route
-Handlers (the only place trusted auth happens today — no Server Component
-needs auth yet) can already set refreshed cookies themselves via
-`createSupabaseServerClient()`'s existing `setAll`, so middleware is not
-needed for basic refresh persistence at the current scope. Not clearly
-required yet — documented rather than guessed at; revisit if a Server
-Component needs auth, or if multi-tab concurrent-refresh becomes a real
-reported issue.
+Current known items include:
 
-## Next development actions
+- production deployment is not yet complete.
+- final learner-facing visual/demo polish remains.
+- full current learner loop still needs manual browser QA after remote migrations are applied.
+- revoked CourseMembership rejoin policy remains intentionally unresolved.
+- malformed/non-UUID course path parameters currently follow a broader existing API pattern that can produce a generic `500` rather than a cleaner `404`/validation response; this is low-priority and not specific to the join feature.
+- auth middleware is not currently implemented; existing Route Handler auth is sufficient for the current sequential request model, but middleware may need reassessment if authenticated Server Components or real multi-tab refresh races become relevant.
+- real multi-connection PostgreSQL concurrency is not fully proven by PGlite; concurrency claims must remain scoped to what has actually been tested or reasoned under PostgreSQL semantics.
+- PGlite DATE parsing is not identical to real `node-postgres` DATE parsing on all host timezones; dedicated row-validation tests cover the production `pg` convention.
 
-1. By hand (or an explicitly-authorized session), exercise the real
-   sign-up/sign-in + timezone + Today flow — including a real learner
-   session actually rendering populated prompt/options — against the
-   hosted Supabase project in a real browser. Both this slice and the
-   "Minimal learner vertical slice" one before it deliberately stopped
-   short of that.
-2. DailyPlanItem completion through `submitAnswer` (Slice 1), interactive
-   Today UI (Slice 2), Skip (Slice 3), the Starter/New Material V1 product
-   decision (Slice 4, ADR-017), and its implementation (Slice 5) are all
-   DONE — see their respective slice sections above. Next: Open Course
-   Join / Ruppin demo onboarding (Slice 6) — read ADR-015 (Course
-   Membership / join authorization) first.
+Not currently implemented / not currently targeted:
 
-## Starter / New-Material V1 — RESOLVED (2026-09-24, Night Run Slice 4)
+- mid-day adaptive mutation of an already-frozen Today plan
+- automatic carry-over of unresolved Today items
+- per-course fairness quota
+- mixing New Material with ordinary review candidates in V1
 
-**UNBLOCKED.** The product decision this section originally described as
-blocking is now made: `docs/DECISIONS/017-starter-new-material-v1.md`
-(ADR-017, ACCEPTED) closes `docs/OPEN_QUESTIONS.md` #4 and #5 for V1.
+---
 
-Summary (full detail in the ADR): unseen = no prior real Attempt for that
-Question; fallback-only (only activates when zero ordinary next-best-action
-candidates exist that day — never mixed with review); up to 3 unseen
-questions selected deterministically (existing order field if present,
-else `created_at`/`id`); placement is not evidence (no `UserQuestionProgress`
-fabricated); new `NEW_LEARNING` action type / `NEW_MATERIAL` tier /
-`UNSEEN_MATERIAL` reason (reusing `next-best-action.ts`'s own
-already-proposed `NEW_LEARNING` name, not inventing a new one).
+## Current Product Decisions Relevant to Active Development
 
-This ADR is a product/architecture decision record only — no code changed
-in this slice. Implementation (discovery query, ranking-pipeline
-integration, schema CHECK-constraint additions) is Slice 5, tracked
-separately below.
+Authoritative decisions live in ADRs.
 
-## New-material fallback implementation (2026-09-24/25, Night Run Slice 5)
+Most relevant accepted ADRs:
 
-Implements ADR-017 exactly. Closes the real gap: a fresh learner with an
-active `LEARNER` membership, zero Attempts, and zero `UserQuestionProgress`
-rows now receives a non-empty Today when eligible unseen Questions exist.
+- `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
+  - CourseMembership roles / authorization / join model
 
-- `supabase/migrations/20260925000000_daily_plan_new_material_v1.sql`:
-  drops/recreates `daily_plan_items`' `action_type`/`tier` CHECK
-  constraints (by Postgres's own auto-generated names — a CHECK's allowed
-  list cannot be widened in place) to add `'NEW_LEARNING'`/`'NEW_MATERIAL'`.
-  `today_session_items`' identical constraints deliberately untouched
-  (superseded, unused-by-any-real-route table).
-- `src/infrastructure/postgres/unseen-question-repository.ts`
-  (`PostgresUnseenQuestionRepository`): the real SQL enforcement point for
-  "unseen" (`NOT EXISTS` against `attempts`, checked against Attempts
-  directly, never inferred from missing `UserQuestionProgress`) and "has a
-  resolvable current QuestionVersion." Resolves `question_version_id` in
-  the same query — no second per-question lookup, avoiding N+1. Called
-  once per eligible Course (mirrors the existing `progress.listForUser`
-  per-Course loop), never once per question.
-- `src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`:
-  the fallback branches on `ranked.length === 0` (zero ordinary
-  next-best-action candidates) — the existing normal-candidate code path
-  is otherwise unchanged, just moved inside `if (ranked.length > 0)`. The
-  fallback merges each Course's own (already-limited-to-3) result set and
-  re-sorts globally by `(createdAt, questionId)` before taking the final
-  top-3 — proven correct (not merely tested) via the standard "top-K from
-  union of per-source top-K lists" argument: since every Course applies
-  the SAME limit as the global limit, no Course can be under-represented
-  in the true global top-3.
-- `src/application/dailyPlan/ports.ts`: `DailyPlanItemActionType`/`Tier`/
-  `Reason` widened to supersets of `next-best-action.ts`'s own
-  `NextBestActionType`/`NextBestActionReason` and
-  `next-best-action-ranking.ts`'s `NextBestActionPriorityTier` — those
-  domain files remain UNCHANGED (still exactly 4 candidate types); the new
-  values exist only as a `DailyPlanItem` persistence shape, produced
-  exclusively by the fallback path, never by ranking.
-- No fake progress: `discoverNewMaterialItems` never references the
-  `progress` repository at all — verified by inspection and by a
-  dedicated test whose fake throws if `progress.upsert` is ever called.
+- `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
+  - one DailyPlan per local day
+  - Global Today / Course Today semantics
+  - frozen-plan behavior
+  - Manual Practice separation
+  - Skip semantics
 
-**Reviewed:** `unlock-db-reviewer`, against this exact diff. No blockers.
-Confirmed by direct inspection (not just trusting tests): the CHECK
-constraint auto-generated names are correct, the global top-N merge is
-provably correct (not just tested), no transactional/executor-mixing
-issue, no fake progress, no ranking regression for the existing candidate
-path.
+- `docs/DECISIONS/017-starter-new-material-v1.md`
+  - unseen definition
+  - fallback-only New Material policy
+  - deterministic up-to-3 selection
+  - no fabricated evidence
 
-**Tests added:** 18 unit cases (`generate-daily-plan-for-resolved-inputs.test.ts`),
-2 unit cases (`get-or-create-daily-plan-for-today.test.ts`, including the
-fresh-learner regression), 6 PGlite cases
-(`unseen-question-repository.test.ts` — ordering, limit, null-version
-exclusion, cross-user Attempt isolation), 4 PGlite cases
-(`daily-plan-unit-of-work.test.ts`'s new-material describe block —
-fresh-learner regression, attempted-question exclusion, no-mixing,
-no-fake-progress, all through the real `getOrCreateDailyPlanForToday`
-pipeline end-to-end).
+Do not duplicate these ADRs here.
+Read the specific ADR only when a task requires its details.
 
-**Verification:**
+---
 
-- unit tests: `562 / 562` (was `554 / 554`; +8 net files, +25 new cases
-  reflected in the total).
-- schema/Postgres tests: `186 / 186` (was `176 / 176`; +10) — real PGlite,
-  full committed migration chain including the new CHECK-constraint
-  migration.
-- typecheck: clean. lint: clean. `git diff --check`: clean.
-- NOT verified: real hosted Supabase/Postgres (migration not applied
-  remotely, per session authorization limits), real browser rendering of
-  a `NEW_LEARNING` item (Slice 7 will add its learner-facing label; the
-  current fallback for an unlabeled action type in `/today` is to render
-  the raw enum string, matching the existing pattern for any unmapped
-  `actionType`).
+## Current Blockers
 
-**Verification:** documentation-only slice — no tests run, no code
-changed. `git diff --check`: clean.
+No known code blocker at pushed HEAD `66df9f9`.
 
-### Historical context (superseded by ADR-017, kept for the investigation trail)
+Remote end-to-end verification is intentionally blocked until the user explicitly authorizes application of the committed-but-not-remote migrations.
 
-Investigated for an autonomous session's queued slice (2026-09-19). NOT
-implemented at that time — this was a genuinely unresolved product
-decision, not a missing-parameter gap:
+---
 
-- `src/domain/learning/next-best-action.ts`'s own doc comment explicitly
-  excludes `EXPAND_COVERAGE`/`NEW_LEARNING` candidates as requiring
-  "course/topic coverage context that does not exist on
-  `UserQuestionProgress`" — modeling them "would mean fabricating a
-  course-aggregate contract that hasn't been designed."
-- `src/domain/learning/today-planner.ts`'s own doc comment states it
-  deliberately does NOT fabricate `NEW_LEARNING`/`EXPAND_COVERAGE` filler
-  when ranked candidates are empty, calling Starter/calibration planning "a
-  deliberately separate, still-deferred future input path."
-- `docs/OPEN_QUESTIONS.md` #4 (Starter Experience Eligibility) and #5
-  (Starter Sampling Strategy) are both explicitly **OPEN** — no entry
-  condition, sampling strategy, or count is decided.
-- `docs/NEW_MATERIAL_EXPOSURE_MODEL.md` is self-labeled "DESIGN ANALYSIS
-  ONLY — NOT AN ADR, NOT IMPLEMENTED, NOT A DECISION," explicitly states no
-  numeric threshold/sample size/novelty-budget is decided, and explicitly
-  scopes itself as a **read-only** analysis of `next-best-action.ts` and
-  `today-planner.ts` — "No change to ... all four are read-only inputs to
-  this analysis."
+## Manual Actions Required
 
-Implementing any unseen-question candidate path now would mean inventing
-the eligibility/sampling policy these documents explicitly defer to future
-product review, contradicting CLAUDE.md §7/§4 ("do not invent an answer"
-when a product decision is unresolved). Left undone; needs a product
-decision on OPEN_QUESTIONS #4/#5 before implementation.
+Before hosted end-to-end QA of the newest learning flows:
 
-**Superseded above:** that product decision now exists (ADR-017). This
-historical trail is kept because it accurately documents why the decision
-was withheld at the time, not because it still describes current state.
+1. Review the committed migration state.
+2. User explicitly authorizes and performs the remote Supabase migration push.
+3. Verify hosted migration success.
+4. Manually exercise the real learner flow:
+   - login
+   - OPEN course join
+   - timezone handling
+   - Today generation
+   - answer
+   - Skip
+   - progress through Today
+   - completion
+   - New Material behavior where applicable
 
-Do not connect to, link, migrate, or modify a remote Supabase project without explicit user authorization.
+Do not perform these hosted mutations automatically.
 
-## Session protocol
+---
 
-For a fresh Claude session:
+## Immediate Development Checkpoint
 
-1. Read `CLAUDE.md`.
-2. Read this file.
-3. Inspect the minimum repository state necessary for the task.
-4. Use `docs/CONTEXT_MAP.md` to locate only task-relevant context.
-5. Do not assume prior chat context.
-6. Implement one focused development slice at a time.
-7. Prefer targeted tests during implementation.
-8. Use the `checkpoint` skill once at the end of a meaningful slice.
-9. Use reviewer agents only when their specialization is actually relevant.
-10. Do not push; pushes are performed manually outside Claude.
+Pushed product/application baseline:
 
-Context-efficiency rules:
+`66df9f9`
 
-- prefer repository state over long conversational context
-- use `/clear` after major approved checkpoints, commits, pushes, or task-type changes
-- start with `git diff --stat` rather than reading a full repository diff unnecessarily
-- do not reload broad documentation trees by default
-- do not reread files already available in the same short session unless they changed
-- keep reports concise
-- use subagents only for isolated review or genuinely independent work
+Completed development queue through:
 
-## Important references
+- Today answer submission
+- interactive Today answering
+- Skip
+- Starter/New Material V1 decision
+- New Material fallback implementation
+- OPEN course learner onboarding
 
-- `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md` — Course Membership / authorization
-- `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md` — Global DailyPlan / Today semantics
-- `docs/DECISIONS/017-starter-new-material-v1.md` — Starter/New-Material V1 (unseen definition, fallback policy, count, ordering)
-- `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`
-- `docs/API_V1_DRAFT.md`
+The previous autonomous Night Run is complete through Slice 6.
+
+Next execution work must come from the new:
+
+`docs/CHATGPT_PLAN.md`
+
+Do not infer the next slice from historical run context.
+
+The current repository is transitioning to Development OS V1 before additional product slices are started.
+
+---
+
+## Current Documentation Model
+
+Use:
+
+- `CLAUDE.md`
+  - HOW Claude works
+
+- `docs/CHATGPT_PLAN.md`
+  - WHAT Claude should execute now
+
+- `docs/DEV_STATUS.md`
+  - WHAT is currently true
+
+- `docs/MASTER_SPEC.md`
+  - WHAT UNLOCK is intended to become
+
 - `docs/OPEN_QUESTIONS.md`
+  - WHAT is still undecided
+
+- `docs/DECISIONS/*`
+  - WHAT has been decided and WHY
+
+- `docs/CONTEXT_MAP.md`
+  - WHERE relevant code/docs/rules are located
+
+- `docs/RUNS/*`
+  - historical execution archive
+
+- `scratch/development_checkpoint.md`
+  - temporary in-run state only
+
+Historical Run Reports are restricted context and must not be used as normal working memory.

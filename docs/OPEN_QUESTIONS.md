@@ -1,1293 +1,985 @@
-# UNLOCK Open Questions
+# UNLOCK — Open Questions
 
 Status: Active decision queue
 
-Purpose: track unresolved product, domain, data, and implementation questions that are important enough to affect behavior, architecture, data integrity, analytics, or scope.
+Purpose: track unresolved product, architecture, domain, data, analytics, security,
+and calibration questions that are important enough that implementation should
+not silently invent an answer.
 
-This file exists to prevent the project from silently inventing answers during implementation.
+This file contains ONLY unresolved questions.
 
-An open question should remain here until it is:
+Resolved decisions belong in:
+- `docs/DECISIONS/`
+- feature contracts
+- committed code
+- `docs/DEV_STATUS.md` for current-state summaries
 
-- resolved;
-- intentionally deferred;
-- converted into an ADR;
-- absorbed into a feature contract;
-- rendered irrelevant by a later decision.
+Historical investigation belongs in:
+- Git history
+- `docs/RUNS/`
+
+Question IDs are stable.
+
+Gaps in numbering are intentional because resolved questions are removed rather
+than kept here as historical records.
 
 ---
 
-## 1. User ↔ Course Relationship in V1
+## Status Meanings
 
-Question:
+### OPEN
 
-How should a learner be related to a Course in V1?
+A real decision is still required.
 
-Possible directions (historical — see Status below):
+If implementation depends on it, do not invent the answer.
 
-- direct ownership;
-- direct membership/access record;
-- lightweight Enrollment;
-- fuller Enrollment model.
+### DEFERRED
+
+The question is real, but current V1 work does not require resolving it yet.
+
+Do not pull it into scope unless the current Plan explicitly does so.
+
+### CALIBRATION
+
+A safe V1/default behavior exists, but real evidence is still required before
+locking thresholds, weights, or numerical values.
+
+Calibration questions should not block unrelated feature work.
+
+---
+
+# Learning Engine / Adaptive Learning
+
+## OQ-002 — Effective Exam-Date Hierarchy
+
+Status: OPEN
+
+Decision needed:
+
+What shared exam-date hierarchy should V1 support?
+
+Minimum candidate:
+
+personal exam date
+→ course exam date
+→ none
+
+Possible future extension:
+
+personal exam date
+→ group exam date
+→ course exam date
+→ none
+
+Current constraints:
+
+- personal override must take precedence
+- Groups are currently deferred
+- the system must never invent an exam date
+- exam urgency should amplify priority rather than replace the rest of the
+  Learning Engine
+
+Resolve before:
+
+building a durable exam-date model or learner-facing exam scheduling behavior.
+
+---
+
+## OQ-008 — Learner-State Persistence Boundary
+
+Status: OPEN
+
+Decision needed:
+
+Which derived learner-state values should be persisted versus recomputed?
+
+Relevant categories include:
+
+- per-question derived state
+- aggregate learner state
+- mastery summaries
+- misconception summaries
+- memory/scheduling state
+- cached selection/ranking outputs
+
+Current constraints:
+
+- Attempts are immutable source evidence
+- persisted derived state must remain reproducible from evidence where intended
+- avoid multiple independent sources of truth
+- avoid unnecessary recomputation at runtime
+- avoid stale duplicated derived state
+
+Resolve when:
+
+introducing a new persisted learner-state aggregate or cache beyond the current
+per-question / DailyPlan model.
+
+---
+
+## OQ-009 — Next Best Action Persistence
+
+Status: DEFERRED
+
+Decision needed:
+
+Should Next Best Action remain purely a calculated ranking process, with only
+selected DailyPlan outputs persisted, or should additional ranking decisions /
+candidate evaluations also be persisted?
+
+Potential reasons to persist more:
+
+- auditability
+- explainability
+- engine evaluation
+- offline analysis
+- debugging ranking behavior
+
+Potential reasons not to:
+
+- data volume
+- stale outputs
+- complexity
+- duplication of reproducible computation
+
+Current V1 direction:
+
+the selected DailyPlan is persisted; ordinary candidate/ranking computation does
+not need to become a permanent event log merely for completeness.
+
+Resolve before:
+
+building detailed Learning Engine audit / experimentation infrastructure.
+
+---
+
+## OQ-010 — Engine Versioning Granularity
+
+Status: OPEN
+
+Decision needed:
+
+What constitutes a new Learning Engine version?
+
+Potential triggers:
+
+- mastery formula change
+- scheduler/rating mapping change
+- misconception logic change
+- ranking weights
+- ranking tie-break behavior
+- Today planner behavior
+- evidence interpretation changes
+
+Need to define whether one engine version covers:
+
+- learner-state derivation
+- scheduling
+- Next Best Action
+- Today planning
+
+or whether these need separate version identities.
 
 Current constraint:
 
-Do not build institutional complexity merely to support this relationship.
+historical behavior and rebuild semantics must remain interpretable.
 
-Decision should support:
+Resolve before:
 
-- learner access;
-- future multi-user Course scenarios;
-- clear authorization;
-- simple V1 implementation.
-
-Status: **DECIDED AND IMPLEMENTED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
-V1 uses an explicit `CourseMembership` relationship (`userId`, `courseId`,
-`role`, `joinedAt`, `revokedAt`, `archivedAt`) with three roles (`OWNER`,
-`INSTRUCTOR`, `LEARNER`) and a per-Course join policy (`AUTHORIZED_ONLY`
-default, `OPEN` settable only by a management role). QR/link is never
-authorization by itself. Institution/enrollment-provisioning remains
-architecture-ready, not built now (ADR-006 unaffected). The exact
-authorization source for `AUTHORIZED_ONLY` Courses, lecturer-vs-institution
-content ownership, and the real persistence/RLS implementation remain
-separately open — see ADR-015's own "Explicitly deferred" section, and
-Open Question #43 for edge cases the implementation deliberately does not
-guess at.
-
-Implemented by `supabase/migrations/20260919000000_course_membership_v1.sql`,
-`src/domain/course/`, `src/application/course/`, and the
-`PostgresCourseRepository`/`PostgresCourseMembershipRepository` pair in
-`src/infrastructure/postgres/`. Auth wiring and real RLS policies remain
-unimplemented.
-
-Target phase: Domain Contracts / Database Design
+meaningful production changes to learning formulas after real learner data exists.
 
 ---
 
-## 2. Effective V1 Exam-Date Hierarchy
+## OQ-011 — Mastery Internal Representation and Calibration
 
-Question:
+Status: CALIBRATION
 
-What shared exam-date concept should V1 actually support?
+Accepted learner-facing progression:
 
-Possible options:
+UNKNOWN
+→ EMERGING
+→ DEVELOPING
+→ STRONG
+→ MASTERED
 
-```text
-personal_exam_date
->
-course_exam_date
->
-null
-```
+Accepted principles:
 
-or later:
+- mastery is evidence-based
+- mastery is cumulative
+- one correct answer does not create mastery
+- mastery is reversible
+- MASTERED is not terminal
+- later retrieval failure may reduce mastery
+- unresolved lapse prevents strong mastery interpretation
+- high-confidence wrong is stronger negative evidence than ordinary wrong
 
-```text
-personal_exam_date
->
-group_exam_date
->
-course_exam_date
->
-null
-```
+Current conservative starting defaults exist in the Learning Engine.
 
-Current concern:
+Still unresolved:
 
-Groups are deferred, so a group-level date may unnecessarily complicate V1.
+- whether the internal representation should remain purely categorical or become
+  score-based / hybrid
+- final production thresholds after real pilot evidence
+- whether the initial conservative numeric defaults need recalibration
+
+Do not treat current calibration values as immutable product invariants.
+
+---
+
+## OQ-012 — FSRS Evidence-to-Rating Mapping and Retention
+
+Status: CALIBRATION
+
+Scheduler family is already decided:
+
+FSRS-family scheduler behind `MemoryScheduler`.
+
+Still unresolved:
+
+- exact mapping from UNLOCK evidence to FSRS rating
+- desired retention configuration
+- whether desired retention changes near an exam
+- how confidence should influence scheduler rating
+- how assistance should influence scheduler rating
+- whether response time should influence scheduler rating at all
 
 Constraint:
 
-A personal override must take precedence.
+confidence and response time must not automatically become FSRS Hard/Easy
+without an explicit, documented, tested policy.
 
-The system must never invent an exam date.
+Resolve through:
 
-Status: OPEN
-
-Target phase: Domain Contracts
-
----
-
-## 3. Today Session Boundary
-
-Question:
-
-What exactly defines the validity period of a Today Session?
-
-Examples that require a decision:
-
-- local calendar day;
-- rolling 24-hour period;
-- learner-defined study day;
-- special behavior after midnight;
-- unfinished session from the previous day.
-
-Required behavior:
-
-A learner returning later during the valid period should resume the same session.
-
-Do not silently regenerate an active Today Session.
-
-Status: OPEN
-
-Target phase: Today Feature Contract
+Learning Engine prototype/pilot calibration.
 
 ---
 
-## 4. Starter Experience Eligibility
+## OQ-013 — Misconception Threshold Calibration
 
-Question:
+Status: CALIBRATION
 
-How does UNLOCK decide that a learner needs Starter instead of normal Today?
+Accepted state model:
 
-Potential evidence thresholds may involve:
+NONE
+→ SUSPECTED
+→ ACTIVE
+→ RESOLVED
 
-- number of Attempts;
-- number of Questions sampled;
-- Course coverage;
-- existence of reliable UserQuestionProgress.
+Accepted principles:
+
+- ordinary wrong contributes weakly
+- high-confidence wrong contributes more strongly
+- one ordinary wrong does not automatically create ACTIVE
+- repeated evidence matters
+- repeated misconception evidence across different questions is especially meaningful
+- high-confidence wrong alone still does not automatically imply ACTIVE
+- resolution requires repeated relevant success, not one correct answer
+
+Still unresolved:
+
+- exact scoring model
+- threshold for SUSPECTED
+- threshold for ACTIVE
+- recovery/resolution thresholds
+- weighting of repeated/cross-question evidence
+
+Do not turn illustrative candidate numbers into permanent product rules without
+pilot evidence.
+
+---
+
+## OQ-014 — Confidence Input Model
+
+Status: OPEN
+
+Decision needed:
+
+What confidence interaction should the learner experience in V1?
 
 Need to define:
 
-- entry condition;
-- exit condition;
-- re-entry behavior if needed;
-- insufficient-content behavior.
+- scale
+- labels
+- whether confidence is requested on every answer
+- whether it is optional
+- when it is collected
+- whether collection differs by question type
+- how it affects evidence
+- how it affects misconception interpretation
+- whether it affects scheduling
 
-Status: **RESOLVED for V1** by
-`docs/DECISIONS/017-starter-new-material-v1.md` (ADR-017, ACCEPTED).
+Possible representations include:
 
-V1 answer: fallback-only. Eligibility is "zero eligible unseen Questions
-have prior real Attempts, AND zero ordinary next-best-action candidates
-exist for the learner's DailyPlan that day." Entry condition and
-insufficient-content behavior are both covered by ADR-017 §1–3; there is
-no separate exit/re-entry state machine in V1 because nothing persisted is
-entered/exited — eligibility is recomputed fresh every day from Attempt
-history. Finer eligibility calibration (broader thresholds, partial-course
-coverage signals) remains open future work, not blocked by this decision.
-
-Target phase: Starter Feature Contract
-
----
-
-## 5. Starter Sampling Strategy
-
-Question:
-
-How should initial Questions be selected for a new learner?
-
-Potential considerations:
-
-- broad Course coverage;
-- random or deterministic sampling;
-- difficulty spread;
-- topic balance;
-- known source quality;
-- exam relevance.
+- low / medium / high
+- sure / unsure
+- numeric scale
 
 Constraint:
 
-Do not pretend adaptive personalization exists before evidence is collected.
-
-Status: **RESOLVED for V1** by
-`docs/DECISIONS/017-starter-new-material-v1.md` (ADR-017, ACCEPTED).
-
-V1 answer: deterministic, up to 3 questions, no mixing with review, no
-per-Course fairness quota, ordered by existing pedagogical/authoring order
-if present, else `created_at` then `id` (ADR-017 §3–4). Explicitly NOT
-decided by V1: difficulty spread, topic balance, known-source-quality
-weighting, or exam-relevance-aware ordering — these remain open
-calibration work for a future revision, per this question's own
-"do not pretend adaptive personalization exists before evidence is
-collected" constraint, which V1's plain deterministic ordering satisfies
-by construction (no personalization is claimed).
-
-Target phase: Starter Feature Contract
+avoid introducing a precise-looking confidence scale whose meaning is not clear
+to learners or the engine.
 
 ---
 
-## 6. Question Editing and Historical Attempts
-
-Question:
-
-What happens when a Question changes after learners have already answered it?
-
-Possible strategies:
-
-- immutable Question versions;
-- Question snapshot stored on Attempt;
-- revision records;
-- restrict certain edits after usage.
-
-Need to preserve the meaning of historical Attempts.
-
-Example risk:
-
-An old Attempt should not suddenly appear to reference different wording or a different correct answer because the shared Question was edited later.
+## OQ-015 — Response-Time Interpretation
 
 Status: OPEN
 
-Target phase: Database Design
+Decision needed:
 
----
-
-## 7. Question Version Reference
-
-Question:
-
-If Question versioning is used, what exactly should Attempt reference?
-
-Possible directions:
-
-- `question_id` + `question_version_id`;
-- immutable version entity;
-- embedded snapshot fields;
-- hybrid approach.
-
-Decision should balance:
-
-- historical integrity;
-- schema simplicity;
-- auditability;
-- future content correction.
-
-Status: OPEN
-
-Target phase: Database Design
-
----
-
-## 8. Learner State Persistence
-
-Question:
-
-Which learner-state values should be persisted versus calculated on demand?
-
-Possible categories:
-
-- UserQuestionProgress persisted;
-- aggregate Learner State persisted;
-- Next Best Action calculated on demand;
-- selected summary values cached.
-
-Need to consider:
-
-- reproducibility;
-- performance;
-- stale derived state;
-- implementation simplicity.
-
-Status: OPEN
-
-Target phase: Database Design / Learning Engine
-
----
-
-## 9. Next Best Action Persistence
-
-Question:
-
-Should Next Best Action exist only as a calculated ranking result, or should selected outputs be persisted?
-
-Potential reasons to persist:
-
-- auditability;
-- explainability;
-- Today generation history;
-- engine evaluation.
-
-Potential reasons not to persist every ranking:
-
-- unnecessary data volume;
-- stale results;
-- increased complexity.
-
-Status: OPEN
-
-Target phase: Learning Engine / Today Design
-
----
-
-## 10. Engine Versioning Granularity
-
-Question:
-
-What requires a new Learning Engine version?
-
-Possible triggers:
-
-- mastery formula change;
-- review scheduling change;
-- misconception logic change;
-- ranking weights change;
-- tie-break change.
-
-Need to define whether versioning applies to:
-
-- Learner State;
-- Next Best Action;
-- Today planner;
-- all of the above.
-
-Status: OPEN
-
-Target phase: Learning Engine V1
-
----
-
-## 11. Mastery Scale
-
-Question:
-
-What is the canonical V1 representation of `mastery_level`?
-
-Possible representations:
-
-- discrete enum;
-- integer band;
-- decimal score;
-- hybrid internal score + learner-facing category.
-
-Constraint:
-
-Avoid false precision.
-
-**Partially resolved (product decision, category model only).** The
-accepted V1 learner-facing progression is:
-
-```text
-UNKNOWN → EMERGING → DEVELOPING → STRONG → MASTERED
-```
-
-with accepted qualitative interpretation and rules — mastery must be
-evidence-based and cumulative (never from a single correct answer or a
-short success streak); mastery is reversible; MASTERED is not terminal
-(FSRS/review scheduling continues, later retrieval failure may reduce
-mastery); high-confidence wrong counts as stronger negative evidence than
-ordinary wrong; New Material Exposure contributes weak evidence only. See
-`docs/LEARNING_ENGINE.md` §16, updated to reflect this progression.
-
-**Resolved at the conservative-production-default level.** Dor's
-product-owner review has since accepted initial numeric defaults for the
-`MasteryPolicy` fields (`src/domain/learning/mastery.ts`,
-`minSpacedRetrievalsForStrengthening`, `minSpacedRetrievalsForMastered`,
-`minEvidenceStrengthForMastered`, `minRetrievabilityForMastered`):
-
-```text
-STRONG:    minSpacedRetrievalsForStrengthening = 1, AND no unresolved lapse
-MASTERED:  minSpacedRetrievalsForMastered = 3
-           AND minEvidenceStrengthForMastered = "strong"
-           AND minRetrievabilityForMastered = 0.80
-           AND no unresolved lapse
-```
-
-"No unresolved lapse" is enforced via the existing lapse-state check
-(`src/domain/learning/lapse.ts`), not a new `MasteryPolicy` field — no
-additional threshold was invented beyond what the current policy shape
-already exposes. **These are configurable conservative production
-defaults, NOT permanent product invariants** — future pilot data may
-recalibrate them; MASTERED remains reversible (a later lapse or retrieval
-failure can move a learner out of MASTERED, per
-`docs/LEARNING_ENGINE.md` §16a/§18).
-
-**Still OPEN:** whether these specific numbers hold after real pilot
-evidence (long-term calibration), and the exact internal representation
-(enum vs. score vs. hybrid) are NOT product-locked — do not treat these as
-final, only as the accepted V1 starting point.
-
-Status: OPEN for long-term calibration and internal representation;
-category progression, interpretation, AND initial numeric defaults are
-DECIDED — a usable V1 default now exists, pending prototype audit for
-final calibration
-
-Target phase: Prototype Learning Audit / Learning Engine
-
----
-
-## 12. Review Scheduling Rule
-
-Decided:
-
-UNLOCK V1 uses an FSRS-family scheduler as the memory-scheduling implementation for `next_review_date`, behind the internal `MemoryScheduler` interface. See `docs/DECISIONS/008-fsrs-memory-scheduler.md` and `docs/LEARNING_ENGINE.md` §12–§15. The scheduler-family choice itself is no longer open.
-
-Still open:
-
-- the exact mapping from UNLOCK evidence (correctness, confidence, response time, assistance) to FSRS ratings;
-- desired retention configuration;
-- whether/how desired retention changes near an exam date.
-
-Response time and confidence must not be automatically mapped to FSRS Hard/Easy ratings without a separate, explicitly documented and tested decision.
-
-Status: OPEN — scheduler family DECIDED (ADR-008); evidence→rating mapping and retention configuration remain open
-
-Target phase: Learning Engine V1 (MemoryScheduler adapter)
-
----
-
-## 13. Misconception Rule
-
-Question:
-
-What exact behavior increments, reduces, resets, or otherwise changes `misconception_hits`?
-
-Potentially relevant evidence:
-
-- repeated incorrect answers;
-- high-confidence incorrect answers;
-- recurrence after prior correction.
-
-**Partially resolved (product decision, state model and evidence
-principles only).** The accepted V1 state progression is:
-
-```text
-NONE → SUSPECTED → ACTIVE → RESOLVED
-```
-
-Misconception is a stronger signal than ordinary failure — a single
-ordinary wrong answer must NOT automatically create an ACTIVE
-misconception. Accepted evidence principles: ordinary wrong contributes
-misconception evidence weakly; high-confidence wrong contributes more
-strongly; repetition of the same misconception increases confidence; the
-same misconception expressed across different questions is especially
-meaningful; high-confidence wrong alone still does NOT automatically mean
-ACTIVE; resolving a misconception requires multiple relevant successful
-retrievals, not one correct answer. See `docs/LEARNING_ENGINE.md` §20,
-updated to reflect this model.
-
-**Still OPEN — engineering calibration, not product-locked:** illustrative
-candidate production defaults for a score model exist (e.g. normal wrong
-+1, high-confidence wrong +2, repeated cross-question misconception adds
-reinforcement, ACTIVE near a cumulative score of 3) but these are
-**conservative production-default candidates**, not immutable product
-rules — do not treat these numbers as decided.
-
-Status: OPEN — state model/evidence principles DECIDED; exact
-thresholds/scores remain open, pending prototype audit
-
-Target phase: Prototype Learning Audit / Learning Engine
-
----
-
-## 14. Confidence Scale and Role
-
-Question:
-
-What confidence scale should V1 use?
-
-Possible examples:
-
-- low / medium / high;
-- numeric range;
-- binary sure/unsure.
-
-Need to define:
-
-- how learner supplies confidence;
-- how it affects progress;
-- when confidence is optional;
-- whether confidence is stored on every Attempt.
-
-Status: OPEN
-
-Target phase: Prototype Audit / Quiz Contract
-
----
-
-## 15. Response-Time Interpretation
-
-Question:
-
-How should `average_time_seconds` influence learner state or priority?
+How should response time affect learning-state interpretation or priority?
 
 Constraints:
 
-- response time is a supporting signal;
-- it must not independently determine mastery;
-- device/network/UI delays should not be confused with cognitive response time.
+- response time is a supporting signal
+- it must not independently determine mastery
+- network/UI delay must not be mistaken for cognitive response time
+- different question types may have structurally different expected times
 
-Status: OPEN
+Need to define:
 
-Target phase: Prototype Audit / Learning Engine
+- when timing begins
+- when timing stops
+- treatment of background/tab inactivity
+- normalization by question type/difficulty if any
+- whether time influences evidence, ranking, analytics, or only diagnostics
 
 ---
 
-## 16. Today Session Size
+## OQ-016 — DailyPlan Size Calibration
 
-Question:
+Status: CALIBRATION
 
-How many learning items should a normal Today Session contain?
+Accepted direction:
+
+- DailyPlan size is dynamic
+- learning need drives size
+- no fixed mandatory number every day
+- no force-filling with weak items
+- no automatic replacement after Skip
+- the learner receives a real finish line
+
+Current conservative working range has been discussed around:
+
+- minimum useful plan near 5
+- typical range near 8–12
+- hard maximum near 15
+
+Still unresolved:
+
+whether those are the correct launch values after real learner/pilot evidence.
+
+The architecture must not depend on these exact numbers being permanent.
+
+---
+
+## OQ-017 — Today Composition Calibration
+
+Status: DEFERRED
+
+Current V1 direction already favors ranked learning need rather than per-category
+quotas.
+
+New Material V1 is separately defined by ADR-017 as fallback-only when ordinary
+candidates do not exist.
+
+Still potentially unresolved for future iterations:
+
+- whether category caps are ever needed
+- whether misconception/repair work should have a maximum daily share
+- how exam urgency should affect cross-category balance
+- whether diagnostic sampling becomes an explicit category
+- whether course diversity should ever affect composition
+
+Do not introduce quota/fairness machinery without an explicit future decision.
+
+---
+
+## OQ-036 — Canonical Sources of Truth for Derived Values
+
+Status: OPEN
+
+Decision needed:
+
+For every derived learning signal, what is canonical and what is reconstructable?
+
+Current working model includes:
+
+Attempts
+→ immutable evidence
+
+UserQuestionProgress
+→ current per-question derived state
+
+DailyPlan
+→ persisted daily planning output
+
+Need to define future treatment of:
+
+- aggregate learner state
+- course-level summaries
+- analytics aggregates
+- readiness metrics
+- cached ranking results
+
+Constraint:
+
+the same current value should not gain multiple independent writable sources of
+truth.
+
+---
+
+## OQ-037 — Recalculation Strategy After Engine Changes
+
+Status: OPEN
+
+Decision needed:
+
+When Learning Engine formulas change, what happens to existing learner state?
 
 Possible strategies:
 
-- fixed number;
-- target duration;
-- adaptive size;
-- learner-selected duration.
+- leave old state under old engine version until new evidence arrives
+- rebuild fully from Attempts
+- migrate selectively
+- rebuild lazily/on demand
+- scheduled background rebuild
 
-Need to balance:
+Decision depends on:
 
-- completion likelihood;
-- useful learning volume;
-- product habit;
-- pilot constraints.
+- Attempt completeness
+- engine versioning
+- scale
+- production traffic
+- migration cost
+- audit requirements
 
-**Partially resolved (accepted default direction, not final numbers).**
-DailyPlan size is dynamic and based on learning need — no fixed "N
-questions every day," no "how many minutes do you have?" as the primary
-sizing mechanism, and no force-filling a plan with weak items merely to
-reach a target (ADR-016 §5; see `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`).
+Resolve before:
 
-**Accepted V1 default direction** (a conservative production-default
-candidate, NOT a locked product invariant): minimum useful plan 5 items;
-typical range 8–12 items; hard maximum 15 items. If only 5 genuinely
-justified items exist, the plan may contain 5; if need is higher, it may
-grow toward 12–15; if far more items deserve attention, the highest-priority
-subset up to the hard maximum is chosen and the remainder stay eligible for
-future days via ordinary ranking. Skip resolves an item as SKIPPED and does
-NOT replenish the plan with a replacement.
-
-**Still OPEN:** whether 5/8–12/15 are the actual launch values (vs. an
-engineering starting point to be revised after real pilot data) is
-calibration work, not decided here — treat these numbers as illustrative
-defaults, not final. See `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md` for the
-architecture these defaults slot into.
-
-Status: OPEN — default direction and its 3 illustrative bounds documented
-as conservative production defaults; final calibrated numbers remain open
-
-Target phase: Today Feature Contract
+changing important Learning Engine formulas after meaningful real learner data exists.
 
 ---
 
-## 17. Today Composition
+# Today UX / Product Analytics
 
-Question:
+## OQ-018 — Learner-Facing Selection Explainability
 
-How should Today balance categories such as:
+Status: DEFERRED
 
-- due review;
-- weak Questions;
-- misconceptions;
-- exam-priority content;
-- new/unseen content;
-- diagnostic sampling.
+Decision needed:
 
-Need to define whether composition is:
+What reason, if any, should the learner see for why a Today item was selected?
 
-- purely rank-based;
-- quota-based;
-- hybrid.
+Possible learner-facing reasons:
+
+- review due
+- repeated mistake
+- weak area
+- exam approaching
+- not enough evidence
+- new material
+
+Constraints:
+
+- avoid exposing internal scores
+- avoid pretending certainty
+- avoid cluttering every question
+- explanations should correspond to real persisted/planning reasons
+
+Resolve during:
+
+Today UX refinement after the core flow is validated.
+
+---
+
+## OQ-019 — Session Abandonment Definition
 
 Status: OPEN
 
-Target phase: Next Best Action / Today Feature Contract
+Decision needed:
 
----
-
-## 18. Explainability of Selection
-
-Question:
-
-What explanation should the learner see for why an item was selected?
-
-Possible examples:
-
-- review due;
-- repeated mistake;
-- exam approaching;
-- weak area;
-- not enough evidence yet.
-
-Need to avoid:
-
-- exposing confusing internal scores;
-- overexplaining every item;
-- implying certainty that does not exist.
-
-Status: OPEN
-
-Target phase: Today UX
-
----
-
-## 19. Session Abandonment Definition
-
-Question:
-
-What exactly counts as `session_abandoned`?
-
-Possibilities:
-
-- user explicitly exits;
-- session remains incomplete past boundary;
-- user starts but never answers;
-- inactivity timeout.
-
-This affects analytics interpretation.
-
-Status: OPEN
-
-Target phase: Today Analytics Contract
-
----
-
-## 20. Active User KPI Denominator
-
-Primary KPI:
-
-> Percentage of active users completing Today on at least 3 separate days within a week.
-
-Question:
-
-What exactly counts as an active user?
+What exactly counts as an abandoned Today session for analytics?
 
 Possible definitions:
 
-- opened app during week;
-- opened Today;
-- had eligible content;
-- started at least one session;
-- signed in and had an active Course.
+- explicit exit
+- DailyPlan remains incomplete after local-day boundary
+- learner starts but answers nothing
+- inactivity threshold
+- some minimum interaction followed by no completion
 
-Need to avoid a denominator that distorts product performance.
+This is an analytics definition.
 
-Status: OPEN
+It must not silently change DailyPlan product semantics.
 
-Target phase: Analytics Review, before formal KPI reporting
+Resolve before:
 
----
-
-## 21. Week Boundary for KPI
-
-Question:
-
-How should a week be defined?
-
-Possible directions:
-
-- Monday–Sunday in learner local time;
-- rolling 7-day window.
-
-Need consistency across analytics.
-
-Status: OPEN
-
-Target phase: Analytics Review
+shipping abandonment analytics or using abandonment as a KPI.
 
 ---
 
-## 22. Starter Sessions in KPI
+## OQ-020 — Active User KPI Denominator
 
-Question:
+Status: OPEN
 
-Do Starter completions count toward the "Today completed on 3 separate days/week" KPI?
+Candidate primary KPI:
 
-Possible rationale for exclusion:
+percentage of active users completing Today on at least 3 separate days within a week.
 
-Starter is calibration, not mature Today behavior.
+Decision needed:
+
+What counts as an active user for the denominator?
+
+Candidates:
+
+- signed in during the week
+- opened the app
+- opened Today
+- had an active LEARNER membership
+- had eligible learning content
+- started at least one DailyPlan
+
+Constraint:
+
+avoid selecting a denominator that artificially improves or worsens product
+performance.
+
+Resolve before:
+
+formal pilot KPI reporting.
+
+---
+
+## OQ-021 — KPI Week Boundary
+
+Status: OPEN
+
+Decision needed:
+
+How is a KPI week defined?
+
+Candidate approaches:
+
+- Monday–Sunday in learner-local time
+- rolling 7-day window
+
+Need consistency across:
+
+- Today completion analytics
+- retention reporting
+- cohort comparisons
+
+Resolve before:
+
+formal weekly KPI dashboards/reporting.
+
+---
+
+## OQ-022 — New-Material / Starter Days in Today KPI
+
+Status: OPEN
+
+Decision needed:
+
+Does a DailyPlan consisting primarily or entirely of New Material count the same
+as an ordinary review-driven Today completion for the recurring-learning KPI?
 
 Possible rationale for inclusion:
 
-It is still intentional repeated learning.
+it is still deliberate learning through the same DailyPlan loop.
 
-Status: OPEN
+Possible rationale for separate analysis:
 
-Target phase: Analytics Review
+early calibration/new-material behavior may not represent mature adaptive
+learning behavior.
 
----
+Resolve before:
 
-## 23. Minimal Material Model
-
-Question:
-
-What is the minimum Material model required for V1?
-
-Potential fields:
-
-- Course;
-- title;
-- type;
-- source/origin;
-- text/file reference;
-- created by;
-- timestamps.
-
-Constraint:
-
-V1 Material must not imply that PDF parsing, RAG, embeddings, or AI ingestion are required for the first loop.
-
-Status: OPEN
-
-Target phase: Database Design
+formal KPI interpretation.
 
 ---
 
-## 24. Content Entry for First Pilot
+## OQ-029 — Minimal Learner Progress Experience
 
-Question:
+Status: DEFERRED
 
-How will Questions and Materials enter the system during the first usable pilot?
+Decision needed:
 
-Possible options:
-
-- manually seeded;
-- CSV/JSON import;
-- simple admin form;
-- learner-created;
-- AI-assisted generation.
-
-Need to choose the simplest path that does not distort the product validation.
-
-Status: OPEN
-
-Target phase: Pilot Planning / Content Setup
-
----
-
-## 25. Supabase Final Confirmation
-
-Question:
-
-Should the project proceed with Supabase for:
-
-- PostgreSQL;
-- Auth;
-- RLS;
-- storage where needed?
-
-**Database/PostgreSQL: DECIDED — see `docs/DECISIONS/013-supabase-postgresql-as-v1-persistence-provider.md`.**
-UNLOCK V1 uses PostgreSQL via Supabase; the first migration is
-`supabase/migrations/20260917203000_initial_schema.sql`.
-
-**Auth / RLS / storage: still OPEN**, not overstated by ADR-013. RLS is
-enabled on every V1 table with zero policies (safe deny-by-default), but
-real policies, Supabase Auth wiring, and storage remain undecided pending
-`docs/OPEN_QUESTIONS.md` #1 (User↔Course authorization model).
-
-Status: PARTIALLY RESOLVED (database/provider decided; Auth/RLS/storage open)
-
-Target phase: Before Database/Auth Foundation
-
----
-
-## 26. Analytics Provider
-
-Question:
-
-What implementation should capture core product events?
-
-Possibilities:
-
-- application-owned event table;
-- lightweight analytics provider;
-- Vercel-compatible analytics tool;
-- hybrid.
-
-Constraint:
-
-Core events should be capturable when Today ships, but the project should not add an oversized analytics stack.
-
-Status: OPEN
-
-Target phase: Today implementation
-
----
-
-## 27. Data Deletion Semantics
-
-Question:
-
-What should happen to learner data if:
-
-- a Course is deleted;
-- a User deletes an account;
-- Material is removed;
-- a Question is retired.
-
-Need to protect:
-
-- privacy;
-- historical integrity;
-- referential consistency.
-
-Status: OPEN
-
-Target phase: Database Design
-
----
-
-## 28. Question Retirement vs Deletion
-
-Question:
-
-Should learner-used Questions be deleted or retired/archived?
-
-Likely need:
-
-Historical Attempts must remain interpretable.
-
-Status: OPEN
-
-Target phase: Database Design
-
----
-
-## 29. Basic Progress Definition
-
-Question:
-
-What is the smallest useful V1 progress experience?
+What is the smallest useful learner-facing progress experience after the core
+Today loop is validated?
 
 Potential elements:
 
-- Today completion;
-- number of recent learning days;
-- upcoming review;
-- improving/weak areas;
-- simple Course progress.
+- Today completion history
+- recent learning days
+- due-review outlook
+- improving areas
+- weak areas
+- simple Course progress
 
 Constraint:
 
-Do not create a complex dashboard before the core loop is proven.
-
-Status: OPEN
-
-Target phase: Basic Progress Feature Contract
+do not build a complex dashboard before validating the adaptive learning loop.
 
 ---
 
-## 30. Exam Readiness
+## OQ-030 — Exam Readiness
 
-Question:
+Status: DEFERRED
 
-Should exam readiness exist in initial V1 at all?
+Decision needed:
+
+Should learner-facing exam readiness exist in early V1?
 
 If yes:
 
-- what evidence threshold is required?
-- how is uncertainty represented?
-- what is learner-facing?
-- what is internal only?
+- what evidence threshold is required
+- how uncertainty is represented
+- what is learner-facing
+- what stays internal
+- whether readiness is per Course/topic/question set
 
 Constraint:
 
-No precise readiness percentage without sufficient evidence.
+no precise readiness percentage without sufficient evidence.
+
+---
+
+# Content / Course Model / Pilot
+
+## OQ-023 — Minimal Material Model
 
 Status: OPEN
 
-Target phase: After core adaptive loop
+Decision needed:
+
+What is the minimum durable Material model required for V1?
+
+Potential fields:
+
+- Course
+- title
+- type
+- source/origin
+- text/file reference
+- created by
+- timestamps
+
+Constraint:
+
+Material must not imply that PDF parsing, RAG, embeddings, or AI ingestion are
+required for the first usable learning loop.
+
+Resolve before:
+
+building a durable content-ingestion/material-management feature.
 
 ---
 
-## 31. Course Structure Depth
-
-Question:
-
-Does V1 require formal Topic / Unit entities, or can Questions initially attach directly to Course/Material with structure added later?
-
-Need to balance:
-
-- simple schema;
-- useful coverage;
-- future analytics;
-- Starter sampling;
-- exam relevance.
+## OQ-024 — Content Entry for the First Real Pilot
 
 Status: OPEN
 
-Target phase: Domain Contracts / Database Design
+Decision needed:
+
+How should Questions and Materials enter UNLOCK for the first real class/pilot?
+
+Candidate approaches:
+
+- manually seeded content
+- CSV/JSON import
+- minimal admin form
+- instructor-authored content
+- AI-assisted generation with review
+
+Decision should optimize for:
+
+- pilot speed
+- content quality
+- repeatability
+- minimal engineering distraction
+- realistic product validation
+
+Do not build a broad CMS merely to seed the pilot.
 
 ---
 
-## 32. Manual Practice Outside Today
-
-Question:
-
-Should V1 support learner-initiated manual practice outside Today?
-
-Potential benefit:
-
-Learner control.
-
-Potential risk:
-
-Distracts from validating Today as the primary recurring experience.
-
-If supported, manual practice must still create valid Attempts and update learner state consistently.
+## OQ-031 — Course Structure Depth
 
 Status: OPEN
 
-Target phase: Product Contract after core loop
+Decision needed:
+
+Does V1 need formal Topic / Unit entities?
+
+Alternative:
+
+Questions initially attach directly to Course/Material and deeper structure is
+added later.
+
+Tradeoffs include:
+
+- schema simplicity
+- coverage measurement
+- New Material ordering
+- analytics
+- exam relevance
+- instructor organization
+- future readiness reporting
+
+Resolve before:
+
+features requiring reliable topic/unit-level reasoning.
 
 ---
 
-## 33. Multiple Active Courses
+## OQ-038 — Human Approval for AI-Generated Content
 
-Question:
+Status: DEFERRED
 
-Can a learner have multiple active Courses in V1?
-
-If yes:
-
-- does Today combine them?
-- is Today Course-specific?
-- how does priority work across Courses?
-- how do exam dates compete?
-
-Simpler V1 may initially focus on one selected Course at a time.
-
-Status: OPEN
-
-Target phase: Domain Contracts
-
----
-
-## 34. Today Scope Across Courses
-
-Question:
-
-Is Today:
-
-- global across the learner's active Courses;
-- tied to one selected Course;
-- generated separately per Course?
-
-This decision affects:
-
-- UI;
-- ranking;
-- session model;
-- KPI interpretation.
-
-Status: RESOLVED — see
-`docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
-(ADR-016, ACCEPTED), superseding the ADR-011 answer below at the target-
-architecture level.
-
-**Current accepted answer (ADR-016):** Today is global at the persistence
-level — one `DailyPlan` per learner per local day, composed of
-`DailyPlanItem`s. Course Today and Global Today are *views* over that one
-plan (Course Today filters by `courseId`); they are not independently
-generated. This also resolves the UI-treatment and KPI-interpretation
-questions this entry previously left open: completing an item through
-either view resolves the same underlying item (no per-view state to
-reconcile), and one `DailyPlan` counts once toward the primary
-Today-completion KPI regardless of which view(s) resolved it (ADR-016 §21,
-§22).
-
-**Persistence foundation now IMPLEMENTED, application layer NOT.** A
-`daily_plans`/`daily_plan_items` migration exists
-(`supabase/migrations/20260921000000_daily_plan_v1.sql`), with domain
-types, a repository port, and a Postgres repository implementation
-(single-use item resolution per §19 included) — but no application code
-generates a real plan into it, and `submitAnswer`/`getOrCreateTodaySession`
-are not wired to it. `today_sessions`/`today_session_items`, keyed by
-`(user_id, course_id, planned_for_date)` per ADR-011, remain the only
-tables any application code actually writes to today.
-
-**Historical V1 answer (ADR-011, now superseded as target architecture,
-still describes the implemented schema):** generated separately per
-Course. `TodaySession` is keyed by `(user_id, course_id, planned_for_date)`;
-a learner with multiple active Courses may have multiple Today sessions on
-the same date.
-
-Target phase: Today Feature Contract (implementation, per
-`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`)
-
----
-
-## 35. Learner Time Zone
-
-Status: **RESOLVED (product decision).** V1 stores a learner timezone as an
-IANA timezone identifier (e.g. `Asia/Jerusalem`, `Europe/London`,
-`America/New_York`) on the user profile.
-
-- On first registration / first relevant client session: detect timezone
-  automatically from the client and persist it to the user profile.
-- After that: the persisted user timezone is the server-side source of
-  truth. DailyPlan local-day calculation uses the stored value — "today" is
-  not recalculated from the current request/device timezone on every
-  request.
-- Manual timezone editing in Settings may be added later; not designed now.
-- A full travel/timezone-change UX (mid-trip DST, crossing a boundary
-  mid-session) is explicitly NOT designed by this decision — see
-  `docs/TODAY_TIMEZONE_EDGE_CASES.md` for that separate, still-open
-  analysis.
-
-**Persistence/domain foundation IMPLEMENTED**: `users.timezone` (nullable
-text, no implied default) via
-`supabase/migrations/20260920000000_user_timezone_v1.sql`;
-validation/canonicalization (`src/domain/user/timezone.ts`) and a
-deterministic local-date derivation (`src/domain/user/local-date.ts`), both
-via the platform's own `Intl` IANA tzdata, no new dependency; read/write use
-cases in `src/application/user/`; `PostgresUserRepository`
-(`src/infrastructure/postgres/user-repository.ts`).
-
-**Client-side first-session detection and DailyPlan's own local-day
-calculation are now IMPLEMENTED**: `/today` (`src/app/today/page.tsx`)
-detects the browser's IANA timezone via
-`Intl.DateTimeFormat().resolvedOptions().timeZone` and persists it via
-`POST /api/user/timezone`, but ONLY when `GET /api/daily-plan/today`
-reports `TIMEZONE_NOT_SET` — an already-persisted timezone is never
-silently overwritten on a later page load. `getOrCreateDailyPlanForToday`
-already calls `deriveLocalDateString` against the persisted timezone for
-real DailyPlan generation (verified against a real hosted Supabase project
-— see `docs/DEV_STATUS.md`).
-
-**Still not designed**: manual timezone editing in Settings, and the
-full travel/timezone-change UX noted above (`docs/TODAY_TIMEZONE_EDGE_CASES.md`).
-
-Target phase: Today / Database Design (implementation) — core mechanism
-COMPLETE; remaining items above are explicitly deferred, not gaps in this
-resolution.
-
----
-
-## 36. Source of Truth for Derived Values
-
-Question:
-
-For each derived signal, what is the source of truth?
-
-Examples:
-
-```text
-Attempts → source evidence
-UserQuestionProgress → current per-question derived state
-Learner State → current aggregate interpretation
-Today Session → persisted decision/output
-```
-
-Need to avoid multiple independent copies of the same current value.
-
-Status: OPEN
-
-Target phase: Database Design
-
----
-
-## 37. Recalculation Strategy
-
-Question:
-
-When Learning Engine formulas change, should existing learner state be:
-
-- left under old version until new evidence arrives;
-- fully recalculated from Attempts;
-- migrated selectively;
-- recalculated on demand.
-
-This decision depends on:
-
-- Attempt completeness;
-- scale;
-- engine versioning;
-- pilot requirements.
-
-Status: OPEN
-
-Target phase: Learning Engine Versioning
-
----
-
-## 38. Human Approval Threshold for AI Content
-
-Question:
+Decision needed:
 
 Which AI-generated content requires human approval before learner use?
 
 Potential distinctions:
 
-- low-stakes practice;
-- professor-approved Course content;
-- formal exam preparation;
-- content with weak source confidence.
+- low-stakes practice
+- instructor-controlled Course content
+- exam preparation
+- weak-source-confidence generation
+- automatic distractor generation
+- explanation generation
+
+Constraint:
+
+AI is not the real-time Learning Engine.
+
+This question concerns content production/governance, not deterministic learner
+state.
+
+---
+
+## OQ-039 — Pilot Content / Data Ownership
 
 Status: OPEN
 
-Target phase: AI Content Intelligence
+Decision needed:
+
+For instructor/class pilots, who owns or controls:
+
+- uploaded Materials
+- authored/generated Questions
+- edits
+- learner Attempts
+- aggregate class insights
+- exports
+- deletion requests
+
+This should be resolved before institutional/instructor workflows become
+meaningful product commitments.
 
 ---
 
-## 39. Pilot Content Ownership
+# Platform / Data Lifecycle
 
-Question:
-
-For professor/class pilots, who owns and controls:
-
-- uploaded Materials;
-- generated Questions;
-- edits;
-- learner Attempts;
-- aggregate class insights.
-
-This is especially important before institutional/instructor features are built.
+## OQ-025 — RLS and Storage Strategy for V1
 
 Status: OPEN
 
-Target phase: Pilot Planning
+PostgreSQL via Supabase is already decided.
+
+Supabase Auth is already implemented.
+
+The remaining platform questions are narrower:
+
+### RLS
+
+- which direct-client table access, if any, should exist
+- which tables should remain server-only
+- what real production RLS policies are required
+- whether API-server authorization remains the primary access layer for V1
+
+### Storage
+
+- whether Supabase Storage is needed at all in the first pilot
+- which future Material types require object/file storage
+- ownership/access model for uploaded files
+
+Do not create permissive placeholder policies.
+
+Resolve RLS before enabling direct client access to protected application tables.
+
+Resolve Storage when file-based Material becomes real scope.
 
 ---
 
-## 40. Answer Option Storage Model
-
-Question:
-
-What is the V1 storage model for Question answer options?
-
-Possible directions:
-
-- normalized records (e.g. a dedicated options table);
-- structured JSON on the Question record.
-
-Decision criteria should include:
-
-- simplicity;
-- validation;
-- ordering;
-- edit/version behavior;
-- future question formats;
-- query needs.
-
-Status: DECIDED — see `docs/DECISIONS/014-question-answer-model-v1.md`.
-Structured JSON on `question_versions` (`answer_options`/`correct_answer`,
-validated at the application/infrastructure boundary, not normalized into
-a table). V1 supports `SINGLE_CHOICE`/`MULTIPLE_CHOICE` only; free
-text/essay/numeric/ordering/matching question types, and any free-text/LLM
-grading, remain undecided and are NOT addressed by ADR-014.
-
-Target phase: Database Design
-
----
-
-## 41. Duplicate Attempt / Idempotency Protection
-
-Question:
-
-How should repeated submissions be prevented from creating duplicate learning evidence?
-
-Potential causes:
-
-- double-click;
-- refresh;
-- retry after slow response;
-- network replay.
-
-Possible protections may include:
-
-- idempotency token;
-- session-item completion constraint;
-- transaction-level guard;
-- application-level duplicate protection.
-
-Status: OPEN. Note: the specific sub-case of a new Today answer attempt
-against an already-resolved (COMPLETED/SKIPPED) `DailyPlanItem`/
-`TodaySessionItem` is now decided — it must be rejected as a conflict, not
-silently accepted as a duplicate or a new Attempt (ADR-016 §19,
-`docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`). The
-general idempotency question (double-click, refresh, network replay
-against a still-pending item) remains OPEN; ADR-010's submissionId-based
-idempotency addresses technical retries of the *same* submission, not this
-broader question.
-
-Target phase: Quiz / Today / Database Design
-
----
-
-## 42. Open Question Discipline
-
-When implementation encounters missing behavior:
-
-Do not silently invent the answer.
-
-Use this process:
-
-```text
-1. Check Master Spec
-2. Check PRODUCT / DOMAIN_GLOSSARY / relevant feature contract
-3. Check ADRs
-4. Check prototype learning evidence if relevant
-5. If still unresolved, add/update an Open Question
-6. Resolve before implementation if it affects correctness
-```
-
-Not every uncertainty belongs here.
-
-Use this file for questions that materially affect:
-
-- product behavior;
-- learning logic;
-- data integrity;
-- architecture;
-- security;
-- analytics;
-- V1 scope.
-
-Minor implementation details can be resolved locally in code review.
-
----
-
-## 43. Course Membership Revocation/Rejoin Edge Cases
-
-Question:
-
-Three concrete behaviors were surfaced while hardening the ADR-015
-implementation (`src/application/course/`) and are not decided by ADR-015
-itself. Current code takes the conservative, non-access-granting path in
-each case; none of the following is a guessed-at product decision:
-
-1. **Rejoin after revoke.** If a previously-revoked `CourseMembership`
-   attempts to self-join an `OPEN` Course again, `joinCourse`'s
-   `createMembership` is `INSERT ... ON CONFLICT (user_id, course_id) DO
-   NOTHING` — it returns the pre-existing (still-revoked) row with outcome
-   `ALREADY_MEMBER`. Access is never silently restored. What is undecided:
-   whether a revoked user should be able to rejoin an `OPEN` Course at all,
-   and if so, through what mechanism (self-service reactivation vs.
-   management-only `un-revoke`) and under what outcome label.
-2. **Last-management-member self-revocation.** `revokeCourseMembership`
-   does not prevent a sole `OWNER`/`INSTRUCTOR` from revoking their own
-   management membership, which can leave a Course with zero management
-   members. What is undecided: whether this should be prevented, and if
-   so, how "last manager" is even defined (e.g. does a revoked-but-not-yet-
-   replaced `OWNER` count?).
-3. **Repeated revoke/archive timestamp semantics.** Calling `revoke` (or
-   `setArchived`) again on an already-revoked (or already-archived)
-   membership unconditionally overwrites the timestamp with the new call's
-   value — there is no "first revocation/archive wins" guarantee. This is
-   harmless to the boolean access/archive fact (still revoked/archived
-   either way) but not a designed audit-trail guarantee. What is
-   undecided: whether the first timestamp should be preserved for audit
-   purposes.
-
-Current behavior for all three is pinned by tests
-(`src/application/course/__tests__/`) so it does not silently drift, but
-none of the three is a resolved product decision.
+## OQ-026 — Analytics Provider / Event Store
 
 Status: OPEN
 
-Target phase: Course Membership / ADR-015 follow-up
+Decision needed:
+
+How should core product events be captured?
+
+Candidates:
+
+- application-owned analytics/event table
+- lightweight external analytics provider
+- Vercel-compatible analytics
+- hybrid
+
+Need to support important product questions without adding an oversized
+analytics stack.
+
+Resolve before:
+
+formal pilot analytics implementation.
 
 ---
 
-## 44. Role Eligibility for Automatic DailyPlan Generation
+## OQ-027 — Data Deletion Semantics
 
-Question:
+Status: OPEN
 
-`CourseMembershipRepository.listActiveForUser` (ADR-015) already excludes
-revoked and archived memberships but does not filter by `CourseRole`. Does
-an `OWNER`/`INSTRUCTOR` membership automatically contribute its Course to
-that same user's own personal DailyPlan (ADR-016), the same way a
-`LEARNER` membership does?
+Decision needed:
 
-Status: **RESOLVED.** Only `CourseMembership.role === "LEARNER"` is
-eligible for automatic DailyPlan participation. `OWNER`/`INSTRUCTOR`
-memberships are Course-management roles
-(`domain/course/types.ts`'s `MANAGEMENT_COURSE_ROLES`) and must NOT
-automatically contribute their Courses to the acting user's personal
-DailyPlan. Implemented in
-`src/application/dailyPlan/get-or-create-daily-plan-for-today.ts`, which
-filters `listActiveForUser`'s result to `role === "LEARNER"` before a
-Course's `UserQuestionProgress` is pooled into candidate generation. An
-instructor/owner's own authoring or class-management surface is a
-separate, not-yet-built concern, unaffected by this decision.
+What happens to historical data when:
 
-Target phase: Global Today / DailyPlan generation (ADR-016 implementation)
+- a User deletes an account
+- a Course is deleted
+- Material is removed
+- a Question is retired
+- a CourseMembership is removed/revoked
+
+Need to balance:
+
+- privacy
+- regulatory obligations
+- historical integrity
+- auditability
+- learning-evidence consistency
+- referential integrity
+
+Resolve before:
+
+building destructive account/content deletion flows.
+
+---
+
+## OQ-028 — Question Retirement vs Deletion
+
+Status: OPEN
+
+Decision needed:
+
+Should Questions that have learner evidence ever be physically deleted?
+
+Likely requirement:
+
+historical Attempts must remain interpretable.
+
+Potential direction:
+
+retire/archive learner-used Questions while reserving hard deletion for unused
+or legally-required cases.
+
+This is not yet locked as a product/data-lifecycle decision.
+
+Resolve before:
+
+building question deletion/retirement UI or APIs.
+
+---
+
+# Course Membership Edge Cases
+
+## OQ-043 — Course Membership Revocation / Rejoin Semantics
+
+Status: OPEN
+
+ADR-015 defines the main membership/authorization model.
+
+Three edge cases remain intentionally unresolved.
+
+### A. Rejoin after revoke
+
+Current behavior fails closed.
+
+A previously revoked membership is not silently reactivated when the learner
+tries to self-join an OPEN Course again.
+
+Decision needed:
+
+- can revoked learners ever self-rejoin an OPEN Course?
+- management-only reactivation?
+- new membership lifecycle vs reactivating the existing row?
+- what response/outcome should the UI receive?
+
+### B. Last management member
+
+Decision needed:
+
+Should the last active OWNER/INSTRUCTOR be allowed to revoke their own management
+membership and leave a Course with zero management members?
+
+If prevented, define:
+
+- what counts as an active manager
+- whether OWNER and INSTRUCTOR are equivalent for this rule
+- ownership-transfer expectations
+
+### C. Repeated revoke/archive timestamps
+
+Current behavior does not establish a permanent audit guarantee that the first
+timestamp always wins.
+
+Decision needed:
+
+Should repeated revoke/archive operations:
+
+- preserve the original timestamp
+- update to the latest timestamp
+- become explicit lifecycle/audit events
+
+Current code should continue failing closed and must not invent new access-
+granting behavior until this question is resolved.
+
+---
+
+# Decision Queue Discipline
+
+A question belongs in this file only if it materially affects:
+
+- product behavior
+- Learning Engine behavior
+- architecture
+- security/authorization
+- data integrity
+- analytics interpretation
+- durable V1 scope
+- calibration that requires explicit evidence
+
+Do NOT use this file for:
+
+- ordinary bugs
+- refactoring opportunities
+- technical debt lists
+- implementation TODOs
+- reviewer suggestions
+- historical investigation
+- already-decided behavior
+- current development status
+
+When Claude encounters an unresolved decision during implementation:
+
+1. inspect the current Plan
+2. inspect the relevant accepted ADR
+3. inspect the narrowest relevant canonical product/domain document
+4. inspect this file
+5. if behavior is still unresolved, report `DECISION_REQUIRED`
+6. do not silently invent the product decision
+
+Claude should not automatically add every discovery to this file.
+
+Adding or materially rewriting an Open Question should be explicitly authorized
+by the current Plan or user.

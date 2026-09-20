@@ -8,115 +8,249 @@ paths:
 
 # UNLOCK — PostgreSQL and Migration Rules
 
-These rules apply whenever working on PostgreSQL runtime code, repositories, transactions, migrations, or schema integration tests.
+These rules apply whenever working on:
 
-## Repository boundaries
+- PostgreSQL runtime code
+- SQL repositories
+- UnitOfWork
+- transactions
+- migrations
+- schema constraints
+- PostgreSQL/PGlite integration tests
 
-- Keep SQL persistence behind the existing repository interfaces.
-- Do not move application logic into repository classes.
+Current work comes from `docs/CHATGPT_PLAN.md`.
+
+---
+
+## Repository Boundaries
+
+- Keep SQL persistence behind existing repository interfaces.
+- Do not move application/product logic into repository classes.
 - Do not bypass repositories from API routes or UI code.
-- Do not rewrite the persistence layer to Supabase JS unless explicitly requested.
-- Prefer the existing `SqlExecutor` abstraction and transaction-bound repository construction.
+- Do not rewrite the persistence layer to Supabase JS unless explicitly required by the current Plan.
+- Prefer the existing `SqlExecutor` abstraction.
+- Preserve transaction-bound repository construction where atomic behavior requires it.
+
+---
 
 ## Transactions
 
-- Multi-write application operations that must be atomic belong inside an explicit transaction.
-- Transaction ownership belongs in the UnitOfWork / infrastructure boundary, not inside domain logic.
-- Use one transaction-bound connection for all repositories participating in the same atomic operation.
-- Do not silently mix transactional and non-transactional executors within the same atomic flow.
+- Multi-write operations that must be atomic belong inside an explicit transaction.
+- Transaction ownership belongs in UnitOfWork / infrastructure, not domain logic.
+- Use one transaction-bound connection for all repositories in the same atomic operation.
+- Do not mix transactional and pool-level executors inside the same logical transaction.
+- Commit only after successful callback completion.
 - On failure, rollback and rethrow the original error.
-- A rollback failure must not replace or mask the original application error.
+- A rollback failure must not replace/mask the original application error.
+- Always release acquired connections.
 
-## PostgreSQL runtime
+---
+
+## PostgreSQL Runtime
 
 - Use the existing `pg.Pool` runtime foundation.
 - Do not create a new Pool per request.
-- `getPool()` is the runtime source for the shared lazy pool.
+- `getPool()` remains the shared lazy/memoized runtime source.
 - `DATABASE_URL` is server-only.
 - Do not hardcode insecure SSL behavior such as `rejectUnauthorized: false`.
-- Environment-specific connection options belong in the connection string or explicitly approved configuration.
-- Construct database runtime only after authentication when handling authenticated routes.
+- Environment-specific connection configuration requires explicit justification.
+- For authenticated API routes, authentication should be resolved before constructing DB runtime when the route contract allows early rejection.
+
+Do not conflate Pool object construction with an actual network connection.
+
+---
+
+## PostgreSQL Type Behavior
+
+Be careful with PostgreSQL/driver representations such as:
+
+- `DATE`
+- timestamp types
+- UUID
+- JSON/JSONB
+- numeric types
+- nullable columns
+
+PGlite and real `node-postgres` behavior may not be identical in every serialization/decoding edge case.
+
+Do not rely on accidental machine-timezone behavior.
+
+---
 
 ## Concurrency
 
-- Do not claim concurrency behavior has been empirically proven unless it was actually tested with multiple real PostgreSQL connections.
-- PGlite is useful for PostgreSQL-compatible integration tests but does not prove genuine multi-backend concurrency behavior.
-- When correctness depends on PostgreSQL isolation semantics, document the assumed isolation level.
-- Existing DailyPlan first-open race handling assumes normal PostgreSQL `READ COMMITTED` behavior.
-- Do not silently change transaction isolation without reviewing concurrency implications.
+- Do not claim concurrency behavior is empirically proven unless it was tested with appropriate real PostgreSQL connections.
+- PGlite does not prove genuine multi-backend concurrency.
+- Document assumed PostgreSQL isolation level when correctness depends on it.
+- Existing DailyPlan first-open race reasoning assumes normal PostgreSQL `READ COMMITTED` behavior unless explicitly changed.
+- Do not silently change transaction isolation.
+- Distinguish constraint-backed race safety from timing-based assumptions.
+
+---
 
 ## Migrations
 
 - Migrations are forward-only.
-- Never edit an already-accepted historical migration to implement a new change.
+- Never edit an accepted historical migration to implement a new change.
 - Add a new timestamped migration.
-- Preserve chronological migration ordering.
-- Do not add destructive schema changes unless explicitly required and reviewed.
-- Prefer additive migrations during V1 development.
-- Do not silently backfill production data without evidence that a backfill is required.
+- Preserve chronological ordering.
+- Prefer additive V1 migrations.
+- Do not introduce destructive schema changes unless the current Slice explicitly requires and reviews them.
+- Do not silently backfill hosted/production data.
+- Do not invent defaults merely to make a migration pass.
 
-## Supabase-managed schemas
+When changing populated tables, consider:
 
-- `auth` is managed by Supabase in a real Supabase project.
-- Do not create the real `auth.users` table in production migrations.
-- Test-only stand-ins for Supabase-managed schemas must remain clearly labeled as test infrastructure only.
-- Do not treat the PGlite `auth.users` stand-in as a faithful Supabase Auth schema.
-- Any behavior depending on real Supabase Auth must be verified later against a real Supabase project.
+- existing-row validity
+- lock implications
+- backfill requirements
+- nullability transitions
+- foreign-key compatibility
+- cascade/delete behavior
 
-## SECURITY DEFINER functions
+---
 
-When creating a `SECURITY DEFINER` function:
+## Supabase-Managed Schemas
 
-- review search-path safety explicitly
-- prefer an empty or tightly controlled `search_path`
-- fully schema-qualify database object references
+- `auth` is managed by Supabase in hosted projects.
+- Do not recreate real `auth.users` in production application migrations.
+- Test-only managed-schema stand-ins must remain clearly test infrastructure.
+- Do not treat the PGlite `auth.users` stand-in as full Supabase Auth.
+- Behavior depending on real Auth must be separately verified when required.
+
+---
+
+## SECURITY DEFINER Functions
+
+When creating/reviewing SECURITY DEFINER:
+
+- inspect search-path safety
+- prefer empty/tightly controlled `search_path`
+- schema-qualify object references
 - avoid unnecessary dynamic SQL
-- keep the function narrowly scoped
-- document why elevated privileges are required
-- verify trigger/function behavior separately from assumptions about the calling role
+- keep responsibility narrow
+- understand privilege/RLS implications
+- verify function/trigger behavior separately from role assumptions
 
-## Data integrity
+---
 
-- Prefer database constraints for invariants that must hold regardless of application code.
-- Use composite foreign keys where cross-entity consistency matters.
-- Preserve immutable historical evidence where the architecture requires it.
-- Do not mutate Attempts as a shortcut.
-- Do not silently weaken existing constraints to make a new feature easier.
+## Data Integrity
 
-## DailyPlan persistence
+- Prefer database constraints for invariants that must hold regardless of application path.
+- Use composite foreign keys where cross-entity identity consistency matters.
+- Preserve immutable historical evidence.
+- Never mutate Attempts as a shortcut.
+- Do not weaken constraints merely to simplify a feature.
+- Keep ranking/calibration policy outside schema constraints.
 
-- One DailyPlan exists per `(user_id, planned_for_date)`.
-- DailyPlanItem belongs to exactly one DailyPlan.
-- Each persisted DailyPlanItem must retain its course/question/version identity.
-- Resolved items must follow the existing state/timestamp consistency constraints.
-- A DailyPlanItem resolves once.
-- Do not re-open or overwrite completed/skipped items unless a future product decision explicitly changes this invariant.
+---
 
-## Test harness
+## DailyPlan Persistence
 
-- Schema tests should apply the real committed migration files in filename order.
-- Do not test a paraphrased copy of migration SQL when the real migration file can be applied.
-- Test-only schema setup may prepare external/Supabase-managed prerequisites before applying application migrations.
-- Clearly distinguish:
-  - what PGlite proves
-  - what only real PostgreSQL proves
-  - what only real Supabase proves
-- Do not overstate test coverage.
+Accepted persistence invariants include:
+
+- one DailyPlan per `(user_id, planned_for_date)`
+- each DailyPlanItem belongs to one DailyPlan
+- each item retains Course / Question / QuestionVersion identity
+- item state and timestamps remain consistent
+- resolved items do not silently reopen
+- DailyPlanItem resolves once
+- Skip remains distinct from completion
+- DailyPlan answer linkage must not conflict with mutually exclusive legacy TodaySession linkage where the schema enforces that distinction
+- immutable Attempt evidence survives mutable planning lifecycle according to current accepted constraints
+
+Do not redefine DailyPlan product semantics in a migration.
+
+---
+
+## New Material Persistence
+
+When ADR-017/New Material persistence is involved:
+
+- allow only accepted reason/action vocabulary
+- unseen planning must not fabricate learner progress
+- persistence must not imply mastery/evidence merely because an item was planned
+- ordinary persisted constraints must still apply to Course/Question/QuestionVersion identity
+
+---
+
+## Test Harness
+
+Schema/Postgres tests should:
+
+- apply real committed migration files in filename order
+- exercise real repository SQL where practical
+- exercise actual constraints
+- test rollback when atomic behavior matters
+
+Do not test paraphrased migration SQL when the real migration can be applied.
+
+Test-only setup may prepare external/Supabase-managed prerequisites before application migrations.
+
+Always distinguish:
+
+- what unit tests prove
+- what PGlite proves
+- what real PostgreSQL proves
+- what real Supabase proves
+
+Do not overstate verification.
+
+---
 
 ## Verification
 
-For PostgreSQL or migration changes, normally verify:
+During a DB-relevant Slice:
 
-- TypeScript typecheck when TypeScript infrastructure changed
-- lint
-- targeted tests while developing
-- full schema/Postgres suite before push/checkpoint
-- `git diff --check`
+- run focused persistence/schema tests while developing
+- run TypeScript typecheck when relevant TypeScript changed
+- run lint
+- run `git diff --check`
 
-Do not rely on a passing unit suite alone for schema changes.
+Run the full:
 
-## Git safety
+`npm run test:schema`
 
-Follow the repository-wide Git safety rules in `CLAUDE.md`.
+when the Slice changes or directly depends on DB/schema/SQL/repository/transaction behavior.
 
-Do not rewrite accepted or pushed migration history. New schema changes must use forward-only migrations.
+If `npm run test:schema` already passed earlier in the same Slice and no DB-relevant code changed afterward:
+
+- do not rerun it merely for ceremony
+- report the existing result
+
+Documentation-only, UI-only, or unrelated client changes do not require `test:schema`.
+
+Full testing policy lives in:
+
+`.claude/rules/testing.md`
+
+A unit suite alone is not sufficient verification for a DB-relevant Slice.
+
+---
+
+## Scope Discipline
+
+Database work must not silently change:
+
+- mastery policy
+- misconception policy
+- NBA ranking/calibration
+- CourseMembership semantics
+- Today composition
+- New Material product rules
+
+If persistence requirements expose an unresolved product/architecture decision:
+
+report `PLAN_CONFLICT`.
+
+Do not invent the answer in SQL.
+
+---
+
+## Git Safety
+
+Follow repository-wide Git safety rules in `CLAUDE.md`.
+
+Do not rewrite accepted or pushed migration history.
+
+New schema behavior must evolve through new forward-only migrations.

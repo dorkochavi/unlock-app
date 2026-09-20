@@ -24,15 +24,12 @@ On 2026-09-19, Dor completed a product-owner review of that decision
 checklist and accepted all nine items (recorded in full in the session that
 produced this revision, and reflected clause-by-clause below and in
 `docs/GLOBAL_TODAY_REMAINING_DECISIONS.md`, now updated to RESOLVED). **This
-ADR is accordingly promoted from PROPOSED to ACCEPTED.** It remains a
-**product-and-architecture decision record, not an implementation.** No
-migration exists for `DailyPlan`/`DailyPlanItem` as of this revision; the
-currently-implemented persistence substrate is still `today_sessions`/
-`today_session_items` per `docs/PERSISTENCE_SCHEMA_V1.md` and
-`supabase/migrations/20260917203000_initial_schema.sql`. This ADR fixes the
-**target** architecture and product semantics that future implementation
-work must build toward — it does not itself change any schema, route, or
-runtime behavior.
+ADR is accordingly promoted from PROPOSED to ACCEPTED.** This paragraph
+records the state at the moment the decision was accepted: at that time the
+DailyPlan migration had not yet been created and the active persistence path
+was still `today_sessions`/`today_session_items`. The implementation has since
+advanced materially; see the Current Implementation Status addendum below.
+The Decision section remains the durable product-and-architecture contract.
 
 **This ADR partially, not fully, supersedes ADR-011.** See ADR-011's own
 updated status section for the precise clause-by-clause breakdown of what
@@ -68,15 +65,14 @@ from both views" property structural rather than something a separate
 dedup/reconciliation mechanism must maintain (see ADR-011's Consequences,
 now updated, and `docs/ADR_011_GLOBAL_TODAY_IMPACT_REVIEW.md` §16). This
 supersedes ADR-011's per-Course `TodaySession` key as the *target*
-architecture; it does not retroactively change the schema already
-implemented today (see Context above and "Migration path," below).
+architecture. The implementation subsequently adopted this architecture;
+see the Current Implementation Status addendum below.
 
-**Migration path (explicitly not decided here, flagged so it is not lost):**
-how the existing `today_sessions`/`today_session_items` tables and data get
-from the current schema to the `DailyPlan`/`DailyPlanItem` schema is
-implementation work, not a product decision — see
-`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` (updated alongside this ADR)
-for the slice ordering. No migration is authorized by this ADR.
+**Historical implementation note:** this ADR did not itself authorize or
+define a migration path. The project later implemented `DailyPlan`/
+`DailyPlanItem` additively, leaving the legacy `today_sessions`/
+`today_session_items` tables intact. The implemented migration/runtime state is
+documented in `docs/PERSISTENCE_SCHEMA_V1.md` and `docs/DEV_STATUS.md`.
 
 ### 2. First-open generation
 
@@ -220,12 +216,12 @@ new Course, a new chapter added later to an existing Course, or a topic
 with insufficient learner evidence generally. This resolves
 `docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §3 and
 `docs/NEW_MATERIAL_EXPOSURE_MODEL.md`'s open framing question in favor of
-"extension," among the three options that document posed. Exact
-eligibility/sampling policy for either the Course-level Starter case or the
-topic-level Exposure case remains undecided calibration work, and this
-clause does **not** resolve `docs/OPEN_QUESTIONS.md` #4/#5 (Starter
-Experience eligibility/sampling), which remain open on their own terms —
-only the "are these one family or two" framing question is resolved.
+"extension," among the three options that document posed. At the time of this ADR, exact Starter/Exposure eligibility and sampling
+were still undecided. ADR-017 later resolved the V1 fallback semantics:
+unseen means no prior real Attempt, ordinary NBA candidates take precedence,
+and deterministic New Material fallback is used only when there are zero
+ordinary candidates, with at most 3 unseen Questions. Broader calibration
+policy remains distinct from those accepted V1 semantics.
 
 ### 14. Novelty preference
 
@@ -253,9 +249,10 @@ generation.
 
 "Today" is based on the learner's local timezone. A session actively
 continuing across local midnight is not interrupted at exactly 00:00; a
-session started fresh after midnight uses the new local day's plan. Exact
-lifecycle mechanics remain undecided — see `docs/TODAY_TIMEZONE_EDGE_CASES.md`
-and `docs/OPEN_QUESTIONS.md` #35.
+session started fresh after midnight uses the new local day's plan. The persisted learner timezone is now the server-side source of truth for
+local-day derivation, and DailyPlan generation uses that persisted timezone.
+Travel/change UX and additional timezone edge-case policy may still evolve;
+see `docs/TODAY_TIMEZONE_EDGE_CASES.md`.
 
 ### 18. History persisted from day one
 
@@ -359,13 +356,13 @@ an overall DailyPlan completion state (see §22, and
 `docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §2, now moot under the accepted
 Option A).
 
-**Migration and orchestration work remain entirely undesigned here.** How
-the current `today_sessions`/`today_session_items` schema and the
-application code that reads/writes it (`getOrCreateTodaySession`,
-`submitAnswer`'s Today-completion branch) get replaced by
-`DailyPlan`/`DailyPlanItem` equivalents is implementation work — see
-`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`, updated alongside this ADR to
-reflect the now-accepted architecture and Ruppin sequencing (§20).
+**Implementation has since moved beyond the migration/orchestration gap
+that existed when this ADR was accepted.** `DailyPlan`/`DailyPlanItem`
+persistence, learner-local first-open generation, the public Today read path,
+Today answer submission, Skip, and ADR-017 New Material fallback are now
+implemented. The legacy `today_sessions`/`today_session_items` path remains
+in the repository for compatibility/history rather than as the active Today
+architecture. Current implementation truth belongs in `docs/DEV_STATUS.md`.
 
 **Ranking/planning domain code requires no change to adopt this ADR's
 architecture.** `src/domain/learning/next-best-action.ts`,
@@ -391,50 +388,52 @@ inferred or invented downstream:
   `docs/TODAY_ADAPTATION_MODEL.md`.
 - Exact dynamic-size minimum/maximum bounds and sizing formula (§5) — see
   `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`.
-- Exact novelty-budget numeric limits (§14) and exact Starter/Exposure
-  eligibility/sampling thresholds (§13, `docs/OPEN_QUESTIONS.md` #4/#5) —
-  see `docs/NEW_MATERIAL_EXPOSURE_MODEL.md`.
-- Final timezone/day-boundary implementation mechanics beyond the
-  qualitative rule in §17 — see `docs/TODAY_TIMEZONE_EDGE_CASES.md`.
+- Broader novelty-budget and calibration policy beyond ADR-017's accepted
+  V1 fallback semantics — see `docs/NEW_MATERIAL_EXPOSURE_MODEL.md`.
+- Travel/timezone-change UX and additional timezone edge-case policy beyond
+  the implemented persisted-timezone local-day foundation — see
+  `docs/TODAY_TIMEZONE_EDGE_CASES.md`.
 - History UI (§18 explicitly defers this beyond V1; only persisted-state
   requirements are decided here).
-- The exact migration path from `today_sessions`/`today_session_items` to
-  `DailyPlan`/`DailyPlanItem`, and the exact transaction-level mechanics of
-  §19's conflict detection — implementation work, see
-  `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`.
 - Whether `docs/OPEN_QUESTIONS.md` #33 (Multiple Active Courses) must be
   formally resolved before Global Today is built, or may proceed in
   parallel.
 - Repeated-skip behavioral policy.
-- The production composition root / conservative-default policy values
-  needed to run `submitAnswer`/`getOrCreateTodaySession` (or their
-  DailyPlan-based successors) end-to-end — see
-  `docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md`. Not resolved by
-  this ADR; tracked as a prerequisite in
-  `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`.
+- Future recalibration/versioning of Learning Engine production policy
+  values. The production composition root itself has since been implemented;
+  calibration/versioning remain governed by the Learning Engine contracts and
+  Open Questions rather than by this ADR.
 
-## Addendum (2026-09-21): persistence foundation implemented
+## Current Implementation Status
 
-`supabase/migrations/20260921000000_daily_plan_v1.sql` adds `daily_plans`/
-`daily_plan_items` — purely additive, alongside the still-intact
-`today_sessions`/`today_session_items` (`docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md`
-§13's recommendation, followed exactly: no drop, no data migration, no
-column altered on any existing table). `src/domain/dailyPlan/types.ts`,
-`src/application/dailyPlan/ports.ts`, and
-`src/infrastructure/postgres/daily-plan-{repository,mapper}.ts` implement
-§19's single-use resolution rule at the repository layer (a conditional
-`UPDATE ... WHERE status = 'pending'`, returning a distinct
-`RESOLVED`/`ALREADY_RESOLVED`/`NOT_FOUND` outcome — never a silent
-overwrite).
+The implementation now follows this ADR's DailyPlan architecture for the
+active Today path.
 
-This is a **persistence foundation only**, not a change to this ADR's
-Context/Decision text above, which remains accurate as the historical
-record of what was decided and, separately, what was implemented as of
-2026-09-19. Still not implemented: any candidate-pool assembly, first-open
-generation orchestration, wiring to `submitAnswer`/`getOrCreateTodaySession`,
-Skip as a callable application use case, or Global/Course Today read views
-— see `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 5/6 for what
-remains before this foundation is used end-to-end.
+Implemented:
+
+- additive `daily_plans` / `daily_plan_items` persistence;
+- single-use DailyPlanItem state consistency;
+- persisted learner timezone and learner-local DailyPlan date derivation;
+- first-open get-or-create DailyPlan generation;
+- eligible active-LEARNER Course discovery;
+- persisted same-day plan reuse;
+- public learner Today read path;
+- Today answer submission linked to DailyPlan/DailyPlanItem;
+- Skip without learning evidence or replacement;
+- ADR-017 deterministic New Material fallback when ordinary NBA candidates are
+  empty.
+
+The legacy `today_sessions` / `today_session_items` schema and repositories
+remain present for compatibility, historical tests, and earlier flows. Their
+continued existence does not make them the current Today architecture.
+
+Current hosted state is separate from local implementation state: the latest
+DailyPlan answer-linkage and New Material migrations may still require explicit
+remote application. `docs/DEV_STATUS.md` is authoritative for that operational
+status.
+
+This addendum updates implementation status only. It does not alter the product
+semantics decided in §§1–22.
 
 ## Alternatives Considered
 
@@ -494,5 +493,5 @@ KPI-interpretation halves of #34 that the PROPOSED revision had left open.
 - `docs/GLOBAL_TODAY_ADVERSARIAL_REVIEW.md` (source of the §10 and §19 findings this ADR resolves)
 - `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` (updated implementation sequencing)
 - `docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` (independent implementation blocker, not resolved here)
-- `docs/OPEN_QUESTIONS.md` (#33 — not resolved; #34 — resolved by §21/§22; #4/#5 — not resolved, only reframed by §13)
-- `docs/PERSISTENCE_SCHEMA_V1.md` (`today_sessions`, `today_session_items` — still the currently-implemented schema; not yet migrated)
+- `docs/OPEN_QUESTIONS.md` (use the current file for unresolved questions; historical IDs referenced in this ADR may since have been resolved)
+- `docs/PERSISTENCE_SCHEMA_V1.md` (documents the implemented DailyPlan schema alongside the still-intact legacy TodaySession schema)

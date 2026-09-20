@@ -1,6 +1,6 @@
 ---
 name: checkpoint
-description: Run UNLOCK's standard read-only verification before commit, push, or handoff. Checks git state, tests, typecheck, lint, architectural boundaries, diff cleanliness, and reports what is actually verified. Never stages, commits, pushes, modifies code, or auto-fixes failures.
+description: Run UNLOCK's standard read-only verification for the current Slice or repository state. Checks git state, required tests, typecheck, lint, architectural boundaries, Plan alignment, diff cleanliness, and reports what is actually verified. Never stages, commits, pushes, modifies code, or auto-fixes failures.
 ---
 
 # /checkpoint
@@ -10,7 +10,9 @@ Standard UNLOCK verification checkpoint.
 This skill is strictly READ-ONLY.
 
 It must never:
+
 - modify code
+- modify documentation
 - auto-fix failures
 - stage files
 - commit
@@ -21,22 +23,45 @@ It must never:
 
 Its job is to verify the current repository state and report whether the work is ready for the next step.
 
-## Step 1 — Read current project state
+---
 
-`CLAUDE.md` and `docs/DEV_STATUS.md` are normally already in context from the current session.
+## Step 1 — Establish Current Run Context
 
-Re-read them only when:
+Normally the current session already has the HOT context:
+
+- `CLAUDE.md`
+- `docs/CHATGPT_PLAN.md`
+- `docs/DEV_STATUS.md`
+
+Re-read only when:
 
 - checkpoint is invoked standalone
 - checkpoint is invoked after `/clear`
-- there is reason to believe either file changed during the current session
-- their current contents are otherwise not available in context
+- one of those files changed
+- the current Run/Slice context is uncertain
 
-Repository state may also already have been inspected immediately before this skill was invoked.
+Determine:
 
-If the current git state is already known and the working tree has not changed since that inspection, do not repeat equivalent repository-state commands unnecessarily.
+- PLAN_VERSION
+- RUN_ID
+- BASE_HEAD
+- current Slice
+- current Slice acceptance criteria
+- required verification
+- required reviewers
+- expected stop condition
 
-Otherwise, run only what is needed from:
+Do not infer the active Slice from DEV_STATUS.
+
+Current execution comes from `docs/CHATGPT_PLAN.md`.
+
+---
+
+## Step 2 — Establish Repository State
+
+If repository state is already fresh and unchanged, do not rerun equivalent commands unnecessarily.
+
+Otherwise use the minimum necessary from:
 
 - `git status`
 - `git status -sb`
@@ -44,7 +69,7 @@ Otherwise, run only what is needed from:
 - `git diff --stat`
 - `git diff --check`
 
-Before continuing, ensure you can determine:
+Determine:
 
 - current branch
 - current HEAD
@@ -52,53 +77,84 @@ Before continuing, ensure you can determine:
 - staged files
 - unstaged files
 - untracked files
-- whether any files appear unrelated to the active task
-
-If any of that information is missing or may be stale, run the minimum necessary command to establish it.
+- whether current HEAD is compatible with the Run's expected state
+- whether unexpected files exist
 
 Do not touch unexpected files.
 
-## Step 2 — Architectural boundary checks
+---
 
-Verify there are no unexpected infrastructure imports inside:
+## Step 3 — Plan Alignment
+
+Compare the current worktree / commits with the current Slice in `docs/CHATGPT_PLAN.md`.
+
+Verify:
+
+- work matches the Slice goal
+- acceptance criteria appear satisfied
+- explicit non-goals were respected
+- unrelated refactors were not added
+- no new product decision was silently invented
+- no later Slice was pulled forward unnecessarily
+
+If repository reality contradicts the Plan, report:
+
+`PLAN_CONFLICT`
+
+Do not modify the Plan.
+
+---
+
+## Step 4 — Architectural Boundary Check
+
+Inspect changed paths first.
+
+Verify relevant architecture boundaries.
+
+At minimum, ensure no unexpected infrastructure/runtime imports crossed into:
 
 - `src/domain/`
 - `src/application/`
 
-Search for imports/references involving:
+Potential suspicious dependencies include:
 
 - `pg`
-- `postgres`
+- PostgreSQL infrastructure
 - `@electric-sql/pglite`
 - `@supabase/`
 - `next/`
 - browser/UI-specific modules
 
-Flag only genuine dependency-boundary violations.
+Flag only genuine violations.
 
-Do not flag intentional type-only references or documented exceptions without checking context.
+Do not flag documented exceptions or intentional type-only references without checking context.
 
-## Step 3 — Temporary / accidental file check
+---
 
-Treat files under:
+## Step 5 — Temporary / Accidental File Check
 
-- `scratch/**`
+Treat:
 
-as temporary, non-canonical development artifacts unless the active task explicitly involves them.
+`scratch/**`
 
-Flag if any `scratch/**` file is staged or about to be committed unexpectedly.
+as temporary, non-canonical run state unless the current Plan explicitly says otherwise.
 
-Also report any unexpected:
+Flag if scratch content is staged unexpectedly.
 
-- zip files
-- exported reports
-- scratch files outside the intended location
-- generated artifacts
-- local environment files
+Also report unexpected:
+
+- `.env*` secrets/config files
+- zip archives
+- generated reports
+- exported artifacts
+- temporary Supabase state
+- unrelated local files
 
 Do not delete, ignore, stage, or modify them automatically.
 
-## Step 4 — Verification commands
+---
+
+## Step 6 — Verification Commands
 
 Run:
 
@@ -110,15 +166,40 @@ Run:
 
 `git diff --check`
 
-`npm run test:schema` is NOT a default checkpoint step. Run it only when the current slice changes or directly depends on: Supabase/PostgreSQL migrations, database schema, SQL queries, PostgreSQL repositories, database row mappers/serialization, persistence constraints, transaction behavior, or other database-specific integration behavior (full policy: `.claude/rules/testing.md`).
+Run:
 
-Do not run `npm run test:schema` when the only changes are documentation, UI-only code, styling, unrelated client-side changes, or workflow/config documentation. If it already passed earlier in the same slice and nothing DB-relevant changed since, do not rerun it — report the earlier result instead.
+`npm run test:schema`
 
-If one command fails, continue only when it is safe and useful to gather the remaining diagnostic information.
+only when the current Slice changes or directly depends on:
+
+- migrations
+- database schema
+- SQL
+- PostgreSQL repositories
+- row mappers / serialization
+- persistence constraints
+- transactions
+- UnitOfWork
+- other database-specific integration behavior
+
+Full policy:
+
+`.claude/rules/testing.md`
+
+If `test:schema` already passed earlier in the same Slice and no DB-relevant work changed afterward:
+
+- do not rerun it
+- report the earlier result
+
+If the current Plan requires additional verification, run it.
+
+If one command fails, continue only when doing so is safe and useful for diagnosis.
 
 Do not auto-fix.
 
-## Step 5 — Interpret failures carefully
+---
+
+## Step 7 — Interpret Failures
 
 For every failure, determine whether it appears to be:
 
@@ -130,36 +211,31 @@ For every failure, determine whether it appears to be:
 
 Known diagnostic clue:
 
-Canonical Attempt replay ordering has historically been timing-sensitive when multiple rows receive the same `created_at` timestamp and ordering falls back to random UUID `id`.
+Canonical Attempt replay ordering has historically been timing-sensitive when multiple rows receive identical ordering timestamps and ordering falls back to random UUID `id`.
 
-If that specific failure appears:
+If that failure appears:
 
 - inspect it
-- do not assume the current change caused it
+- do not assume current work caused it
 - do not ignore it
-- report it as a known diagnostic possibility
+- report the uncertainty accurately
 
-Never weaken tests merely to make the suite green.
+Never weaken tests merely to produce a green checkpoint.
 
-## Step 6 — Verification honesty
+---
+
+## Step 8 — Verification Honesty
 
 Distinguish clearly between:
 
 - unit-tested
+- route-wiring tested
 - PGlite integration-tested
 - reviewed by inspection
 - reasoned under PostgreSQL semantics
 - real PostgreSQL tested
 - real Supabase tested
 - browser E2E tested
-
-Do not use vague phrases such as:
-
-- "fully tested"
-- "production verified"
-- "end-to-end verified"
-
-unless that is literally true.
 
 PGlite does NOT prove:
 
@@ -169,34 +245,57 @@ PGlite does NOT prove:
 - browser cookie/session behavior
 - deployed network behavior
 
-## Step 7 — Active-task consistency
+Do not overstate verification.
 
-Compare the current git diff/state against `docs/DEV_STATUS.md`.
+---
 
-Check:
+## Step 9 — DEV_STATUS Consistency
 
-- does the current work match the stated active issue?
-- are unrelated product/domain changes mixed into the slice?
-- does the current test baseline still make sense?
-- has an already-resolved issue remained incorrectly marked as active?
+Compare durable repository reality against `docs/DEV_STATUS.md`.
 
-Do not modify `DEV_STATUS.md`.
-Only report inconsistencies.
+DEV_STATUS should describe what is currently true, not the active task.
 
-## Step 8 — Report format
+Check whether:
+
+- newly completed durable capability should eventually be reflected there
+- existing capability statements are now stale
+- migration state changed
+- verification baseline changed
+- known gaps were closed or introduced
+
+Do not edit DEV_STATUS inside this read-only skill.
+
+Report required status updates to the implementation workflow.
+
+---
+
+## Step 10 — Report Format
 
 Return exactly these sections:
+
+### Plan / Slice
+
+Report:
+
+- PLAN_VERSION
+- RUN_ID
+- current Slice
+- Slice goal
+- Plan alignment: aligned / PLAN_CONFLICT
 
 ### Branch + HEAD
 
 Report:
-- branch name
+
+- branch
 - short SHA
 - ahead/behind origin
+- relationship to BASE_HEAD where relevant
 
-### Git state
+### Git State
 
 Summarize:
+
 - staged
 - unstaged
 - untracked
@@ -205,66 +304,72 @@ Summarize:
 ### Tests
 
 Report:
+
+- targeted tests already run if relevant
 - `npm test` pass/total
-- `npm run test:schema`: pass/total if run this checkpoint, or state why it was not run (not DB-relevant to this slice, or already passed earlier in this slice with no DB-relevant changes since)
+- `npm run test:schema` pass/total if run
+- or why `test:schema` was legitimately not run
 
 ### Typecheck / Lint
 
 Report:
-- clean
-or
-- first relevant errors
 
-### Diff integrity
+- clean
+
+or the first relevant errors.
+
+### Diff Integrity
 
 Report:
+
 - `git diff --stat`
 - `git diff --check`
 
-### Architecture boundary check
+### Architecture Boundary Check
 
-State whether any unexpected infrastructure dependency crossed into domain/application code.
+State whether any relevant boundary violation was found.
 
-### Verification level
+### Verification Level
 
-Explicitly state what has actually been verified, for example:
+State exactly what has actually been verified.
 
-- unit-tested
-- PGlite integration-tested
-- not yet real-Supabase tested
-- not yet browser E2E tested
+### DEV_STATUS Consistency
 
-### DEV_STATUS consistency
+State whether DEV_STATUS remains accurate and what will need updating outside this read-only checkpoint.
 
-State whether the repository state matches the active development status document.
+### Blockers Before Next Step
 
-### Blockers before next step
+List blockers.
 
-List blockers, or:
+If none:
 
 `None.`
 
-### Checkpoint verdict
+### Checkpoint Verdict
 
 Choose exactly one:
 
-- `READY FOR COMMIT`
 - `READY FOR REVIEW`
-- `READY FOR PUSH`
+- `READY FOR COMMIT`
+- `READY FOR HANDOFF`
 - `NOT READY`
 
-Choose the strongest status actually justified by the current state.
+Use the strongest status justified by the actual Slice state.
 
 Do not commit or push.
 
-## Final rules
+---
+
+## Final Rules
 
 - Read-only means read-only.
+- Current work comes from `CHATGPT_PLAN`, not DEV_STATUS.
+- Do not modify the Plan.
+- Do not modify DEV_STATUS.
 - Do not stage.
 - Do not commit.
 - Do not push.
-- Do not modify files.
 - Do not auto-fix.
 - Do not delete unknown files.
-- Do not use destructive git commands.
+- Do not use destructive Git commands.
 - Report facts, not assumptions.

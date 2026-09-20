@@ -1,14 +1,14 @@
 # UNLOCK Database Design
 
-Status: Active data-model design guide
+Status: Active conceptual data-model guide
 
-Purpose: define the intended V1 data responsibilities, integrity rules, ownership model, and unresolved schema decisions before concrete database migrations are written.
+Purpose: define V1 data responsibilities, integrity rules, ownership boundaries, and unresolved data-model decisions alongside the implemented migration history.
 
-This document is a design contract.
+This document is a conceptual design contract.
 
-It is not yet the final SQL schema.
+It is not the authoritative physical SQL schema. Implemented physical details belong in committed migrations and `docs/PERSISTENCE_SCHEMA_V1.md`.
 
-Do not create database tables merely because a concept appears here.
+Do not create or change database tables merely because a concept appears here.
 
 ---
 
@@ -67,8 +67,9 @@ Examples:
 
 Examples:
 
-- Today Session;
-- Today Session Item;
+- DailyPlan;
+- DailyPlanItem;
+- legacy TodaySession / TodaySessionItem where still supported;
 - selected Next Best Action outputs where persistence is justified.
 
 Do not collapse these categories into one table for convenience.
@@ -417,9 +418,9 @@ Possible reasons not to persist every ranking result:
 - stale rankings;
 - complexity.
 
-V1 direction (decided — see `docs/DECISIONS/010-answer-submission-transaction-model.md`):
+V1 direction:
 
-Persist only the selected decision inside Today Session Items rather than storing every possible ranking candidate. No separate table stores NBA candidates or full ranking results; they are ephemeral computation (`src/domain/learning/next-best-action.ts`, `next-best-action-ranking.ts`).
+Persist only the selected decision that becomes part of the learner's frozen plan rather than storing every possible ranking candidate. Current Today persistence uses `DailyPlanItem`; legacy `TodaySessionItem` remains supported for the older path. No separate table stores all NBA candidates or full ranking results; candidate ranking remains ephemeral computation (`src/domain/learning/next-best-action.ts`, `next-best-action-ranking.ts`).
 
 ---
 
@@ -450,7 +451,7 @@ Potential statuses may include:
 
 Exact status model belongs in the Today feature contract.
 
-Uniqueness (implemented, per `docs/DECISIONS/011-today-is-course-scoped-v1.md`): `UNIQUE (user_id, course_id, planned_for_date)`. This remains the actual implemented schema today — a learner with multiple active Courses may have multiple TodaySession rows for the same date, one per Course. At the product/architecture level this is now partially superseded: `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md` (ACCEPTED) establishes one DailyPlan/DailyPlanItem per user per local day, with Course Today and Global Today as filtered views of that same plan — DECIDED, but not yet migrated; `today_sessions`/`today_session_items` remain the implemented tables until that migration happens. `getOrCreateTodaySession` is an `INSERT ... ON CONFLICT DO NOTHING RETURNING` with a fallback `SELECT`, never a check-then-insert race — this is the mechanism that makes "the same session resumes" reliable. `planned_for_date` is a caller-supplied date; no timezone/day-boundary logic exists in the domain or persistence layer (`docs/OPEN_QUESTIONS.md` #3 remains open).
+Legacy `TodaySession` persistence remains implemented with `UNIQUE (user_id, course_id, planned_for_date)` per ADR-011, and the legacy repository/path remains available. It is no longer the primary Today planning model. ADR-016 supersedes the product architecture with one persisted `DailyPlan` per learner-local day and `DailyPlanItem` rows carrying their own Course identity. Current Today generation/orchestration uses that DailyPlan model; Course Today and Global Today are views over the same persisted plan. The legacy tables remain additive compatibility/history infrastructure and are not rewritten or dropped.
 
 ---
 
@@ -497,7 +498,7 @@ Generate plan
 
 Do not regenerate the session simply because the page reloads.
 
-Exact daily/session-boundary semantics remain open.
+For current DailyPlan Today, the persisted learner IANA timezone defines the learner-local calendar day. Reopening within that same local day returns the persisted DailyPlan. Legacy TodaySession APIs may still accept an already-resolved logical date; that legacy storage contract does not redefine the current DailyPlan day boundary.
 
 ---
 
@@ -677,29 +678,26 @@ Time zone matters for:
 - weekly analytics;
 - exam urgency.
 
-**V1 strategy — DECIDED, persistence foundation IMPLEMENTED** (see
-`docs/OPEN_QUESTIONS.md` #35, RESOLVED): store an IANA timezone
-identifier on the user profile. Detect it automatically from the client on
-first registration / first relevant session, and persist it. After that,
-the persisted value is the server-side source of truth — DailyPlan local-day
-calculation uses the stored timezone, not a value recalculated from the
-current request/device on every request. Manual timezone editing in
-Settings may be added later; a full travel/timezone-change UX is not
-designed for V1.
+**V1 strategy — DECIDED AND USED BY CURRENT DAILYPLAN FLOW** (see the
+resolved timezone decision): store an IANA timezone identifier on the user
+profile and treat the persisted value as the server-side source of truth.
+DailyPlan local-day calculation uses the stored timezone rather than a value
+recomputed from the current request/device on every request.
 
 `users.timezone` (nullable text, no implied default) is added by
 `supabase/migrations/20260920000000_user_timezone_v1.sql`; validity and
 canonical-form normalization are enforced at the application boundary
-(`src/domain/user/timezone.ts`, via the platform's own `Intl` IANA tzdata —
-no timezone library dependency added). A deterministic
-`deriveLocalDateString` utility (`src/domain/user/local-date.ts`) derives a
-`YYYY-MM-DD` local date from an instant + stored timezone. **Not yet
-implemented**: client-side first-session detection, and any DailyPlan code
-that actually calls this derivation — this slice is persistence +
-domain/application foundation only.
+(`src/domain/user/timezone.ts`, using the platform's `Intl` IANA tzdata).
+`deriveLocalDateString` (`src/domain/user/local-date.ts`) deterministically
+derives `YYYY-MM-DD` from an instant + stored timezone, and the current
+DailyPlan/Today orchestration uses persisted timezone to determine the local
+day.
 
-Status: DECIDED; persistence/domain foundation IMPLEMENTED; client-side
-detection and DailyPlan usage OPEN
+Automatic first-session detection and future travel/manual-timezone-edit UX
+are separate client/product concerns; they do not change the server-side
+authority rule.
+
+Status: DECIDED; persistence/domain/application DailyPlan usage IMPLEMENTED
 
 ---
 
@@ -819,7 +817,7 @@ Exact transaction mechanics may use:
 
 Choose the simplest reliable approach supported by the final stack.
 
-V1 decision (see `docs/DECISIONS/010-answer-submission-transaction-model.md`): `submitAnswer` runs as one database transaction covering, in order: (1) acquire a transaction-scoped Postgres advisory lock keyed by `(user_id, question_id)` — this closes the race where no UserQuestionProgress row exists yet, which row-level locking alone cannot; (2) idempotent Attempt insert (`ON CONFLICT (user_id, submission_id) DO NOTHING`); (3) on conflict, validate the existing Attempt against the full canonical command-identity field list (see §12) before returning it as a safe retry, otherwise reject as an idempotency-key conflict; (4) on a genuine new insert, `SELECT` (optionally `FOR UPDATE` as defense-in-depth) the UserQuestionProgress row for `(user_id, question_id)`; (5) the pure `applyAttemptToProgress` call; (6) the UserQuestionProgress upsert; (7) the TodaySessionItem/TodaySession completion update when the Attempt carries a `today_session_item_id`. The advisory lock (not row locking alone, optimistic concurrency, or full `SERIALIZABLE`) is the chosen concurrency strategy, because it is the only one of these that correctly serializes the very first Attempts on a learner-question pair before any progress row exists.
+V1 answer submission runs through one database transaction covering immutable Attempt creation/idempotency, learner-progress update, and planned-item resolution when applicable. The mature `submitAnswer` path still supports the legacy TodaySession linkage, and the current DailyPlan answer flow extends that same transactional learning path with authoritative server-derived `daily_plan_id` / `daily_plan_item_id` linkage. A DailyPlan-backed Attempt resolves the corresponding DailyPlanItem through the current single-use resolution rules; Manual Practice remains separate and does not resolve Today. The transaction-scoped advisory lock keyed by `(user_id, question_id)` remains the concurrency strategy for serializing learner-question progress updates, including the first concurrent Attempts before a UserQuestionProgress row exists.
 
 ---
 
@@ -870,8 +868,11 @@ UserQuestionProgress
 Aggregate Learner State
 → current broader interpretation, if persisted
 
-Today Session / Items
-→ persisted output of a learning decision
+DailyPlan / DailyPlanItems
+→ current persisted output of the Today learning decision
+
+Legacy TodaySession / TodaySessionItems
+→ older persisted decision path retained for compatibility/history
 ```
 
 Avoid multiple independent writable copies of the same current learning signal.
@@ -1148,8 +1149,9 @@ Question
 Attempt
 UserQuestionProgress
 Exam Date Context
-Today Session
-Today Session Item
+DailyPlan
+DailyPlanItem
+legacy Today Session / Today Session Item where retained
 minimal version/provenance fields where justified
 ```
 
@@ -1169,24 +1171,27 @@ Agent infrastructure
 
 ---
 
-## 51. Decisions Required Before Concrete Schema
+## 51. Current Database Decision Status
 
-Before writing the real V1 schema, resolve at minimum:
+The physical V1 schema already exists and evolves through forward-only migrations.
+
+Important current decision status:
 
 ```text
-1. User ↔ Course relationship — DECIDED AND IMPLEMENTED, see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
+1. User ↔ Course relationship — DECIDED AND IMPLEMENTED (ADR-015)
 2. V1 exam-date hierarchy — OPEN
-3. Question editing/version strategy — DECIDED, see docs/DECISIONS/009-question-versioning.md
+3. Question editing/version strategy — DECIDED AND IMPLEMENTED (ADR-009)
 4. Course structure depth — OPEN
-5. Today scope: one Course or multiple Courses — implemented/WRITTEN-TO schema is still course-scoped (ADR-011, see docs/DECISIONS/011-today-is-course-scoped-v1.md); at the product/architecture level this is now partially superseded by docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md (ACCEPTED): one DailyPlan/DailyPlanItem per user per local day, Course Today and Global Today as filtered views. DECIDED; persistence foundation migrated (supabase/migrations/20260921000000_daily_plan_v1.sql), application layer (generation/orchestration) not yet built
-6. Today session boundary/timezone behavior — OPEN (domain/persistence layer accepts an already-resolved logical date regardless)
+5. Today scope — DECIDED AND IMPLEMENTED through DailyPlan/DailyPlanItem (ADR-016); legacy TodaySession tables remain additive
+6. Today local-day/timezone authority — DECIDED AND IMPLEMENTED for current DailyPlan flow
 7. aggregate Learner State persistence — OPEN
-8. selected Next Best Action persistence strategy (persist only the chosen decision, not every candidate) — DECIDED, see docs/DECISIONS/010-answer-submission-transaction-model.md
+8. selected Next Best Action persistence — DECIDED: persist selected frozen plan output, not all candidates
 9. data deletion / Question retirement semantics — OPEN
-10. final Supabase confirmation — DATABASE/PROVIDER DECIDED, see `docs/DECISIONS/013-supabase-postgresql-as-v1-persistence-provider.md`; Auth/RLS/storage remain OPEN
+10. persistence provider — DECIDED: Supabase PostgreSQL (ADR-013)
+11. Supabase Auth provisioning — IMPLEMENTED; full RLS policy design remains OPEN
 ```
 
-Do not let the migration code become the place where these product decisions are accidentally made.
+Do not let migration implementation accidentally decide still-open product questions.
 
 ---
 
