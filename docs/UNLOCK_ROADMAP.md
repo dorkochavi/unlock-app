@@ -64,7 +64,7 @@ This defines UNLOCK's first real validation context:
 - real questions tied to that material;
 - students using UNLOCK primarily from their mobile phones.
 
-The pilot does not require every V1 capability described in this Roadmap. It requires the smallest complete loop that proves real learner and instructor value — see Product Runs 004–006.
+The pilot does not require every V1 capability described in this Roadmap. It requires the smallest complete loop that proves real learner and instructor value — see Product Runs 004–008.
 
 ---
 
@@ -188,38 +188,64 @@ The learner side feels like a coherent product, not a collection of working rout
 
 ---
 
-## Product Run 005 — Course & Question Authoring + Structured Import V1
+## Product Run 005 — Course Authoring & Topics V1 — COMPLETE
 
 ### Goal
 
-An instructor can create and manage a real course and its questions without using Supabase SQL, seed scripts, Cursor, or Claude — using manual authoring or an externally prepared question set.
+An instructor can create, configure, and publish a real course, and organize it into flat
+Topics, without using Supabase SQL, seed scripts, Cursor, or Claude.
+
+### Delivered outcomes
+
+- Instructor-facing authoring surface (`src/app/instructor/`), deliberately separate from the
+  learner shell/nav;
+- Create Course / edit Course metadata (title, exam date);
+- explicit Course publish (DRAFT → PUBLISHED) and archive (terminal in V1);
+- join policy configuration;
+- shareable join link;
+- flat, Course-scoped Topic model (create / list / rename / archive, no hard delete).
+
+### Scope note
+
+This Run was originally planned to also include manual question authoring, immutable
+QuestionVersion publish lifecycle, and Structured Import (CSV/JSON/spreadsheet). It was closed
+intentionally after Course + Topic authoring reached a coherent, independently valuable product
+boundary — see `docs/RUNS/2026-09-20-005.md` for the full rationale. That remaining scope was not
+dropped; it is re-sequenced into Runs 006-008 below.
+
+### Content model delivered
+
+Course
+→ Topic
+
+Question / QuestionVersion / Structured Import remain future work (Runs 006-007).
+
+### Exit condition — MET
+
+Dor or another instructor can create a real Course, configure it, organize it into Topics, and
+publish it entirely through the product UI.
+
+---
+
+## Product Run 006 — Question Authoring & Publishing V1
+
+### Goal
+
+An instructor can author real learning questions inside a published-or-draft Course and publish
+them as immutable, learner-eligible content, without SQL, seed scripts, Cursor, or Claude.
 
 ### Primary outcomes
 
-- Instructor role-aware product surface;
-- Create Course;
-- Edit Course;
-- Archive Course;
-- join policy;
-- exam date;
-- basic course publishing;
-- shareable join link / QR;
-- manual question authoring;
-- lightweight structured question import (e.g. CSV / JSON / spreadsheet-style) for externally prepared question sets;
-- question editing through immutable QuestionVersion;
-- minimal Topic structure;
-- learner-safe question preview.
-
-### Accepted question sources for V1
-
-Questions may come from any combination of:
-
-- the course lecturer directly;
-- manual authoring in the product;
-- external AI tools, brought in via structured import;
-- structured import generally.
-
-Native PDF ingestion and in-product AI question generation are not required here — see Product Run 008.
+- manual SINGLE_CHOICE / MULTIPLE_CHOICE question authoring, associated with one Topic in the
+  authoring Course (reusing Run 005's flat Topic model and its cross-Course-association guard
+  pattern);
+- draft question editing, with server-side validation of grading invariants (enough options,
+  correct-answer definitions, etc.);
+- explicit publish → immutable `QuestionVersion` creation;
+- re-publish creates a new `QuestionVersion` without rewriting history; historical Attempts keep
+  referencing their exact original version;
+- draft-only questions never leak into learner-facing planning/read paths;
+- learner-safe question preview that creates no Attempt/evidence.
 
 ### Content model target
 
@@ -228,17 +254,83 @@ Course
 → Question
 → QuestionVersion
 
-Material/Source support may begin here if useful, but must not block manual authoring or structured import.
-
-The exact structured import file format is an implementation detail to settle when this Run is planned, not a decision to lock prematurely here.
-
 ### Exit condition
 
-Dor or another instructor can create a usable demo/real course entirely through the product UI, using manual authoring and/or structured import.
+An instructor can author a valid question, publish it, and edit/re-publish it later, with full
+immutable-history integrity preserved end to end.
 
 ---
 
-## Product Run 006 — Learner Progress + Instructor Insights V1
+## Product Run 007 — Structured Import V1
+
+### Goal
+
+An instructor can bring an externally prepared question set (from the lecturer, external AI
+tools, or a spreadsheet) into UNLOCK through one canonical, format-independent import pipeline,
+built on top of Run 006's Question/QuestionVersion model.
+
+### Primary outcomes
+
+- canonical Structured Import model (source adapter → canonical rows → validation → preview →
+  confirm → persistence), format-independent internally;
+- JSON adapter — a documented UNLOCK JSON shape suitable for external AI generation and
+  developer/system export;
+- spreadsheet adapter (CSV required; XLSX if a mature library adds it cleanly, otherwise
+  deferred without redesigning the canonical pipeline);
+- row-level validation and an actionable preview (valid/invalid counts, per-row errors) before
+  any write;
+- all-or-nothing confirm, revalidating authoritative data rather than trusting a client preview
+  payload.
+
+### Accepted question sources for V1
+
+Questions may come from any combination of:
+
+- the course lecturer directly;
+- manual authoring in the product (Run 006);
+- external AI tools, brought in via structured import;
+- structured import generally.
+
+Native PDF ingestion and in-product AI question generation are not required here — see
+Product Run 011.
+
+### Exit condition
+
+A validated externally prepared question set (JSON or spreadsheet) can be previewed and
+explicitly imported through one canonical pipeline, preserving every Course/Topic/Question/
+Version invariant Runs 005-006 already established.
+
+---
+
+## Product Run 008 — Authoring Integration + Pilot Readiness
+
+### Goal
+
+Make Course creation, Topic organization, question authoring, and Structured Import (Runs
+005-007) feel like one coherent instructor workflow, and confirm the full instructor-to-learner
+loop is ready for the Ruppin pilot.
+
+### Primary outcomes
+
+- end-to-end instructor workflow polish: Course → Topics → author or import questions →
+  validate/preview → publish questions → publish Course → share join link;
+- a critical integration invariant re-verified explicitly: only intended published content
+  (published Course, published QuestionVersion) ever becomes eligible for learner-facing Today —
+  a draft Course or draft-only Question must never accidentally leak through;
+- integration-level tests across the full authoring flow where the current test harness supports
+  them;
+- a real Course/question set created entirely through the product, with no SQL/seed/developer
+  intervention, as the pilot-readiness proof.
+
+### Exit condition
+
+A non-developer (the Ruppin lecturer or Dor acting as one) can set up a real Course with usable
+published questions through UNLOCK alone, and the instructor-to-learner loop (Run Sequence
+004-008 combined) is demonstrably self-sufficient.
+
+---
+
+## Product Run 009 — Learner Progress + Instructor Insights V1
 
 ### Goal
 
@@ -279,11 +371,11 @@ A learner can understand their own strong/weak topics from Progress, and an inst
 
 ---
 
-## Product Run 007 — Learning Intelligence Expansion
+## Product Run 010 — Learning Intelligence Expansion
 
 ### Goal
 
-Deepen UNLOCK's differentiated prioritization beyond the basic signals already proven in Runs 004–006.
+Deepen UNLOCK's differentiated prioritization beyond the basic signals already proven in Runs 004–009.
 
 ### Primary outcomes
 
@@ -308,13 +400,13 @@ The learner's next action and Progress view are meaningfully informed by memory,
 
 ---
 
-## Product Run 008 — PDF / AI Content Pipeline V1
+## Product Run 011 — PDF / AI Content Pipeline V1
 
 ### Goal
 
 Allow instructors to turn source material into reviewed learning content without letting AI silently become the source of truth.
 
-PDF/content ingestion and AI question generation remain strategically important, but are not required for the Ruppin pilot or the earliest usable V1 (Runs 004–006). This Run builds that capability once the core learner and instructor loops are validated.
+PDF/content ingestion and AI question generation remain strategically important, but are not required for the Ruppin pilot or the earliest usable V1 (Runs 004–008). This Run builds that capability once the core learner and instructor loops are validated.
 
 ### Target flow
 
@@ -345,7 +437,7 @@ A real instructor can upload teaching material and produce a reviewed, publishab
 
 ---
 
-## Product Run 009 — Production / Scale Hardening
+## Product Run 012 — Production / Scale Hardening
 
 ### Goal
 
@@ -467,33 +559,43 @@ Reached after Run 004.
 
 A learner can independently use the product end to end.
 
-## Milestone B — Self-Sufficient Course Creation
+## Milestone B — Self-Sufficient Course & Topic Creation
 
 Reached after Run 005.
 
-An instructor can create and publish a course — using manual authoring and/or structured import — without developer/database intervention.
+An instructor can create, configure, publish, and organize a course into Topics — without
+developer/database intervention. Question authoring and Structured Import are not yet part of
+this milestone; see Milestone C.
 
-## Milestone C — Learner Progress & Instructor Insight Hypothesis Tested
-
-Reached after Run 006.
-
-Learners can see topic-level strong/weak progress, and the instructor-insights hypothesis (Run 006) has real pilot evidence for or against it.
-
-## Milestone D — Differentiated Learning Intelligence
-
-Reached after Run 007.
-
-UNLOCK's prioritization visibly reflects memory, mastery, misconceptions, confidence, and exam urgency.
-
-## Milestone E — AI-Assisted Content Creation
+## Milestone C — Self-Sufficient Content Authoring
 
 Reached after Run 008.
 
-Course material can become reviewed questions through an instructor-controlled AI pipeline.
+An instructor can create and publish a course — using manual question authoring and/or
+Structured Import — entirely without developer/database intervention, and the full
+instructor-to-learner loop (Runs 004–008) is pilot-ready.
 
-## Milestone F — Pilot-Ready, Scale-Ready V1
+## Milestone D — Learner Progress & Instructor Insight Hypothesis Tested
 
 Reached after Run 009.
+
+Learners can see topic-level strong/weak progress, and the instructor-insights hypothesis (Run 009) has real pilot evidence for or against it.
+
+## Milestone E — Differentiated Learning Intelligence
+
+Reached after Run 010.
+
+UNLOCK's prioritization visibly reflects memory, mastery, misconceptions, confidence, and exam urgency.
+
+## Milestone F — AI-Assisted Content Creation
+
+Reached after Run 011.
+
+Course material can become reviewed questions through an instructor-controlled AI pipeline.
+
+## Milestone G — Pilot-Ready, Scale-Ready V1
+
+Reached after Run 012.
 
 The system is deployable and operable for real pilot users, and for additional cohorts beyond the first pilot.
 
@@ -528,8 +630,12 @@ At the beginning of each Product Run:
 
 # 12. Current Next Step
 
+Product Runs 004 and 005 are complete (see `docs/DEV_STATUS.md` and
+`docs/RUNS/2026-09-20-005.md`).
+
 The next planned Product Run is:
 
-> **Product Run 004 — Complete Learner Product Loop V1**
+> **Product Run 006 — Question Authoring & Publishing V1**
 
-Its implementation Plan should be authored separately against the current clean committed repository baseline.
+Its implementation Plan should be authored separately, as a new dedicated
+`docs/CHATGPT_PLAN.md`, against the current clean committed repository baseline.

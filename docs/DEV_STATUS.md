@@ -24,16 +24,20 @@ Pushed HEAD:
 
 Current local HEAD (not yet pushed):
 
-`2368e54` — `add flat Topic model and authoring V1 (Run 005 S4)`
+`01c6029` — `update DEV_STATUS with Run 005 S3+S4 current truth`, plus one
+further documentation-only Run-closure commit on top of it (this file's own
+edit) — see `git log --oneline -1` for its exact SHA.
 
-Local HEAD is 10 commits ahead of pushed HEAD: all of Run 004 (`3568275`
+Local HEAD is ahead of pushed HEAD by all of Run 004 (`3568275`
 learner shell/nav + My Courses + Course View, `cb22a97` malformed-courseId
 500 fix, `0e8a597` mobile tap-target/truncation pass, `60b6dea` Playwright
 E2E harness, `0e812a1` Run 004 handoff — see `docs/RUNS/2026-09-20-004.md`),
-plus Run 005 in progress: `6090862` (Run 004 handoff metadata fix), `f09bb19`
-(S2 Course lifecycle + authoring authorization), `d1fa3eb` (S2 Run-report
-follow-up), `fd87f9e` (S3 Instructor Course Management UI V1), `2368e54`
-(S4 Flat Topic Model + Topic Authoring V1).
+plus Run 005 — COMPLETE (`6090862` Run 004 handoff metadata fix, `f09bb19`
+S2 Course lifecycle + authoring authorization, `d1fa3eb` S2 Run-report
+follow-up, `fd87f9e` S3 Instructor Course Management UI V1, `2368e54` S4
+Flat Topic Model + Topic Authoring V1, `01c6029` DEV_STATUS update, and the
+final Run-closure documentation commit — see `docs/RUNS/2026-09-20-005.md`
+for the full Run Report).
 
 Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
 
@@ -148,7 +152,7 @@ join link / QR
 
 ---
 
-### Course Authoring (Run 005, in progress)
+### Course Authoring (Run 005 — Course Authoring & Topics V1, COMPLETE)
 
 Implemented (Slice S2 — Course Lifecycle + Instructor Authorization Foundation):
 
@@ -208,7 +212,7 @@ Implemented (Slice S4 — Flat Topic Model + Topic Authoring V1):
   timestamps. Flat only — no parent/nesting/prerequisite columns. No hard
   delete: archiving excludes a Topic from listing but never removes the
   row, preserving referential integrity ahead of a future Question<->Topic
-  association (S5+).
+  association (planned for Run 006, see `docs/UNLOCK_ROADMAP.md`).
 - `src/domain/topic/`, `src/application/topic/` (createTopic /
   listTopicsForCourse / renameTopic / archiveTopic), 
   `src/infrastructure/postgres/topic-repository.ts` — authorization reuses
@@ -224,8 +228,18 @@ Implemented (Slice S4 — Flat Topic Model + Topic Authoring V1):
   archive-with-confirm, empty state) added to the instructor Course manage
   page from S3.
 
-Manual question authoring, QuestionVersion publish lifecycle, and
-Structured Import remain fully unimplemented (Slices S5-S8).
+Run 005 closed intentionally after S4 — a coherent product boundary (Course
+lifecycle + instructor authoring UI + flat Topic model) — rather than
+continuing through its originally-planned S5-S10. See
+`docs/RUNS/2026-09-20-005.md` for the full scope-closure rationale.
+
+**Not yet implemented** (moved to future Runs per `docs/UNLOCK_ROADMAP.md`,
+not abandoned):
+
+- manual question authoring (SINGLE_CHOICE/MULTIPLE_CHOICE) — Run 006
+- QuestionVersion publish/edit lifecycle — Run 006
+- Structured Import (JSON/spreadsheet adapters) — Run 007
+- end-to-end authoring workflow integration — Run 008
 
 ---
 
@@ -588,7 +602,7 @@ Database / Migration State).
 
 1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
 2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
-3. Push Run 004 + Run 005 (in progress) when ready — not yet pushed.
+3. Push Run 004 + Run 005 (complete) when ready — not yet pushed.
 4. Apply `20260926000000_course_lifecycle_v1.sql` and `20260927000000_topics_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
 5. Production deployment remains outstanding.
 
@@ -606,16 +620,23 @@ Current pushed HEAD:
 
 `f10daaa`
 
-Current local HEAD: Run 004 (`3568275`..`0e812a1`) plus Run 005 in progress (Slices S2-S4
-committed on top of Run 004's `6090862` handoff-metadata-fix commit — see `git log` for exact
-SHAs; current local HEAD is `2368e54`).
+Current local HEAD: Run 004 (`3568275`..`0e812a1`) plus Run 005 — **COMPLETE**
+(Slices S1-S4 committed on top of Run 004's `6090862` handoff-metadata-fix
+commit, closed intentionally after S4 — see `git log` for exact SHAs and
+`docs/RUNS/2026-09-20-005.md` for the full Run Report and scope-closure
+rationale).
 
-Next execution work continues Run 005 at Slice S5 (Manual Question Authoring V1) per
-`docs/CHATGPT_PLAN.md`.
+Run 005 is closed. Next execution requires a NEW, dedicated
+`docs/CHATGPT_PLAN.md` for Run 006 (Question Authoring & Publishing V1),
+written against this Run's actual committed baseline, per
+`docs/UNLOCK_ROADMAP.md`'s updated Product Run sequence. Do not resume this
+Run's original S5-S10 plan text — it no longer reflects the authorized
+scope.
 
-Do not infer the next slice from historical run context. See
+Do not infer next work from historical run context beyond what
+`docs/UNLOCK_ROADMAP.md` and `docs/DEV_STATUS.md` currently state. See
 `docs/RUNS/2026-09-20-004.md` for Run 004's full handoff and
-`docs/RUNS/2026-09-20-005.md` for Run 005's in-progress state.
+`docs/RUNS/2026-09-20-005.md` for Run 005's completed Run Report.
 
 ---
 
