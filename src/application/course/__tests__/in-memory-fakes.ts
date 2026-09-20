@@ -89,6 +89,12 @@ export class InMemoryCourseDatabase {
         const title = this.courseTitles.get(courseId);
         return title === undefined ? null : { id: courseId, title };
       },
+      getCourseSummaries: async (courseIds) => {
+        return courseIds.flatMap((courseId) => {
+          const title = this.courseTitles.get(courseId);
+          return title === undefined ? [] : [{ id: courseId, title }];
+        });
+      },
       getJoinPolicy: async (courseId) => {
         return this.joinPolicies.get(courseId) ?? null;
       },

@@ -277,7 +277,7 @@ Primary persistence/runtime areas:
 
 Primary UI/API areas:
 
-- `src/app/today/`
+- `src/app/(learner)/today/` (route group; URL remains `/today`)
 - `src/app/api/daily-plan/`
 
 Supporting design docs exist for specialized Today questions, including:

@@ -95,6 +95,16 @@ export interface CourseRepository {
   getCourseSummary(courseId: string): Promise<CourseSummary | null>;
 
   /**
+   * Batched form of `getCourseSummary` for listing several Courses at once
+   * (e.g. My Courses) without one query per Course. Returns only the
+   * summaries that exist — silently omits any `courseId` with no matching
+   * row rather than throwing, since a membership referencing a since-deleted
+   * Course is a caller-side concern, not this port's. Order is not
+   * guaranteed to match `courseIds`.
+   */
+  getCourseSummaries(courseIds: string[]): Promise<CourseSummary[]>;
+
+  /**
    * Returns `null` if the Course does not exist; otherwise the join policy
    * actually persisted after the write (always equal to `joinPolicy`).
    * Does not itself check the caller's authorization — that is

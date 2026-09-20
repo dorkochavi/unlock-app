@@ -65,4 +65,35 @@ describe("PostgresCourseRepository", () => {
     const repo = new PostgresCourseRepository(db);
     expect(await repo.getCourseSummary(randomUUID())).toBeNull();
   });
+
+  it("getCourseSummaries returns a summary per existing id against the real `= any($1::uuid[])` query", async () => {
+    const ownerId = await insertUser(db);
+    const courseId1 = await insertCourse(db, ownerId);
+    const courseId2 = await insertCourse(db, ownerId);
+    const repo = new PostgresCourseRepository(db);
+
+    const summaries = await repo.getCourseSummaries([courseId1, courseId2]);
+
+    expect(summaries).toHaveLength(2);
+    expect(summaries.map((s) => s.id).sort()).toEqual([courseId1, courseId2].sort());
+    for (const summary of summaries) {
+      expect(Object.keys(summary).sort()).toEqual(["id", "title"]);
+    }
+  });
+
+  it("getCourseSummaries silently omits ids that do not exist", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const repo = new PostgresCourseRepository(db);
+
+    const summaries = await repo.getCourseSummaries([courseId, randomUUID()]);
+
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0].id).toBe(courseId);
+  });
+
+  it("getCourseSummaries returns an empty array for an empty input without querying Postgres", async () => {
+    const repo = new PostgresCourseRepository(db);
+    expect(await repo.getCourseSummaries([])).toEqual([]);
+  });
 });

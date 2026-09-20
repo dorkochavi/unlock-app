@@ -32,6 +32,28 @@ export class PostgresCourseRepository implements CourseRepository {
     };
   }
 
+  /**
+   * Batched form of `getCourseSummary` (`CourseRepository.getCourseSummaries`
+   * doc comment). Same security-sensitive column list: `id, title` only.
+   * Empty input short-circuits to an empty result rather than issuing
+   * `= ANY($1)` with an empty array, which is valid SQL but a wasted round
+   * trip for a case the caller (My Courses with zero memberships) already
+   * knows the answer to.
+   */
+  async getCourseSummaries(courseIds: string[]): Promise<CourseSummary[]> {
+    if (courseIds.length === 0) {
+      return [];
+    }
+    const result = await this.db.query(
+      "select id, title from courses where id = any($1::uuid[])",
+      [courseIds],
+    );
+    return result.rows.map((row) => ({
+      id: readString(row, TABLE, "id"),
+      title: readString(row, TABLE, "title"),
+    }));
+  }
+
   async getJoinPolicy(courseId: string) {
     const result = await this.db.query(
       "select join_policy from courses where id = $1",
