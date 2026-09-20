@@ -384,4 +384,134 @@ describe("getOrCreateDailyPlanForToday — real Postgres generation path", () =>
     expect(Number(todaySessionItemCount.rows[0].count)).toBe(0);
     expect(Number(attemptCount.rows[0].count)).toBe(0);
   });
+
+  describe("New-material fallback against real Postgres (ADR-017, Night-Run Slice 5)", () => {
+    it("F. fresh learner regression: active LEARNER membership, zero Attempts, zero UserQuestionProgress, real eligible Questions — Today is non-empty with real NEW_LEARNING/NEW_MATERIAL rows", async () => {
+      const userId = await insertUser(db);
+      await setUserTimezone(db, userId, "UTC");
+      const courseId = await insertCourse(db, userId);
+      await insertCourseMembership(db, { userId, courseId, role: "LEARNER" });
+      const questionId = await insertQuestion(db, courseId);
+      const versionId = await insertQuestionVersion(db, questionId);
+      await setCurrentVersion(db, questionId, versionId);
+      // Deliberately NO seedDueProgress / no Attempt at all.
+
+      const ports = makePorts();
+      const result = await getOrCreateDailyPlanForToday(
+        { userId, now: new Date("2026-01-10T10:00:00Z") },
+        makeSettings(),
+        ports,
+      );
+
+      expect(result.outcome).toBe("READY");
+      if (result.outcome !== "READY") throw new Error("unreachable");
+      expect(result.plan.items).toHaveLength(1);
+      expect(result.plan.items[0].questionId).toBe(questionId);
+      expect(result.plan.items[0].actionType).toBe("NEW_LEARNING");
+      expect(result.plan.items[0].tier).toBe("NEW_MATERIAL");
+      expect(result.plan.items[0].reasons).toEqual(["UNSEEN_MATERIAL"]);
+
+      const itemRow = await db.query<{ action_type: string; tier: string; reasons: unknown }>(
+        "select action_type, tier, reasons from daily_plan_items where id = $1",
+        [result.plan.items[0].id],
+      );
+      expect(itemRow.rows[0].action_type).toBe("NEW_LEARNING");
+      expect(itemRow.rows[0].tier).toBe("NEW_MATERIAL");
+      expect(itemRow.rows[0].reasons).toEqual(["UNSEEN_MATERIAL"]);
+    });
+
+    it("G. a Question the learner already has a real Attempt for is excluded from the unseen pool, even with no UserQuestionProgress row", async () => {
+      const userId = await insertUser(db);
+      await setUserTimezone(db, userId, "UTC");
+      const courseId = await insertCourse(db, userId);
+      await insertCourseMembership(db, { userId, courseId, role: "LEARNER" });
+      const attemptedQuestionId = await insertQuestion(db, courseId);
+      const attemptedVersionId = await insertQuestionVersion(db, attemptedQuestionId);
+      await setCurrentVersion(db, attemptedQuestionId, attemptedVersionId);
+      const unseenQuestionId = await insertQuestion(db, courseId);
+      const unseenVersionId = await insertQuestionVersion(db, unseenQuestionId, 1, {
+        options: [
+          { id: "A", content: "Option A" },
+          { id: "B", content: "Option B" },
+        ],
+      });
+      await setCurrentVersion(db, unseenQuestionId, unseenVersionId);
+
+      // A real Attempt row, deliberately with NO corresponding
+      // UserQuestionProgress row — proves ADR-017 §1's rule is checked
+      // against Attempts directly, not inferred from progress-row absence.
+      await db.query(
+        `insert into attempts (
+           id, submission_id, user_id, course_id, question_id, question_version_id,
+           answered_at, is_correct, selected_answer, attempt_number_for_presented_item,
+           engine_version
+         )
+         values (gen_random_uuid(), 'sub-1', $1, $2, $3, $4, now(), true, '"A"'::jsonb, 1, 'test-engine-v1')`,
+        [userId, courseId, attemptedQuestionId, attemptedVersionId],
+      );
+
+      const ports = makePorts();
+      const result = await getOrCreateDailyPlanForToday(
+        { userId, now: new Date("2026-01-10T10:00:00Z") },
+        makeSettings(),
+        ports,
+      );
+
+      expect(result.outcome).toBe("READY");
+      if (result.outcome !== "READY") throw new Error("unreachable");
+      expect(result.plan.items).toHaveLength(1);
+      expect(result.plan.items[0].questionId).toBe(unseenQuestionId);
+    });
+
+    it("H. when a normal (review-due) candidate exists, the unseen fallback never activates even though eligible unseen Questions also exist — no mixing", async () => {
+      const userId = await insertUser(db);
+      await setUserTimezone(db, userId, "UTC");
+      const courseId = await insertCourse(db, userId);
+      await insertCourseMembership(db, { userId, courseId, role: "LEARNER" });
+      const dueQuestionId = await insertQuestion(db, courseId);
+      const dueVersionId = await insertQuestionVersion(db, dueQuestionId);
+      await setCurrentVersion(db, dueQuestionId, dueVersionId);
+      await seedDueProgress(db, userId, dueQuestionId);
+      const unseenQuestionId = await insertQuestion(db, courseId);
+      const unseenVersionId = await insertQuestionVersion(db, unseenQuestionId);
+      await setCurrentVersion(db, unseenQuestionId, unseenVersionId);
+
+      const ports = makePorts();
+      const result = await getOrCreateDailyPlanForToday(
+        { userId, now: new Date("2026-01-10T10:00:00Z") },
+        makeSettings(),
+        ports,
+      );
+
+      expect(result.outcome).toBe("READY");
+      if (result.outcome !== "READY") throw new Error("unreachable");
+      expect(result.plan.items).toHaveLength(1);
+      expect(result.plan.items[0].questionId).toBe(dueQuestionId);
+      expect(result.plan.items[0].actionType).not.toBe("NEW_LEARNING");
+    });
+
+    it("I. selecting new-material creates no real UserQuestionProgress row — placement is not evidence", async () => {
+      const userId = await insertUser(db);
+      await setUserTimezone(db, userId, "UTC");
+      const courseId = await insertCourse(db, userId);
+      await insertCourseMembership(db, { userId, courseId, role: "LEARNER" });
+      const questionId = await insertQuestion(db, courseId);
+      const versionId = await insertQuestionVersion(db, questionId);
+      await setCurrentVersion(db, questionId, versionId);
+
+      const ports = makePorts();
+      const result = await getOrCreateDailyPlanForToday(
+        { userId, now: new Date("2026-01-10T10:00:00Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(result.outcome).toBe("READY");
+
+      const progressCount = await db.query<{ count: string }>(
+        "select count(*)::int as count from user_question_progress where user_id = $1",
+        [userId],
+      );
+      expect(Number(progressCount.rows[0].count)).toBe(0);
+    });
+  });
 });

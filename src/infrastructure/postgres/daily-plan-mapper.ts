@@ -4,14 +4,18 @@
  * this closely mirrors).
  */
 import {
-  NEXT_BEST_ACTION_REASONS,
   NEXT_BEST_ACTION_TYPES,
-  type NextBestActionReason,
   type NextBestActionType,
 } from "../../domain/learning/next-best-action";
-import { NEXT_BEST_ACTION_PRIORITY_TIERS } from "../../domain/learning/next-best-action-ranking";
 import { DAILY_PLAN_ITEM_STATUSES } from "../../domain/dailyPlan/types";
-import type { DailyPlan, DailyPlanItem } from "../../application/dailyPlan/ports";
+import {
+  DAILY_PLAN_ITEM_ACTION_TYPES,
+  DAILY_PLAN_ITEM_REASONS,
+  DAILY_PLAN_ITEM_TIERS,
+  type DailyPlanItemReason,
+  type DailyPlan,
+  type DailyPlanItem,
+} from "../../application/dailyPlan/ports";
 import {
   MalformedRowError,
   readDate,
@@ -66,19 +70,19 @@ export function mapDailyPlanItemRow(row: Record<string, unknown>): DailyPlanItem
     position: readNumber(row, ITEM_TABLE, "position"),
     questionId: readString(row, ITEM_TABLE, "question_id"),
     questionVersionId: readString(row, ITEM_TABLE, "question_version_id"),
-    actionType: readEnum(row, ITEM_TABLE, "action_type", NEXT_BEST_ACTION_TYPES),
-    tier: readEnum(row, ITEM_TABLE, "tier", NEXT_BEST_ACTION_PRIORITY_TIERS),
+    actionType: readEnum(row, ITEM_TABLE, "action_type", DAILY_PLAN_ITEM_ACTION_TYPES),
+    tier: readEnum(row, ITEM_TABLE, "tier", DAILY_PLAN_ITEM_TIERS),
     otherApplicableTypes: readEnumArray<NextBestActionType>(
       row,
       ITEM_TABLE,
       "other_applicable_types",
       NEXT_BEST_ACTION_TYPES,
     ),
-    reasons: readEnumArray<NextBestActionReason>(
+    reasons: readEnumArray<DailyPlanItemReason>(
       row,
       ITEM_TABLE,
       "reasons",
-      NEXT_BEST_ACTION_REASONS,
+      DAILY_PLAN_ITEM_REASONS,
     ),
     status: readEnum(row, ITEM_TABLE, "status", DAILY_PLAN_ITEM_STATUSES),
     resolvedAt: readNullableDate(row, ITEM_TABLE, "resolved_at"),

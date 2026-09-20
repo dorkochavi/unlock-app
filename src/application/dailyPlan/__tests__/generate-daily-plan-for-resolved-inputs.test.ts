@@ -317,4 +317,174 @@ describe("generateDailyPlanForResolvedInputs", () => {
     expect(db.listForUserCallCount).toBe(listForUserCallsAfterFirst);
     expect(db.getCurrentVersionCallCount).toBe(getCurrentVersionCallsAfterFirst);
   });
+
+  describe("New-material fallback (ADR-017, Night-Run Slice 5)", () => {
+    it("L. fresh learner (zero progress) with 5 eligible unseen questions across 2 Courses receives exactly 3, globally ordered by (createdAt, questionId)", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-3rd",
+        courseId: "course-1",
+        questionVersionId: "qv-3rd",
+        createdAt: new Date("2026-01-03T00:00:00.000Z"),
+      });
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-1st",
+        courseId: "course-1",
+        questionVersionId: "qv-1st",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      });
+      db.seedUnseenQuestion("course-2", {
+        questionId: "q-2nd",
+        courseId: "course-2",
+        questionVersionId: "qv-2nd",
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
+      });
+      db.seedUnseenQuestion("course-2", {
+        questionId: "q-4th",
+        courseId: "course-2",
+        questionVersionId: "qv-4th",
+        createdAt: new Date("2026-01-04T00:00:00.000Z"),
+      });
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-5th",
+        courseId: "course-1",
+        questionVersionId: "qv-5th",
+        createdAt: new Date("2026-01-05T00:00:00.000Z"),
+      });
+
+      const plan = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1", "course-2"] },
+        makeContext(),
+        db,
+      );
+
+      expect(plan.items).toHaveLength(3);
+      expect(plan.items.map((item) => item.questionId)).toEqual([
+        "q-1st",
+        "q-2nd",
+        "q-3rd",
+      ]);
+      expect(plan.items.map((item) => item.position)).toEqual([0, 1, 2]);
+      for (const item of plan.items) {
+        expect(item.actionType).toBe("NEW_LEARNING");
+        expect(item.tier).toBe("NEW_MATERIAL");
+        expect(item.reasons).toEqual(["UNSEEN_MATERIAL"]);
+        expect(item.otherApplicableTypes).toEqual([]);
+        expect(item.status).toBe("pending");
+      }
+      expect(plan.items.find((item) => item.questionId === "q-2nd")?.courseId).toBe(
+        "course-2",
+      );
+    });
+
+    it("M. when only 2 eligible unseen questions exist, selects only those — no filler to reach 3", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-1",
+        courseId: "course-1",
+        questionVersionId: "qv-1",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      });
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-2",
+        courseId: "course-1",
+        questionVersionId: "qv-2",
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
+      });
+
+      const plan = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1"] },
+        makeContext(),
+        db,
+      );
+
+      expect(plan.items).toHaveLength(2);
+    });
+
+    it("N. when at least one normal candidate exists, the unseen fallback NEVER activates — no mixing, even if eligible unseen questions also exist", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedProgress("course-1", makeProgress({ questionId: "question-due" }));
+      db.setCurrentVersion("question-due", "qv-due");
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-unseen",
+        courseId: "course-1",
+        questionVersionId: "qv-unseen",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      });
+
+      const plan = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1"] },
+        makeContext(),
+        db,
+      );
+
+      expect(plan.items).toHaveLength(1);
+      expect(plan.items[0].questionId).toBe("question-due");
+      expect(plan.items[0].actionType).not.toBe("NEW_LEARNING");
+      // The fallback path must not even be QUERIED when normal candidates
+      // exist — not merely filtered out afterward.
+      expect(db.findUnseenQuestionsCallCount).toBe(0);
+    });
+
+    it("O. zero eligible unseen questions AND zero normal candidates: Today may be legitimately empty, no filler fabricated", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+
+      const plan = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1"] },
+        makeContext(),
+        db,
+      );
+
+      expect(plan.items).toEqual([]);
+    });
+
+    it("P. resuming an existing new-material-fallback plan does not re-query unseen questions", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-1",
+        courseId: "course-1",
+        questionVersionId: "qv-1",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      });
+
+      const first = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1"] },
+        makeContext(),
+        db,
+      );
+      expect(first.items).toHaveLength(1);
+      const callsAfterFirst = db.findUnseenQuestionsCallCount;
+
+      const second = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1"] },
+        makeContext(),
+        db,
+      );
+
+      expect(second).toEqual(first);
+      expect(db.findUnseenQuestionsCallCount).toBe(callsAfterFirst);
+    });
+
+    it("Q. new-material selection creates no UserQuestionProgress row — placement is not evidence", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedUnseenQuestion("course-1", {
+        questionId: "q-1",
+        courseId: "course-1",
+        questionVersionId: "qv-1",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      });
+
+      // InMemoryDailyPlanDatabase's progress.upsert fake throws if ever
+      // called ("not used by DailyPlan generation") — a passing call here
+      // is itself the proof that generation never wrote a progress row for
+      // the newly-selected unseen question.
+      const plan = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1"] },
+        makeContext(),
+        db,
+      );
+
+      expect(plan.items).toHaveLength(1);
+    });
+  });
 });

@@ -31,6 +31,8 @@ import type {
   DailyPlanTransactionalRepositories,
   DailyPlanUnitOfWork,
   ResolveDailyPlanItemResult,
+  UnseenQuestionCandidate,
+  UnseenQuestionRepository,
 } from "../ports";
 
 function dailyPlanKeyString(key: DailyPlanKey): string {
@@ -45,6 +47,16 @@ interface InMemoryState {
   dailyPlans: Map<string, DailyPlan>;
   progressByCourse: Map<string, UserQuestionProgress[]>;
   currentVersionByQuestion: Map<string, string>;
+  /**
+   * Pre-seeded eligible-unseen pool, keyed by courseId — this fake proves
+   * ORCHESTRATION only (does the generation core call this port correctly,
+   * merge/sort/limit across Courses correctly), not the real "no real
+   * Attempt exists" SQL logic itself (that is
+   * `supabase/tests/postgres/unseen-question-repository.test.ts`'s job). A
+   * test seeds exactly the candidates that should already be considered
+   * eligible-unseen.
+   */
+  unseenByCourse: Map<string, UnseenQuestionCandidate[]>;
 }
 
 function cloneState(state: InMemoryState): InMemoryState {
@@ -61,7 +73,18 @@ export class InMemoryDailyPlanDatabase implements DailyPlanUnitOfWork {
     dailyPlans: new Map(),
     progressByCourse: new Map(),
     currentVersionByQuestion: new Map(),
+    unseenByCourse: new Map(),
   };
+
+  /** Test-only call counter — assert the fallback path is/isn't reached. */
+  findUnseenQuestionsCallCount = 0;
+
+  /** Test setup helper — not part of any port. */
+  seedUnseenQuestion(courseId: string, candidate: UnseenQuestionCandidate): void {
+    const existing = this.state.unseenByCourse.get(courseId) ?? [];
+    existing.push(candidate);
+    this.state.unseenByCourse.set(courseId, existing);
+  }
 
   /**
    * Test-only, deliberately NOT part of `state` — configuration for a
@@ -230,6 +253,20 @@ export class InMemoryDailyPlanDatabase implements DailyPlanUnitOfWork {
       },
     };
 
-    return { dailyPlans, progress, questionVersions };
+    const unseenQuestions: UnseenQuestionRepository = {
+      findUnseenQuestions: async (userId, courseId, limit) => {
+        void userId; // this fake's pool is pre-filtered by the test itself
+        this.findUnseenQuestionsCallCount++;
+        const candidates = [...(this.state.unseenByCourse.get(courseId) ?? [])];
+        candidates.sort((a, b) => {
+          const byCreatedAt = a.createdAt.getTime() - b.createdAt.getTime();
+          if (byCreatedAt !== 0) return byCreatedAt;
+          return a.questionId < b.questionId ? -1 : a.questionId > b.questionId ? 1 : 0;
+        });
+        return candidates.slice(0, limit);
+      },
+    };
+
+    return { dailyPlans, progress, questionVersions, unseenQuestions };
   }
 }

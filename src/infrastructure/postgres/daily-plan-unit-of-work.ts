@@ -2,8 +2,9 @@
  * PostgreSQL implementation of `DailyPlanUnitOfWork`
  * (`src/application/dailyPlan/ports.ts`) — mirrors `PostgresUnitOfWork`
  * (`postgres-unit-of-work.ts`)'s BEGIN/COMMIT/ROLLBACK pattern exactly,
- * scoped to the three repositories DailyPlan generation actually needs:
- * `dailyPlans`, `progress`, `questionVersions`.
+ * scoped to the repositories DailyPlan generation actually needs:
+ * `dailyPlans`, `progress`, `questionVersions`, `unseenQuestions` (ADR-017,
+ * only ever read when the ranked-candidate pool is empty).
  *
  * Deliberately does NOT acquire `submitAnswer`'s advisory lock
  * (`acquireLearnerQuestionLock`, ADR-010) — DailyPlan generation only ever
@@ -23,6 +24,7 @@ import type { ConnectionProvider } from "./connection-provider";
 import { PostgresDailyPlanRepository } from "./daily-plan-repository";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
 import { PostgresUserQuestionProgressRepository } from "./progress-repository";
+import { PostgresUnseenQuestionRepository } from "./unseen-question-repository";
 
 export class PostgresDailyPlanUnitOfWork implements DailyPlanUnitOfWork {
   constructor(private readonly connectionProvider: ConnectionProvider) {}
@@ -43,6 +45,7 @@ export class PostgresDailyPlanUnitOfWork implements DailyPlanUnitOfWork {
           dailyPlans: new PostgresDailyPlanRepository(db),
           progress: new PostgresUserQuestionProgressRepository(db),
           questionVersions: new PostgresQuestionVersionRepository(db),
+          unseenQuestions: new PostgresUnseenQuestionRepository(db),
         };
         const result = await fn(repos);
         await db.query("commit");

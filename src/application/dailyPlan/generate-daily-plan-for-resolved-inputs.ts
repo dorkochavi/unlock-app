@@ -53,7 +53,70 @@ import {
 } from "../../domain/learning/today-planner";
 import type { MemoryScheduler } from "../../domain/learning/scheduler";
 import type { UserQuestionProgress } from "../../domain/learning/types";
-import type { DailyPlan, DailyPlanItem, DailyPlanUnitOfWork } from "./ports";
+import {
+  NEW_MATERIAL_ACTION_TYPE,
+  NEW_MATERIAL_TIER,
+  UNSEEN_MATERIAL_REASON,
+  type DailyPlan,
+  type DailyPlanItem,
+  type DailyPlanTransactionalRepositories,
+  type DailyPlanUnitOfWork,
+  type UnseenQuestionCandidate,
+} from "./ports";
+
+/**
+ * ADR-017 §3: fixed V1 count, not a configurable policy value — deliberately
+ * simpler than `TodayPlannerPolicy`'s injectable knobs, since this is a
+ * one-shot fallback constant the ADR itself fixes for V1, not a calibration
+ * surface any caller currently needs to vary.
+ */
+const MAX_NEW_MATERIAL_ITEMS = 3;
+
+/**
+ * ADR-017 §2/§3/§4: the fallback-only new-material discovery path — reached
+ * ONLY when `ranked` (the ordinary next-best-action pool) is empty for this
+ * learner today. Merges each eligible Course's own (already-limited, already
+ * deterministically-ordered) result set and re-sorts globally by
+ * `(createdAt, questionId)` before taking the final top-N — a Course-level
+ * `LIMIT` alone cannot guarantee the correct GLOBAL top-N across multiple
+ * Courses on its own.
+ */
+async function discoverNewMaterialItems(
+  userId: string,
+  eligibleCourseIds: string[],
+  repos: DailyPlanTransactionalRepositories,
+): Promise<Array<Omit<DailyPlanItem, "id" | "dailyPlanId">>> {
+  const pooled: UnseenQuestionCandidate[] = [];
+  for (const courseId of eligibleCourseIds) {
+    const candidates = await repos.unseenQuestions.findUnseenQuestions(
+      userId,
+      courseId,
+      MAX_NEW_MATERIAL_ITEMS,
+    );
+    pooled.push(...candidates);
+  }
+
+  pooled.sort((a, b) => {
+    const byCreatedAt = a.createdAt.getTime() - b.createdAt.getTime();
+    if (byCreatedAt !== 0) return byCreatedAt;
+    return a.questionId < b.questionId ? -1 : a.questionId > b.questionId ? 1 : 0;
+  });
+
+  return pooled.slice(0, MAX_NEW_MATERIAL_ITEMS).map((candidate, index) => ({
+    userId,
+    courseId: candidate.courseId,
+    position: index,
+    questionId: candidate.questionId,
+    questionVersionId: candidate.questionVersionId,
+    actionType: NEW_MATERIAL_ACTION_TYPE,
+    tier: NEW_MATERIAL_TIER,
+    otherApplicableTypes: [],
+    reasons: [UNSEEN_MATERIAL_REASON],
+    status: "pending",
+    resolvedAt: null,
+    completedAt: null,
+  }));
+}
 
 export interface DailyPlanGenerationContext {
   now: Date;
@@ -146,63 +209,77 @@ export async function generateDailyPlanForResolvedInputs(
     // carry no courseId concept at all and are called completely
     // unmodified.
     const ranked = rankNextBestActionCandidates(candidates, { now: context.now });
-    const plan = generateTodayPlan(
-      { rankedCandidates: ranked, plannedForDate: command.plannedForDate },
-      context.todayPlannerPolicy,
-    );
 
-    // QuestionVersion resolution/freezing is an application-layer
-    // responsibility, not today-planner.ts's (ADR-010) — identical
-    // reasoning and identical defensive skip to getOrCreateTodaySession: a
-    // Question with no current version is skipped rather than crashing the
-    // whole generation. `planItem.position` (below) is reused as-is, so a
-    // skipped Question can leave a gap in persisted positions (e.g.
-    // [0,1,2,4]) rather than being renumbered contiguously — intentional,
-    // matching getOrCreateTodaySession's identical existing behavior; the
-    // schema has no contiguity constraint and nothing reads position as a
-    // dense sequence.
-    const items: Array<Omit<DailyPlanItem, "id" | "dailyPlanId">> = [];
-    for (const planItem of plan.items) {
-      const version = await repos.questionVersions.getCurrentVersion(
-        planItem.questionId,
+    let items: Array<Omit<DailyPlanItem, "id" | "dailyPlanId">>;
+
+    if (ranked.length > 0) {
+      const plan = generateTodayPlan(
+        { rankedCandidates: ranked, plannedForDate: command.plannedForDate },
+        context.todayPlannerPolicy,
       );
-      if (version === null) {
-        continue;
-      }
-      const courseId = questionCourseId.get(planItem.questionId);
-      if (courseId === undefined) {
-        // Unreachable: every ranked candidate originated from a progress
-        // row fetched under some eligibleCourseId, recorded above before
-        // ranking ever ran — surfaced loudly rather than silently, in
-        // case that invariant is ever broken by a future change.
-        throw new Error(
-          `generateDailyPlanForResolvedInputs: no courseId recorded for ` +
-            `questionId ${planItem.questionId} — this should be unreachable`,
+
+      // QuestionVersion resolution/freezing is an application-layer
+      // responsibility, not today-planner.ts's (ADR-010) — identical
+      // reasoning and identical defensive skip to getOrCreateTodaySession: a
+      // Question with no current version is skipped rather than crashing the
+      // whole generation. `planItem.position` (below) is reused as-is, so a
+      // skipped Question can leave a gap in persisted positions (e.g.
+      // [0,1,2,4]) rather than being renumbered contiguously — intentional,
+      // matching getOrCreateTodaySession's identical existing behavior; the
+      // schema has no contiguity constraint and nothing reads position as a
+      // dense sequence.
+      items = [];
+      for (const planItem of plan.items) {
+        const version = await repos.questionVersions.getCurrentVersion(
+          planItem.questionId,
         );
+        if (version === null) {
+          continue;
+        }
+        const courseId = questionCourseId.get(planItem.questionId);
+        if (courseId === undefined) {
+          // Unreachable: every ranked candidate originated from a progress
+          // row fetched under some eligibleCourseId, recorded above before
+          // ranking ever ran — surfaced loudly rather than silently, in
+          // case that invariant is ever broken by a future change.
+          throw new Error(
+            `generateDailyPlanForResolvedInputs: no courseId recorded for ` +
+              `questionId ${planItem.questionId} — this should be unreachable`,
+          );
+        }
+        items.push({
+          userId: command.userId,
+          courseId,
+          position: planItem.position,
+          questionId: planItem.questionId,
+          questionVersionId: version.versionId,
+          actionType: planItem.actionType,
+          tier: planItem.tier,
+          otherApplicableTypes: planItem.otherApplicableTypes,
+          reasons: planItem.reasons,
+          status: "pending",
+          resolvedAt: null,
+          completedAt: null,
+        });
       }
-      items.push({
-        userId: command.userId,
-        courseId,
-        position: planItem.position,
-        questionId: planItem.questionId,
-        questionVersionId: version.versionId,
-        actionType: planItem.actionType,
-        tier: planItem.tier,
-        otherApplicableTypes: planItem.otherApplicableTypes,
-        reasons: planItem.reasons,
-        status: "pending",
-        resolvedAt: null,
-        completedAt: null,
-      });
+    } else {
+      // ADR-017 §2: fallback-only new-material exposure — reached ONLY
+      // when zero ordinary next-best-action candidates exist for this
+      // learner today. Never mixed with the branch above in the same plan.
+      items = await discoverNewMaterialItems(
+        command.userId,
+        eligibleCourseIds,
+        repos,
+      );
     }
 
     // No filler is ever fabricated when `items` is empty (zero eligible
-    // Courses, zero progress, or zero ranked candidates) — a zero-item
-    // DailyPlan is still persisted, mirroring getOrCreateTodaySession's
-    // own unconditional createIfNotExists call. Skipping persistence here
-    // would break "a second Today view opened later the same day resumes
-    // the already-generated plan" (ADR-016 §2) for a legitimately-empty
-    // day.
+    // Courses, zero progress, zero ranked candidates, AND zero eligible
+    // unseen questions) — a zero-item DailyPlan is still persisted,
+    // mirroring getOrCreateTodaySession's own unconditional
+    // createIfNotExists call. Skipping persistence here would break "a
+    // second Today view opened later the same day resumes the
+    // already-generated plan" (ADR-016 §2) for a legitimately-empty day.
     return repos.dailyPlans.createIfNotExists(
       {
         userId: command.userId,

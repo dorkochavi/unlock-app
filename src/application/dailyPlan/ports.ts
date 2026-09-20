@@ -18,16 +18,52 @@
  * `submitAnswer` — see `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 6
  * for what remains before this is used end-to-end.
  */
-import type {
-  NextBestActionReason,
-  NextBestActionType,
+import {
+  NEXT_BEST_ACTION_REASONS,
+  NEXT_BEST_ACTION_TYPES,
+  type NextBestActionType,
 } from "../../domain/learning/next-best-action";
-import type { NextBestActionPriorityTier } from "../../domain/learning/next-best-action-ranking";
+import { NEXT_BEST_ACTION_PRIORITY_TIERS } from "../../domain/learning/next-best-action-ranking";
 import type { DailyPlanItemStatus } from "../../domain/dailyPlan/types";
 import type {
   QuestionVersionRepository,
   UserQuestionProgressRepository,
 } from "../learning/ports";
+
+/**
+ * ADR-017 (Starter / New-Material Exposure V1): the PERSISTED
+ * `DailyPlanItem` shape is a strict superset of `next-best-action.ts`'s own
+ * `NextBestActionType`/`NextBestActionReason` and
+ * `next-best-action-ranking.ts`'s `NextBestActionPriorityTier` —
+ * deliberately. Those domain files stay scoped to "candidate generation
+ * only, 4 of 7 types" (their own doc comments) and are UNCHANGED by this
+ * ADR; `generateNextBestActionCandidates` never produces a `NEW_LEARNING`
+ * candidate. `NEW_LEARNING`/`NEW_MATERIAL`/`UNSEEN_MATERIAL` exist ONLY as
+ * values a `DailyPlanItem` can carry, produced exclusively by the
+ * fallback-only new-material selection path in
+ * `generate-daily-plan-for-resolved-inputs.ts` — never by ranking.
+ */
+export const NEW_MATERIAL_ACTION_TYPE = "NEW_LEARNING" as const;
+export const NEW_MATERIAL_TIER = "NEW_MATERIAL" as const;
+export const UNSEEN_MATERIAL_REASON = "UNSEEN_MATERIAL" as const;
+
+export const DAILY_PLAN_ITEM_ACTION_TYPES = [
+  ...NEXT_BEST_ACTION_TYPES,
+  NEW_MATERIAL_ACTION_TYPE,
+] as const;
+export type DailyPlanItemActionType = (typeof DAILY_PLAN_ITEM_ACTION_TYPES)[number];
+
+export const DAILY_PLAN_ITEM_TIERS = [
+  ...NEXT_BEST_ACTION_PRIORITY_TIERS,
+  NEW_MATERIAL_TIER,
+] as const;
+export type DailyPlanItemTier = (typeof DAILY_PLAN_ITEM_TIERS)[number];
+
+export const DAILY_PLAN_ITEM_REASONS = [
+  ...NEXT_BEST_ACTION_REASONS,
+  UNSEEN_MATERIAL_REASON,
+] as const;
+export type DailyPlanItemReason = (typeof DAILY_PLAN_ITEM_REASONS)[number];
 
 export interface DailyPlanItem {
   id: string;
@@ -37,15 +73,46 @@ export interface DailyPlanItem {
   position: number;
   questionId: string;
   questionVersionId: string;
-  actionType: NextBestActionType;
-  tier: NextBestActionPriorityTier;
+  actionType: DailyPlanItemActionType;
+  tier: DailyPlanItemTier;
+  /** Never includes `NEW_LEARNING` — that concept has no "other applicable type" notion in V1. */
   otherApplicableTypes: NextBestActionType[];
-  reasons: NextBestActionReason[];
+  reasons: DailyPlanItemReason[];
   status: DailyPlanItemStatus;
   /** Set once, the first time this item leaves `pending` (ADR-016 §19). */
   resolvedAt: Date | null;
   /** Set only for a COMPLETED item — equals `resolvedAt` in that case. */
   completedAt: Date | null;
+}
+
+/**
+ * ADR-017 §1/§4: one eligible unseen Question (no prior real Attempt),
+ * already carrying its current `QuestionVersion` id (resolved in the same
+ * query, avoiding a second per-question lookup) and `createdAt` for the
+ * deterministic global tie-break across multiple eligible Courses —
+ * `generate-daily-plan-for-resolved-inputs.ts` merges each Course's own
+ * (already-limited) result set and re-sorts globally before taking the
+ * final top-N.
+ */
+export interface UnseenQuestionCandidate {
+  questionId: string;
+  courseId: string;
+  questionVersionId: string;
+  createdAt: Date;
+}
+
+export interface UnseenQuestionRepository {
+  /**
+   * Deterministic order (`created_at` asc, `id` asc — ADR-017 §4), limited
+   * to `limit` rows. Excludes any Question the learner has a real Attempt
+   * for (ADR-017 §1) and any Question with no resolvable current
+   * `QuestionVersion`. Selects only non-grading fields.
+   */
+  findUnseenQuestions(
+    userId: string,
+    courseId: string,
+    limit: number,
+  ): Promise<UnseenQuestionCandidate[]>;
 }
 
 export interface DailyPlan {
@@ -141,6 +208,8 @@ export interface DailyPlanTransactionalRepositories {
   dailyPlans: DailyPlanRepository;
   progress: UserQuestionProgressRepository;
   questionVersions: QuestionVersionRepository;
+  /** ADR-017 — only read when the ranked-candidate pool is empty. */
+  unseenQuestions: UnseenQuestionRepository;
 }
 
 export interface DailyPlanUnitOfWork {

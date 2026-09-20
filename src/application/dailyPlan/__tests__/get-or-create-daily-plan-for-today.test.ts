@@ -443,4 +443,77 @@ describe("getOrCreateDailyPlanForToday", () => {
     }
     expect(dailyPlans.listForUserCallCount).toBe(1);
   });
+
+  it("K. fresh learner regression (ADR-017, Night-Run Slice 5): active LEARNER membership, zero Attempts, zero UserQuestionProgress, but eligible unseen Questions — Today is non-empty, not the previously-real empty-plan gap", async () => {
+    const users = new InMemoryUserDatabase();
+    users.seedUser(USER_ID, "UTC");
+    const courses = new InMemoryCourseDatabase();
+    courses.seedMembership(makeMembership({ courseId: "course-a", role: "LEARNER" }));
+
+    const dailyPlans = new InMemoryDailyPlanDatabase();
+    // Deliberately NO seedProgress call — this is the exact fresh-learner
+    // state the gap described in docs/DEV_STATUS.md (pre-ADR-017) produced
+    // an empty Today for.
+    dailyPlans.seedUnseenQuestion("course-a", {
+      questionId: "question-new",
+      courseId: "course-a",
+      questionVersionId: "qv-new",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = await getOrCreateDailyPlanForToday(
+      { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
+      makeSettings(),
+      {
+        users: users.repo(),
+        courseMemberships: courses.repos().memberships,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome === "READY") {
+      expect(result.plan.items).toHaveLength(1);
+      expect(result.plan.items[0].actionType).toBe("NEW_LEARNING");
+      expect(result.plan.items[0].questionId).toBe("question-new");
+    }
+  });
+
+  it("L. new-material discovery reuses the SAME LEARNER-only eligible Course set as normal candidates — OWNER/INSTRUCTOR Courses are never queried for unseen questions either", async () => {
+    const users = new InMemoryUserDatabase();
+    users.seedUser(USER_ID, "UTC");
+    const courses = new InMemoryCourseDatabase();
+    courses.seedMembership(makeMembership({ courseId: "course-learner", role: "LEARNER" }));
+    courses.seedMembership(makeMembership({ courseId: "course-owner", role: "OWNER" }));
+
+    const dailyPlans = new InMemoryDailyPlanDatabase();
+    dailyPlans.seedUnseenQuestion("course-learner", {
+      questionId: "question-learner",
+      courseId: "course-learner",
+      questionVersionId: "qv-learner",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    dailyPlans.seedUnseenQuestion("course-owner", {
+      questionId: "question-owner",
+      courseId: "course-owner",
+      questionVersionId: "qv-owner",
+      createdAt: new Date("2025-01-01T00:00:00.000Z"), // earlier — would win if wrongly included
+    });
+
+    const result = await getOrCreateDailyPlanForToday(
+      { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
+      makeSettings(),
+      {
+        users: users.repo(),
+        courseMemberships: courses.repos().memberships,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome === "READY") {
+      expect(result.plan.items).toHaveLength(1);
+      expect(result.plan.items[0].questionId).toBe("question-learner");
+    }
+  });
 });

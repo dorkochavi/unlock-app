@@ -583,9 +583,9 @@ This work is workflow/configuration-only and separate from the DailyPlan route c
 
 ## Current test baseline
 
-- Unit tests: `554 / 554`
-- Schema/Postgres tests: `176 / 176` (rerun this slice — new PGlite test
-  file for the Skip use case)
+- Unit tests: `562 / 562`
+- Schema/Postgres tests: `186 / 186` (rerun this slice — new migration +
+  new `PostgresUnseenQuestionRepository`)
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -632,12 +632,11 @@ reported issue.
    "Minimal learner vertical slice" one before it deliberately stopped
    short of that.
 2. DailyPlanItem completion through `submitAnswer` (Slice 1), interactive
-   Today UI (Slice 2), Skip (Slice 3), and the Starter/New Material V1
-   product decision (Slice 4, ADR-017) are all DONE — see their respective
-   slice sections above. Next: ADR-017's implementation (Slice 5) — a
-   discovery query for eligible unseen questions, the fallback-only
-   integration into DailyPlan generation, and the `NEW_LEARNING`/
-   `NEW_MATERIAL` schema CHECK-constraint additions.
+   Today UI (Slice 2), Skip (Slice 3), the Starter/New Material V1 product
+   decision (Slice 4, ADR-017), and its implementation (Slice 5) are all
+   DONE — see their respective slice sections above. Next: Open Course
+   Join / Ruppin demo onboarding (Slice 6) — read ADR-015 (Course
+   Membership / join authorization) first.
 
 ## Starter / New-Material V1 — RESOLVED (2026-09-24, Night Run Slice 4)
 
@@ -658,6 +657,79 @@ This ADR is a product/architecture decision record only — no code changed
 in this slice. Implementation (discovery query, ranking-pipeline
 integration, schema CHECK-constraint additions) is Slice 5, tracked
 separately below.
+
+## New-material fallback implementation (2026-09-24/25, Night Run Slice 5)
+
+Implements ADR-017 exactly. Closes the real gap: a fresh learner with an
+active `LEARNER` membership, zero Attempts, and zero `UserQuestionProgress`
+rows now receives a non-empty Today when eligible unseen Questions exist.
+
+- `supabase/migrations/20260925000000_daily_plan_new_material_v1.sql`:
+  drops/recreates `daily_plan_items`' `action_type`/`tier` CHECK
+  constraints (by Postgres's own auto-generated names — a CHECK's allowed
+  list cannot be widened in place) to add `'NEW_LEARNING'`/`'NEW_MATERIAL'`.
+  `today_session_items`' identical constraints deliberately untouched
+  (superseded, unused-by-any-real-route table).
+- `src/infrastructure/postgres/unseen-question-repository.ts`
+  (`PostgresUnseenQuestionRepository`): the real SQL enforcement point for
+  "unseen" (`NOT EXISTS` against `attempts`, checked against Attempts
+  directly, never inferred from missing `UserQuestionProgress`) and "has a
+  resolvable current QuestionVersion." Resolves `question_version_id` in
+  the same query — no second per-question lookup, avoiding N+1. Called
+  once per eligible Course (mirrors the existing `progress.listForUser`
+  per-Course loop), never once per question.
+- `src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`:
+  the fallback branches on `ranked.length === 0` (zero ordinary
+  next-best-action candidates) — the existing normal-candidate code path
+  is otherwise unchanged, just moved inside `if (ranked.length > 0)`. The
+  fallback merges each Course's own (already-limited-to-3) result set and
+  re-sorts globally by `(createdAt, questionId)` before taking the final
+  top-3 — proven correct (not merely tested) via the standard "top-K from
+  union of per-source top-K lists" argument: since every Course applies
+  the SAME limit as the global limit, no Course can be under-represented
+  in the true global top-3.
+- `src/application/dailyPlan/ports.ts`: `DailyPlanItemActionType`/`Tier`/
+  `Reason` widened to supersets of `next-best-action.ts`'s own
+  `NextBestActionType`/`NextBestActionReason` and
+  `next-best-action-ranking.ts`'s `NextBestActionPriorityTier` — those
+  domain files remain UNCHANGED (still exactly 4 candidate types); the new
+  values exist only as a `DailyPlanItem` persistence shape, produced
+  exclusively by the fallback path, never by ranking.
+- No fake progress: `discoverNewMaterialItems` never references the
+  `progress` repository at all — verified by inspection and by a
+  dedicated test whose fake throws if `progress.upsert` is ever called.
+
+**Reviewed:** `unlock-db-reviewer`, against this exact diff. No blockers.
+Confirmed by direct inspection (not just trusting tests): the CHECK
+constraint auto-generated names are correct, the global top-N merge is
+provably correct (not just tested), no transactional/executor-mixing
+issue, no fake progress, no ranking regression for the existing candidate
+path.
+
+**Tests added:** 18 unit cases (`generate-daily-plan-for-resolved-inputs.test.ts`),
+2 unit cases (`get-or-create-daily-plan-for-today.test.ts`, including the
+fresh-learner regression), 6 PGlite cases
+(`unseen-question-repository.test.ts` — ordering, limit, null-version
+exclusion, cross-user Attempt isolation), 4 PGlite cases
+(`daily-plan-unit-of-work.test.ts`'s new-material describe block —
+fresh-learner regression, attempted-question exclusion, no-mixing,
+no-fake-progress, all through the real `getOrCreateDailyPlanForToday`
+pipeline end-to-end).
+
+**Verification:**
+
+- unit tests: `562 / 562` (was `554 / 554`; +8 net files, +25 new cases
+  reflected in the total).
+- schema/Postgres tests: `186 / 186` (was `176 / 176`; +10) — real PGlite,
+  full committed migration chain including the new CHECK-constraint
+  migration.
+- typecheck: clean. lint: clean. `git diff --check`: clean.
+- NOT verified: real hosted Supabase/Postgres (migration not applied
+  remotely, per session authorization limits), real browser rendering of
+  a `NEW_LEARNING` item (Slice 7 will add its learner-facing label; the
+  current fallback for an unlabeled action type in `/today` is to render
+  the raw enum string, matching the existing pattern for any unmapped
+  `actionType`).
 
 **Verification:** documentation-only slice — no tests run, no code
 changed. `git diff --check`: clean.
