@@ -79,6 +79,31 @@ async function submitDailyPlanItemAnswer(
   }
 }
 
+type SkipOutcome =
+  | { outcome: "SKIPPED" }
+  | { outcome: "UNAUTHENTICATED" }
+  | { outcome: "ALREADY_RESOLVED" }
+  | { outcome: "ERROR" };
+
+async function skipDailyPlanItem(itemId: string): Promise<SkipOutcome> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/daily-plan/items/${itemId}/skip`, { method: "POST" });
+  } catch {
+    return { outcome: "ERROR" };
+  }
+  if (response.status === 401) {
+    return { outcome: "UNAUTHENTICATED" };
+  }
+  if (response.status === 409) {
+    return { outcome: "ALREADY_RESOLVED" };
+  }
+  if (!response.ok) {
+    return { outcome: "ERROR" };
+  }
+  return { outcome: "SKIPPED" };
+}
+
 export default function TodayPage() {
   const messages = getMessages();
   const [state, setState] = useState<ViewState>({ kind: "loading" });
@@ -305,6 +330,38 @@ function TodayPlanView({
     setFeedback({ itemId, isCorrect: result.isCorrect });
   }
 
+  async function handleSkip(itemId: string) {
+    setSubmitError(null);
+    const result = await skipDailyPlanItem(itemId);
+
+    if (result.outcome === "UNAUTHENTICATED") {
+      onUnauthenticated();
+      return;
+    }
+    if (result.outcome === "ALREADY_RESOLVED") {
+      setAlreadyResolvedNotice(true);
+      const refreshed = await fetchTodayPlan();
+      if (refreshed.outcome === "READY") {
+        setItems(refreshed.plan.items);
+      } else if (refreshed.outcome === "UNAUTHENTICATED") {
+        onUnauthenticated();
+      }
+      setAlreadyResolvedNotice(false);
+      return;
+    }
+    if (result.outcome === "ERROR") {
+      setSubmitError(messages.today.skipError);
+      return;
+    }
+
+    // Skip is not an answer — no correctness feedback, no continue step
+    // (`.claude/rules/learning-engine.md` "Item resolution"). Resolving it
+    // locally immediately advances `current` to the next pending item.
+    setItems((previous) =>
+      previous.map((item) => (item.id === itemId ? { ...item, status: "skipped" } : item)),
+    );
+  }
+
   return (
     <div className="w-full max-w-2xl">
       <div className="mb-4 flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">
@@ -331,6 +388,7 @@ function TodayPlanView({
           submitError={submitError}
           onSubmit={(selectedAnswer) => handleAnswer(current.id, selectedAnswer)}
           onContinue={() => setFeedback(null)}
+          onSkip={() => handleSkip(current.id)}
         />
       )}
     </div>
@@ -343,24 +401,28 @@ function TodayAnswerCard({
   submitError,
   onSubmit,
   onContinue,
+  onSkip,
 }: {
   item: DailyPlanItemDto;
   feedback: Feedback | null;
   submitError: string | null;
   onSubmit: (selectedAnswer: string | string[] | null) => Promise<void>;
   onContinue: () => void;
+  onSkip: () => Promise<void>;
 }) {
   const messages = getMessages();
   const isMultiple = item.questionType === "MULTIPLE_CHOICE";
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+  const busy = submitting || skipping;
 
   const actionLabel =
     messages.today.actionType[item.actionType as keyof typeof messages.today.actionType] ??
     item.actionType;
 
   function toggleOption(optionId: string) {
-    if (feedback !== null || submitting) return;
+    if (feedback !== null || busy) return;
     if (isMultiple) {
       setSelected((previous) =>
         previous.includes(optionId)
@@ -373,11 +435,18 @@ function TodayAnswerCard({
   }
 
   async function handleSubmit() {
-    if (selected.length === 0 || submitting) return;
+    if (selected.length === 0 || busy) return;
     setSubmitting(true);
     const selectedAnswer = isMultiple ? selected : (selected[0] ?? null);
     await onSubmit(selectedAnswer);
     setSubmitting(false);
+  }
+
+  async function handleSkipClick() {
+    if (busy) return;
+    setSkipping(true);
+    await onSkip();
+    setSkipping(false);
   }
 
   return (
@@ -391,7 +460,7 @@ function TodayAnswerCard({
               <button
                 type="button"
                 onClick={() => toggleOption(option.id)}
-                disabled={feedback !== null || submitting}
+                disabled={feedback !== null || busy}
                 aria-pressed={isSelected}
                 className={`w-full rounded-md border px-3 py-2 text-start text-sm transition disabled:opacity-60 ${
                   isSelected
@@ -413,14 +482,26 @@ function TodayAnswerCard({
       ) : null}
 
       {feedback === null ? (
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={selected.length === 0 || submitting}
-          className="w-full rounded-md bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          {submitting ? messages.today.submitting : messages.today.submit}
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={selected.length === 0 || busy}
+            className="w-full rounded-md bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+          >
+            {submitting ? messages.today.submitting : messages.today.submit}
+          </button>
+          {/* Visually secondary, per Slice 3: Skip is not an answer and
+              must not compete with the primary submit action. */}
+          <button
+            type="button"
+            onClick={handleSkipClick}
+            disabled={busy}
+            className="w-full rounded-md px-4 py-2 text-sm text-zinc-500 underline disabled:opacity-50 dark:text-zinc-400"
+          >
+            {skipping ? messages.today.skipping : messages.today.skip}
+          </button>
+        </div>
       ) : (
         <div>
           <p

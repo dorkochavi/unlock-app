@@ -311,10 +311,22 @@ export class InMemoryLearningDatabase implements UnitOfWork {
           return { outcome: "NOT_FOUND" };
         }
         if (item.status !== "pending") {
-          return { outcome: "ALREADY_RESOLVED" };
+          return { outcome: "ALREADY_RESOLVED", item: { status: item.status } };
         }
         item.status = "completed";
         void completedAt; // not separately modeled on this minimal fake shape
+        return { outcome: "RESOLVED" };
+      },
+      markSkipped: async (itemId, skippedAt) => {
+        const item = this.state.dailyPlanItems.get(itemId);
+        if (item === undefined) {
+          return { outcome: "NOT_FOUND" };
+        }
+        if (item.status !== "pending") {
+          return { outcome: "ALREADY_RESOLVED", item: { status: item.status } };
+        }
+        item.status = "skipped";
+        void skippedAt; // not separately modeled on this minimal fake shape
         return { outcome: "RESOLVED" };
       },
     };

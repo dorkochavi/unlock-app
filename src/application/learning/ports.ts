@@ -288,7 +288,13 @@ export interface DailyPlanAnswerTarget {
 
 export type ResolveDailyPlanAnswerItemResult =
   | { outcome: "RESOLVED" }
-  | { outcome: "ALREADY_RESOLVED" }
+  /**
+   * `item` here is intentionally narrower than the full `DailyPlanItem` —
+   * only `status` is needed so a caller (e.g. `skipDailyPlanItem`) can
+   * report WHICH resolution already happened, without this port depending
+   * on `application/dailyPlan/ports.ts`'s fuller type.
+   */
+  | { outcome: "ALREADY_RESOLVED"; item: Pick<DailyPlanAnswerTarget, "status"> }
   | { outcome: "NOT_FOUND" };
 
 export interface DailyPlanAnswerRepository {
@@ -306,6 +312,19 @@ export interface DailyPlanAnswerRepository {
   markCompleted(
     itemId: string,
     completedAt: Date,
+  ): Promise<ResolveDailyPlanAnswerItemResult>;
+
+  /**
+   * Resolves a `pending` DailyPlanItem as SKIPPED (ADR-016, Night-Run
+   * Slice 3) — same single-use enforcement, same real implementation
+   * (`PostgresDailyPlanRepository.markSkipped`). Never creates an Attempt
+   * and never touches `UserQuestionProgress` — this port has no way to,
+   * since it only ever issues an `UPDATE daily_plan_items`
+   * (`.claude/rules/learning-engine.md` "Item resolution").
+   */
+  markSkipped(
+    itemId: string,
+    skippedAt: Date,
   ): Promise<ResolveDailyPlanAnswerItemResult>;
 }
 

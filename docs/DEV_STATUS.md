@@ -197,7 +197,6 @@ Not yet end-to-end verified:
 
 Not implemented yet:
 
-- Skip use case
 - mid-day Today adaptation
 - Global Today user-facing UI
 - production deployment
@@ -338,6 +337,63 @@ learner interaction against `POST /api/daily-plan/items/:itemId/answer`
   learner credentials and is explicitly not authorized to submit real
   answers against the hosted Supabase project. This is the concrete next
   verification step for a human to run by hand.
+
+## Skip slice (2026-09-24, Night Run Slice 3)
+
+Closes "Skip use case" above. Implements the already-decided Skip semantics
+end to end: `SKIPPED` is not an incorrect answer, creates no Attempt, no
+correctness evidence, no scheduler/mastery/misconception mutation, and gets
+no replacement item (`.claude/rules/learning-engine.md` "Item resolution").
+
+- `src/application/dailyPlan/skip-daily-plan-item.ts`: new, deliberately
+  much smaller than `submitAnswer` — needs neither the advisory lock nor a
+  transaction, since it never reads-then-writes `UserQuestionProgress`. The
+  single `UPDATE ... WHERE status = 'pending' RETURNING` inside
+  `DailyPlanRepository.markSkipped` (already existed, unchanged) is already
+  atomic on its own. Ownership check (`item.userId !== command.userId`) →
+  `ITEM_NOT_FOUND_OR_NOT_OWNED`, never leaking whether the item exists.
+  Already-resolved (by either a prior skip or a prior answer) →
+  `ALREADY_RESOLVED` with the real status, never a silent no-op.
+- `src/application/learning/ports.ts`: `DailyPlanAnswerRepository` gained
+  `markSkipped` (mirrors `markCompleted` exactly); `ResolveDailyPlanAnswerItemResult`'s
+  `ALREADY_RESOLVED` case now also carries the item's real `status`, so a
+  caller (skip) can distinguish "already completed" from "already skipped."
+  `PostgresDailyPlanRepository` already implemented this real method — no
+  infrastructure change needed.
+- `POST /api/daily-plan/items/:itemId/skip` (`route.ts` +
+  `handle-skip-daily-plan-item.ts`): no request body at all — Skip has no
+  learner-controlled data. Auth resolved before any `getPool()`/DB
+  construction. Response on success: `{status: "SKIPPED"}` only.
+- `/today` UI: a visually secondary "דלג" button (underlined, not the
+  primary button) alongside submit. On Skip: resolves the item locally
+  (immediately advances to the next pending item — no correctness feedback,
+  no explicit continue step, unlike answering). On the last item: the same
+  completion state as answering everything.
+
+**Tests added:** 6 unit cases (`skip-daily-plan-item.test.ts`, fake
+repository), 11 route cases (`handle-skip-daily-plan-item.test.ts` +
+`route-auth-db-ordering.test.ts`), 6 PGlite cases
+(`supabase/tests/postgres/skip-daily-plan-item.test.ts`) proving: owner can
+skip; a different user cannot; no Attempt/no UserQuestionProgress row is
+ever created; duplicate skip is idempotent (same `resolved_at`, not a second
+mutation); a skipped item cannot then be answered (`submitAnswer` itself
+rejects it as `DAILY_PLAN_ITEM_ALREADY_RESOLVED`); no replacement item is
+ever created and the plan's item set is unchanged.
+
+**Verification:**
+
+- unit tests: `554 / 554` (was `537 / 537`; +17).
+- schema/Postgres tests: run once this slice (new PGlite test file
+  exercising the already-existing `PostgresDailyPlanRepository.markSkipped`
+  — no migration, no infrastructure code change).
+- typecheck: clean. lint: clean. `git diff --check`: clean.
+- smoke-tested via `npm run dev` + `curl`: `GET /`, `GET /today` both `200`.
+- NOT verified: a real authenticated learner clicking Skip in a browser —
+  same limitation as the answer-submission UI (Slice 2): no real learner
+  credentials, not authorized to create hosted data.
+
+**Explicitly out of scope for this slice:** Starter/new-material policy,
+Open Course join, session/completion UX polish (Slice 7).
 
 ## Minimal learner vertical slice: auth + timezone + Today UI
 
@@ -527,9 +583,9 @@ This work is workflow/configuration-only and separate from the DailyPlan route c
 
 ## Current test baseline
 
-- Unit tests: `537 / 537`
-- Schema/Postgres tests: `170 / 170` (rerun this slice — new migration +
-  Postgres repository wiring for DailyPlanItem answer submission)
+- Unit tests: `554 / 554`
+- Schema/Postgres tests: `176 / 176` (rerun this slice — new PGlite test
+  file for the Skip use case)
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -575,10 +631,12 @@ reported issue.
    hosted Supabase project in a real browser. Both this slice and the
    "Minimal learner vertical slice" one before it deliberately stopped
    short of that.
-2. DailyPlanItem completion through `submitAnswer` is DONE (Night Run
-   Slice 1, `POST /api/daily-plan/items/:itemId/answer`) — see "Today
-   answer submission slice" above. Next: interactive Today UI (Slice 2)
-   wiring `/today`'s cards to this route, then Skip (Slice 3).
+2. DailyPlanItem completion through `submitAnswer` (Slice 1), interactive
+   Today UI (Slice 2), and Skip (Slice 3) are all DONE — see their
+   respective slice sections above. Next: the Starter/New Material V1
+   product decision (Slice 4 — an ADR closing `docs/OPEN_QUESTIONS.md`
+   #4/#5, using the policy already approved in the Night Run plan) and its
+   implementation (Slice 5).
 
 ## Blocked: unseen-question / new-material exposure eligibility
 

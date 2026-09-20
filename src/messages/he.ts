@@ -59,6 +59,9 @@ export const he = {
     alreadyResolvedError: "השאלה כבר נענתה במקום אחר. מרעננים את התוכנית...",
     completionTitle: "סיימת להיום",
     completionBody: "אפשר לחזור מחר לפריטים חדשים, או לתרגל תרגול חופשי בינתיים.",
+    skip: "דלג",
+    skipping: "מדלג...",
+    skipError: "לא ניתן היה לדלג על השאלה. נסו שוב.",
   },
 } as const;
 
