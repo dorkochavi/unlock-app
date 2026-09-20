@@ -71,6 +71,36 @@ export interface QuestionRepository {
     questionId: string,
     input: UpdateQuestionDraftInput,
   ): Promise<QuestionAuthoringRecord | null>;
+
+  /**
+   * Full content of one already-published `QuestionVersion` — including
+   * `correctOptionIds` — keyed by `questionId`'s own `current_version_id`.
+   * Authoring-only: never used by any learner-facing read path (which uses
+   * `LearnerQuestionContentRepository` instead, deliberately excluding
+   * `correct_answer`). Exists solely so `getQuestionForAuthoring` (Run 006
+   * S4) can let an authorized instructor "reopen/edit" a Question that has
+   * no pending draft — the current published content is for display/
+   * edit-seeding only, never written back to `draft_*` unless the
+   * instructor explicitly saves. `null` if the version does not exist
+   * (should not happen for a real `current_version_id`, since that FK is
+   * `on delete restrict` and no code ever deletes a `question_versions`
+   * row — treated as a caller-visible `null`, not an exception, matching
+   * this port's other methods' discipline).
+   */
+  getVersionContent(versionId: string): Promise<QuestionDraftContent | null>;
+
+  /**
+   * Batched prompt-only read for one or more already-published
+   * QuestionVersions — used by `listQuestionsForCourse` (Run 006 S4) so a
+   * Course's Question list can show a PUBLISHED Question's real prompt
+   * without leaking `correctOptionIds` into a list view (use
+   * `getVersionContent` instead when full content is genuinely needed for
+   * one specific Question). Returns only the ids that actually exist; a
+   * caller-supplied id with no matching row is silently omitted, matching
+   * `CourseRepository.getCourseSummaries`'s own established "omit, don't
+   * throw" convention for a batched read.
+   */
+  getVersionPrompts(versionIds: readonly string[]): Promise<Map<string, string>>;
 }
 
 export interface QuestionRepositories {

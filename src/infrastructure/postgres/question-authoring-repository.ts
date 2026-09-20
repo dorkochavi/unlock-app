@@ -17,7 +17,7 @@ import type {
   QuestionRepository,
   UpdateQuestionDraftInput,
 } from "../../application/question/ports";
-import { readAnswerOptions } from "./question-answer-definition-mapper";
+import { mapQuestionAnswerDefinitionRow, readAnswerOptions } from "./question-answer-definition-mapper";
 import {
   MalformedRowError,
   readDate,
@@ -27,10 +27,12 @@ import {
 import type { TransactionExecutor } from "./sql-executor";
 
 const TABLE = "questions";
+const VERSIONS_TABLE = "question_versions";
 const COLUMNS =
   "id, course_id, topic_id, current_version_id, draft_question_type, " +
   "draft_prompt, draft_answer_options, draft_correct_answer, " +
   "draft_explanation, created_at, updated_at";
+const VERSION_CONTENT_COLUMNS = "prompt, question_type, answer_options, correct_answer, explanation";
 
 const DRAFT_QUESTION_TYPES = ["SINGLE_CHOICE", "MULTIPLE_CHOICE"] as const;
 
@@ -172,5 +174,38 @@ export class PostgresQuestionRepository implements QuestionRepository {
       values,
     );
     return result.rows.length === 1 ? mapQuestionAuthoringRow(result.rows[0]) : null;
+  }
+
+  async getVersionContent(versionId: string): Promise<QuestionDraftContent | null> {
+    const result = await this.db.query(
+      `select ${VERSION_CONTENT_COLUMNS} from question_versions where id = $1`,
+      [versionId],
+    );
+    if (result.rows.length !== 1) {
+      return null;
+    }
+    const definition = mapQuestionAnswerDefinitionRow(result.rows[0]);
+    return {
+      questionType: definition.questionType,
+      prompt: readString(result.rows[0], VERSIONS_TABLE, "prompt"),
+      answerOptions: definition.options,
+      correctOptionIds: definition.correctOptionIds,
+      explanation: readNullableString(result.rows[0], VERSIONS_TABLE, "explanation"),
+    };
+  }
+
+  async getVersionPrompts(versionIds: readonly string[]): Promise<Map<string, string>> {
+    if (versionIds.length === 0) {
+      return new Map();
+    }
+    const result = await this.db.query(
+      `select id, prompt from question_versions where id = any($1)`,
+      [versionIds],
+    );
+    const prompts = new Map<string, string>();
+    for (const row of result.rows) {
+      prompts.set(readString(row, VERSIONS_TABLE, "id"), readString(row, VERSIONS_TABLE, "prompt"));
+    }
+    return prompts;
   }
 }

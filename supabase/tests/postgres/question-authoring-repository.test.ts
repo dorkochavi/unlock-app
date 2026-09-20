@@ -183,4 +183,58 @@ describe("PostgresQuestionRepository", () => {
       },
     });
   });
+
+  it("getVersionContent returns a published QuestionVersion's full content, including correctOptionIds", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const questionId = await insertQuestion(db, courseId);
+    const versionId = await insertQuestionVersion(db, questionId, 1, {
+      questionType: "MULTIPLE_CHOICE",
+      options: [
+        { id: "a", content: "3" },
+        { id: "b", content: "4" },
+      ],
+      correctOptionIds: ["a", "b"],
+    });
+    const repo = new PostgresQuestionRepository(db);
+
+    const content = await repo.getVersionContent(versionId);
+
+    expect(content).toEqual({
+      questionType: "MULTIPLE_CHOICE",
+      prompt: "Prompt?",
+      answerOptions: [
+        { id: "a", content: "3" },
+        { id: "b", content: "4" },
+      ],
+      correctOptionIds: ["a", "b"],
+      explanation: null,
+    });
+  });
+
+  it("getVersionContent returns null for an unknown versionId", async () => {
+    const repo = new PostgresQuestionRepository(db);
+    expect(await repo.getVersionContent(randomUUID())).toBeNull();
+  });
+
+  it("getVersionPrompts batches a prompt-only read for several versions, silently omitting unknown ids", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const questionA = await insertQuestion(db, courseId);
+    const questionB = await insertQuestion(db, courseId);
+    const versionA = await insertQuestionVersion(db, questionA);
+    const versionB = await insertQuestionVersion(db, questionB, 1, { options: [{ id: "x", content: "X" }], correctOptionIds: ["x"] });
+    const repo = new PostgresQuestionRepository(db);
+
+    const prompts = await repo.getVersionPrompts([versionA, versionB, randomUUID()]);
+
+    expect(prompts.get(versionA)).toBe("Prompt?");
+    expect(prompts.get(versionB)).toBe("Prompt?");
+    expect(prompts.size).toBe(2);
+  });
+
+  it("getVersionPrompts returns an empty map for an empty input", async () => {
+    const repo = new PostgresQuestionRepository(db);
+    expect((await repo.getVersionPrompts([])).size).toBe(0);
+  });
 });

@@ -15,7 +15,7 @@
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { getMessages } from "@/messages";
 import type { CourseJoinPolicy, CourseStatus } from "@/domain/course/types";
@@ -38,6 +38,30 @@ interface TopicDto {
   updatedAt: string;
 }
 
+type QuestionAuthoringState = "DRAFT_ONLY" | "PUBLISHED" | "PUBLISHED_WITH_DRAFT_CHANGES";
+
+interface QuestionAuthoringDto {
+  id: string;
+  courseId: string;
+  topicId: string | null;
+  state: QuestionAuthoringState;
+  draft: {
+    questionType: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | null;
+    prompt: string | null;
+    answerOptions: { id: string; content: string }[] | null;
+    correctOptionIds: string[] | null;
+    explanation: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TopicSummaryDto {
+  id: string;
+  name: string;
+  archivedAt: string | null;
+}
+
 type ViewState =
   | { kind: "loading" }
   | { kind: "signed-out" }
@@ -50,6 +74,16 @@ type TopicsState =
   | { kind: "loading" }
   | { kind: "error" }
   | { kind: "ready"; topics: TopicDto[] };
+
+type QuestionsState =
+  | { kind: "loading" }
+  | { kind: "error" }
+  | {
+      kind: "ready";
+      questions: QuestionAuthoringDto[];
+      publishedPromptByQuestionId: Record<string, string>;
+      topicById: Record<string, TopicSummaryDto>;
+    };
 
 async function fetchCourseForAuthoring(
   courseId: string,
@@ -98,9 +132,47 @@ async function fetchTopics(
   }
 }
 
+async function fetchQuestions(
+  courseId: string,
+): Promise<
+  | {
+      outcome: "READY";
+      questions: QuestionAuthoringDto[];
+      publishedPromptByQuestionId: Record<string, string>;
+      topicById: Record<string, TopicSummaryDto>;
+    }
+  | { outcome: "ERROR" }
+> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/courses/${courseId}/questions`);
+  } catch {
+    return { outcome: "ERROR" };
+  }
+  if (!response.ok) {
+    return { outcome: "ERROR" };
+  }
+  try {
+    const body = (await response.json()) as {
+      questions: QuestionAuthoringDto[];
+      publishedPromptByQuestionId: Record<string, string>;
+      topicById: Record<string, TopicSummaryDto>;
+    };
+    return {
+      outcome: "READY",
+      questions: body.questions,
+      publishedPromptByQuestionId: body.publishedPromptByQuestionId,
+      topicById: body.topicById,
+    };
+  } catch {
+    return { outcome: "ERROR" };
+  }
+}
+
 export default function InstructorCourseManagePage() {
   const messages = getMessages();
   const params = useParams<{ courseId: string }>();
+  const router = useRouter();
   const courseId = String(params.courseId);
 
   const [state, setState] = useState<ViewState>({ kind: "loading" });
@@ -132,6 +204,11 @@ export default function InstructorCourseManagePage() {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [archivingTopicId, setArchivingTopicId] = useState<string | null>(null);
   const [archiveTopicError, setArchiveTopicError] = useState<string | null>(null);
+
+  const [questionsState, setQuestionsState] = useState<QuestionsState>({ kind: "loading" });
+  const [questionsRetryCount, setQuestionsRetryCount] = useState(0);
+  const [creatingQuestion, setCreatingQuestion] = useState(false);
+  const [createQuestionError, setCreateQuestionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -185,6 +262,52 @@ export default function InstructorCourseManagePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, state.kind === "ready", topicsRetryCount]);
+
+  useEffect(() => {
+    if (state.kind !== "ready") return;
+    let cancelled = false;
+
+    async function run() {
+      setQuestionsState({ kind: "loading" });
+      const result = await fetchQuestions(courseId);
+      if (cancelled) return;
+      setQuestionsState(
+        result.outcome === "READY"
+          ? {
+              kind: "ready",
+              questions: result.questions,
+              publishedPromptByQuestionId: result.publishedPromptByQuestionId,
+              topicById: result.topicById,
+            }
+          : { kind: "error" },
+      );
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, state.kind === "ready", questionsRetryCount]);
+
+  async function handleCreateQuestion() {
+    if (creatingQuestion) return;
+    setCreatingQuestion(true);
+    setCreateQuestionError(null);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/questions`, { method: "POST" });
+      if (!response.ok) {
+        setCreateQuestionError(messages.instructor.manage.questions.createError);
+        return;
+      }
+      const body = (await response.json()) as { question: QuestionAuthoringDto };
+      router.push(`/instructor/courses/${courseId}/questions/${body.question.id}`);
+    } catch {
+      setCreateQuestionError(messages.instructor.manage.questions.createError);
+    } finally {
+      setCreatingQuestion(false);
+    }
+  }
 
   async function handleAddTopic(event: React.FormEvent) {
     event.preventDefault();
@@ -632,6 +755,90 @@ export default function InstructorCourseManagePage() {
                   {addTopicError ? (
                     <p className="mt-2 text-sm text-red-600 dark:text-red-400">{addTopicError}</p>
                   ) : null}
+                </>
+              ) : null}
+            </div>
+
+            <div className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+              <h2 className="mb-3 text-lg font-medium">{messages.instructor.manage.questions.heading}</h2>
+
+              {questionsState.kind === "loading" ? (
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {messages.instructor.manage.questions.loading}
+                </p>
+              ) : null}
+
+              {questionsState.kind === "error" ? (
+                <div>
+                  <p className="mb-2 text-sm text-red-600 dark:text-red-400">
+                    {messages.instructor.manage.questions.genericError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setQuestionsRetryCount((count) => count + 1)}
+                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium dark:border-zinc-700"
+                  >
+                    {messages.instructor.manage.retry}
+                  </button>
+                </div>
+              ) : null}
+
+              {questionsState.kind === "ready" ? (
+                <>
+                  {questionsState.questions.length === 0 ? (
+                    <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+                      {messages.instructor.manage.questions.emptyTitle}
+                    </p>
+                  ) : (
+                    <ul className="mb-4 flex flex-col gap-2">
+                      {questionsState.questions.map((question) => {
+                        const topic = question.topicId !== null ? questionsState.topicById[question.topicId] : undefined;
+                        const topicLabel = topic
+                          ? topic.name + (topic.archivedAt !== null ? messages.questionEditor.topicArchivedSuffix : "")
+                          : messages.instructor.manage.questions.noTopic;
+                        const displayPrompt =
+                          question.draft.prompt ?? questionsState.publishedPromptByQuestionId[question.id] ?? null;
+                        return (
+                          <li
+                            key={question.id}
+                            className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm" title={displayPrompt ?? undefined}>
+                                {displayPrompt ?? messages.instructor.manage.questions.untitled}
+                              </p>
+                              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                {topicLabel}
+                                {" · "}
+                                {messages.instructor.manage.questions.stateLabel[question.state]}
+                              </p>
+                            </div>
+                            <Link
+                              href={`/instructor/courses/${courseId}/questions/${question.id}`}
+                              className="shrink-0 text-sm text-zinc-500 underline dark:text-zinc-400"
+                            >
+                              {messages.instructor.manage.questions.editAction}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+
+                  {createQuestionError ? (
+                    <p className="mb-2 text-sm text-red-600 dark:text-red-400">{createQuestionError}</p>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={handleCreateQuestion}
+                    disabled={creatingQuestion || state.course.status === "ARCHIVED"}
+                    className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+                  >
+                    {creatingQuestion
+                      ? messages.instructor.manage.questions.creating
+                      : messages.instructor.manage.questions.createAction}
+                  </button>
                 </>
               ) : null}
             </div>

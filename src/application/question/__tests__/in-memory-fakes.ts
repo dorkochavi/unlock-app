@@ -9,6 +9,7 @@
 import {
   EMPTY_QUESTION_DRAFT,
   type QuestionAuthoringRecord,
+  type QuestionDraftContent,
 } from "../../../domain/question/types";
 import type {
   CourseMembership,
@@ -32,6 +33,7 @@ export class InMemoryQuestionDatabase {
   private memberships = new Map<string, CourseMembership>();
   private topics = new Map<string, Topic>();
   private questions = new Map<string, QuestionAuthoringRecord>();
+  private versionContents = new Map<string, QuestionDraftContent>();
 
   /** Test setup helper — not part of any port. */
   seedMembership(membership: CourseMembership): void {
@@ -46,6 +48,11 @@ export class InMemoryQuestionDatabase {
   /** Test setup helper — not part of any port. */
   seedQuestion(question: QuestionAuthoringRecord): void {
     this.questions.set(question.id, question);
+  }
+
+  /** Test setup helper — not part of any port. Seeds a published QuestionVersion's full content, keyed by versionId. */
+  seedVersionContent(versionId: string, content: QuestionDraftContent): void {
+    this.versionContents.set(versionId, content);
   }
 
   repos(): QuestionRepositories {
@@ -170,6 +177,19 @@ export class InMemoryQuestionDatabase {
         };
         this.questions.set(questionId, updated);
         return updated;
+      },
+      getVersionContent: async (versionId) => {
+        return this.versionContents.get(versionId) ?? null;
+      },
+      getVersionPrompts: async (versionIds) => {
+        const prompts = new Map<string, string>();
+        for (const versionId of versionIds) {
+          const content = this.versionContents.get(versionId);
+          if (content?.prompt != null) {
+            prompts.set(versionId, content.prompt);
+          }
+        }
+        return prompts;
       },
     };
 

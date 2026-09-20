@@ -10,9 +10,26 @@
  *
  * `actorUserId` is trusted as-is at this boundary — see
  * `src/application/course/join-course.ts`'s module doc comment for why.
+ *
+ * Also resolves `publishedContent` (Run 006 S4): the CURRENT QuestionVersion's
+ * full content (including `correctOptionIds`), so an authoring UI can let an
+ * instructor "reopen/edit" a Question that has no pending draft — without
+ * this, `question.draft` alone would show only `null` fields for a plain
+ * `PUBLISHED` Question, even though it has real published content. This is
+ * a DISPLAY-only convenience: it never writes to `draft_*`, and is `null`
+ * whenever there is no current version yet (`currentVersionId === null`).
+ *
+ * Also resolves `topic` (Run 006 S4, reviewer finding): the associated
+ * Topic's own record, via `TopicRepository.getTopic` — which, unlike
+ * `listActiveForCourse`, does NOT filter by `archived_at`. Without this, an
+ * authoring UI that only has access to the active-Topics list would show a
+ * Question's since-archived Topic as unset, even though the association is
+ * still real (Run 006 S1 finding #10: an already-associated Topic remaining
+ * archived must not force reassociation). `null` whenever `topicId` is
+ * `null`.
  */
 import { canAuthorCourse } from "../../domain/course/types";
-import type { QuestionAuthoringRecord, QuestionRepositories } from "./ports";
+import type { QuestionAuthoringRecord, QuestionDraftContent, QuestionRepositories, Topic } from "./ports";
 
 export interface GetQuestionForAuthoringCommand {
   actorUserId: string;
@@ -21,7 +38,12 @@ export interface GetQuestionForAuthoringCommand {
 }
 
 export type GetQuestionForAuthoringResult =
-  | { outcome: "FOUND"; question: QuestionAuthoringRecord }
+  | {
+      outcome: "FOUND";
+      question: QuestionAuthoringRecord;
+      publishedContent: QuestionDraftContent | null;
+      topic: Topic | null;
+    }
   | { outcome: "NOT_AUTHORIZED" }
   | { outcome: "QUESTION_NOT_FOUND" };
 
@@ -41,5 +63,13 @@ export async function getQuestionForAuthoring(
   if (question === null || question.courseId !== command.courseId) {
     return { outcome: "QUESTION_NOT_FOUND" };
   }
-  return { outcome: "FOUND", question };
+
+  const publishedContent =
+    question.currentVersionId === null
+      ? null
+      : await repos.questions.getVersionContent(question.currentVersionId);
+
+  const topic = question.topicId === null ? null : await repos.topics.getTopic(question.topicId);
+
+  return { outcome: "FOUND", question, publishedContent, topic };
 }
