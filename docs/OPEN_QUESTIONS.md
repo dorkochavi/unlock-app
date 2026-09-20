@@ -153,11 +153,17 @@ Need to define:
 - re-entry behavior if needed;
 - insufficient-content behavior.
 
-Status: OPEN. Note: `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
-(ADR-016 §13, ACCEPTED) resolved the *framing* question of whether New
-Material Exposure and Starter Experience are one mechanism family or two —
-they are one family, Exposure is an extension of Starter. That does **not**
-decide this question's actual eligibility thresholds; this remains OPEN.
+Status: **RESOLVED for V1** by
+`docs/DECISIONS/017-starter-new-material-v1.md` (ADR-017, ACCEPTED).
+
+V1 answer: fallback-only. Eligibility is "zero eligible unseen Questions
+have prior real Attempts, AND zero ordinary next-best-action candidates
+exist for the learner's DailyPlan that day." Entry condition and
+insufficient-content behavior are both covered by ADR-017 §1–3; there is
+no separate exit/re-entry state machine in V1 because nothing persisted is
+entered/exited — eligibility is recomputed fresh every day from Attempt
+history. Finer eligibility calibration (broader thresholds, partial-course
+coverage signals) remains open future work, not blocked by this decision.
 
 Target phase: Starter Feature Contract
 
@@ -182,10 +188,18 @@ Constraint:
 
 Do not pretend adaptive personalization exists before evidence is collected.
 
-Status: OPEN. Note: ADR-016 §13 (ACCEPTED) frames this sampling question as
-applying to the broader Starter/New-Material-Exposure mechanism family, not
-only Course-level Starter — the sampling strategy itself remains
-undecided.
+Status: **RESOLVED for V1** by
+`docs/DECISIONS/017-starter-new-material-v1.md` (ADR-017, ACCEPTED).
+
+V1 answer: deterministic, up to 3 questions, no mixing with review, no
+per-Course fairness quota, ordered by existing pedagogical/authoring order
+if present, else `created_at` then `id` (ADR-017 §3–4). Explicitly NOT
+decided by V1: difficulty spread, topic balance, known-source-quality
+weighting, or exam-relevance-aware ordering — these remain open
+calibration work for a future revision, per this question's own
+"do not pretend adaptive personalization exists before evidence is
+collected" constraint, which V1's plain deterministic ordering satisfies
+by construction (no personalization is claimed).
 
 Target phase: Starter Feature Contract
 

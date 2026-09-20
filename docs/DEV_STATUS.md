@@ -632,17 +632,41 @@ reported issue.
    "Minimal learner vertical slice" one before it deliberately stopped
    short of that.
 2. DailyPlanItem completion through `submitAnswer` (Slice 1), interactive
-   Today UI (Slice 2), and Skip (Slice 3) are all DONE — see their
-   respective slice sections above. Next: the Starter/New Material V1
-   product decision (Slice 4 — an ADR closing `docs/OPEN_QUESTIONS.md`
-   #4/#5, using the policy already approved in the Night Run plan) and its
-   implementation (Slice 5).
+   Today UI (Slice 2), Skip (Slice 3), and the Starter/New Material V1
+   product decision (Slice 4, ADR-017) are all DONE — see their respective
+   slice sections above. Next: ADR-017's implementation (Slice 5) — a
+   discovery query for eligible unseen questions, the fallback-only
+   integration into DailyPlan generation, and the `NEW_LEARNING`/
+   `NEW_MATERIAL` schema CHECK-constraint additions.
 
-## Blocked: unseen-question / new-material exposure eligibility
+## Starter / New-Material V1 — RESOLVED (2026-09-24, Night Run Slice 4)
+
+**UNBLOCKED.** The product decision this section originally described as
+blocking is now made: `docs/DECISIONS/017-starter-new-material-v1.md`
+(ADR-017, ACCEPTED) closes `docs/OPEN_QUESTIONS.md` #4 and #5 for V1.
+
+Summary (full detail in the ADR): unseen = no prior real Attempt for that
+Question; fallback-only (only activates when zero ordinary next-best-action
+candidates exist that day — never mixed with review); up to 3 unseen
+questions selected deterministically (existing order field if present,
+else `created_at`/`id`); placement is not evidence (no `UserQuestionProgress`
+fabricated); new `NEW_LEARNING` action type / `NEW_MATERIAL` tier /
+`UNSEEN_MATERIAL` reason (reusing `next-best-action.ts`'s own
+already-proposed `NEW_LEARNING` name, not inventing a new one).
+
+This ADR is a product/architecture decision record only — no code changed
+in this slice. Implementation (discovery query, ranking-pipeline
+integration, schema CHECK-constraint additions) is Slice 5, tracked
+separately below.
+
+**Verification:** documentation-only slice — no tests run, no code
+changed. `git diff --check`: clean.
+
+### Historical context (superseded by ADR-017, kept for the investigation trail)
 
 Investigated for an autonomous session's queued slice (2026-09-19). NOT
-implemented — this is a genuinely unresolved product decision, not a
-missing-parameter gap:
+implemented at that time — this was a genuinely unresolved product
+decision, not a missing-parameter gap:
 
 - `src/domain/learning/next-best-action.ts`'s own doc comment explicitly
   excludes `EXPAND_COVERAGE`/`NEW_LEARNING` candidates as requiring
@@ -668,6 +692,10 @@ the eligibility/sampling policy these documents explicitly defer to future
 product review, contradicting CLAUDE.md §7/§4 ("do not invent an answer"
 when a product decision is unresolved). Left undone; needs a product
 decision on OPEN_QUESTIONS #4/#5 before implementation.
+
+**Superseded above:** that product decision now exists (ADR-017). This
+historical trail is kept because it accurately documents why the decision
+was withheld at the time, not because it still describes current state.
 
 Do not connect to, link, migrate, or modify a remote Supabase project without explicit user authorization.
 
@@ -700,6 +728,7 @@ Context-efficiency rules:
 
 - `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md` — Course Membership / authorization
 - `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md` — Global DailyPlan / Today semantics
+- `docs/DECISIONS/017-starter-new-material-v1.md` — Starter/New-Material V1 (unseen definition, fallback policy, count, ordering)
 - `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`
 - `docs/API_V1_DRAFT.md`
 - `docs/OPEN_QUESTIONS.md`
