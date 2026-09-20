@@ -7,6 +7,8 @@ an `OPEN`-by-default join policy; ADR-015 decided `AUTHORIZED_ONLY` by
 default), ADR-015 is authoritative. Do not treat anything below as current
 product decision.
 
+The body intentionally preserves questions that were open when this draft was written. ADR-015 has since resolved the V1 membership roles, join policy, archive/revoke semantics, and management authorization source of truth. Consult `docs/OPEN_QUESTIONS.md` only for the narrower follow-ups that remain active.
+
 Original status (superseded): DRAFT DECISION BRIEF — not an ADR, not implemented, not approved.
 
 Purpose: lay out concrete model options for `docs/OPEN_QUESTIONS.md` #1

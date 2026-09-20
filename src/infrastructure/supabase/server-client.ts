@@ -29,10 +29,9 @@
  *   (not invented here): the write is silently dropped when it cannot
  *   legally happen, and a session-refresh write from a Server Component
  *   render is lost unless a future `middleware.ts` also refreshes it. No
- *   `middleware.ts` exists in this repo yet — the first caller of this
- *   factory (a future DailyPlan route handler, a Route Handler, not a
- *   Server Component) CAN set cookies without hitting this fallback at
- *   all.
+ *   `middleware.ts` exists in this repo yet. Current Route Handlers that use
+ *   this request-scoped client can set cookies without hitting this fallback;
+ *   the catch remains specifically for Server Component render contexts.
  *
  * Uses ONLY `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` —
  * never the service-role key. Authenticating a request's own user never

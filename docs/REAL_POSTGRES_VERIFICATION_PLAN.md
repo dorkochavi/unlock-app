@@ -1,6 +1,10 @@
 # Real-Postgres Concurrency Verification Plan
 
-Status: **PLAN ONLY — NOT EXECUTED**. This document designs a future test
+Status: **PLAN / GAP REFERENCE.** The true multi-connection concurrency scenarios in this document remain a separate verification class from the PGlite schema/infrastructure suite. Some repository/hosted Supabase foundations described as unavailable at original authoring time now exist; read the current-state note below before treating old blockers as current.
+
+**Current-state note:** ADR-015 has resolved the User↔Course authorization model, Supabase Auth/provisioning and hosted project wiring exist, and learner-facing routes exist. Concrete RLS allow-policies are still not implemented; deny-by-default remains the current posture. This document does not claim that the two-connection concurrency scenarios themselves have been executed.
+
+This document designs a future test
 suite. No Postgres/Docker/Supabase CLI infrastructure was started or run to
 produce it, and none of the scenarios below have been observed to pass or
 fail against a real server. Docker/Supabase CLI are unavailable in this
@@ -403,9 +407,11 @@ anything about `anon`/`authenticated`/`service_role` behavior.
 Supabase-provisioned roles, with their actual privilege attributes, are
 denied as designed.
 
-**Part B — deferred until `docs/OPEN_QUESTIONS.md` #1 is resolved**: once
-the User↔Course authorization model is decided and real RLS policies are
-written, a future suite must verify, per policy, per table, at minimum:
+**Part B — deferred until concrete RLS allow-policies are designed and
+implemented:** ADR-015 has already resolved the User↔Course authorization
+model; the remaining prerequisite is translating that accepted model into
+actual RLS policies. Once those policies exist, a future suite must verify,
+per policy, per table, at minimum:
 
 - a learner can `SELECT` their own `attempts`/`user_question_progress`/
   `today_sessions` rows and **cannot** `SELECT` another learner's;

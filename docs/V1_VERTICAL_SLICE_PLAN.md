@@ -1,20 +1,18 @@
-# UNLOCK V1 Vertical Slice Plan
+# UNLOCK V1 Vertical Slice Plan — Historical
 
-Status: Planning document only — Phase 9 of the overnight hardening session.
-Not an ADR. Not implemented. Describes the shortest path from the current
-repo state to one working end-to-end learner journey.
+Status: **HISTORICAL PLANNING DOCUMENT — SUPERSEDED AS AN EXECUTION PLAN.**
 
-This document does not decide anything docs/OPEN_QUESTIONS.md still lists as
-open. Where a checkpoint is blocked by a genuinely open product question,
-this document says so explicitly rather than assuming an answer.
+This document captured the shortest path from an earlier repository baseline to a first learner journey. Its body intentionally preserves the then-current facts and blockers, including now-stale statements about missing Auth, API routes, CourseMembership, timezone handling, DailyPlan, Starter/New Material, and test counts.
 
-**Cross-reference note**: as of this writing, neither
-`docs/COURSE_ACCESS_MODEL_DRAFT.md` nor `docs/GLOBAL_TODAY_DESIGN_DRAFT.md`
-exist yet. Checkpoint 0 below is written directly against
-`docs/OPEN_QUESTIONS.md` #1's own framing. If `COURSE_ACCESS_MODEL_DRAFT.md`
-is written later (see the parallel Phase 6 output of this same session), it
-should supersede Checkpoint 0's authorization-model framing, and this
-document's reference to it should be updated rather than left stale.
+Do not use this file as the current task queue or current repository status.
+
+Current execution: `docs/CHATGPT_PLAN.md`
+Current implementation state: `docs/DEV_STATUS.md`
+Current product constitution: `docs/MASTER_SPEC.md`
+Current unresolved product/architecture questions: `docs/OPEN_QUESTIONS.md`
+
+The historical plan remains useful for understanding sequencing decisions and why certain infrastructure exists.
+
 
 ---
 

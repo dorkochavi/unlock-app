@@ -1,15 +1,14 @@
 # Global Today — Design Impact Analysis (DRAFT)
 
-Status: **DESIGN IMPACT ANALYSIS ONLY — NOT AN ADR, NOT DECIDED, NOT IMPLEMENTED.**
+Status: **HISTORICAL DESIGN IMPACT ANALYSIS.**
 
-This document was produced during the 2026-09-18 overnight hardening session,
-Phase 5. Global Today is a product direction the product owner has discussed
-but has **not** approved as an implementation decision. Nothing in this
-document changes `docs/DECISIONS/011-today-is-course-scoped-v1.md` (ADR-011),
-which remains the current, accepted V1 behavior: Today is per-Course, keyed
-by `(user_id, course_id, planned_for_date)`. This document does not implement
-anything; it exists so a future decision can be made with the real
-architectural picture in hand instead of guessed at implementation time.
+This document was produced during the 2026-09-18 overnight hardening session
+before Dor accepted ADR-016. Its body intentionally preserves that pre-decision
+state. ADR-016 later accepted one DailyPlan per learner-local day, and that
+architecture is now implemented locally. Do not treat statements below that
+Global Today is unapproved, ADR-011 is still the current target, or DailyPlan is
+unimplemented as current repository truth. The file remains useful as the
+reasoning trail that preceded the accepted decision.
 
 Every claim below is grounded in the actual committed code/schema as of this
 session's baseline (`308` unit tests, `97` schema tests, all passing). File

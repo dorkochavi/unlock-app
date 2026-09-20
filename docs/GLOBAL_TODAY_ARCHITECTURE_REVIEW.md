@@ -1,10 +1,10 @@
 # Global Today — Architecture Review (PROPOSAL ONLY)
 
-Status: **ARCHITECTURE COMPARISON AND PROPOSAL — NOT AN ADR, NOT DECIDED, NOT
-IMPLEMENTED.** This document does not modify
-`docs/DECISIONS/011-today-is-course-scoped-v1.md` (ADR-011), which remains
-the current accepted V1 behavior until a future ADR explicitly supersedes it.
-Nothing here is authorized to be built from this document alone.
+Status: **HISTORICAL ARCHITECTURE COMPARISON.** This document predates the
+accepted implementation. Its recommendation was later accepted by ADR-016 and
+implemented through DailyPlan/DailyPlanItem. The comparative reasoning below is
+preserved; any statement that ADR-011 is still the current architecture or that
+DailyPlan is unimplemented is historical, not current repository truth.
 
 **Reconciliation note (post-decision):** Dor's product-owner review has since
 **ACCEPTED this document's recommended Option A** — a single

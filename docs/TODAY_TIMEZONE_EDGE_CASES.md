@@ -1,43 +1,22 @@
-# Today Timezone Edge Cases (Design Analysis)
+# Today Timezone Edge Cases (Historical Design Analysis)
 
-Status: **DESIGN ANALYSIS ONLY — NOT AN ADR, NOT IMPLEMENTED, NOT A
-DECISION.** Analyzes lifecycle implications of
-`docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §15 (midnight/timezone semantics) and
-its §19 worked example ("Pre-midnight active session"). Every "V1 RULE"
-recommendation below is a **PROPOSAL requiring product/engineering
-review**, not a decision. This document does not implement anything and
-does not resolve `docs/OPEN_QUESTIONS.md` #3 (Today Session Boundary) or
-#35 (Learner Time Zone), both still OPEN.
+Status: **HISTORICAL DESIGN ANALYSIS.** The original greenfield analysis below is intentionally preserved as reasoning history; do not use its old "nothing implemented / #3 and #35 open" statements as current repository truth.
 
-## 0. This is genuinely greenfield analysis
+## Current-state reconciliation (2026-09-20)
 
-Verified this session, stated here plainly because it changes the nature
-of the analysis: **no timezone or day-boundary logic exists anywhere in
-the current domain or persistence layer.**
+The foundation this document originally analyzed is now implemented:
 
-- `src/domain/learning/today-planner.ts`'s own doc comment: `plannedForDate`
-  is "an explicit, caller-supplied ISO calendar-date string (YYYY-MM-DD)
-  ... never derived from `Date.now()`." The file "validates only the
-  STRING FORMAT ... never which definition of 'today' produced it."
-- `docs/API_V1_DRAFT.md` §2: `plannedForDate` "remains an opaque
-  caller-supplied `YYYY-MM-DD` string end to end (`docs/OPEN_QUESTIONS.md`
-  #3 is still open — no day-boundary/timezone logic exists anywhere in
-  this stack, and this boundary must not quietly invent any)."
-- ADR-010's "Today Session freeze model": "`planned_for_date` is a
-  caller-supplied `DATE` value. No day-boundary or timezone logic exists
-  in the domain or persistence layer for computing it."
-- `docs/OPEN_QUESTIONS.md` #3 (Today Session Boundary) and #35 (Learner
-  Time Zone) are both OPEN, with #3 requiring "a learner returning later
-  during the valid period should resume the same session ... do not
-  silently regenerate an active Today Session," and #35 asking exactly
-  which of account-setting / browser-derived / fixed-pilot / stored-IANA
-  timezone should govern.
+- `users.timezone` stores the learner's IANA timezone.
+- the persisted timezone is the server-side source of truth for DailyPlan local-day derivation.
+- `deriveLocalDateString` deterministically derives `YYYY-MM-DD`.
+- `getOrCreateDailyPlanForToday` uses that learner-local date and reuses the same persisted plan on same-day reopen.
+- ADR-016 is authoritative for the qualitative midnight rule: an actively continuing session is not forcibly interrupted at exactly 00:00, while a fresh open after midnight uses the new local day's plan.
 
-So every edge case below is analyzed against a **currently nonexistent**
-mechanism, guided only by the qualitative product rule already accepted
-in `docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §15: *"A session started before
-local midnight is not interrupted at exactly 00:00 — an actively
-continuing session may keep using the day it started on."*
+What may still need future product/UX work is narrower: travel/timezone-change behavior, explicit timezone editing UX, and any richer definition of a continuously active pre-midnight browser session across midnight.
+
+The body below reflects the pre-implementation reasoning state and may mention now-resolved Open Question IDs. It remains useful as analysis, not as current status.
+
+---
 
 ## 1. A recurring theme: what should "continuation" be judged by?
 

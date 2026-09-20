@@ -1,20 +1,11 @@
-# UNLOCK — Supabase local project
+# UNLOCK — Supabase / PostgreSQL Project
 
-Status: database-foundation + Postgres infrastructure phase (see ADR-013,
-ADR-014). Postgres repository adapters, `PostgresUnitOfWork`, the
-advisory-lock transaction, and `submitAnswer`/answer-correctness are all
-implemented and integration-tested against a real Postgres engine
-(`src/infrastructure/postgres/`, `supabase/tests/postgres/`), including a
-real `pg.Pool`-backed `ConnectionProvider`
-(`src/infrastructure/postgres/pg-{connection-provider,pool}.ts`).
+Status: **ACTIVE infrastructure reference.**
 
-Supabase Auth CLIENT construction (`src/infrastructure/supabase/`) and the
-`auth.users -> public.users` provisioning trigger
-(`migrations/20260923000000_auth_user_provisioning.sql`) now exist too —
-**this is client/migration code only, not a working Auth flow**: no real
-Supabase project has been configured against any environment, no
-login/signup UI exists, and no API route calls any of it yet. See
-`docs/API_V1_DRAFT.md` for the prepared (not implemented) route shape.
+The repository now has working Supabase Auth/server-client wiring, `auth.users -> public.users` provisioning, production PostgreSQL connection wiring, learner-facing Auth UI, DailyPlan Today API/UI, DailyPlan answer/Skip routes, and OPEN-course onboarding. Hosted Supabase has the foundational migration chain applied through auth provisioning; the newest DailyPlan answer-linkage and New Material migrations may still require explicit manual hosted application. `docs/DEV_STATUS.md` is authoritative for remote-vs-local state.
+
+RLS remains enabled with zero application allow-policies, so ordinary PostgREST roles fail closed. Current server routes use trusted server-side database access plus application authorization. ADR-015 defines the CourseMembership authorization model; translating it into future RLS allow-policies is separate work.
+
 
 ## What's here
 
@@ -49,13 +40,18 @@ login/signup UI exists, and no API route calls any of it yet. See
     state/timestamp consistency constraints (ADR-016 §19).
   - `20260923000000_auth_user_provisioning.sql` — the `auth.users ->
     public.users` `SECURITY DEFINER` provisioning trigger.
+  - `20260924000000_daily_plan_answer_attempts.sql` — extends immutable
+    Attempts with nullable DailyPlan/DailyPlanItem linkage while preserving
+    legacy TodaySession compatibility and mutually exclusive origin semantics.
+  - `20260925000000_daily_plan_new_material_v1.sql` — widens the persisted
+    DailyPlan action/reason vocabulary required by ADR-017 New Material fallback.
 
   Both test harnesses (`tests/schema.integration.test.ts` and
   `tests/postgres/db-harness.ts`) apply every `.sql` file in this directory
   dynamically, by filename order — they were not hardcoded to only the
   first two migrations, so this staleness was in this README's prose only,
   not in what was actually tested.
-- `tests/schema.integration.test.ts` — runs BOTH migrations above, in
+- `tests/schema.integration.test.ts` — runs the full migration chain above, in
   order, against a real (WASM, in-process) PostgreSQL engine via
   `@electric-sql/pglite` and proves the database itself rejects the
   invalid rows/operations the schema is supposed to make impossible, and
@@ -73,7 +69,7 @@ login/signup UI exists, and no API route calls any of it yet. See
 
 ## What was verified, and how
 
-- Both migrations, applied in order, succeed with zero errors against a
+- The full committed migration chain, applied in order, succeeds against a
   real PostgreSQL engine (`pglite`) — proving the full migration chain
   applies cleanly from an empty database, not just each file in isolation
   (a real gap found and fixed during this session: the test harnesses
@@ -107,17 +103,13 @@ login/signup UI exists, and no API route calls any of it yet. See
 
 ## What was NOT verified, and remains for the next checkpoint
 
-- The Supabase CLI itself was never run (`supabase init`, `supabase start`,
-  `supabase db push`, `supabase migration up`) — re-checked this session,
-  neither the CLI nor Docker is available in this environment.
-  `config.toml` should be diffed against a real `supabase init` output once
-  the CLI is installed, and `supabase start` (requires Docker) should be
-  run to confirm the CLI actually applies both migrations the same way
-  `pglite` did.
-- No connection to any real Supabase project (local or remote) has been
-  made. No credentials were requested or used.
-- RLS policy behavior (as opposed to "RLS is enabled") — requires the real
-  authorization model (`docs/OPEN_QUESTIONS.md` #1) to be decided first.
+- PGlite does not prove true multi-backend transaction blocking; keep
+  `docs/REAL_POSTGRES_VERIFICATION_PLAN.md` for that separate verification class.
+- Hosted Supabase is connected/configured for the project, but hosted schema
+  state must be distinguished from local committed migrations. Use
+  `docs/DEV_STATUS.md` before any manual `supabase db push`.
+- RLS allow-policy behavior is not yet implemented/tested. ADR-015 has resolved
+  the authorization model; concrete policies are still future work.
 - Real multi-connection advisory-lock concurrency (see above).
 - The provisioning trigger against Supabase's REAL `auth.users` table —
   only a minimal stand-in was testable (see above); this requires a real
@@ -125,8 +117,9 @@ login/signup UI exists, and no API route calls any of it yet. See
 - Any existing `auth.users` row backfill — not written; no evidence of
   pre-existing production data exists in this repo (see the migration's
   own header comment).
-- API routes, login/signup UI, and `middleware.ts` session refresh — none
-  exist yet; see `docs/API_V1_DRAFT.md` for the prepared route shape.
+- Full RLS-policy enforcement through PostgREST remains future work. The
+  current learner-facing Auth/Today/join routes and login UI are implemented;
+  `docs/API_V1_DRAFT.md` is now a mixed historical/current boundary reference.
 
 ## Running this locally once the CLI is available
 

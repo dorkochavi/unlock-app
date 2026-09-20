@@ -5,9 +5,11 @@
  * (`docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md` §4/§8: no such
  * root existed anywhere in `src/` before this).
  *
- * No HTTP/API/UI wiring here — these factories return plain context objects
- * for a future route handler (not implemented by this slice) to pass to
- * `submitAnswer`/`getOrCreateTodaySession`.
+ * No HTTP/API/UI wiring lives in this file. These factories return plain
+ * production context objects for application/route composition to pass to
+ * `submitAnswer` and the legacy `getOrCreateTodaySession` path. The current
+ * DailyPlan flow reuses the same centralized Learning Engine defaults through
+ * its own composition root rather than duplicating policy values here.
  *
  * `now` is a required, explicit parameter on every factory — neither
  * function reads the clock itself. This matches the domain layer's own

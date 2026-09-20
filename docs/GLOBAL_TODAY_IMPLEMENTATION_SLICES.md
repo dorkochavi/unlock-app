@@ -1,34 +1,17 @@
-# Global Today — Implementation Slices
+# Global Today — Historical Implementation Slices
 
-Status: **ANALYSIS ONLY — NOT AN IMPLEMENTATION PLAN COMMITMENT, NOT
-SEQUENCED APPROVAL BEYOND THE ORDERING ITSELF.** No code in this document
-is authorized by writing it. This document has been reordered (2026-09-19)
-to reflect the now-ACCEPTED `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
-(ADR-016) and the accepted Ruppin demo strategy
-(`docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §7, ADR-016 §20). The original
-per-slice analysis below (files affected, tests needed, rollback risk) is
-left intact as reference — only the **ordering** and the **architecture
-premise** are updated by this revision; see "Accepted sequencing," below.
+Status: **HISTORICAL IMPLEMENTATION ANALYSIS — NOT THE CURRENT EXECUTION QUEUE.**
 
-This document slices the accepted `docs/GLOBAL_TODAY_PRODUCT_SPEC.md` /
-ADR-016 direction into small, reversible engineering units, each grounded
-in the real files this session found under `src/domain/learning/`,
-`src/application/learning/`, `src/infrastructure/postgres/`, and
-`supabase/migrations/`.
+This document records the slice decomposition used while ADR-016 was being implemented. Many "not implemented", "blocked", migration, Auth, timezone, API, and CourseMembership statements in the body are now historical and are intentionally preserved as a record of how the implementation was decomposed.
 
-**Architecture premise is now decided, not provisional.** ADR-016 §1
-accepts **Option A** (own `DailyPlan`/`DailyPlanItem` entity, Course Today
-as a filtered view) as the target architecture — this was open when the
-slices below were first drafted; it is no longer open. Slice 3's "shape
-depends on option chosen" language, below, should now be read as "shape
-follows Option A specifically," not as a still-open menu. No migration has
-been written yet; this document does not authorize writing one.
+Current execution comes only from `docs/CHATGPT_PLAN.md`.
+Current repository truth comes from `docs/DEV_STATUS.md`.
+Current product/architecture truth comes from accepted ADRs and `docs/MASTER_SPEC.md`.
 
-Blocking status in each slice cites `docs/GLOBAL_TODAY_REMAINING_DECISIONS.md`
-by name for anything that document was expected to resolve — that document
-is now RESOLVED (all 9 items accepted 2026-09-19); read each "Blocked on
-Dor" note below as historical (what was blocking) rather than current
-(nothing in the 9 decisions is still blocking).
+As of the Development OS V1 baseline, the following work described as future in this historical document has been implemented locally: CourseMembership, user timezone persistence, production Learning Engine composition, DailyPlan/DailyPlanItem persistence, learner-local first-open generation, Today read API/UI, DailyPlan answer submission, Skip, ADR-017 New Material fallback, Auth flow, and OPEN-course onboarding. The two newest DailyPlan migrations may still be pending explicit hosted application; `docs/DEV_STATUS.md` is authoritative for remote state.
+
+Do not use this file to decide what Claude should build next.
+
 
 ---
 

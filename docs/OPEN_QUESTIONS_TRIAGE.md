@@ -1,8 +1,15 @@
 # Open Questions Triage
 
-Status: Analysis artifact — triage and prioritization only.
+Status: **HISTORICAL ANALYSIS SNAPSHOT — NOT CURRENT PROJECT STATE OR TASK QUEUE.**
 
-Purpose: classify and score every item in `docs/OPEN_QUESTIONS.md` (42 items) so the
+This file preserves the triage performed at the time it was written. Many items
+below were subsequently resolved, implemented, superseded, or reclassified.
+Do not use the body of this document to determine current blockers or open
+decisions. Current truth lives in `docs/OPEN_QUESTIONS.md`, accepted ADRs,
+`docs/DEV_STATUS.md`, and the active `docs/CHATGPT_PLAN.md`.
+
+Purpose at the time of writing: classify and score every item in
+`docs/OPEN_QUESTIONS.md` (42 items) so the
 product owner can see, at a glance, what kind of decision each one is, how much it
 matters, and which ones are genuinely blocking near-term milestones. Written per the
 "Open Question Discipline" process in `docs/OPEN_QUESTIONS.md` §42: this document
@@ -25,6 +32,11 @@ Legend:
 
 ---
 
+> Historical-body note: statuses, blockers, implementation claims, test counts,
+> and cross-references below intentionally describe the repository at the time
+> this triage was produced. They are preserved as analysis history and are not
+> maintained as current-state assertions.
+
 ## Per-item triage
 
 ### 1. User ↔ Course Relationship in V1
@@ -32,7 +44,7 @@ Classification: **PRODUCT DECISION** (with architecture consequences). Confirmed
 genuinely open — `docs/PERSISTENCE_SCHEMA_V1.md`'s `courses.owner_user_id` explicitly
 says it is "chosen only as the minimum needed to make this table concrete, **not** a
 closure of `docs/OPEN_QUESTIONS.md` #1."
-Blocking: **High** (named directly in `CLAUDE.md` as the current blocker for Auth/RLS/API). Schema: High. UX: Medium. Reversibility: Expensive (authorization model changes touch every table's RLS policy). Ruppin: High. Production: High.
+Blocking at the time: **High** (then named directly in `CLAUDE.md` as the blocker for Auth/RLS/API). Schema: High. UX: Medium. Reversibility: Expensive (authorization model changes touch every table's RLS policy). Ruppin: High. Production: High.
 
 ### 2. Effective V1 Exam-Date Hierarchy
 Classification: **PRODUCT DECISION**. Genuinely open.

@@ -1,28 +1,18 @@
-# UNLOCK API Boundary — V1 Draft
+# UNLOCK API Boundary — V1 Draft / Historical Boundary Reference
 
-Status: DRAFT — mostly still preparation, not an ADR. Sections 1/2 below
-(`submitAnswer`, the legacy Course-scoped "Get Today") remain unimplemented
-shapes to build FROM, not decisions already made. **Section 2a
-(`GET /api/daily-plan/today`) is the one exception: it is now IMPLEMENTED**
-(`src/app/api/daily-plan/today/route.ts`) — added once Auth wiring
-(`src/infrastructure/supabase/`) existed, per this document's own original
-"per this session's own instruction not to build insecure routes ahead of
-Auth."
+Status: **MIXED HISTORICAL + CURRENT REFERENCE.** This file began as a pre-Auth API design draft. It is no longer the current execution plan and should not be used to infer repository status. Current execution comes from `docs/CHATGPT_PLAN.md`; current implementation status comes from `docs/DEV_STATUS.md`.
 
-This is deliberately NOT canonical the way an ADR is: it records a shape to
-build FROM, not a decision already made. Promote the settled parts into an
-ADR once Auth exists and the shape has actually been implemented against it.
+Current learner-facing boundaries now include:
 
-## Why this stays undecided/unimplemented for now
+- `GET /api/daily-plan/today`
+- `POST /api/daily-plan/items/:itemId/answer`
+- `POST /api/daily-plan/items/:itemId/skip`
+- public-safe Course lookup for join
+- `POST /api/courses/:courseId/join`
 
-`submitAnswer`/`getOrCreateTodaySession` both require a real, trusted
-`userId` — currently, nothing in this repository authenticates anyone.
-`docs/ARCHITECTURE.md` §31: "the UI is not a security boundary... never
-assume that hiding a button prevents unauthorized actions." A route that
-accepted `userId` from request JSON today would be trivially spoofable —
-worse than not having the route at all, because it would look secure. So:
-no route is added in this session. This document exists so the eventual
-route is designed correctly on day one, not retrofitted.
+The legacy `submitAnswer` / Course-scoped Today shapes below remain useful as historical boundary design because the mature learning transaction still underpins the DailyPlan answer path. Where this file conflicts with implemented DailyPlan/Auth behavior, implemented routes plus accepted ADRs are authoritative.
+
+Do not add a client-supplied `userId` to any route. Authenticated identity remains server-derived.
 
 ## 1. `submitAnswer` route shape
 
@@ -120,11 +110,7 @@ Two application functions already exist with different semantics
 
 `TodaySessionKey` (`userId`, `courseId`, `plannedForDate`) — `userId` is,
 again, server-derived from the authenticated principal, never a query
-param; `courseId`/`plannedForDate` come from the request. `plannedForDate`
-remains an opaque caller-supplied `YYYY-MM-DD` string end to end
-(`docs/OPEN_QUESTIONS.md` #3 is still open — no day-boundary/timezone logic
-exists anywhere in this stack, and this boundary must not quietly invent
-any).
+param; `courseId`/`plannedForDate` come from the request. `plannedForDate` on this legacy Course-scoped shape remains an explicit caller-supplied `YYYY-MM-DD`. The current DailyPlan route does **not** accept that date from the client: `getOrCreateDailyPlanForToday` derives the learner-local date from the persisted IANA timezone, per ADR-016 and the implemented user-timezone/local-date path.
 
 ## 2a. `GET /api/daily-plan/today` — IMPLEMENTED
 

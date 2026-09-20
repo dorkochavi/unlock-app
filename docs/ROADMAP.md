@@ -1,14 +1,17 @@
 # UNLOCK Roadmap
 
-Status: Active implementation roadmap
+Status: **STRATEGIC / HISTORICAL SEQUENCING REFERENCE — NOT THE ACTIVE EXECUTION QUEUE**
 
 Purpose: define the recommended order for building UNLOCK V1 so the product reaches a trustworthy end-to-end adaptive learning loop without overbuilding.
 
-This roadmap is sequencing guidance.
+This roadmap preserves the broad sequencing logic that guided early V1 development.
 
-It does not replace `docs/MASTER_SPEC.md`.
+It does not replace `docs/MASTER_SPEC.md`, `docs/DEV_STATUS.md`, or
+`docs/CHATGPT_PLAN.md`.
 
-Where the Master Spec's V1 Core Activation Plan and Immediate Next Steps are more specific, they take precedence.
+**Current work comes only from `docs/CHATGPT_PLAN.md`.** Do not infer the next
+implementation task from phase statuses or the historical immediate sequence
+below. Git history and `docs/RUNS/` preserve how the roadmap was traversed.
 
 ---
 
@@ -656,9 +659,10 @@ The roadmap is a decision aid, not a rigid promise.
 
 ---
 
-## 21. Current Immediate Sequence
+## 21. Historical Immediate Sequence
 
-The current recommended sequence is:
+The sequence below was the early roadmap that led to the current repository
+state. It is preserved as history, not as an active queue:
 
 ```text
 1. Complete the project documentation foundation
@@ -674,12 +678,12 @@ The current recommended sequence is:
 11. Prove the adaptive feedback loop
 ```
 
-Do not skip directly to feature-rich UI.
+Much of this sequence is now implemented or superseded by later ADRs, especially
+ADR-015 through ADR-017 and the DailyPlan vertical slice.
 
-The first major product milestone is not:
+For the next authorized work, read:
 
-> "The app has many screens."
+- `docs/CHATGPT_PLAN.md`
+- `docs/DEV_STATUS.md`
 
-It is:
-
-> "What the learner does now meaningfully changes what UNLOCK recommends next."
+Do not use this section to start implementation.

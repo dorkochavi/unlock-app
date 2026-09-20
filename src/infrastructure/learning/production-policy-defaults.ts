@@ -100,9 +100,9 @@ export const PRODUCTION_MISCONCEPTION_POLICY: MisconceptionPolicy = Object.freez
  * dynamic sizing (minimum useful 5, typical 8-12, hard maximum 15) — NOT a
  * single fixed number. `src/domain/learning/today-planner.ts`'s current
  * architecture only exposes one `maxItems` truncation ceiling; it has no
- * tiered minimum/typical-range behavior. Implementing the full tiered model
- * is out of scope for this composition root (tracked separately —
- * `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`, the future DailyPlan work).
+ * tiered minimum/typical-range behavior. The DailyPlan path is implemented,
+ * but the fuller dynamic-sizing model remains calibration/architecture work;
+ * this composition root intentionally does not invent that missing behavior.
  * `maxItems` is set to the accepted HARD MAXIMUM (15), the conservative
  * ceiling this single-field shape can express: `generateTodayPlan` already
  * never fabricates filler items when fewer are ranked (its own "no filler"

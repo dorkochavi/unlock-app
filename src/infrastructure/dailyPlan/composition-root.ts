@@ -7,14 +7,12 @@
  * own `UnitOfWork`: no benefit to coupling the two composition roots
  * together.
  *
- * Like `infrastructure/learning/composition-root.ts`, this is code-shape
- * only: it assembles a real `getOrCreateDailyPlanForToday` dependency
- * bundle from a CALLER-SUPPLIED `SqlExecutor`/`ConnectionProvider` — no
- * production Postgres connection wiring (a real `pg.Pool` or equivalent)
- * exists anywhere in this codebase yet (ADR-013 remains "not wired up
- * yet"), so this file never constructs one itself. A future API
- * route/server composition layer (not built here) supplies the real
- * connection; this file only wires ports/settings once it has one. No
+ * Like `infrastructure/learning/composition-root.ts`, this assembles the
+ * `getOrCreateDailyPlanForToday` dependency bundle from caller-supplied
+ * `SqlExecutor`/`ConnectionProvider` instances. Production server/route
+ * composition now supplies those real connection objects; this file remains
+ * intentionally responsible only for wiring ports/settings, not for owning
+ * process-level connection lifecycle. No
  * service locator, no hidden `Date.now()`, no hidden timezone lookup —
  * `now` continues to live on `GetOrCreateDailyPlanForTodayCommand`, not
  * here.

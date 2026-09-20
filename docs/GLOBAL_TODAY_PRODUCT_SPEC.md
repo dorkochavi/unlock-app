@@ -4,10 +4,12 @@ Status: **ACCEPTED AND FORMALIZED — see
 `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md` (ADR-016,
 ACCEPTED).** This document remains the product-language source of every
 rule ADR-016 formalizes; where the two might read differently, ADR-016 is
-authoritative. **Not yet implemented** — no migration exists for the
-`DailyPlan`/`DailyPlanItem` model this document and ADR-016 describe;
-`today_sessions`/`today_session_items` (ADR-011) remain the actually
-implemented schema.
+authoritative. **Implementation status has advanced since this specification
+was accepted:** `DailyPlan`/`DailyPlanItem` persistence, learner-local
+first-open generation, Today read/answer/Skip, and ADR-017 New Material fallback
+are implemented locally. The legacy `today_sessions`/`today_session_items`
+schema remains intact for compatibility/history. `docs/DEV_STATUS.md` is
+authoritative for local-vs-hosted deployment state.
 
 This document formalizes product rules Dor explicitly accepted in product
 discussion on 2026-09-18, and the remaining architecture/decision checklist
@@ -183,9 +185,11 @@ material through a small initial sample (illustrative: 2–3 representative
 questions) — exposure, not proof of mastery. Good initial performance
 continues gradual exposure toward normal review/retrieval; poor performance
 may lead Today to *recommend* (never silently redirect to) focused Manual
-Practice. Exact eligibility/sampling policy remains open — see
-`docs/NEW_MATERIAL_EXPOSURE_MODEL.md` and `docs/OPEN_QUESTIONS.md` #4/#5
-(not resolved by the extension framing).
+Practice. ADR-017 now defines the V1 fallback semantics: unseen means no
+prior real Attempt, ordinary NBA candidates take precedence, fallback runs only
+when the ordinary candidate set is empty, selection is deterministic, and at
+most 3 unseen Questions are planned. Broader calibration/coverage policy may
+still evolve beyond that V1 fallback.
 
 ## 10. Novelty behavior
 
@@ -410,21 +414,18 @@ inferred or invented downstream:
 - Exact significant-event detection thresholds (§12).
 - Exact dynamic-size minimum/maximum bounds and the sizing model's precise
   formula (§6).
-- Exact novelty-budget numeric limits (§10) and exact Starter/Exposure
-  eligibility/sampling thresholds (§9, `docs/OPEN_QUESTIONS.md` #4/#5).
-- Final timezone/day-boundary implementation mechanics beyond the
-  qualitative rule in §15.
-- The exact migration path from the currently-implemented
-  `today_sessions`/`today_session_items` schema to `DailyPlan`/
-  `DailyPlanItem` — implementation work, not decided here.
+- Exact novelty-budget numeric limits (§10) and broader calibration policy
+  beyond ADR-017's accepted V1 fallback semantics.
+- Travel/timezone-change UX and richer cross-midnight active-session behavior
+  beyond the implemented persisted-timezone local-day foundation.
 - Whether `docs/OPEN_QUESTIONS.md` #33 (Multiple Active Courses) must be
   formally resolved before Global Today can be built, versus proceeding in
   parallel.
 - Repeated-skip behavioral policy.
 - History UI (deferred beyond V1 by design, §18).
-- The production composition root / conservative default policy values
-  needed to run the learning engine end-to-end — see
-  `docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md`.
+- Future recalibration/versioning of Learning Engine production policy
+  values. The production composition root and conservative V1 defaults are
+  already implemented.
 
 ## Related Documents
 

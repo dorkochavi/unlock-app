@@ -1,13 +1,21 @@
-# New-Material Exposure Model (Design Analysis)
+# New-Material Exposure Model (Historical Design Analysis)
 
-Status: **DESIGN ANALYSIS ONLY — NOT AN ADR, NOT IMPLEMENTED, NOT A DECISION.**
-Written against `docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §9 (exposure), §10
-(novelty), and §19's worked examples, which are the accepted product
-language this document formalizes toward implementation-readiness. This
-document does not change any engine behavior, does not add a schema column
-or enum, and does not resolve `docs/OPEN_QUESTIONS.md` #4 or #5. Anything
-below labeled **PROPOSAL** requires product + engineering review before it
-becomes a decision.
+Status: **HISTORICAL ANALYSIS, PARTIALLY SUPERSEDED BY ADR-017.**
+
+This document contains the reasoning that led toward New Material behavior. ADR-017 is now authoritative for the implemented V1 fallback:
+
+- unseen = no prior real Attempt for the learner/question;
+- missing UserQuestionProgress alone is insufficient to prove unseen;
+- ordinary evidence-driven NBA candidates always take precedence;
+- fallback runs only when there are zero ordinary NBA candidates;
+- at most 3 unseen Questions are selected;
+- selection is deterministic;
+- no per-Course fairness quota is introduced;
+- planning unseen material creates no Attempt and no fake UserQuestionProgress;
+- only the learner's real response enters the ordinary evidence pipeline.
+
+Broader topic/coverage calibration and richer future Starter UX remain outside ADR-017. Any old statement below saying #4/#5 are still open or that New Material is entirely unimplemented is historical and must not override ADR-017 or current code.
+
 
 ## 1. Purpose
 
@@ -286,11 +294,9 @@ new-material exposure is an EXTENSION of Starter Experience, one mechanism
 family, not two unrelated mechanisms, and not a full retirement of Starter
 either (Framing 1 is also rejected). Examples given: beginning of a new
 Course, a new chapter added later, and a topic with insufficient learner
-evidence may all use the same mechanism family. This does **not** resolve
-`docs/OPEN_QUESTIONS.md` #4/#5 themselves (exact eligibility/sampling
-policy remains open calibration work, per that same accepted decision) —
-it resolves only which of the three framings below governs how #4/#5
-should eventually be answered. The analysis below is left as originally
+evidence may all use the same mechanism family. ADR-017 subsequently resolves the V1 fallback semantics that #4/#5 were
+tracking. Broader calibration/coverage strategy can still evolve, but the V1
+eligibility and deterministic fallback behavior are no longer open. The analysis below is left as originally
 written since Framing 2's own reasoning (textual consistency with
 `docs/LEARNING_ENGINE.md` §31 vs. `docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §9/§10)
 is exactly why it was accepted — it remains the load-bearing justification,
@@ -342,12 +348,9 @@ feeling ("reduce uncertainty across the Course with the smallest useful
 sample"), while `docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §9/§10 is explicitly
 topic-scoped and recurring ("when multiple new topics exist," "a new
 chapter"). Framing 1 (full retirement of Starter) has since been explicitly rejected by
-the accepted decision — Starter and exposure are one mechanism family, but
-Starter's own eligibility/sampling/exit questions (#4/#5) are not thereby
-answered, only unified in direction. Whoever resolves
-`docs/OPEN_QUESTIONS.md` #4/#5 should do so consistently with Framing 2,
-referencing this section, rather than resolving them as if a separate,
-unrelated mechanism were still on the table.
+the accepted decision — Starter and exposure are one mechanism family. ADR-017 later answers the
+V1 fallback eligibility/sampling semantics; this section remains the reasoning
+trail for why the broader mechanism family was unified.
 
 ## 10. What this document does NOT decide
 
@@ -355,7 +358,7 @@ unrelated mechanism were still on the table.
 - No numeric attempt-count threshold, sample size, or novelty-budget limit
   (§6, §7 — `docs/GLOBAL_TODAY_PRODUCT_SPEC.md` §20 already lists these as
   undecided).
-- No resolution of `docs/OPEN_QUESTIONS.md` #4 or #5 (§9).
+- No broader topic/coverage calibration beyond ADR-017's implemented V1 fallback (§9).
 - No change to `qualifyRetrieval`, `evidence.ts`, `next-best-action.ts`, or
   `today-planner.ts` — all four are read-only inputs to this analysis.
 - No decision on whether "very low familiarity during exposure" should

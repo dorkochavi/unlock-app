@@ -1,12 +1,11 @@
-# Global Today — Test Plan (DRAFT / FUTURE SPECIFICATION)
+# Global Today — Historical Test Plan / Coverage Reference
 
-Status: **SPECIFICATION ONLY.** This document describes what a future test
-suite SHOULD assert once Global Today is implemented. It is not code, and
-**no runtime test files are added to the repo in this session** — nothing
-under `src/**/__tests__/` or `supabase/tests/` is created or modified by
-this document. Global Today itself is not implemented
-(`docs/GLOBAL_TODAY_PRODUCT_SPEC.md`, "PRODUCT DIRECTION ACCEPTED ... NOT
-YET AN ADR, NOT IMPLEMENTED"), so nothing here can be executed yet.
+Status: **HISTORICAL SPECIFICATION, PARTIALLY REALIZED.** This file was written before the DailyPlan vertical slice existed. The body is retained as a scenario catalog, but statements saying Global Today/DailyPlan APIs or New Material are not implemented are historical.
+
+Current local implementation includes DailyPlan persistence/generation, the Today read route, DailyPlan item answer route, Skip route, interactive Today UI, and ADR-017 New Material fallback. Existing unit and PostgreSQL/PGlite tests now cover substantial parts of the scenarios below. `docs/DEV_STATUS.md` and the actual test suite are authoritative for what is verified today.
+
+This file is not the current test execution plan; use `docs/CHATGPT_PLAN.md` for the active Run.
+
 
 **Reconciliation note (post-decision):** Dor's product-owner review has
 since accepted the `DailyPlan`/`DailyPlanItem` architecture (ADR-016,
@@ -299,12 +298,10 @@ evidence-strength/retrieval-qualification pipeline as any other Attempt
 - **Domain**: primary layer — reuses existing mastery/evidence-strength
   domain tests' fixtures, adding an exposure-labeled Attempt sequence and
   asserting no divergent mastery-update code path is taken for it.
-- **Provable today**: Partially — provable once "new-material exposure" is
-  actually modeled as a distinct candidate type (`docs/NEW_MATERIAL_EXPOSURE_MODEL.md`
-  — not yet implemented per `src/domain/learning/next-best-action.ts`'s own
-  comment that `NEW_LEARNING`/`EXPAND_COVERAGE` are deliberately NOT
-  implemented there yet). Until that model exists, this scenario can only
-  be specified, not written.
+- **Current status:** ADR-017's New Material fallback is implemented as a
+  distinct fallback path when ordinary NBA candidates are empty. It does not
+  fabricate progress and it uses real Attempts for subsequent evidence.
+  Broader topic/coverage modeling remains future work.
 
 ### 2.12 Novelty budget (fewer new topics preferred)
 
@@ -500,15 +497,12 @@ process restart.
 
 ## 3. API and E2E layers
 
-Per `docs/API_V1_DRAFT.md`, no API route exists yet for Today (Global or
-Course), and per `docs/TESTING.md` §20, E2E tests are reserved for a small
-number of critical full-stack flows. Both layers are listed here for
-completeness of the layer taxonomy the prompt asked for, but neither has
-concrete scenarios to specify yet beyond restating the domain/application
-scenarios above through a thin, not-yet-built boundary:
+The Today API boundary now exists for reading the learner's DailyPlan,
+answering a DailyPlanItem, and skipping a DailyPlanItem. E2E/browser coverage
+remains intentionally smaller than domain/application coverage.
 
-- **API**: once a Today route exists, every scenario above that mentions
-  "submitting a command" should be re-verified at the DTO boundary
+- **API**: scenarios that mention "submitting a command" should also be
+  verified at the DTO/auth boundary
   specifically for the existing project-wide rule that `userId` must come
   from the authenticated principal, never client-supplied request data
   (CLAUDE.md §6) — this applies identically to Global Today's future route

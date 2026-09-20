@@ -104,7 +104,7 @@ Question is a stable logical identity; QuestionVersion is an immutable content s
 
 ### ADR-011 — Today Is Course-Scoped in V1
 
-UNLOCK V1 Today is course-scoped: `TodaySession` is uniquely keyed by `(user_id, course_id, planned_for_date)`. A learner with multiple active Courses may have multiple Today sessions on the same date. Global cross-course Today is deferred beyond V1.
+Historical decision: ADR-011 originally made Today Course-scoped. ADR-016 partially supersedes that identity model with one `DailyPlan` per learner-local day; Course Today is now a filtered view of the same DailyPlan. The legacy TodaySession schema remains in the repository for compatibility/history.
 
 ### ADR-012 — Attempt Replayability and Rebuild Semantics
 
@@ -112,11 +112,24 @@ UNLOCK V1 Today is course-scoped: `TodaySession` is uniquely keyed by `(user_id,
 
 ### ADR-013 — PostgreSQL + Supabase as the V1 Persistence Provider
 
-UNLOCK V1 uses PostgreSQL via Supabase (closing `docs/OPEN_QUESTIONS.md` #25 for the database-engine/provider question). Supabase is infrastructure only — no Supabase-specific type/import may appear in `src/domain/` or `src/application/`; a future adapter implementing the existing ports belongs under `src/infrastructure/postgres/` (this ADR's own original text wrongly named `src/services/` — corrected in place once `src/infrastructure/learning/fsrs/` was found to already be the real, committed precedent). RLS is enabled on every table now with zero policies (safe deny-by-default, not a policy decision); real policies wait for `docs/OPEN_QUESTIONS.md` #1 (User↔Course authorization) to be resolved. `users.id` is intended to eventually equal `auth.users.id`, with no FK/default added yet.
+UNLOCK V1 uses PostgreSQL via Supabase. Supabase-specific concerns remain outside `src/domain/` and `src/application/`. The Postgres adapters and production connection path live under `src/infrastructure/postgres/`; Supabase Auth/server-client wiring lives under `src/infrastructure/supabase/`. RLS remains enabled with zero permissive application policies (deny-by-default for ordinary PostgREST roles); ADR-015 has resolved the User↔Course authorization model, but concrete RLS allow-policies remain separate implementation work. Auth provisioning now maps `auth.users.id` to `public.users.id` through the committed provisioning migration.
 
 ### ADR-014 — Question/Answer Model V1
 
 UNLOCK V1 supports exactly two question types, `SINGLE_CHOICE` and `MULTIPLE_CHOICE` (`TRUE_FALSE` is deliberately not a distinct type — it's a `SINGLE_CHOICE` question with two options). `QuestionAnswerDefinition` (`options: {id, content}[]`, `correctOptionIds: string[]`) is the durable persisted-content contract on `question_versions`; `SelectedAnswer` (`string | string[] | null`) is the submitted-answer contract on `Attempt`, always canonicalized (sorted, duplicate-free) before comparison or persistence. Correctness is computed by one pure domain function (`evaluateAnswerCorrectness`), never in SQL. A malformed persisted definition and a malformed submitted answer are two distinct, never-conflated error types — neither is ever silently treated as "incorrect."
+
+
+### ADR-015 — User/Course Membership and Join Authorization
+
+`CourseMembership` is the authorization source of truth for Course access and management. Roles are OWNER / INSTRUCTOR / LEARNER; Courses are `AUTHORIZED_ONLY` by default and may be `OPEN`. Archived learner memberships are excluded from automatic Today while remaining manually accessible; revoked memberships fail closed.
+
+### ADR-016 — Global DailyPlan and Today View Semantics
+
+UNLOCK has one persisted `DailyPlan` per learner per local day. Global Today and Course Today are views over the same plan; Course identity lives on each `DailyPlanItem`. Skip, Manual Practice separation, no carry-over, frozen-by-default behavior, and learner-local timezone semantics are part of the accepted contract.
+
+### ADR-017 — Starter / New Material V1
+
+When ordinary NBA candidates are empty, V1 may deterministically fall back to unseen Questions. Unseen means no prior real Attempt; planning unseen material creates no fake learner evidence or progress; ordinary candidates always take precedence; at most 3 unseen Questions are selected.
 
 ---
 

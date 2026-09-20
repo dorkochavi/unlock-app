@@ -1,9 +1,9 @@
 /**
  * Deterministic server-side local-date derivation — the foundation
- * `docs/OPEN_QUESTIONS.md` #35 / `docs/DATABASE.md` §26 calls for so a
- * future DailyPlan (ADR-016; not implemented by this slice) can compute
- * "today" from a persisted IANA timezone rather than a value recalculated
- * per-request/device.
+ * Deterministic learner-local date derivation used by the implemented
+ * DailyPlan public entry path (ADR-016; `docs/DATABASE.md` §26). The
+ * persisted IANA timezone is the server-side source of truth; callers do
+ * not recalculate "today" from an arbitrary request/device timezone.
  */
 import type { IanaTimezone } from "./timezone";
 

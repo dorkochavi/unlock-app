@@ -5,9 +5,9 @@
  * This is NOT the public long-term application API. It takes an explicit,
  * caller-supplied `eligibleCourseIds` list rather than deriving it from
  * CourseMembership — that derivation, plus persisted-timezone ->
- * `plannedForDate` resolution, belongs to a later, separate public entry
- * point (`getOrCreateDailyPlanForToday`, not implemented by this slice)
- * that will call this function once it has resolved both inputs. Keeping
+ * `plannedForDate` resolution, belongs to the public application entry
+ * point `getOrCreateDailyPlanForToday`, which now calls this internal core
+ * after resolving both inputs. Keeping
  * this function's own contract free of timezone/membership concerns keeps
  * it a pure, deterministic-given-its-inputs orchestration core, testable in
  * isolation from either resolution step. It is deliberately NOT exposed as

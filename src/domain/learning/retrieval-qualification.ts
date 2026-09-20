@@ -25,8 +25,10 @@
  * - same-session repetition never qualifies, regardless of how large a
  *   timestamp gap happens to separate the two attempts;
  * - session identity is caller-provided (`isSameLearningSession`), never
- *   inferred from timestamps or from a Today-session boundary this file
- *   does not define (docs/OPEN_QUESTIONS.md #3 is still open);
+ *   inferred from timestamps or from the learner-local DailyPlan day
+ *   boundary. That day boundary is resolved by the DailyPlan application
+ *   layer from the persisted learner timezone; this pure qualification
+ *   module deliberately does not own or recompute it;
  * - missing session information (`null`) is treated conservatively as
  *   non-qualifying (`SESSION_UNKNOWN`), never optimistically as "assume
  *   a different session";

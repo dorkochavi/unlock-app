@@ -25,11 +25,11 @@ entity — one `DailyPlan` per `(user_id, planned_for_date)`, `DailyPlanItem`
 carrying its own `courseId`, Course Today served as a filtered view. See
 ADR-016 §1.
 
-**What remains open:** the exact migration path from the currently
-*implemented* `today_sessions`/`today_session_items` schema to
-`DailyPlan`/`DailyPlanItem` is implementation work, not decided here — see
-`docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`. No migration has been written
-or authorized. `docs/GLOBAL_TODAY_ARCHITECTURE_REVIEW.md`'s reasoning for
+**Subsequent implementation:** the project implemented
+`DailyPlan`/`DailyPlanItem` additively, leaving the legacy
+`today_sessions`/`today_session_items` tables intact. This document remains the
+historical decision record; current schema/runtime truth belongs in
+`docs/PERSISTENCE_SCHEMA_V1.md` and `docs/DEV_STATUS.md`. `docs/GLOBAL_TODAY_ARCHITECTURE_REVIEW.md`'s reasoning for
 recommending Option A remains the reference analysis; it is not
 superseded, only promoted from recommendation to accepted decision.
 
@@ -56,11 +56,11 @@ Starter Experience — one broader low-evidence/unseen-material mechanism
 family, not two unrelated mechanisms, and not a full retirement of the
 "Starter" concept. See ADR-016 §13.
 
-**What remains open:** exact eligibility/sampling policy for either the
-Course-level Starter case or the topic-level Exposure case is calibration
-work, not decided here. `docs/OPEN_QUESTIONS.md` #4/#5 (Starter Experience
-eligibility/sampling) remain OPEN on their own terms — only the "one family
-or two" framing question is resolved. Do not treat #4/#5 as closed.
+**Subsequent decision:** ADR-017 closes the V1 Starter/New Material fallback
+semantics. Ordinary NBA candidates take precedence; only when there are zero
+ordinary candidates may the planner deterministically choose up to 3 unseen
+Questions, where unseen means no prior real Attempt. Broader calibration and
+future richer Starter UX remain separate from that accepted V1 fallback.
 
 ---
 
@@ -155,11 +155,10 @@ conservatively by engineering and revised, per
 `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`'s own recommendations, now that the
 architecture (§1) is decided.
 
-Separately, the production composition root / conservative default policy
-values needed to actually run the learning engine end-to-end
-(`docs/LEARNING_ENGINE_PRODUCTION_COMPOSITION_AUDIT.md`) remain unresolved
-and are not one of the 9 items above — they are a distinct implementation
-prerequisite, tracked in `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`.
+Separately, the production composition root and conservative V1 policy
+defaults were subsequently implemented. Future calibration/versioning remains
+a Learning Engine concern rather than an unresolved prerequisite in this
+historical decision list.
 
 ## Related Documents
 
@@ -167,4 +166,4 @@ prerequisite, tracked in `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`.
 - `docs/DECISIONS/011-today-is-course-scoped-v1.md` (partially superseded — see its updated status)
 - `docs/GLOBAL_TODAY_ARCHITECTURE_REVIEW.md`, `docs/GLOBAL_TODAY_ADVERSARIAL_REVIEW.md`
 - `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` (implementation sequencing)
-- `docs/OPEN_QUESTIONS.md` (#4, #5, #20, #21, #33 remain open; #34 resolved)
+- `docs/OPEN_QUESTIONS.md` (consult the current file for unresolved questions; #4/#5 were subsequently closed for V1 by ADR-017, while this historical record preserves their earlier framing)
