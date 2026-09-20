@@ -30,6 +30,14 @@ interface CourseAuthoringDto {
   updatedAt: string;
 }
 
+interface TopicDto {
+  id: string;
+  courseId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 type ViewState =
   | { kind: "loading" }
   | { kind: "signed-out" }
@@ -37,6 +45,11 @@ type ViewState =
   | { kind: "notAuthorized" }
   | { kind: "error" }
   | { kind: "ready"; course: CourseAuthoringDto };
+
+type TopicsState =
+  | { kind: "loading" }
+  | { kind: "error" }
+  | { kind: "ready"; topics: TopicDto[] };
 
 async function fetchCourseForAuthoring(
   courseId: string,
@@ -65,6 +78,26 @@ async function fetchCourseForAuthoring(
   }
 }
 
+async function fetchTopics(
+  courseId: string,
+): Promise<{ outcome: "READY"; topics: TopicDto[] } | { outcome: "ERROR" }> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/courses/${courseId}/topics`);
+  } catch {
+    return { outcome: "ERROR" };
+  }
+  if (!response.ok) {
+    return { outcome: "ERROR" };
+  }
+  try {
+    const body = (await response.json()) as { topics: TopicDto[] };
+    return { outcome: "READY", topics: body.topics };
+  } catch {
+    return { outcome: "ERROR" };
+  }
+}
+
 export default function InstructorCourseManagePage() {
   const messages = getMessages();
   const params = useParams<{ courseId: string }>();
@@ -87,6 +120,18 @@ export default function InstructorCourseManagePage() {
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
   const [linkCopied, setLinkCopied] = useState(false);
+
+  const [topicsState, setTopicsState] = useState<TopicsState>({ kind: "loading" });
+  const [topicsRetryCount, setTopicsRetryCount] = useState(0);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [addingTopic, setAddingTopic] = useState(false);
+  const [addTopicError, setAddTopicError] = useState<string | null>(null);
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [savingTopicId, setSavingTopicId] = useState<string | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [archivingTopicId, setArchivingTopicId] = useState<string | null>(null);
+  const [archiveTopicError, setArchiveTopicError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,6 +165,119 @@ export default function InstructorCourseManagePage() {
       cancelled = true;
     };
   }, [courseId, retryCount]);
+
+  useEffect(() => {
+    if (state.kind !== "ready") return;
+    let cancelled = false;
+
+    async function run() {
+      setTopicsState({ kind: "loading" });
+      const result = await fetchTopics(courseId);
+      if (cancelled) return;
+      setTopicsState(
+        result.outcome === "READY" ? { kind: "ready", topics: result.topics } : { kind: "error" },
+      );
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, state.kind === "ready", topicsRetryCount]);
+
+  async function handleAddTopic(event: React.FormEvent) {
+    event.preventDefault();
+    if (addingTopic) return;
+    setAddingTopic(true);
+    setAddTopicError(null);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/topics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTopicName }),
+      });
+      if (!response.ok) {
+        setAddTopicError(messages.instructor.manage.topics.addError);
+        return;
+      }
+      const body = (await response.json()) as { topic: TopicDto };
+      setTopicsState((previous) =>
+        previous.kind === "ready"
+          ? { kind: "ready", topics: [...previous.topics, body.topic] }
+          : { kind: "ready", topics: [body.topic] },
+      );
+      setNewTopicName("");
+    } catch {
+      setAddTopicError(messages.instructor.manage.topics.addError);
+    } finally {
+      setAddingTopic(false);
+    }
+  }
+
+  function handleStartRename(topic: TopicDto) {
+    setEditingTopicId(topic.id);
+    setRenameDraft(topic.name);
+    setRenameError(null);
+  }
+
+  function handleCancelRename() {
+    setEditingTopicId(null);
+    setRenameError(null);
+  }
+
+  async function handleSaveRename(topicId: string) {
+    if (savingTopicId !== null) return;
+    setSavingTopicId(topicId);
+    setRenameError(null);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/topics/${topicId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: renameDraft }),
+      });
+      if (!response.ok) {
+        setRenameError(messages.instructor.manage.topics.renameError);
+        return;
+      }
+      const body = (await response.json()) as { topic: TopicDto };
+      setTopicsState((previous) =>
+        previous.kind === "ready"
+          ? { kind: "ready", topics: previous.topics.map((t) => (t.id === topicId ? body.topic : t)) }
+          : previous,
+      );
+      setEditingTopicId(null);
+    } catch {
+      setRenameError(messages.instructor.manage.topics.renameError);
+    } finally {
+      setSavingTopicId(null);
+    }
+  }
+
+  async function handleArchiveTopic(topicId: string) {
+    if (archivingTopicId !== null) return;
+    if (!window.confirm(messages.instructor.manage.topics.archiveConfirm)) return;
+    setArchivingTopicId(topicId);
+    setArchiveTopicError(null);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/topics/${topicId}/archive`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        setArchiveTopicError(messages.instructor.manage.topics.archiveError);
+        return;
+      }
+      setTopicsState((previous) =>
+        previous.kind === "ready"
+          ? { kind: "ready", topics: previous.topics.filter((t) => t.id !== topicId) }
+          : previous,
+      );
+    } catch {
+      setArchiveTopicError(messages.instructor.manage.topics.archiveError);
+    } finally {
+      setArchivingTopicId(null);
+    }
+  }
 
   async function handleSaveDetails(event: React.FormEvent) {
     event.preventDefault();
@@ -349,6 +507,132 @@ export default function InstructorCourseManagePage() {
               </label>
               {joinPolicyError ? (
                 <p className="mt-3 text-sm text-red-600 dark:text-red-400">{joinPolicyError}</p>
+              ) : null}
+            </div>
+
+            <div className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+              <h2 className="mb-3 text-lg font-medium">{messages.instructor.manage.topics.heading}</h2>
+
+              {topicsState.kind === "loading" ? (
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {messages.instructor.manage.topics.loading}
+                </p>
+              ) : null}
+
+              {topicsState.kind === "error" ? (
+                <div>
+                  <p className="mb-2 text-sm text-red-600 dark:text-red-400">
+                    {messages.instructor.manage.topics.genericError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setTopicsRetryCount((count) => count + 1)}
+                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium dark:border-zinc-700"
+                  >
+                    {messages.instructor.manage.retry}
+                  </button>
+                </div>
+              ) : null}
+
+              {topicsState.kind === "ready" ? (
+                <>
+                  {topicsState.topics.length === 0 ? (
+                    <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+                      {messages.instructor.manage.topics.emptyTitle}
+                    </p>
+                  ) : (
+                    <ul className="mb-4 flex flex-col gap-2">
+                      {topicsState.topics.map((topic) => (
+                        <li
+                          key={topic.id}
+                          className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+                        >
+                          {editingTopicId === topic.id ? (
+                            <>
+                              <input
+                                type="text"
+                                value={renameDraft}
+                                onChange={(event) => setRenameDraft(event.target.value)}
+                                className="min-w-0 flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                                autoFocus
+                              />
+                              <div className="flex shrink-0 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveRename(topic.id)}
+                                  disabled={savingTopicId === topic.id}
+                                  className="text-sm font-medium text-zinc-900 disabled:opacity-50 dark:text-zinc-100"
+                                >
+                                  {messages.instructor.manage.topics.renameSave}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleCancelRename}
+                                  className="text-sm text-zinc-500 dark:text-zinc-400"
+                                >
+                                  {messages.instructor.manage.topics.renameCancel}
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <span className="min-w-0 truncate text-sm" title={topic.name}>
+                                {topic.name}
+                              </span>
+                              <div className="flex shrink-0 gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartRename(topic)}
+                                  className="text-sm text-zinc-500 underline dark:text-zinc-400"
+                                >
+                                  {messages.instructor.manage.topics.renameAction}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleArchiveTopic(topic.id)}
+                                  disabled={archivingTopicId === topic.id}
+                                  className="text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
+                                >
+                                  {archivingTopicId === topic.id
+                                    ? messages.instructor.manage.topics.archiving
+                                    : messages.instructor.manage.topics.archiveAction}
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {renameError ? (
+                    <p className="mb-2 text-sm text-red-600 dark:text-red-400">{renameError}</p>
+                  ) : null}
+                  {archiveTopicError ? (
+                    <p className="mb-2 text-sm text-red-600 dark:text-red-400">{archiveTopicError}</p>
+                  ) : null}
+
+                  <form onSubmit={handleAddTopic} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTopicName}
+                      onChange={(event) => setNewTopicName(event.target.value)}
+                      placeholder={messages.instructor.manage.topics.addPlaceholder}
+                      className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={addingTopic}
+                      className="shrink-0 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+                    >
+                      {addingTopic ? messages.instructor.manage.topics.adding : messages.instructor.manage.topics.addAction}
+                    </button>
+                  </form>
+                  {addTopicError ? (
+                    <p className="mt-2 text-sm text-red-600 dark:text-red-400">{addTopicError}</p>
+                  ) : null}
+                </>
               ) : null}
             </div>
 
