@@ -24,13 +24,16 @@ Pushed HEAD:
 
 Current local HEAD (not yet pushed):
 
-`0e812a1` — `Run 004 handoff: update DEV_STATUS, CONTEXT_MAP, and add Run Report`
+`2368e54` — `add flat Topic model and authoring V1 (Run 005 S4)`
 
-Local HEAD is 5 commits ahead of pushed HEAD — all of Run 004: `3568275`
-(S2-S4: learner shell/nav, My Courses, Course View), `cb22a97` (S5:
-malformed-courseId 500 fix), `0e8a597` (S6: mobile tap-target/truncation
-pass), `60b6dea` (S7: Playwright E2E harness), `0e812a1` (S8: this Run's
-own handoff). See `docs/RUNS/2026-09-20-004.md` for the full Run.
+Local HEAD is 10 commits ahead of pushed HEAD: all of Run 004 (`3568275`
+learner shell/nav + My Courses + Course View, `cb22a97` malformed-courseId
+500 fix, `0e8a597` mobile tap-target/truncation pass, `60b6dea` Playwright
+E2E harness, `0e812a1` Run 004 handoff — see `docs/RUNS/2026-09-20-004.md`),
+plus Run 005 in progress: `6090862` (Run 004 handoff metadata fix), `f09bb19`
+(S2 Course lifecycle + authoring authorization), `d1fa3eb` (S2 Run-report
+follow-up), `fd87f9e` (S3 Instructor Course Management UI V1), `2368e54`
+(S4 Flat Topic Model + Topic Authoring V1).
 
 Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
 
@@ -44,8 +47,8 @@ Development OS V1 is committed and pushed (`0135495`); the subsequent
 active-documentation consistency pass (`d67371a`) and the Run
 `2026-09-20-002` handoff (`fd9162e`) were pushed at the time, and `f10daaa`
 (defining V1 scope/roadmap) was pushed after that — `f10daaa` is the actual
-current pushed HEAD, not `fd9162e`. Run 004 (`3568275`..`0e812a1`) is
-committed locally and not yet pushed.
+current pushed HEAD, not `fd9162e`. Run 004 (`3568275`..`0e812a1`) and Run 005-in-progress
+(`6090862`..`2368e54`) are committed locally and not yet pushed.
 
 ---
 
@@ -177,9 +180,52 @@ Implemented (Slice S2 — Course Lifecycle + Instructor Authorization Foundation
   (`canSelfJoinCourse`, replacing the plain `canSelfJoin` check inside
   `joinCourse` specifically).
 
-No instructor-facing UI exists yet for any of this (Slice S3). Flat Topics,
-manual question authoring, QuestionVersion publish lifecycle, and
-Structured Import remain fully unimplemented (Slices S4-S8).
+Implemented (Slice S3 — Instructor Course Management UI V1):
+
+- `src/app/instructor/` — a desktop-oriented instructor authoring surface,
+  deliberately separate from the learner `(learner)` shell/bottom nav
+  (reached via a small text link on My Courses, not a nav tab):
+  `/instructor/courses` (list Courses the caller owns/instructs, filtered
+  client-side from `GET /api/courses/mine`, with a create-first-course
+  empty state), `/instructor/courses/new` (create form), and
+  `/instructor/courses/[courseId]` (manage: edit title/exam date, edit
+  join policy, explicit publish, explicit archive-with-confirm, and —
+  once PUBLISHED — a copyable `/join/:courseId` link).
+- `PATCH /api/courses/:courseId/join-policy` — the first live route wiring
+  of `setCourseJoinPolicy` (previously application-layer-only). Its
+  authorization is deliberately UNCHANGED (checks only `revokedAt`, not
+  `archivedAt`) — ADR-015's Addendum explicitly pins this as intended
+  ("archived-but-not-revoked management members retain management
+  rights"), a different, narrower policy than `canAuthorCourse`'s
+  Run-005-specific stricter gate; the two are not meant to converge.
+- archived-Course metadata/join-policy controls are disabled in the UI
+  (editing them has no product effect once a Course is terminal-ARCHIVED).
+
+Implemented (Slice S4 — Flat Topic Model + Topic Authoring V1):
+
+- `topics` table (migration `20260927000000_topics_v1.sql`): `id`,
+  `course_id` (FK, `on delete restrict`), `name`, `archived_at`,
+  timestamps. Flat only — no parent/nesting/prerequisite columns. No hard
+  delete: archiving excludes a Topic from listing but never removes the
+  row, preserving referential integrity ahead of a future Question<->Topic
+  association (S5+).
+- `src/domain/topic/`, `src/application/topic/` (createTopic /
+  listTopicsForCourse / renameTopic / archiveTopic), 
+  `src/infrastructure/postgres/topic-repository.ts` — authorization reuses
+  `canAuthorCourse` unchanged, same policy as every other Run-005
+  content-authoring action.
+- `renameTopic`/`archiveTopic` take both `courseId` (checked first, before
+  the Topic is ever loaded) and `topicId`, and collapse a Topic that
+  exists but belongs to a different Course into the same `TOPIC_NOT_FOUND`
+  outcome as a nonexistent one — closes "do not allow cross-Course Topic
+  association" without leaking which Course a Topic actually belongs to.
+- Three routes under `/api/courses/:courseId/topics/` (list/create,
+  rename, archive) plus a Topics section (list, inline rename, add,
+  archive-with-confirm, empty state) added to the instructor Course manage
+  page from S3.
+
+Manual question authoring, QuestionVersion publish lifecycle, and
+Structured Import remain fully unimplemented (Slices S5-S8).
 
 ---
 
@@ -318,12 +364,17 @@ Implemented relevant APIs include:
 - `GET /api/courses/mine` (authenticated, My Courses)
 - `GET /api/courses/:courseId/context` (authenticated, membership-gated Course View)
 
-Run 005 instructor-authoring APIs (S2; no UI yet — see Course Authoring above):
+Run 005 instructor-authoring APIs (S2-S4 — see Course Authoring above for the
+`/instructor/` UI that consumes these):
 
 - `POST /api/courses` (create, DRAFT)
 - `GET`/`PATCH /api/courses/:courseId/manage` (authoring read / metadata update)
 - `POST /api/courses/:courseId/publish`
 - `POST /api/courses/:courseId/archive`
+- `PATCH /api/courses/:courseId/join-policy` (S3)
+- `GET`/`POST /api/courses/:courseId/topics` (list active / create, S4)
+- `PATCH /api/courses/:courseId/topics/:topicId` (rename, S4)
+- `POST /api/courses/:courseId/topics/:topicId/archive` (S4)
 
 This list is a current capability summary, not an exhaustive API specification.
 Use the API docs / source for full contracts.
@@ -364,6 +415,11 @@ Claude must not run `supabase db push` without explicit user authorization.
     `npm run test:schema` suite green plus a dedicated atomicity/rollback
     suite for the new `PostgresCourseUnitOfWork`); not yet pushed to the
     real hosted project.
+11. `20260927000000_topics_v1.sql` (Run 005 S4) — adds the `topics` table
+    (flat, Course-scoped, archive-not-delete). PGlite-verified only (full
+    `npm run test:schema` suite green, 224/224 including 10 new
+    `topic-repository.test.ts` cases); not yet pushed to the real hosted
+    project.
 
 ---
 
@@ -453,10 +509,10 @@ end-to-end — see "Not yet executed" above.
 
 ## Current Test Baseline
 
-At local HEAD after Run 005 S2 (pushed HEAD remains `f10daaa`; see Repository State):
+At local HEAD after Run 005 S4 (pushed HEAD remains `f10daaa`; see Repository State):
 
-- Unit tests: `713 / 713`
-- Schema/Postgres (PGlite): `214 / 214`
+- Unit tests: `778 / 778`
+- Schema/Postgres (PGlite): `224 / 224`
 - Typecheck: clean
 - Lint: clean
 - `git diff --check`: clean
@@ -521,9 +577,10 @@ Read the specific ADR only when a task requires its details.
 
 No known code blocker.
 
-No remote migration gate remains for previously-applied migrations. Run 005 S2 adds one new
-migration (`20260926000000_course_lifecycle_v1.sql`) that is committed locally and
-PGlite-verified only — not yet applied to hosted Supabase (see Database / Migration State).
+No remote migration gate remains for previously-applied migrations. Run 005 S2/S4 add two new
+migrations (`20260926000000_course_lifecycle_v1.sql`, `20260927000000_topics_v1.sql`) that are
+committed locally and PGlite-verified only — not yet applied to hosted Supabase (see
+Database / Migration State).
 
 ---
 
@@ -532,7 +589,7 @@ PGlite-verified only — not yet applied to hosted Supabase (see Database / Migr
 1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
 2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
 3. Push Run 004 + Run 005 (in progress) when ready — not yet pushed.
-4. Apply `20260926000000_course_lifecycle_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
+4. Apply `20260926000000_course_lifecycle_v1.sql` and `20260927000000_topics_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
 5. Production deployment remains outstanding.
 
 Do not perform hosted mutations automatically.
@@ -549,10 +606,11 @@ Current pushed HEAD:
 
 `f10daaa`
 
-Current local HEAD: Run 004 (`3568275`..`0e812a1`) plus Run 005 in progress (Slice S2 committed
-on top of Run 004's `6090862` handoff-metadata-fix commit — see `git log` for the exact SHA).
+Current local HEAD: Run 004 (`3568275`..`0e812a1`) plus Run 005 in progress (Slices S2-S4
+committed on top of Run 004's `6090862` handoff-metadata-fix commit — see `git log` for exact
+SHAs; current local HEAD is `2368e54`).
 
-Next execution work continues Run 005 at Slice S3 (Instructor Course Management UI V1) per
+Next execution work continues Run 005 at Slice S5 (Manual Question Authoring V1) per
 `docs/CHATGPT_PLAN.md`.
 
 Do not infer the next slice from historical run context. See
