@@ -123,7 +123,12 @@ describe("getOrCreateDailyPlanForToday", () => {
     const result = await getOrCreateDailyPlanForToday(
       { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
       makeSettings(),
-      { users: users.repo(), courseMemberships: membershipsSpy, dailyPlanUnitOfWork: dailyPlans },
+      {
+        users: users.repo(),
+        courseMemberships: membershipsSpy,
+        courses: courses.repos().courses,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
     );
 
     expect(result).toEqual({ outcome: "USER_NOT_FOUND" });
@@ -143,7 +148,12 @@ describe("getOrCreateDailyPlanForToday", () => {
     const result = await getOrCreateDailyPlanForToday(
       { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
       makeSettings(),
-      { users: users.repo(), courseMemberships: membershipsSpy, dailyPlanUnitOfWork: dailyPlans },
+      {
+        users: users.repo(),
+        courseMemberships: membershipsSpy,
+        courses: courses.repos().courses,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
     );
 
     expect(result).toEqual({ outcome: "TIMEZONE_NOT_SET" });
@@ -166,6 +176,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -191,6 +202,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -223,6 +235,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -260,6 +273,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -293,6 +307,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -319,6 +334,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -342,6 +358,7 @@ describe("getOrCreateDailyPlanForToday", () => {
     const ports = {
       users: users.repo(),
       courseMemberships: courses.repos().memberships,
+      courses: courses.repos().courses,
       dailyPlanUnitOfWork: dailyPlans,
     };
 
@@ -377,6 +394,7 @@ describe("getOrCreateDailyPlanForToday", () => {
     const ports = {
       users: users.repo(),
       courseMemberships: courses.repos().memberships,
+      courses: courses.repos().courses,
       dailyPlanUnitOfWork: dailyPlans,
     };
 
@@ -433,7 +451,12 @@ describe("getOrCreateDailyPlanForToday", () => {
     const result = await getOrCreateDailyPlanForToday(
       { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
       makeSettings(),
-      { users: users.repo(), courseMemberships: doubledMemberships, dailyPlanUnitOfWork: dailyPlans },
+      {
+        users: users.repo(),
+        courseMemberships: doubledMemberships,
+        courses: courses.repos().courses,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
     );
 
     expect(result.outcome).toBe("READY");
@@ -467,6 +490,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -506,6 +530,7 @@ describe("getOrCreateDailyPlanForToday", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );
@@ -514,6 +539,104 @@ describe("getOrCreateDailyPlanForToday", () => {
     if (result.outcome === "READY") {
       expect(result.plan.items).toHaveLength(1);
       expect(result.plan.items[0].questionId).toBe("question-learner");
+    }
+  });
+
+  it("M. excludes a Course whose OWN status is ARCHIVED, even though the LEARNER membership itself is neither revoked nor archived (Run 008 S4) — both ranked-progress and unseen/new-material candidates", async () => {
+    const users = new InMemoryUserDatabase();
+    users.seedUser(USER_ID, "UTC");
+    const courses = new InMemoryCourseDatabase();
+    // Explicitly seed the Course as ARCHIVED before the membership — this
+    // is `courses.status`, Run 005's whole-Course instructor-lifecycle
+    // field, NOT `CourseMembership.archivedAt` (already covered by test E,
+    // a distinct per-learner fact, ADR-015 §9). The membership row here is
+    // fully active: `archivedAt: null`, `revokedAt: null`.
+    courses.seedCourse("course-archived", "AUTHORIZED_ONLY", "Archived Course", "ARCHIVED");
+    courses.seedMembership(makeMembership({ courseId: "course-archived", role: "LEARNER" }));
+    courses.seedMembership(makeMembership({ courseId: "course-active", role: "LEARNER" }));
+
+    const dailyPlans = new InMemoryDailyPlanDatabase();
+    dailyPlans.seedProgress(
+      "course-archived",
+      makeProgress({ questionId: "question-archived-progress", masteryCategory: "strengthening" }),
+    );
+    dailyPlans.setCurrentVersion("question-archived-progress", "qv-archived-progress");
+    dailyPlans.seedUnseenQuestion("course-archived", {
+      questionId: "question-archived-unseen",
+      courseId: "course-archived",
+      questionVersionId: "qv-archived-unseen",
+      createdAt: new Date("2025-01-01T00:00:00.000Z"), // earlier — would win if wrongly included
+    });
+    dailyPlans.seedUnseenQuestion("course-active", {
+      questionId: "question-active-unseen",
+      courseId: "course-active",
+      questionVersionId: "qv-active-unseen",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = await getOrCreateDailyPlanForToday(
+      { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
+      makeSettings(),
+      {
+        users: users.repo(),
+        courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome === "READY") {
+      const questionIds = result.plan.items.map((item) => item.questionId);
+      expect(questionIds).not.toContain("question-archived-progress");
+      expect(questionIds).not.toContain("question-archived-unseen");
+      expect(questionIds).toContain("question-active-unseen");
+    }
+  });
+
+  it("N. excludes an ARCHIVED Course's unseen/new-material candidate specifically via the fallback path — zero ranked/progress candidates anywhere, isolating the fallback branch (Run 008 S4, addresses review rigor note on test M)", async () => {
+    const users = new InMemoryUserDatabase();
+    users.seedUser(USER_ID, "UTC");
+    const courses = new InMemoryCourseDatabase();
+    courses.seedCourse("course-archived", "AUTHORIZED_ONLY", "Archived Course", "ARCHIVED");
+    courses.seedMembership(makeMembership({ courseId: "course-archived", role: "LEARNER" }));
+    courses.seedMembership(makeMembership({ courseId: "course-active", role: "LEARNER" }));
+
+    // No `seedProgress` call anywhere in this test — zero ranked candidates
+    // exist for either Course, so `generateDailyPlanForResolvedInputs`'s
+    // unseen/new-material fallback (ADR-017) is the ONLY path that could
+    // possibly place an item, isolating exactly the branch the S4 review
+    // noted test M's ranked-progress candidate left unexercised.
+    const dailyPlans = new InMemoryDailyPlanDatabase();
+    dailyPlans.seedUnseenQuestion("course-archived", {
+      questionId: "question-archived-unseen-only",
+      courseId: "course-archived",
+      questionVersionId: "qv-archived-unseen-only",
+      createdAt: new Date("2025-01-01T00:00:00.000Z"), // earlier — would win if wrongly included
+    });
+    dailyPlans.seedUnseenQuestion("course-active", {
+      questionId: "question-active-unseen-only",
+      courseId: "course-active",
+      questionVersionId: "qv-active-unseen-only",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+
+    const result = await getOrCreateDailyPlanForToday(
+      { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
+      makeSettings(),
+      {
+        users: users.repo(),
+        courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome === "READY") {
+      const questionIds = result.plan.items.map((item) => item.questionId);
+      expect(questionIds).not.toContain("question-archived-unseen-only");
+      expect(questionIds).toContain("question-active-unseen-only");
     }
   });
 });

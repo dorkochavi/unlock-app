@@ -35,6 +35,28 @@
  * (if that ever becomes possible) would still be eligible under this rule
  * — the filter is per-membership-row `role`, not per-user-per-Course.
  *
+ * ## Accepted product decision: an ARCHIVED Course is excluded too (Run 008 S4)
+ *
+ * `listActiveForUser` (ADR-015 §7/§9) already excludes a membership the
+ * LEARNER has personally archived (`CourseMembership.archivedAt`) — a
+ * per-user fact, unrelated to the Course's own lifecycle. It says nothing
+ * about the Course's own `status` (Run 005's DRAFT/PUBLISHED/ARCHIVED
+ * lifecycle, `domain/course/types.ts`). `canSelfJoinCourse`'s own doc
+ * comment already states the accepted rule this file was missing: "an
+ * ARCHIVED Course is no longer active for normal learner participation...
+ * regardless of `join_policy`" (Run 005 CHATGPT_PLAN.md "Course
+ * lifecycle"/"Join behavior") — that rule was enforced only at JOIN time;
+ * an existing membership whose Course is archived AFTERWARD kept
+ * contributing that Course's progress/unseen candidates to the learner's
+ * DailyPlan indefinitely. This closes that gap by additionally filtering
+ * `eligibleCourseIds` to Courses whose CURRENT status is `PUBLISHED`,
+ * applying the same already-accepted rule consistently rather than only
+ * at the moment of joining. A DRAFT Course is already structurally
+ * unreachable here (no membership can exist without having passed through
+ * `canSelfJoinCourse`, which requires `PUBLISHED`, or being the Course's
+ * own OWNER — a management role this file already excludes above), so
+ * this filter's only observable effect in practice is excluding ARCHIVED.
+ *
  * ## Timezone resolution
  *
  * `UserRepository.findTimezone` is the sole source of truth (`docs
@@ -79,7 +101,7 @@
  */
 import { parseIanaTimezone } from "../../domain/user/timezone";
 import { deriveLocalDateString } from "../../domain/user/local-date";
-import type { CourseMembershipRepository } from "../course/ports";
+import type { CourseMembershipRepository, CourseRepository } from "../course/ports";
 import type { UserRepository } from "../user/ports";
 import {
   generateDailyPlanForResolvedInputs,
@@ -106,6 +128,11 @@ export type DailyPlanGenerationSettings = Omit<DailyPlanGenerationContext, "now"
 export interface GetOrCreateDailyPlanForTodayPorts {
   users: UserRepository;
   courseMemberships: CourseMembershipRepository;
+  /**
+   * Read-only, used only for `listStatuses` (Run 008 S4) — see this file's
+   * own "Accepted product decision" doc comment below for why.
+   */
+  courses: CourseRepository;
   dailyPlanUnitOfWork: DailyPlanUnitOfWork;
 }
 
@@ -139,9 +166,12 @@ export async function getOrCreateDailyPlanForToday(
   const activeMemberships = await ports.courseMemberships.listActiveForUser(
     command.userId,
   );
-  const eligibleCourseIds = activeMemberships
+  const learnerCourseIds = activeMemberships
     .filter((membership) => membership.role === "LEARNER")
     .map((membership) => membership.courseId);
+
+  // ARCHIVED-Course exclusion (see module doc comment).
+  const eligibleCourseIds = await filterToPublishedCourseIds(learnerCourseIds, ports.courses);
 
   const plan = await generateDailyPlanForResolvedInputs(
     { userId: command.userId, plannedForDate, eligibleCourseIds },
@@ -150,4 +180,19 @@ export async function getOrCreateDailyPlanForToday(
   );
 
   return { outcome: "READY", plan };
+}
+
+/** ARCHIVED-Course exclusion (see this file's own module doc comment). */
+async function filterToPublishedCourseIds(
+  courseIds: string[],
+  courses: CourseRepository,
+): Promise<string[]> {
+  if (courseIds.length === 0) {
+    return [];
+  }
+  const statuses = await courses.listStatuses(courseIds);
+  const publishedIds = new Set(
+    statuses.filter((course) => course.status === "PUBLISHED").map((course) => course.id),
+  );
+  return courseIds.filter((courseId) => publishedIds.has(courseId));
 }

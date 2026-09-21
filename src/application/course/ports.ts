@@ -151,6 +151,22 @@ export interface CourseRepository {
   getCourseSummaries(courseIds: string[]): Promise<CourseSummary[]>;
 
   /**
+   * Batched Course-status lookup (Run 008 S4) — silently omits any
+   * `courseId` with no matching row, same convention as
+   * `getCourseSummaries`. Used to gate automatic learner-facing DailyPlan
+   * eligibility by Course lifecycle status
+   * (`get-or-create-daily-plan-for-today.ts`): an ARCHIVED Course is "no
+   * longer active for normal learner participation" (`canSelfJoinCourse`'s
+   * own doc comment, Run 005 CHATGPT_PLAN.md "Course lifecycle"/"Join
+   * behavior") — that already-accepted rule was enforced at join time but
+   * not yet for an existing membership whose Course is archived afterward.
+   * Deliberately independent of `CourseSummary` (the learner-display
+   * projection, `id`/`title` only) — status is a separate, narrower read
+   * for a separate purpose.
+   */
+  listStatuses(courseIds: string[]): Promise<{ id: string; status: CourseStatus }[]>;
+
+  /**
    * Returns `null` if the Course does not exist; otherwise the join policy
    * actually persisted after the write (always equal to `joinPolicy`).
    * Does not itself check the caller's authorization — that is

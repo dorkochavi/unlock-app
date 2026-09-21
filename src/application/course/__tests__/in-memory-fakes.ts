@@ -79,9 +79,21 @@ export class InMemoryCourseDatabase {
     };
   }
 
-  /** Test setup helper — not part of any port. */
+  /**
+   * Test setup helper — not part of any port. Also defaults the
+   * membership's Course to `PUBLISHED` if no status was explicitly seeded
+   * for it yet (same default/rationale as `seedCourse` above: a real
+   * `course_memberships` row's `course_id` always has a matching `courses`
+   * row via FK, so a membership without an explicitly seeded Course status
+   * should not silently behave as if the Course doesn't exist — this keeps
+   * every test written before Run 008 S4's `listStatuses` passing without
+   * modification, matching `seedCourse`'s own stated precedent).
+   */
   seedMembership(membership: CourseMembership): void {
     this.memberships.set(key(membership.userId, membership.courseId), membership);
+    if (!this.courseStatuses.has(membership.courseId)) {
+      this.courseStatuses.set(membership.courseId, "PUBLISHED");
+    }
   }
 
   repos(): CourseRepositories {
@@ -135,6 +147,12 @@ export class InMemoryCourseDatabase {
         return courseIds.flatMap((courseId) => {
           const title = this.courseTitles.get(courseId);
           return title === undefined ? [] : [{ id: courseId, title }];
+        });
+      },
+      listStatuses: async (courseIds) => {
+        return courseIds.flatMap((courseId) => {
+          const status = this.courseStatuses.get(courseId);
+          return status === undefined ? [] : [{ id: courseId, status }];
         });
       },
       getJoinPolicy: async (courseId) => {

@@ -318,6 +318,27 @@ describe("generateDailyPlanForResolvedInputs", () => {
     expect(db.getCurrentVersionCallCount).toBe(getCurrentVersionCallsAfterFirst);
   });
 
+  it("L. skips a ranked candidate whose Question has no published QuestionVersion (draft-only) — regression for Run 008 S4, this exact negative case was previously unproven in the ordinary/ranked candidate path (only the unseen/new-material path had a test)", async () => {
+    const db = new InMemoryDailyPlanDatabase();
+    db.seedProgress("course-1", makeProgress({ questionId: "question-published" }));
+    db.seedProgress("course-1", makeProgress({ questionId: "question-draft-only" }));
+    db.setCurrentVersion("question-published", "qv-published");
+    // Deliberately NOT calling db.setCurrentVersion("question-draft-only", ...)
+    // — `getCurrentVersion` returns null, the exact shape of a real
+    // `current_version_id IS NULL` Question (never published, or a
+    // Structured-Import DRAFT_ONLY Question, Run 007).
+
+    const plan = await generateDailyPlanForResolvedInputs(
+      { ...KEY, eligibleCourseIds: ["course-1"] },
+      makeContext(),
+      db,
+    );
+
+    const questionIds = plan.items.map((item) => item.questionId);
+    expect(questionIds).toContain("question-published");
+    expect(questionIds).not.toContain("question-draft-only");
+  });
+
   describe("New-material fallback (ADR-017, Night-Run Slice 5)", () => {
     it("L. fresh learner (zero progress) with 5 eligible unseen questions across 2 Courses receives exactly 3, globally ordered by (createdAt, questionId)", async () => {
       const db = new InMemoryDailyPlanDatabase();

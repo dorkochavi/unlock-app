@@ -265,6 +265,9 @@ export class InMemoryQuestionDatabase {
         throw new Error("InMemoryQuestionDatabase.publishRepos: getCourseSummary is not used by publishQuestion");
       },
       getCourseSummaries: async () => [],
+      listStatuses: async () => {
+        throw new Error("InMemoryQuestionDatabase.publishRepos: listStatuses is not used by publishQuestion");
+      },
       getJoinPolicy: async () => null,
       getJoinEligibility: async () => null,
       setJoinPolicy: async () => null,

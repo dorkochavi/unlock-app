@@ -95,6 +95,7 @@ describe("createProductionDailyPlanGenerationSettings", () => {
       {
         users: users.repo(),
         courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
         dailyPlanUnitOfWork: dailyPlans,
       },
     );

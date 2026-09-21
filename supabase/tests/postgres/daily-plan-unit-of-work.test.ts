@@ -28,6 +28,7 @@ import { getOrCreateDailyPlanForToday } from "../../../src/application/dailyPlan
 import type { DailyPlan, DailyPlanItem } from "../../../src/application/dailyPlan/ports";
 import type { TodayPlannerPolicy } from "../../../src/domain/learning/today-planner";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
+import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import type { ConnectionProvider } from "../../../src/infrastructure/postgres/connection-provider";
 import { PostgresDailyPlanUnitOfWork } from "../../../src/infrastructure/postgres/daily-plan-unit-of-work";
 import type { SqlExecutor } from "../../../src/infrastructure/postgres/sql-executor";
@@ -128,6 +129,7 @@ function makePorts() {
   return {
     users: new PostgresUserRepository(db),
     courseMemberships: new PostgresCourseMembershipRepository(db),
+    courses: new PostgresCourseRepository(db),
     dailyPlanUnitOfWork: new PostgresDailyPlanUnitOfWork(pgliteConnectionProvider(db)),
   };
 }
@@ -383,6 +385,80 @@ describe("getOrCreateDailyPlanForToday — real Postgres generation path", () =>
     expect(Number(todaySessionCount.rows[0].count)).toBe(0);
     expect(Number(todaySessionItemCount.rows[0].count)).toBe(0);
     expect(Number(attemptCount.rows[0].count)).toBe(0);
+  });
+
+  it("J. excludes a Course whose OWN status is ARCHIVED, even though the real CourseMembership row is neither revoked nor archived (Run 008 S4) — real Postgres, both ranked-progress and unseen candidates", async () => {
+    const userId = await insertUser(db);
+    await setUserTimezone(db, userId, "UTC");
+
+    const archivedCourseId = await insertCourse(db, userId, { status: "ARCHIVED" });
+    await insertCourseMembership(db, { userId, courseId: archivedCourseId, role: "LEARNER" });
+    const archivedProgressQuestionId = await insertQuestion(db, archivedCourseId);
+    const archivedProgressVersionId = await insertQuestionVersion(db, archivedProgressQuestionId);
+    await setCurrentVersion(db, archivedProgressQuestionId, archivedProgressVersionId);
+    await seedDueProgress(db, userId, archivedProgressQuestionId);
+    // A second, unseen (no progress row) Question in the same archived
+    // Course. Note: since this Course also has a due ranked candidate
+    // above, the ranked path wins and this assertion alone does not
+    // isolate the unseen/new-material fallback branch specifically — see
+    // test K below for that isolated proof (S4 review rigor note).
+    const archivedUnseenQuestionId = await insertQuestion(db, archivedCourseId);
+    const archivedUnseenVersionId = await insertQuestionVersion(db, archivedUnseenQuestionId);
+    await setCurrentVersion(db, archivedUnseenQuestionId, archivedUnseenVersionId);
+
+    const activeCourseId = await insertCourse(db, userId);
+    await insertCourseMembership(db, { userId, courseId: activeCourseId, role: "LEARNER" });
+    const activeQuestionId = await insertQuestion(db, activeCourseId);
+    const activeVersionId = await insertQuestionVersion(db, activeQuestionId);
+    await setCurrentVersion(db, activeQuestionId, activeVersionId);
+    await seedDueProgress(db, userId, activeQuestionId);
+
+    const ports = makePorts();
+    const result = await getOrCreateDailyPlanForToday(
+      { userId, now: new Date("2026-01-10T10:00:00Z") },
+      makeSettings(),
+      ports,
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome !== "READY") throw new Error("unreachable");
+    const questionIds = result.plan.items.map((item) => item.questionId);
+    expect(questionIds).not.toContain(archivedProgressQuestionId);
+    expect(questionIds).not.toContain(archivedUnseenQuestionId);
+    expect(questionIds).toContain(activeQuestionId);
+  });
+
+  it("K. excludes an ARCHIVED Course's unseen/new-material candidate specifically via the fallback path — zero ranked/progress candidates anywhere, real Postgres, isolating the fallback branch (Run 008 S4, addresses review rigor note on test J)", async () => {
+    const userId = await insertUser(db);
+    await setUserTimezone(db, userId, "UTC");
+
+    const archivedCourseId = await insertCourse(db, userId, { status: "ARCHIVED" });
+    await insertCourseMembership(db, { userId, courseId: archivedCourseId, role: "LEARNER" });
+    const archivedUnseenOnlyId = await insertQuestion(db, archivedCourseId);
+    const archivedUnseenOnlyVersionId = await insertQuestionVersion(db, archivedUnseenOnlyId);
+    await setCurrentVersion(db, archivedUnseenOnlyId, archivedUnseenOnlyVersionId);
+    // No `seedDueProgress` call for either Course in this test — zero
+    // ranked candidates exist anywhere, so the unseen/new-material fallback
+    // (ADR-017) is the only path that could place an item.
+
+    const activeCourseId = await insertCourse(db, userId);
+    await insertCourseMembership(db, { userId, courseId: activeCourseId, role: "LEARNER" });
+    const activeUnseenOnlyId = await insertQuestion(db, activeCourseId);
+    const activeUnseenOnlyVersionId = await insertQuestionVersion(db, activeUnseenOnlyId);
+    await setCurrentVersion(db, activeUnseenOnlyId, activeUnseenOnlyVersionId);
+
+    const ports = makePorts();
+    const result = await getOrCreateDailyPlanForToday(
+      { userId, now: new Date("2026-01-10T10:00:00Z") },
+      makeSettings(),
+      ports,
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome !== "READY") throw new Error("unreachable");
+    const questionIds = result.plan.items.map((item) => item.questionId);
+    expect(questionIds).not.toContain(archivedUnseenOnlyId);
+    expect(questionIds).toContain(activeUnseenOnlyId);
   });
 
   describe("New-material fallback against real Postgres (ADR-017, Night-Run Slice 5)", () => {

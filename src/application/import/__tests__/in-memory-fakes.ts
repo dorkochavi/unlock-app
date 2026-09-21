@@ -129,6 +129,9 @@ export class InMemoryImportDatabase {
         throw new Error("InMemoryImportDatabase: getCourseSummary is not used by import");
       },
       getCourseSummaries: async () => [],
+      listStatuses: async () => {
+        throw new Error("InMemoryImportDatabase: listStatuses is not used by import");
+      },
       getJoinPolicy: async () => null,
       getJoinEligibility: async () => null,
       setJoinPolicy: async () => null,

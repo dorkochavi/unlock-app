@@ -81,6 +81,25 @@ export class PostgresCourseRepository implements CourseRepository {
     }));
   }
 
+  /**
+   * Batched form mirroring `getCourseSummaries` exactly (`CourseRepository
+   * .listStatuses` doc comment) — same empty-input short-circuit, same
+   * `= ANY($1::uuid[])` shape, different column list.
+   */
+  async listStatuses(courseIds: string[]): Promise<{ id: string; status: CourseStatus }[]> {
+    if (courseIds.length === 0) {
+      return [];
+    }
+    const result = await this.db.query(
+      "select id, status from courses where id = any($1::uuid[])",
+      [courseIds],
+    );
+    return result.rows.map((row) => ({
+      id: readString(row, TABLE, "id"),
+      status: readEnum(row, TABLE, "status", COURSE_STATUSES),
+    }));
+  }
+
   async getJoinPolicy(courseId: string) {
     const result = await this.db.query(
       "select join_policy from courses where id = $1",
