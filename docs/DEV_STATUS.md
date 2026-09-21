@@ -1,18 +1,23 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-21
+Updated: 2026-09-22
 
 ## Repository
 
 - Branch: `feature/project-foundation`
-- Local HEAD: `0dd4c74` (Run 007 S6 close) — 8 commits ahead of
-  `origin/feature/project-foundation` (`26678d8`): `db25076`, `bdaae1d`,
-  `885df06`, `445a276`, `9109b12`, `413c4e4`, `0e91566`, `0dd4c74`.
+- Local HEAD: `b86d4e3` (Run 008 S5 close) — 5 commits ahead of
+  `origin/feature/project-foundation` (`d509987`): `1bea327`, `38e26fc`,
+  `4fe5adb`, `a894f9c`, `b86d4e3`.
 - Working tree clean. Not pushed — remote push remains a manual/human action.
-- Run 007 (Structured Import V1) added product code (`src/domain/import/**`,
-  `src/application/import/**`, two new API routes, one new instructor page)
-  and one new dependency (`papaparse`, S1). No schema/migration change.
+- Run 007 (Structured Import V1) was pushed to origin between its own Run
+  Report being written and Run 008 starting — Run 008's `BASE_HEAD` is the
+  clean, already-pushed `d509987`, not Run 007's own local HEAD.
+- Run 008 (Authoring Integration + Pilot Readiness) added product code
+  (safe review-bundle tooling, real calendar-date validation, Structured
+  Import row-count limit, auth-before-body-parsing across 10 routes, a
+  learner-eligibility fix, instructor workflow copy) and test-only
+  integration evidence. No schema/migration change.
 - Hosted/remote mutation remains human-controlled.
 
 ## Product Direction
@@ -35,7 +40,8 @@ Primary instructor navigation direction:
 ## Current Product Capabilities
 
 Current repository capabilities include:
-- authentication and authenticated API boundaries;
+- authentication and authenticated API boundaries (all authenticated JSON
+  routes now authenticate before parsing the request body — Run 008 S1.E);
 - Course + CourseMembership with `OWNER`, `INSTRUCTOR`, `LEARNER` roles;
 - OPEN / AUTHORIZED_ONLY join behavior;
 - Course lifecycle (`DRAFT`, `PUBLISHED`, `ARCHIVED`);
@@ -52,8 +58,15 @@ Current repository capabilities include:
 - Today answer + Skip behavior;
 - New Material fallback V1;
 - learner shell / My Courses / Course View;
-- Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY Questions;
-- Playwright E2E harness.
+- Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY
+  Questions, with source-size AND row-count HTTP/application-layer limits
+  (Run 008 S1.D);
+- a coherent instructor authoring workflow: Course → Topics → author or
+  import Questions → publish Questions → publish Course → share join
+  link, with an explicit draft/published Question-count summary near the
+  Course publish action (Run 008 S3);
+- Playwright E2E harness (not executed against a real environment this
+  Run — see "Pilot Readiness" below).
 
 ## DailyPlan / Today
 
@@ -67,7 +80,15 @@ Key current truths:
 - Manual Practice does not resolve Today items;
 - Skip resolves the plan item without creating Attempt/mastery/misconception evidence;
 - New Material is deterministic fallback-only in V1;
-- only active LEARNER memberships auto-participate.
+- only active LEARNER memberships auto-participate;
+- as of Run 008 S4, a Course whose own `status` is `ARCHIVED` is also
+  excluded from automatic DailyPlan eligibility, even for a LEARNER
+  membership that is itself neither revoked nor archived
+  (`getOrCreateDailyPlanForToday`'s `filterToPublishedCourseIds`) — closes
+  a gap where an instructor archiving a Course did not stop that Course's
+  content from being pooled into a learner's Today. This is per-Course,
+  distinct from `CourseMembership.archivedAt` (a per-learner fact, ADR-015
+  §9, already excluded before this Run).
 
 ## Question Authoring / Publishing
 
@@ -85,6 +106,13 @@ Accepted V1 limitation:
 - concurrent publish to the same Question is not lock-serialized;
 - unique `(question_id, version_number)` prevents corruption;
 - one racing request may receive generic INTERNAL_ERROR.
+
+Run 008 S5 added an integration-level proof
+(`supabase/tests/postgres/run-008-authoring-integration-walkthrough.test.ts`)
+that manual authoring, publish, and re-publish continue to preserve
+immutable QuestionVersion history when exercised inside the SAME
+end-to-end journey as Structured Import and Course publish/learner join —
+not merely in isolation.
 
 ## Structured Import V1
 
@@ -113,7 +141,9 @@ of Run 006's Question/QuestionVersion model:
 - a minimal instructor UI (`/instructor/courses/:courseId/import`): format
   choice, paste/upload, Preview action with a valid/invalid row table, and a
   Confirm action (disabled while any row is invalid) that links back into
-  the existing, unmodified Course Question list/editor/publish flow.
+  the existing, unmodified Course Question list/editor/publish flow, with
+  the `SOURCE_TOO_LARGE`/`TOO_MANY_ROWS` 413 outcomes now shown with
+  distinct copy (Run 008 S3).
 
 Accepted V1 scope boundaries (unchanged from the Plan):
 - import creates new Questions only, never updates/merges an existing one;
@@ -146,8 +176,18 @@ practical exposure is a small number of `DRAFT_ONLY` Questions created
 into a Course/Topic that became archived moments earlier, not corruption
 or a learner-facing leak (draft-only content is never learner-eligible
 regardless). Acceptable for the single-editor Ruppin V1 pilot; not
-pessimistically locked. Tracked for future consideration in
-`docs/FOLLOW_UP_BACKLOG.md`.
+pessimistically locked. Tracked in `docs/FOLLOW_UP_BACKLOG.md` (FUB-014).
+
+## Repository Tooling (Run 008 S1.A)
+
+`npm run bundle:review` (`scripts/create-review-bundle.mjs`) produces a
+deterministic, safe repository snapshot under `scratch/review-bundle/
+<timestamp>/` for external review, built from `git ls-files` (tracked,
+non-deleted paths) rather than a raw directory copy, with a
+defense-in-depth unsafe-pattern filter (including tracked-symlink
+detection) as a second layer. Replaces manually zipping the working
+directory, which previously included local/sensitive artifacts a prior
+audit found.
 
 ## Database / Supabase
 
@@ -164,8 +204,76 @@ Committed/local-PGlite verified but not confirmed hosted at the last durable pro
 - `20260927000000_topics_v1.sql`
 - `20260928000000_question_authoring_v1.sql`
 
+Unchanged by Run 008 — no new migration was introduced this Run.
+
 Do not infer hosted application from local migration existence.
 Claude must not run `supabase link` or `supabase db push`.
+
+## Pilot Readiness (Run 008 S6)
+
+Assessed against the Ruppin pilot, not full production hardening (Run 012):
+
+- **Product self-sufficiency**: Course creation, Topic management, manual
+  Question authoring, Structured Import, explicit Question/Course publish,
+  and learner join are all reachable through the product UI with no
+  SQL/seed/developer intervention — confirmed by direct route/page
+  inspection (Run 008 S2) and by the real end-to-end
+  APPLICATION INTEGRATION proof (Run 008 S5, real Postgres/PGlite, real
+  application use cases, not mocks).
+- **Browser/hosted proof**: NOT PERFORMED this Run —
+  `MANUAL PILOT GATE`. `.env.local` in this environment points at a
+  remote (hosted) `DATABASE_URL`/Supabase project, not an isolated local
+  sandbox; starting the dev server or running the existing Playwright
+  suite (`npm run test:e2e`) against it would create real rows (users,
+  Courses) in what is almost certainly the shared pilot Supabase project
+  — autonomous hosted-database mutation is out of bounds
+  (`CLAUDE.md` §6). A human should either point a local/disposable
+  Postgres+Supabase project at this repo and run `npm run dev` +
+  `npm run test:e2e` themselves, or confirm the current `.env.local`
+  target is safe to write pilot-shaped test data into before doing so.
+- **Dependency/security audit**: `npm audit` run successfully (network
+  available) — 0 vulnerabilities across 529 dependencies (45 prod, 446
+  dev, 116 optional). Not re-run automatically in future Sessions merely
+  because time has passed.
+- **Hosted migration readiness**: `MANUAL PILOT GATE` — the three
+  migrations listed above under "Database / Supabase" remain
+  local/PGlite-verified but not confirmed applied to the hosted project.
+  Human checklist: apply `20260926000000_course_lifecycle_v1.sql`,
+  `20260927000000_topics_v1.sql`, `20260928000000_question_authoring_v1.sql`
+  to the hosted Supabase project (via the Supabase dashboard/CLI under
+  human control — Claude must not run `supabase db push`), then update
+  this section.
+- **Runtime troubleshooting posture**: `POST-PILOT BACKLOG` (FUB-008) —
+  no application APM exists, but every route handler already logs
+  unexpected errors server-side via `console.error` with route context
+  before returning a safe generic response (verified across all 10 routes
+  touched by Run 008 S1.E); Vercel captures this in function logs by
+  default. Judged sufficient for pilot scale; a dedicated APM/structured
+  logging pass is post-pilot work, not a narrow addition this Run found
+  clearly warranted.
+- **Backup/restore**: `MANUAL PILOT GATE` (FUB-009) — cannot be verified
+  from the repository; a human must check the hosted Supabase project's
+  actual backup/restore plan and settings before the pilot. No RPO/RTO
+  guarantee is claimed here.
+- **Postgres/Vercel connection strategy**: `MANUAL PILOT GATE` (FUB-010) —
+  `src/infrastructure/postgres/pg-pool.ts` is a functional, lazily
+  constructed singleton `pg.Pool` with no hardcoded SSL/pool-size
+  overrides (deliberately deferred to `DATABASE_URL`'s own query
+  parameters, see that file's doc comment). Before deploying to Vercel, a
+  human should specifically confirm `DATABASE_URL` uses Supabase's
+  connection **pooler** endpoint, not the direct connection — Vercel's
+  per-invocation serverless model can otherwise exhaust the hosted
+  project's direct-connection limit under concurrent traffic. Not
+  verifiable from this repository (would require reading `.env.local`'s
+  secret value, which Claude does not do) and not treated as a blocker
+  for current expected pilot load, since single-course pilot traffic is
+  low-concurrency.
+- **Abuse/platform hardening**: `POST-PILOT BACKLOG` (FUB-011) — no
+  evidence found of an actual Run 008 pilot blocker.
+
+None of the above is a `PILOT BLOCKER` in the sense of "demonstrably
+unsafe or nonfunctional" — every item above is either already resolved,
+or a human-verifiable/human-actionable gate, not a code defect.
 
 ## Verification Baseline
 
@@ -181,21 +289,33 @@ Run 006 final product verification recorded:
 These are historical evidence for the Run 006 code baseline, not a claim that later product changes have been tested.
 
 Run 007 (Structured Import V1) final per-Slice evidence — no full-suite
-re-run was performed at Run close (`.claude/rules/testing.md` §11: reuse
-fresh Slice evidence rather than automatically replaying broad suites when
-it already proves the required behavior):
+re-run was performed at Run close:
+- typecheck: clean; lint: clean;
+- unit (targeted, cumulative): 291 passed;
+- schema/PGlite (S6): 10/10 passed;
+- reviewers: DB, security, and general reviewers each returned NO
+  BLOCKING FINDINGS across S3-S6 after fixing every CORRECTIONS-REQUIRED
+  finding raised along the way;
+- browser/E2E: not performed.
+
+Run 008 (Authoring Integration + Pilot Readiness) final evidence:
 - typecheck: clean (full repo, re-verified after every Slice);
-- lint: clean (every changed file, every Slice);
-- unit (targeted, cumulative across S3-S5's final runs): 291 passed across
-  `src/app/api/courses`, `src/application/import`, `src/infrastructure/postgres`;
-- schema/PGlite (S6, real Postgres via `npm run test:schema`): 10/10 passed
-  across the new integrated walkthrough (8 scenarios) and the dedicated
-  `PostgresImportUnitOfWork` commit/rollback proof (2 scenarios);
-- reviewers: DB, security, and general reviewers each returned
-  NO BLOCKING FINDINGS across S3-S6 after fixing every CORRECTIONS-REQUIRED
-  finding raised along the way (see `docs/RUNS/2026-09-21-007.md` for detail);
-- browser/E2E: not performed this Run (no running dev/auth/DB environment
-  available in-session) — stated honestly, not claimed.
+- lint: clean (0 errors; one pre-existing, unrelated warning in
+  `.claude/telemetry/statusline.mjs`, not touched by this Run);
+- unit: full suite run repeatedly through the Run (cross-cutting changes
+  in S1/S4 justified full-suite reruns per `.claude/rules/testing.md`
+  §5) — final full run 1073/1073 passed, 120 files;
+- schema/PGlite (`npm run test:schema`, real Postgres): final full run
+  266/266 passed, 25 files — includes the new Run 008 S5 integrated
+  walkthrough and the S4 archived-Course regression tests;
+- reviewers: `unlock-security-reviewer` (mandatory, S1.E and S4),
+  `unlock-db-reviewer` (mandatory, S4), and `unlock-reviewer` (S1
+  non-security scope, S5) each returned NO BLOCKING FINDINGS, after
+  fixing every non-blocking finding raised along the way (see
+  `docs/RUNS/2026-09-22-008.md` for detail);
+- `npm audit`: 0 vulnerabilities, 529 dependencies;
+- browser/E2E: not performed — see "Pilot Readiness" above for why and
+  the exact manual gate.
 
 ## Development OS V1.2
 
@@ -215,16 +335,38 @@ The Development OS V1.2 Final Compression Patch is complete in this repository s
 
 ## Development OS — Active Observations
 
-Rolling state only — not a diary. An item leaves this list the moment it resolves (`DROP`/`ABSORB`/`REVERT`); see `docs/DEVOS_OBSERVABILITY.md` §8 for the promotion lifecycle. Evidence lives in `docs/RUNS/2026-09-21-007.md` and its own follow-up audits, not copied here.
+Rolling state only — not a diary. An item leaves this list the moment it resolves (`DROP`/`ABSORB`/`REVERT`); see `docs/DEVOS_OBSERVABILITY.md` §8 for the promotion lifecycle. Evidence lives in `docs/RUNS/2026-09-22-008.md` and its own follow-up audits, not copied here.
 
-Currently active `WATCH` items (none has cleared the cross-Run bar in `docs/DEVOS_OBSERVABILITY.md` §6 required before becoming a `CHANGE`):
-
-- **Adversarial acceptance criteria proven only at review, not before it.** Run 007 S4 (concurrent-membership-revocation re-check) and S6 (genuine mid-transaction rollback) each reached review with the correct behavior implemented but no test yet proving the specific named negative scenario the Plan called out. Re-check after Run 008 before considering any workflow change.
+- **`CHANGE CANDIDATE` (promoted this Run — crossed the cross-Run bar,
+  `docs/DEVOS_OBSERVABILITY.md` §6): named negative/isolation scenarios
+  proven only at review, not before it.** Observed in Run 007 (S4/S6, a
+  missing TOCTOU test and a missing genuine-rollback test, both only
+  caught by the general reviewer) AND again in Run 008 (S4: the security
+  reviewer found both of the first two archived-Course regression tests
+  had a ranked-progress candidate that always won, so the unseen/fallback
+  branch was never actually isolated/exercised, despite the code being
+  correct). Two separate Runs, same pattern: correct implementation
+  reaches review with a named negative/branch-isolation case technically
+  covered by an assertion that would not actually have caught the
+  specific failure mode. Proposed smallest change: `.claude/rules/testing.md`
+  gains one line — "when a Slice's acceptance criteria name a specific
+  negative case, race, rollback, or branch/fallback that must be
+  independently exercised, verify that the test setup cannot ALSO satisfy
+  the assertion through a different code path before invoking review."
+  Canonical owner: `.claude/rules/testing.md` (verification selection).
+  Expected effect: fewer review-round-trips for this specific failure
+  mode. Guardrail: watch for reviewer findings becoming vaguer/harder to
+  action if this is over-applied as a checklist rather than judgment.
+  Observation window: not yet experimented with — a human or a future Run
+  should decide whether to actually add the rule line, run one more Run
+  under it, and only then `ABSORB` or `REVERT`. Not edited this Run
+  (Guardrail: canonical-policy edits are a bigger, more consequential step
+  than recording the promotion).
 - **`src/domain/import/types.ts` bundles three concerns** (canonical row shape, row-content validation, Topic-name resolution) in one file. Not costly today — reconsider only if a fourth concern or new external fan-out appears.
-- **`src/domain/learning/answer.ts`**: Run 007 needed a full read of this dense, multi-function file to extract confidence about one reused function's contract. Reconsider only if this narrow-extraction-from-a-dense-file pattern recurs in a later Run.
-- **Test-fakes-as-template reads** (`in-memory-fakes.ts` style files read in full purely to copy an established fake-construction convention). Only becomes an action item if a third feature again requires a full read of an older fakes module for this reason.
+- **`src/domain/learning/answer.ts`**: Run 007 needed a full read of this dense, multi-function file to extract confidence about one reused function's contract. Not recurred in Run 008 — no full read of this file was needed. Candidate for `DROP` if it does not recur in one more Run.
+- **Test-fakes-as-template reads** (`in-memory-fakes.ts` style files read in full purely to copy an established fake-construction convention). Recurred in Run 008 (reading `application/course/__tests__/in-memory-fakes.ts` in full to extend it with `listStatuses`/`seedMembership`'s default-fill). Still not costly — the read was necessary to add a real new method correctly, not merely to copy convention. Remains `WATCH`.
 - **Telemetry has no native per-Slice attribution** — a per-Slice breakdown currently requires manual reconstruction from commit timestamps. Remains `WATCH` unless it materially limits a future analysis.
-- **Main-session `Edit`/`Write` tool-result echoes measured larger than file-read cost this Run** (Run 007's context-cost audit: ~147k vs. ~93k main-context tokens), concentrated on files receiving several sequential edits in one session. Genuinely new this Run — watch for recurrence in Run 008 before considering any edit-batching guidance; no change proposed yet.
+- **Main-session `Edit`/`Write` tool-result echoes measured larger than file-read cost in Run 007** (~147k vs. ~93k main-context tokens). Run 008 ran as a single ~54%-peak-context session with 100% average cache hit ratio and 0 compactions across the whole multi-Slice Run (`docs/RUNS/2026-09-22-008.md` telemetry section) — no evidence this Run that Edit/Write echo cost became a binding constraint. Candidate for `DROP` if a future Run also shows no material impact.
 
 ## Development OS Safety
 
@@ -240,43 +382,61 @@ Remote Git push and hosted database mutation remain manual/user-controlled actio
 ## Known Limitations / Gaps
 
 Product roadmap remains:
-- Run 007 — Structured Import (COMPLETE, local-only — see below)
-- Run 008 — Authoring Integration + Pilot Readiness
+- Run 008 — Authoring Integration + Pilot Readiness (IMPLEMENTATION
+  COMPLETE — PILOT MANUAL GATE PENDING, see below)
 - Run 009 — Learner Progress + Instructor Insights
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
 
-Run 007 — Structured Import V1 is complete per `docs/CHATGPT_PLAN.md`
-(6 Slices, S1-S6, all committed locally). No hosted/browser interactive
-verification of the new import UI has been performed. Run 008 requires a
-new Plan before starting.
+Run 008 status: **IMPLEMENTATION COMPLETE — PILOT MANUAL GATE PENDING**.
+All autonomous Slice work (S1-S5) is committed and reviewed with NO
+BLOCKING FINDINGS. S6's pilot-readiness assessment found no code-level
+`PILOT BLOCKER` — every remaining item is a human-actionable
+`MANUAL PILOT GATE` (browser/hosted E2E proof, hosted migration
+application, backup/restore verification, Postgres pooler-connection
+confirmation) or genuinely `POST-PILOT BACKLOG` work. The Roadmap's
+Milestone C exit condition ("an instructor can create and publish a
+course... entirely without developer/database intervention, and the full
+instructor-to-learner loop is pilot-ready") is supported by
+APPLICATION INTEGRATION evidence (real Postgres/PGlite, real application
+use cases) but NOT by BROWSER LOCAL or HOSTED evidence — that distinction
+is the one thing keeping this from being marked fully `COMPLETE`.
 
-Known deferred maintainability work lives in `docs/FOLLOW_UP_BACKLOG.md`.
+Known deferred maintainability work lives in `docs/FOLLOW_UP_BACKLOG.md`
+(FUB-005 RESOLVED this Run; FUB-006 through FUB-016 added this Run,
+capturing audit findings intentionally not acted on; FUB-001-004 remain
+from before this Run, unchanged).
 
 ## Current Manual Actions
 
-For Run 007:
-- push local HEAD (`0dd4c74`, 8 commits ahead of origin) to
+For Run 008:
+- push local HEAD (`b86d4e3`, 5 commits ahead of origin) to
   `origin/feature/project-foundation` when ready;
-- manually exercise the instructor Preview/Confirm import journey against a
-  real hosted/browser session when a real instructor account is available
-  (no browser-level verification was performed this Run);
-- decide, at some future point, whether the accepted V1 scope boundaries
-  (no Topic auto-creation, no re-import merge, no bulk publish) still hold
-  once real instructor usage patterns are observed.
+- resolve the pilot-readiness manual gates listed under "Pilot Readiness"
+  above (browser/hosted E2E, hosted migration application, backup/restore
+  verification, Postgres pooler-connection confirmation);
+- decide whether to experiment with the `CHANGE CANDIDATE` Development OS
+  observation above (named-negative-case test isolation) before it is
+  absorbed into `.claude/rules/testing.md`.
 
 For hosted Supabase:
 - no new migration was introduced this Run — the existing pending
-  migration-application action from prior Runs remains unchanged and
-  separate from Run 007's own scope.
+  migration-application action from prior Runs remains unchanged;
+- apply the three pending migrations (see "Database / Supabase" above)
+  when ready to move toward the pilot.
 
-For Run 008:
-- requires a new Plan; do not begin without one.
+For Run 009:
+- requires a new Plan; do not begin without one. Run 008's own remaining
+  manual gates do not block starting Run 009's planning, but the Ruppin
+  pilot itself cannot start until they are resolved.
 
 ## Blockers
 
-No known product blocker is introduced by the Development OS compression work.
+No known product blocker is introduced by Run 008. No code-level
+`PILOT BLOCKER` was found during S6's pilot-readiness assessment — every
+remaining pilot-readiness item is a human-actionable manual gate (see
+"Pilot Readiness" above).
 
 Current execution source:
 - `docs/CHATGPT_PLAN.md`
