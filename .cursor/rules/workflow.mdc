@@ -1,67 +1,187 @@
 ---
-description: UNLOCK day-to-day development workflow
+description: UNLOCK Cursor workflow adapter
 alwaysApply: true
 ---
+# UNLOCK — Cursor Workflow
 
-# UNLOCK Workflow
+This rule is a thin Cursor-specific adapter.
 
-Use this rule as a concise execution checklist.
+Canonical repository-wide instructions live in:
 
-Detailed product and engineering behavior belongs in `docs/`, not here.
+`AGENTS.md`
 
-## Before Coding
+Do not recreate a separate Development OS inside Cursor rules.
 
-1. Read `docs/CONTEXT_MAP.md`.
-2. Read only the documents relevant to the task.
-3. Check `docs/OPEN_QUESTIONS.md`.
-4. If the task changes meaningful feature behavior, create or update the relevant contract under `docs/FEATURES/`.
-5. Do not invent unresolved product, learning, data, or security behavior.
+---
 
-## Scope
+## 1. Start From Repository Reality
 
-- Implement the smallest approved change that solves the task.
-- Do not add deferred or architecture-ready features unless explicitly required.
-- Do not introduce new infrastructure, dependencies, services, agents, queues, vector databases, or background systems without demonstrated need.
-- Preserve the modular-monolith architecture.
+Before substantial work:
 
-## Core Invariants
+* read `AGENTS.md`;
+* inspect the relevant code;
+* inspect current Git state when repository state matters;
+* load only the additional documents required by the task.
 
-- `docs/MASTER_SPEC.md` provides high-level product direction and system context, but it does not override committed code or accepted ADRs.
-- Today is the primary recurring learning experience.
-- Today planning selects learning items; Quiz executes the prepared plan.
-- Attempts are historical evidence and must not be rewritten as current progress changes.
-- AI is not the Learning Engine.
-- A Course must work without an Institution.
-- Hebrew / RTL / `he-IL` are defaults.
-- Prefer cost-efficient deterministic solutions before external providers or AI.
+Do not reconstruct current truth from historical Run Reports.
 
-## While Coding
+---
 
-- Keep learning/domain logic outside React presentation code.
-- Use explicit TypeScript contracts.
-- Validate important runtime boundaries.
-- Preserve data ownership and authorization boundaries.
-- Reuse the messages layer for learner-facing copy.
-- Add tests for meaningful rules and regressions.
-- Keep changes focused; do not perform unrelated refactors.
+## 2. Use the Correct Owner
 
-## Before Finishing
+Use canonical sources rather than duplicating their policy here.
 
-Run the relevant checks:
+Examples:
+
+* current execution → `docs/CHATGPT_PLAN.md`
+* current durable state → `docs/DEV_STATUS.md`
+* product boundary → `docs/UNLOCK_V1_SCOPE.md`
+* product sequencing → `docs/UNLOCK_ROADMAP.md`
+* durable decisions → `docs/DECISIONS/**`
+* unresolved decisions → `docs/OPEN_QUESTIONS.md`
+* terminology → `docs/DOMAIN_GLOSSARY.md`
+* architecture → `docs/ARCHITECTURE.md`
+* testing philosophy → `docs/TESTING.md`
+* deferred technical work → `docs/FOLLOW_UP_BACKLOG.md`
+
+Use `docs/CONTEXT_MAP.md` only when you need help locating the right source/code/tests.
+
+---
+
+## 3. Scope Discipline
+
+Implement the smallest approved change that solves the task.
+
+Do not:
+
+* add deferred or architecture-ready functionality without explicit scope;
+* redesign adjacent systems for convenience;
+* introduce speculative infrastructure;
+* resolve open product/security/data decisions silently;
+* perform unrelated refactors.
+
+If a real unresolved decision blocks correct implementation, surface it instead of guessing.
+
+---
+
+## 4. Architecture Guardrail
+
+Preserve the current layered modular monolith:
 
 ```text
-npm run lint
-npm run typecheck
-npm test
-npm run build   # when runtime/build behavior may be affected
+app
+→ application
+→ domain
+
+infrastructure
+→ persistence/provider implementation
 ```
 
-Then:
+Keep domain/learning policy out of presentation code.
 
-- review `git diff`;
-- review `git status`;
-- confirm no accidental files were changed;
-- update docs/ADRs when behavior or durable decisions changed;
-- report checks actually run, known limitations, and unresolved questions.
+Keep persistence details out of domain logic.
 
-Do not commit, push, merge, rebase, reset, or delete branches unless explicitly instructed.
+Use the relevant scoped Cursor rule when the task materially touches that area.
+
+---
+
+## 5. Product Guardrails
+
+Preserve accepted current behavior, including where relevant:
+
+* Attempts are immutable historical evidence;
+* QuestionVersions are immutable;
+* AI is not the deterministic Learning Engine;
+* `DailyPlan` / `DailyPlanItem` are the primary current Today model;
+* a Course works without requiring an Institution;
+* Hebrew / RTL / `he-IL` are defaults.
+
+Do not use this rule as the detailed source for those behaviors.
+
+Load the relevant canonical source when implementation depends on them.
+
+---
+
+## 6. Feature Contracts
+
+Feature Contracts under `docs/FEATURES/` are optional.
+
+Use one only when a complex feature genuinely benefits from a durable feature-specific behavior contract.
+
+Do not create or update a Feature Contract automatically for every meaningful code change.
+
+---
+
+## 7. Verification
+
+Select verification based on the actual changed risk.
+
+Do not use a fixed universal checklist such as:
+
+```text
+lint
+typecheck
+unit tests
+build
+```
+
+for every change.
+
+Use the narrowest evidence that proves the behavior, and broaden only when the risk requires it.
+
+Conceptual testing guidance lives in:
+
+`docs/TESTING.md`
+
+If Claude Code owns the active execution, its operational verification policy lives in:
+
+`.claude/rules/testing.md`
+
+Report only checks actually performed.
+
+---
+
+## 8. Documentation
+
+Update documentation only when durable truth changed.
+
+Use the owner of the changed fact.
+
+Examples:
+
+* durable decision → ADR
+* unresolved decision → `OPEN_QUESTIONS`
+* current state → `DEV_STATUS`
+* current execution → `CHATGPT_PLAN`
+* deferred technical work → `FOLLOW_UP_BACKLOG`
+
+Do not cascade documentation edits ceremonially.
+
+---
+
+## 9. Git Safety
+
+Do not perform destructive Git operations or remote mutation without explicit instruction.
+
+Do not:
+
+* reset/clean away unknown work;
+* force-push;
+* rewrite shared history;
+* push automatically;
+* deploy automatically;
+* apply hosted Supabase migrations automatically.
+
+Inspect the intended diff before handing work back.
+
+---
+
+## 10. Core Principle
+
+> Use Cursor as an implementation tool over canonical repository truth.
+
+> Keep context narrow.
+
+> Preserve scope and accepted behavior.
+
+> Do not let Cursor rules become a second policy system.

@@ -1,831 +1,852 @@
 # UNLOCK — Context Map
 
-Status: Active navigation guide
+Status: ACTIVE NAVIGATION GUIDE
 
-Purpose: help developers and coding agents locate the minimum trustworthy context
-needed for a specific task.
+Load level: WARM
+
+Purpose: help developers and coding agents locate the **minimum trustworthy context** required for a specific task.
 
 This file is a GPS.
 
-It is NOT:
-- a source of product truth
-- a development plan
-- a status report
-- an ADR
-- a historical record
-- a replacement for reading the relevant code
+It is not:
+
+* a product specification;
+* a development plan;
+* a status report;
+* an ADR;
+* a testing policy;
+* a telemetry policy;
+* a historical record;
+* a replacement for inspecting actual code.
 
 Use it to locate context, then leave it.
 
 ---
 
-## 1. Core Development Documents
+# 1. Default Startup
 
-### How Claude works
+For normal current development work, start with:
 
-`CLAUDE.md`
+| Need                      | Source                          |
+| ------------------------- | ------------------------------- |
+| Repository-wide baseline  | `AGENTS.md`                     |
+| Claude operating rules    | `CLAUDE.md`                     |
+| What to execute now       | `docs/CHATGPT_PLAN.md`          |
+| What is true now          | `docs/DEV_STATUS.md`            |
+| Actual repository reality | Git + code + tests + migrations |
 
-Contains:
-- development workflow
-- context policy
-- scope discipline
-- testing/review expectations
-- Git/remote safety
-- Run lifecycle
+Load this Context Map only when you need help locating additional context.
 
-Read automatically at the start of a substantial Claude run.
-
----
-
-### What Claude should execute now
-
-`docs/CHATGPT_PLAN.md`
-
-Contains:
-- current Run ID
-- BASE_HEAD
-- current run goal
-- ordered slices
-- acceptance criteria
-- required tests/reviewers
-- explicit stop point
-
-This is the execution queue.
-
-Do not infer current work from old planning documents or historical Runs.
+Do not reconstruct current state from historical Runs.
 
 ---
 
-### What is true now
+# 2. Authority Quick Map
 
-`docs/DEV_STATUS.md`
-
-Contains the concise current-state snapshot:
-
-- implemented capabilities
-- current database/migration state
-- verification state
-- current test baseline
-- known gaps
-- blockers
-- required manual actions
-
-Use this instead of reconstructing current state from historical notes.
+| Question                                   | Owner                                     |
+| ------------------------------------------ | ----------------------------------------- |
+| What is UNLOCK?                            | `docs/MASTER_SPEC.md` / `docs/PRODUCT.md` |
+| What belongs in V1?                        | `docs/UNLOCK_V1_SCOPE.md`                 |
+| What is the product sequence?              | `docs/UNLOCK_ROADMAP.md`                  |
+| What should we do now?                     | `docs/CHATGPT_PLAN.md`                    |
+| What is true now?                          | `docs/DEV_STATUS.md`                      |
+| What has been durably decided?             | `docs/DECISIONS/**`                       |
+| What is unresolved?                        | `docs/OPEN_QUESTIONS.md`                  |
+| What terminology should we use?            | `docs/DOMAIN_GLOSSARY.md`                 |
+| How is the system structured?              | `docs/ARCHITECTURE.md`                    |
+| What does good testing mean?               | `docs/TESTING.md`                         |
+| What verification should run now?          | `.claude/rules/testing.md`                |
+| What quality bar must be met?              | `docs/DEFINITION_OF_DONE.md`              |
+| How do we measure Run/context efficiency?  | `docs/RUN_TELEMETRY.md`                   |
+| What useful work is deliberately deferred? | `docs/FOLLOW_UP_BACKLOG.md`               |
+| What happened in past Runs?                | `docs/RUNS/**`                            |
+| What temporary resume state exists?        | `scratch/development_checkpoint.md`       |
 
 ---
 
-### What UNLOCK is intended to become
-
-`docs/MASTER_SPEC.md`
+# 3. Architecture / Module Boundaries
 
 Use for:
-- product vision
-- North Star
-- overall product/system intent
-- long-term boundaries
 
-Read only when the current slice needs product-level context.
+* dependency direction;
+* placement of new code;
+* cross-layer behavior;
+* composition;
+* runtime boundaries.
+
+### Decision / design
+
+* `docs/ARCHITECTURE.md`
+* relevant ADR under `docs/DECISIONS/**`
+
+### Rule
+
+* `CLAUDE.md`
+* relevant scoped `.claude/rules/**`
+
+### Implementation
+
+```text
+src/app/              presentation / Next.js runtime / API
+src/application/      use cases / ports / orchestration
+src/domain/           domain + learning rules
+src/infrastructure/   PostgreSQL / Supabase / provider adapters
+```
+
+### Tests
+
+Inspect tests nearest the affected module first.
+
+Do not use this map as a substitute for actual dependency inspection.
 
 ---
 
-### Strategic sequencing and V1 boundary
+# 4. Learning Engine
 
-`docs/UNLOCK_ROADMAP.md`
+Use for:
 
-Contains:
-- strategic Product Run sequencing toward V1 (current sequence: Run 004–009)
-- strategic milestones
+* Attempts;
+* evidence;
+* mastery;
+* misconceptions;
+* spaced retrieval;
+* memory scheduling;
+* learner-state updates;
+* replay/rebuild;
+* Next Best Action;
+* ranking.
 
-`docs/UNLOCK_V1_SCOPE.md`
+### Decision sources
 
-Contains:
-- the V1 product boundary
-- V1 Definition of Done
+* `docs/LEARNING_ENGINE.md`
+* `docs/DOMAIN_GLOSSARY.md`
+* relevant ADRs, especially:
 
-Neither is an execution plan or a substitute for `docs/CHATGPT_PLAN.md`.
+  * ADR-004 — AI is not the Learning Engine
+  * ADR-005 — Attempts are immutable
+  * ADR-008 — FSRS memory scheduler
+  * ADR-009 — Question versioning
+  * ADR-012 — Attempt replay/rebuild
 
-`docs/ROADMAP.md` (no `UNLOCK_` prefix) is an older historical/phase-based sequencing
-reference. It is NOT the active product roadmap — use `docs/UNLOCK_ROADMAP.md` instead.
+### Rule
+
+`.claude/rules/learning-engine.md`
+
+### Implementation
+
+* `src/domain/learning/`
+* `src/application/learning/`
+
+### Tests
+
+* nearby `__tests__/`
+* relevant PostgreSQL tests under `supabase/tests/postgres/`
+* `docs/GOLDEN_SCENARIOS.md` when scenario evidence mapping is useful
+
+Do not load all Learning Engine design history by default.
 
 ---
 
-### What is still undecided
+# 5. Today / DailyPlan
+
+Use for:
+
+* Today generation;
+* DailyPlan persistence;
+* DailyPlanItems;
+* same-day reuse;
+* plan freezing;
+* completion;
+* Global Today;
+* Course context;
+* DailyPlan item answer/Skip.
+
+### Decision sources
+
+* ADR-016 — Global DailyPlan / Today semantics
+* ADR-017 — New Material V1
+* `docs/PRODUCT.md`
+* `docs/DOMAIN_GLOSSARY.md`
+
+### Rules
+
+* `.claude/rules/learning-engine.md`
+* `.claude/rules/postgres.md` when persistence is affected
+* `.claude/rules/api.md` when routes are affected
+
+### Implementation
+
+* `src/application/dailyPlan/`
+* `src/infrastructure/postgres/daily-plan-repository.ts`
+* relevant DailyPlan Unit-of-Work code
+* `src/app/api/daily-plan/`
+* `src/app/(learner)/today/`
+
+### Tests
+
+* DailyPlan application tests
+* DailyPlan repository/schema tests
+* DailyPlan API/route tests
+* Playwright Today flow when browser integration is the risk
+
+Legacy `TodaySession` paths are compatibility/history unless the task explicitly targets them.
+
+---
+
+# 6. New Material / Fresh Learner
+
+Use for:
+
+* unseen Question discovery;
+* fresh learner fallback;
+* ordinary candidates vs New Material;
+* no-evidence planning behavior.
+
+### Decision source
+
+ADR-017
+
+### Supporting context
+
+`docs/NEW_MATERIAL_EXPOSURE_MODEL.md`
+
+Supporting analysis does not override ADR-017.
+
+### Implementation
+
+* `src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`
+* `src/infrastructure/postgres/unseen-question-repository.ts`
+
+### Tests
+
+Search DailyPlan generation tests for New Material scenarios.
+
+---
+
+# 7. Courses / Membership / Join
+
+Use for:
+
+* OWNER / INSTRUCTOR / LEARNER;
+* OPEN / AUTHORIZED_ONLY;
+* CourseMembership;
+* joining;
+* management authorization;
+* revoked/archived membership;
+* automatic learner eligibility.
+
+### Decision source
+
+ADR-015
+
+### Unresolved behavior
 
 `docs/OPEN_QUESTIONS.md`
 
-Use when implementation reaches an unresolved product or architecture question.
+### Rules
 
-Do not invent answers to unresolved questions.
+* `.claude/rules/auth.md`
+* `.claude/rules/api.md` when route behavior changes
 
----
+### Implementation
 
-### Accepted durable decisions
+* `src/domain/course/`
+* `src/application/course/`
+* Course and CourseMembership repositories under `src/infrastructure/postgres/`
+* `src/app/join/[courseId]/`
+* `src/app/(learner)/courses/`
+* `src/app/api/courses/`
 
-`docs/DECISIONS/`
+### Tests
 
-Read the specific relevant ADR only.
+Use nearest course/application/repository/route tests.
 
-Do not load every ADR by default.
-
----
-
-### Historical development runs
-
-`docs/RUNS/`
-
-RESTRICTED CONTEXT.
-
-Historical Run Reports are archive material, not normal working memory.
-
-Do not read or search prior Run Reports unless:
-- the current `CHATGPT_PLAN.md` explicitly names a specific Run, or
-- the user explicitly authorizes it.
+Do not invent unresolved revoke/rejoin or ownership-transfer behavior.
 
 ---
 
-## 2. Product / Domain Context
+# 8. Instructor Authoring
 
-For broad product behavior:
+Use for:
 
-- `docs/MASTER_SPEC.md`
-- `docs/PRODUCT.md`
-- `docs/DOMAIN_GLOSSARY.md`
+* Course lifecycle;
+* Topics;
+* Question drafts;
+* Question editing;
+* QuestionVersion publishing;
+* instructor authorization.
 
-For unresolved behavior:
+### Decision / scope
 
-- `docs/OPEN_QUESTIONS.md`
+* `docs/UNLOCK_V1_SCOPE.md`
+* relevant Course/Question ADRs
+* current implementation reality
 
-For accepted behavior:
+### Rules
 
-- relevant ADR under `docs/DECISIONS/`
+* `.claude/rules/auth.md`
+* `.claude/rules/api.md`
+* `.claude/rules/postgres.md` when persistence changes
 
-For feature-specific supporting material:
+### Implementation
 
-- `docs/FEATURES/`
+* `src/application/course/`
+* `src/application/topic/`
+* `src/application/question/`
+* corresponding `src/domain/**`
+* corresponding PostgreSQL repositories
+* instructor routes/UI under `src/app/`
 
-Prefer the narrowest relevant source.
+### Tests
 
----
+Use nearest application/repository/API tests.
 
-## 3. Architecture
-
-For module boundaries, dependency direction, runtime structure, or composition:
-
-- `docs/ARCHITECTURE.md`
-- relevant ADR under `docs/DECISIONS/`
-- relevant scoped rule under `.claude/rules/`
-
-Primary source-code layers:
-
-- `src/domain/`
-  - pure domain / learning logic
-
-- `src/application/`
-  - use cases, ports, orchestration, transactions
-
-- `src/infrastructure/`
-  - PostgreSQL, Supabase, schedulers, external adapters
-
-- `src/app/`
-  - Next.js UI / runtime / API routes
-
-Dependency direction:
-
-domain
-→ application
-→ infrastructure
-→ runtime/API
-
-Do not use this map as a substitute for inspecting the actual code.
+Structured Import is separate future product scope.
 
 ---
 
-## 4. Learning Engine
+# 9. Answer Submission / Attempts
 
-Use this section for work involving:
+Use for:
 
-- evidence
-- mastery
-- misconception
-- memory scheduling
-- retrieval qualification
-- replay / rebuild
-- Next Best Action
-- ranking
-- learning-state updates
+* correctness;
+* Attempt persistence;
+* idempotency;
+* learning-state mutation;
+* replay/rebuild;
+* planned-item resolution.
 
-Primary docs:
+### Decision sources
 
-- `docs/LEARNING_ENGINE.md`
-- `docs/DOMAIN_GLOSSARY.md`
+* ADR-005
+* ADR-009
+* ADR-010
+* ADR-012
+* ADR-014
 
-Key ADRs:
+### Rules
 
-- `docs/DECISIONS/004-ai-is-not-the-learning-engine.md`
-- `docs/DECISIONS/005-attempts-are-immutable.md`
-- `docs/DECISIONS/008-fsrs-memory-scheduler.md`
-- `docs/DECISIONS/009-question-versioning.md`
-- `docs/DECISIONS/012-attempt-replayability-and-rebuild-semantics.md`
+* `.claude/rules/learning-engine.md`
+* `.claude/rules/postgres.md`
+* `.claude/rules/api.md` for HTTP boundary
 
-Claude rule:
+### Implementation
 
-- `.claude/rules/learning-engine.md`
+* `src/application/learning/submit-answer.ts`
+* `src/application/dailyPlan/submit-daily-plan-item-answer.ts`
+* relevant PostgreSQL repositories/UoW
+* `src/app/api/daily-plan/items/[itemId]/answer/`
 
-Primary code area:
+### Tests
 
-- `src/domain/learning/`
-- `src/application/learning/`
-
-Relevant tests live near those modules and under:
-
-- `supabase/tests/postgres/`
-
-Read only the ADRs relevant to the exact behavior being changed.
+* application answer-submission tests
+* PostgreSQL answer-submission tests
+* route/API tests
 
 ---
 
-## 5. DailyPlan / Today
+# 10. Skip
 
-Use this section for:
+Use for DailyPlan Skip behavior.
 
-- DailyPlan generation
-- DailyPlan persistence
-- Today semantics
-- item selection
-- plan freezing
-- Skip
-- answer resolution
-- learner Today UI
-- course/global Today behavior
+### Decision source
 
-Primary accepted decision:
+ADR-016
 
-- `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
+### Implementation
 
-Current state:
+* `src/application/dailyPlan/skip-daily-plan-item.ts`
+* DailyPlan repository resolution methods
+* `src/app/api/daily-plan/items/[itemId]/skip/`
 
-- `docs/DEV_STATUS.md`
+### Tests
 
-Primary application code:
+* application Skip tests
+* route Skip tests
+* `supabase/tests/postgres/skip-daily-plan-item.test.ts`
 
-- `src/application/dailyPlan/`
-
-Primary persistence/runtime areas:
-
-- `src/infrastructure/postgres/daily-plan-repository.ts`
-- `src/infrastructure/postgres/postgres-daily-plan-unit-of-work.ts`
-
-Primary UI/API areas:
-
-- `src/app/(learner)/today/` (route group; URL remains `/today`)
-- `src/app/api/daily-plan/`
-
-Supporting design docs exist for specialized Today questions, including:
-
-- `docs/GLOBAL_TODAY_APPLICATION_FLOW.md`
-- `docs/GLOBAL_TODAY_PERSISTENCE_PLAN.md`
-- `docs/GLOBAL_TODAY_PRIORITY_MODEL.md`
-- `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`
-- `docs/TODAY_ADAPTATION_MODEL.md`
-- `docs/TODAY_TIMEZONE_EDGE_CASES.md`
-
-Do not read these all by default.
-
-Open only the document needed for the current problem.
+Skip is resolution, not an incorrect Attempt.
 
 ---
 
-## 6. Starter / New Material
+# 11. Question / QuestionVersion
 
-Primary accepted decision:
+Use for:
 
-- `docs/DECISIONS/017-starter-new-material-v1.md`
+* authoring;
+* immutable versioning;
+* answer options;
+* learner-safe reads;
+* grading content.
 
-Primary application path:
+### Decision sources
 
-- `src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`
+* ADR-009
+* ADR-014
+* `docs/DOMAIN_GLOSSARY.md`
 
-Primary Postgres discovery path:
+### Implementation
 
-- `src/infrastructure/postgres/unseen-question-repository.ts`
+* `src/domain/question/`
+* `src/application/question/`
+* Question repositories
+* learner question-content repository
+* grading/correctness path
 
-Relevant supporting analysis:
+### Key boundary
 
-- `docs/NEW_MATERIAL_EXPOSURE_MODEL.md`
+Learner-facing read models must not expose grading-only information before submission.
 
-The supporting analysis is not authoritative over ADR-017.
-
-Use ADR-017 for accepted V1 behavior.
-
----
-
-## 7. Courses / Membership / Join
-
-Use this section for:
-
-- CourseMembership
-- OWNER / INSTRUCTOR / LEARNER roles
-- OPEN courses
-- AUTHORIZED_ONLY courses
-- learner join
-- archive/revoke behavior
-- management authorization
-- automatic learning eligibility
-
-Primary accepted decision:
-
-- `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
-
-Unresolved behavior:
-
-- `docs/OPEN_QUESTIONS.md`
-
-Primary application area:
-
-- `src/application/course/`
-
-Primary Postgres areas:
-
-- course repository
-- course-membership repository under `src/infrastructure/postgres/`
-
-Learner onboarding UI:
-
-- `src/app/join/[courseId]/`
-
-Learner course-list/course-context UI (Run 004):
-
-- `src/app/(learner)/courses/` — My Courses (`/courses`) and Course View
-  (`/courses/[courseId]`)
-
-Course APIs:
-
-- `src/app/api/courses/` — includes `mine/` (My Courses) and
-  `[courseId]/context/` (authenticated, membership-gated Course View; not
-  the same route as the public unauthenticated `[courseId]/` join-page
-  lookup)
-
-Relevant Claude rule:
-
-- `.claude/rules/auth.md`
-
-Do not invent revoke/rejoin or ownership-transfer semantics if they remain unresolved.
+Historical Attempts remain linked to the exact QuestionVersion shown.
 
 ---
 
-## 8. Authentication / Authorization / Redirects
+# 12. User Timezone / Local Day
 
-Use this section for:
+Use for:
 
-- Supabase Auth
-- login/session behavior
-- trusted user identity
-- authenticated APIs
-- authorization
-- safe redirects
-- auth-before-database ordering
+* persisted timezone;
+* learner-local Today date;
+* midnight boundaries;
+* timezone setup.
 
-Primary docs:
+### Decision / design
 
-- `docs/API_V1_DRAFT.md`
-- relevant ADR
-- `docs/DEV_STATUS.md` for current verification state
+* accepted DailyPlan semantics
+* `docs/TODAY_TIMEZONE_EDGE_CASES.md` when edge-case detail is needed
 
-Claude rules:
+### Implementation
 
-- `.claude/rules/auth.md`
-- `.claude/rules/api.md`
+* `src/domain/user/timezone.ts`
+* `src/domain/user/local-date.ts`
+* `src/application/user/`
+* `src/app/api/user/timezone/`
+* PostgreSQL user/date mapping helpers
 
-Primary infrastructure:
+### Tests
 
-- `src/infrastructure/supabase/`
+Use timezone/local-date domain tests and relevant DailyPlan application tests.
 
-Login UI:
-
-- `src/app/login/`
-
-Safe redirect helper:
-
-- `src/lib/safe-redirect.ts`
-
-Authenticated API routes:
-
-- `src/app/api/`
-
-For route changes, inspect the nearest existing auth-before-DB regression test
-before inventing a new pattern.
+Do not assume UTC date is the learner's Today date.
 
 ---
 
-## 9. Answer Submission / Attempts
+# 13. Authentication / Trusted Identity
 
-Use this section for:
+Use for:
 
-- answer submission
-- correctness
-- Attempt persistence
-- idempotency
-- learning-state mutation
-- replay/rebuild
-- DailyPlan item completion
+* Supabase Auth;
+* server-side identity;
+* login/session behavior;
+* auth-before-DB ordering;
+* secrets;
+* authentication redirects.
 
-Key ADRs:
+### Rule
 
-- `docs/DECISIONS/005-attempts-are-immutable.md`
-- `docs/DECISIONS/009-question-versioning.md`
-- `docs/DECISIONS/010-answer-submission-transaction-model.md`
-- `docs/DECISIONS/012-attempt-replayability-and-rebuild-semantics.md`
-- `docs/DECISIONS/014-question-answer-model-v1.md`
+`.claude/rules/auth.md`
 
-Primary application path:
+### Supporting docs
 
-- `src/application/learning/submit-answer.ts`
+* relevant ADR
+* `docs/API_V1_DRAFT.md` where API contract detail matters
 
-DailyPlan orchestration:
+### Implementation
 
-- `src/application/dailyPlan/submit-daily-plan-item-answer.ts`
+* `src/infrastructure/supabase/`
+* `src/app/login/`
+* authenticated API routes
+* `src/lib/safe-redirect.ts`
 
-Primary API:
+### Tests
 
-- `src/app/api/daily-plan/items/[itemId]/answer/`
+Use nearest auth/route tests.
 
-Primary Postgres integration test:
-
-- `supabase/tests/postgres/submit-answer.test.ts`
-
-Database reference:
-
-- `docs/DATABASE.md`
+Do not use client-supplied `userId` as authority.
 
 ---
 
-## 10. Skip
+# 14. API / Route Work
 
-Use this section for DailyPlan Skip behavior.
+Use for:
 
-Primary application path:
+* request validation;
+* route composition;
+* DTOs;
+* error mapping;
+* trusted identity propagation;
+* Node runtime.
 
-- `src/application/dailyPlan/skip-daily-plan-item.ts`
+### Rule
 
-Primary API:
+`.claude/rules/api.md`
 
-- `src/app/api/daily-plan/items/[itemId]/skip/`
+### Implementation
 
-Primary persistence behavior:
+`src/app/api/`
 
-- DailyPlan repository resolution methods under `src/infrastructure/postgres/`
+### Tests
 
-Relevant product semantics:
+Use nearest route/handler tests.
 
-- `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
+For security-sensitive routes, inspect auth/authorization ordering explicitly.
 
-Relevant tests:
-
-- application tests near `skip-daily-plan-item.ts`
-- route tests near the API
-- `supabase/tests/postgres/skip-daily-plan-item.test.ts`
-
----
-
-## 11. Learner-Facing Question Content
-
-Use this section for safe question reads shown to learners.
-
-Application port:
-
-- learner question-content interfaces under `src/application/learning/`
-
-Postgres repository:
-
-- `src/infrastructure/postgres/learner-question-content-repository.ts`
-
-Mapper:
-
-- learner question-content mapper under `src/infrastructure/postgres/`
-
-DailyPlan DTO / Today response:
-
-- DailyPlan DTO code under `src/application/dailyPlan/`
-- `src/app/api/daily-plan/today/`
-
-Important boundary:
-
-learner-facing reads must not expose grading-only fields.
-
-For correctness/grading, use the dedicated grading path instead of expanding the
-learner-facing projection.
+Do not implement domain policy inside route files.
 
 ---
 
-## 12. User Timezone / Local Day
+# 15. Database / PostgreSQL / Migrations
 
-Use this section for:
+Use for:
 
-- persisted timezone
-- learner-local date
-- Today day boundaries
-- timezone setup
+* migrations;
+* SQL;
+* repositories;
+* constraints;
+* Unit of Work;
+* transactions;
+* pooling;
+* PostgreSQL semantics;
+* concurrency assumptions.
 
-Primary domain code:
+### Decision / design
 
-- `src/domain/user/timezone.ts`
-- `src/domain/user/local-date.ts`
+* `docs/DATABASE.md`
+* `docs/PERSISTENCE_SCHEMA_V1.md`
+* ADR-013 and relevant schema ADRs
 
-Application code:
+### Rule
 
-- `src/application/user/`
+`.claude/rules/postgres.md`
 
-API:
+### Implementation
 
-- `src/app/api/user/timezone/`
+* `supabase/migrations/`
+* `src/infrastructure/postgres/`
 
-Supporting design doc:
+### Tests
 
-- `docs/TODAY_TIMEZONE_EDGE_CASES.md`
+* `supabase/tests/postgres/`
+* schema integration suite
 
-Database/date parsing helpers:
+### Current remote state
 
-- `src/infrastructure/postgres/row-validation.ts`
+Use `docs/DEV_STATUS.md`.
 
-Do not assume PGlite DATE behavior perfectly matches real `node-postgres`.
-
----
-
-## 13. Database / PostgreSQL / Migrations
-
-Use this section for:
-
-- schema
-- migrations
-- SQL
-- repositories
-- constraints
-- transactions
-- UnitOfWork
-- PostgreSQL runtime
-- concurrency assumptions
-
-Primary docs:
-
-- `docs/DATABASE.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DECISIONS/013-supabase-postgresql-as-v1-persistence-provider.md`
-
-Migrations:
-
-- `supabase/migrations/`
-
-Postgres infrastructure:
-
-- `src/infrastructure/postgres/`
-
-Integration tests:
-
-- `supabase/tests/postgres/`
-
-Claude rule:
-
-- `.claude/rules/postgres.md`
-
-Testing rule:
-
-- `.claude/rules/testing.md`
-
-Check `docs/DEV_STATUS.md` for which migrations are:
-- applied remotely
-- committed but still local-only
+Do not infer hosted migration state from committed files alone.
 
 ---
 
-## 14. Testing / Verification
+# 16. Testing / Verification
 
-Primary testing docs:
+Use for:
 
-- `docs/TESTING.md`
-- `docs/DEFINITION_OF_DONE.md`
+* deciding what tests are meaningful;
+* selecting current verification;
+* determining stale vs fresh evidence;
+* final relevant verification.
 
-Claude testing rule:
+### Philosophy
 
-- `.claude/rules/testing.md`
+`docs/TESTING.md`
 
-Workflow skills:
+### Operational rule
 
-- `.claude/skills/implement-slice/`
-- `.claude/skills/checkpoint/`
-- `.claude/skills/review-commit/`
+`.claude/rules/testing.md`
 
-Reviewer agents:
+### Workflow
 
-- `.claude/agents/unlock-reviewer.md`
-- `.claude/agents/unlock-db-reviewer.md`
-- `.claude/agents/unlock-security-reviewer.md`
+* `/implement-slice`
+* `/review-commit`
+* `/checkpoint`
 
-Use the reviewer that matches actual risk.
+### Golden scenario evidence
 
-Do not invoke all reviewers automatically.
+`docs/GOLDEN_SCENARIOS.md`
 
----
-
-## 15. UI / Hebrew / RTL
-
-Use this section for:
-
-- learner-facing UI
-- copy
-- localization
-- RTL behavior
-
-Product context:
-
-- `docs/PRODUCT.md`
-
-Definition of Done:
-
-- `docs/DEFINITION_OF_DONE.md`
-
-Messages:
-
-- `src/messages/`
-
-Locale helpers:
-
-- `src/lib/locale.ts`
-
-Cursor rule:
-
-- `.cursor/rules/rtl-i18n.mdc`
-
-Primary defaults:
-
-- Hebrew
-- RTL
-- `he-IL`
-
-Do not move domain or learning policy into UI components.
+Do not use this Context Map as a test matrix.
 
 ---
 
-## 16. AI Features
+# 17. Review
 
-Use this section when adding AI-assisted product behavior.
+Use when implementation is ready for risk review.
 
-Primary decision:
+### Owner
 
-- `docs/DECISIONS/004-ai-is-not-the-learning-engine.md`
+`.claude/skills/review-commit/`
 
-Supporting context:
+### Reviewers
 
-- `docs/PRODUCT.md`
-- `docs/ARCHITECTURE.md`
+* `.claude/agents/unlock-reviewer.md`
+* `.claude/agents/unlock-db-reviewer.md`
+* `.claude/agents/unlock-security-reviewer.md`
 
-Cursor rule:
+Select reviewers by actual risk.
 
-- `.cursor/rules/ai.mdc`
+Do not invoke all specialists automatically.
 
-AI may assist workflows.
+---
+
+# 18. Run Telemetry / Context Efficiency
+
+Use for:
+
+* Run duration;
+* session metrics;
+* token/context usage;
+* prompt-cache behavior;
+* file-access counts;
+* re-reads;
+* instruction loading;
+* search/navigation activity;
+* tool activity;
+* compaction;
+* subagent offload;
+* Context Misses;
+* unnecessary rechecks;
+* Development OS efficiency analysis.
+
+### Canonical policy
+
+`docs/RUN_TELEMETRY.md`
+
+This is the sole owner of telemetry definitions and measurement semantics.
+
+### Runtime implementation
+
+* `.claude/telemetry/collect.mjs`
+* `.claude/telemetry/statusline.mjs`
+* `.claude/telemetry/summarize.mjs`
+* `.claude/settings.json`
+
+### Raw local data
+
+`scratch/telemetry/<RUN_ID>/`
+
+Raw telemetry is temporary and non-canonical.
+
+Do not load raw telemetry during normal implementation.
+
+### Durable Run summary
+
+`docs/RUNS/RUN_TEMPLATE.md`
+
+Completed Run Reports under:
+
+`docs/RUNS/**`
+
+should retain only compact aggregate evidence and meaningful observations.
+
+### Normal closeout flow
+
+```text
+Claude Code telemetry
+→ scratch/telemetry/<RUN_ID>/
+→ node .claude/telemetry/summarize.mjs
+→ read summary.md
+→ copy useful aggregate evidence into Run Report
+```
+
+### Important boundaries
+
+Telemetry observes the development workflow.
+
+It does not determine:
+
+* required verification;
+* reviewer selection;
+* product behavior;
+* architecture;
+* correctness.
+
+Do not:
+
+* maintain a manual telemetry diary;
+* load raw JSONL routinely;
+* invent missing runtime metrics;
+* optimize implementation merely to improve telemetry numbers;
+* treat file reads, cache hit ratio, subagent count, or context usage as standalone quality scores.
+
+For broad disposable investigation, subagents may be useful for protecting primary-session context when appropriate.
+
+Run 007 is intended to be the first full baseline Run measured from the beginning under this telemetry model.
+
+---
+
+# 19. UI / Hebrew / RTL
+
+Use for:
+
+* learner-facing UI;
+* instructor UI;
+* Hebrew copy;
+* RTL;
+* mobile behavior;
+* localization.
+
+### Product source
+
+`docs/PRODUCT.md`
+
+### Quality bar
+
+`docs/DEFINITION_OF_DONE.md`
+
+### Implementation
+
+* `src/app/`
+* `src/components/`
+* `src/messages/`
+* `src/lib/locale.ts`
+
+### Cursor rule
+
+`.cursor/rules/rtl-i18n.mdc`
+
+Do not move domain/learning policy into UI components.
+
+---
+
+# 20. AI-Assisted Features
+
+Use for:
+
+* AI content generation;
+* AI verification;
+* future content intelligence.
+
+### Decision source
+
+ADR-004
+
+### Supporting sources
+
+* `docs/PRODUCT.md`
+* `docs/ARCHITECTURE.md`
+
+### Tool rule
+
+`.cursor/rules/ai.mdc`
+
+AI may assist content workflows.
 
 It must not become the deterministic real-time Learning Engine.
 
 ---
 
-## 17. Durable New Decisions
+# 21. New Durable Decisions
 
-When a task introduces a durable, cross-cutting decision involving:
+When implementation exposes a durable cross-cutting choice involving:
 
-- architecture
-- persistence
-- domain boundaries
-- security model
-- provider strategy
-- data ownership
-- Learning Engine strategy
-- major product semantics
+* architecture;
+* persistence;
+* data ownership;
+* security;
+* Learning Engine strategy;
+* major product semantics;
 
 inspect:
 
-- `docs/DECISIONS/`
-- `docs/OPEN_QUESTIONS.md`
+* relevant existing ADR;
+* `docs/OPEN_QUESTIONS.md`.
 
-Create a new ADR only when the decision genuinely deserves a durable record.
+Create a new ADR only when the decision genuinely deserves durable recording.
 
 Do not create ADRs for ordinary implementation details.
 
 ---
 
-## 18. Source-Code Quick Map
+# 22. Current Execution vs Future Work
 
-### Domain
-
-`src/domain/`
-
-Key areas:
-- learning
-- user
-- core domain rules
-
-### Application
-
-`src/application/`
-
-Key areas:
-- `learning/`
-- `dailyPlan/`
-- `course/`
-- `user/`
-
-### Infrastructure
-
-`src/infrastructure/`
-
-Key areas:
-- `postgres/`
-- `supabase/`
-- runtime adapters
-
-### Next.js runtime / UI / API
-
-`src/app/`
-
-Key areas:
-- `login/`
-- `today/`
-- `join/`
-- `api/`
-
-### Database
-
-- `supabase/migrations/`
-- `supabase/tests/postgres/`
-
-### User-facing messages
-
-- `src/messages/`
-
-### Shared frontend/runtime helpers
-
-- `src/lib/`
-
----
-
-## 19. Historical / Legacy Planning Material
-
-Some older design and implementation-planning documents remain useful as supporting
-context.
-
-They must not automatically be treated as current execution plans.
-
-Examples include:
-
-- `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md`
-- older feature design analyses
-- superseded investigation documents
-
-Current execution always comes from:
+For current work:
 
 `docs/CHATGPT_PLAN.md`
 
-Current state always comes from:
+For strategic future sequencing:
 
-`docs/DEV_STATUS.md`
+`docs/UNLOCK_ROADMAP.md`
 
-Accepted decisions come from:
+For deferred technical opportunities:
 
-`docs/DECISIONS/`
+`docs/FOLLOW_UP_BACKLOG.md`
 
-Use older planning material only when the current task specifically needs its
-analysis or history.
+For unresolved decisions:
+
+`docs/OPEN_QUESTIONS.md`
+
+Do not move items between these categories casually.
 
 ---
 
-## 20. Scratch / Temporary Context
+# 23. Historical Context
 
-`scratch/` is temporary and non-canonical.
+Historical material includes:
 
-A current autonomous run may use:
+* `docs/RUNS/**`;
+* `docs/INVARIANT_MATRIX.md`;
+* old implementation plans;
+* superseded investigations.
+
+Load historical context only when the current task specifically requires history.
+
+Historical material does not override current accepted decisions or repository reality.
+
+---
+
+# 24. Scratch
+
+`scratch/**` is temporary and non-canonical.
+
+Current temporary resume state may live in:
 
 `scratch/development_checkpoint.md`
 
-when authorized by the Plan.
+Run telemetry may live temporarily in:
 
-Do not browse old scratch files for project history.
+`scratch/telemetry/<RUN_ID>/`
 
-Do not treat scratch as a source of product truth.
+Do not use scratch as:
+
+* product truth;
+* current durable status;
+* canonical telemetry policy;
+* historical archive.
+
+Overwrite or discard temporary context when no longer needed.
 
 ---
 
-## 21. Navigation Rule
+# 25. Navigation Rule
 
-When starting work on an unfamiliar area:
+When starting unfamiliar work:
 
-1. identify the domain of the task
-2. use this map to locate the smallest relevant documentation/code area
-3. read the relevant accepted ADR if one exists
-4. inspect the actual implementation
-5. inspect the nearest relevant tests
-6. expand context only when evidence requires it
+```text
+Task
+→ identify decision source
+→ load relevant scoped rule
+→ inspect implementation
+→ inspect nearest tests
+→ expand context only if evidence requires it
+```
+
+For telemetry-specific work:
+
+```text
+Telemetry question
+→ docs/RUN_TELEMETRY.md
+→ inspect .claude/telemetry/** only if implementation detail is needed
+→ inspect raw scratch telemetry only when diagnosing telemetry itself
+```
+
+Prefer the narrowest trustworthy context.
 
 Do not load broad documentation trees preemptively.
 
+Do not load telemetry raw data preemptively.
+
 The goal is not maximum context.
 
-The goal is the minimum trustworthy context required for the current slice.
+The goal is:
+
+> minimum context required to make a correct change.

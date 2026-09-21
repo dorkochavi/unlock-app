@@ -1,17 +1,40 @@
-# UNLOCK Invariant Matrix
+# UNLOCK Invariant Matrix — Historical Hardening Snapshot
 
-Status: Active invariant audit (written during the 2026-09-18 overnight
-hardening session)
+**Status:** HISTORICAL / RESTRICTED
+**Snapshot date:** 2026-09-18 overnight hardening session
+**Authority:** Historical evidence only — not current canonical product, architecture, or implementation policy
+**Default loading:** Do not load unless historical investigation or a referenced invariant specifically requires it
 
-Purpose: enumerate the invariants currently implied by the ADRs, domain
-types, migrations, and application orchestration; state where each is
-enforced; and identify what proves it and what remains unproven. This
-document does not invent new invariants — every row below traces to a
-committed ADR, type, migration comment, or module doc comment.
+Purpose: preserve the invariant audit produced during the 2026-09-18 overnight hardening session.
 
-Layer legend: **D** = domain (`src/domain/learning/`), **A** = application
-(`src/application/learning/`), **DB** = database (migrations/constraints),
-**M** = multiple layers (defense in depth).
+This file records:
+
+* invariants understood at that point in repository history;
+* where they appeared to be enforced;
+* what evidence existed at that time;
+* gaps identified during that hardening session;
+* adversarial-review findings and follow-up observations from that session.
+
+It intentionally preserves historical terminology and implementation state, including `TodaySession` / `TodaySessionItem`, where those concepts were part of the audited repository at that time.
+
+This file is **not** an evergreen invariant specification.
+
+Do not use it to override or reopen current accepted behavior.
+
+For current truth, prefer:
+
+1. committed code, tests, and migrations for repository reality;
+2. accepted ADRs in `docs/DECISIONS/**`;
+3. current canonical product and architecture documents;
+4. `docs/DOMAIN_GLOSSARY.md` for current terminology;
+5. `docs/GOLDEN_SCENARIOS.md` for the current active product-behavior → evidence map;
+6. `docs/OPEN_QUESTIONS.md` for genuinely unresolved decisions.
+
+If a row in this historical matrix conflicts with a later accepted ADR, current implementation, or current canonical documentation, the newer authority controls.
+
+Do not silently edit historical rows to make this snapshot look current.
+
+If UNLOCK later needs an evergreen active invariant matrix, rebuild one deliberately from current ADRs, code, migrations, and tests rather than evolving this historical artifact in place.
 
 ---
 

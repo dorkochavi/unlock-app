@@ -1,281 +1,747 @@
 # UNLOCK Golden Scenarios
 
-Status: Active test-coverage map (written during the 2026-09-18 overnight hardening session)
+Status: Active supporting test/evidence map
 
-Purpose: describe, in product language, the realistic learner histories UNLOCK's
-test suite proves the Learning Engine and answer-submission pipeline handle
-correctly — and link each scenario to the exact test file(s) that prove it.
+Load level: COLD
 
-This document does not define new product behavior. Every scenario below
-describes ALREADY-DECIDED behavior (per the ADRs in `docs/DECISIONS/` and
-`docs/LEARNING_ENGINE.md`). Where a scenario's expected behavior would depend
-on an open product question, it is explicitly excluded — see "Deliberately
-excluded" at the end.
+Purpose: describe, in product language, the realistic learner histories and critical product behaviors that UNLOCK's automated tests currently prove — and link each scenario to the exact test file(s) that provide that evidence.
+
+This document is a map from important product behavior to automated evidence.
+
+It does not define new product behavior.
+
+Canonical behavior is owned by:
+
+* accepted ADRs in `docs/DECISIONS/`;
+* current canonical product/domain documentation;
+* `docs/LEARNING_ENGINE.md` for adopted Learning Engine detail;
+* committed implementation and tests.
+
+If this document conflicts with a newer accepted decision or current implementation, the newer authority controls and this evidence map should be reconciled.
+
+Legacy behavior may remain documented when the repository still intentionally supports or tests it, but legacy scenarios must be labeled as such.
 
 ---
 
 ## A. First exposure
 
-**Story**: A learner answers a Question for the very first time. There is no
-prior evidence for this learner-question pair.
+**Story:** A learner answers a Question for the very first time. There is no prior evidence for this learner-question pair.
 
-**Expected behavior**: The first clean, correct answer establishes the
-retrieval baseline but does NOT itself count as a spaced retrieval (there is
-nothing prior to be spaced from). Evidence strength starts at `early`,
-mastery starts at `learning`, misconception state starts at `none`.
+**Expected behavior:** The first clean, correct answer establishes the retrieval baseline but does NOT itself count as a spaced retrieval because there is nothing prior to be spaced from.
 
-**Proof**:
-- `src/domain/learning/__tests__/learning-engine-golden-scenarios.test.ts` —
-  scenario 1 ("new learner calibration: first clean correct evidence")
-- `src/domain/learning/__tests__/retrieval-qualification.test.ts` —
-  `NO_PRIOR_RETRIEVAL` reason
-- `src/application/learning/__tests__/submit-answer.test.ts` — test 1 ("a new
-  submission creates exactly one Attempt")
+Evidence strength starts at `early`, mastery starts at `learning`, and misconception state starts at `none` under the current implemented Learning Engine vocabulary.
+
+**Proof:**
+
+* `src/domain/learning/__tests__/learning-engine-golden-scenarios.test.ts`
+
+  * scenario 1: new learner calibration / first clean correct evidence;
+* `src/domain/learning/__tests__/retrieval-qualification.test.ts`
+
+  * `NO_PRIOR_RETRIEVAL`;
+* `src/application/learning/__tests__/submit-answer.test.ts`
+
+  * new submission creates exactly one Attempt.
 
 ---
 
 ## B. Same-session repetition
 
-**Story**: A learner answers the same Question correctly several times within
-one sitting (same `learningSessionId`).
+**Story:** A learner answers the same Question correctly several times within one learning session.
 
-**Expected behavior**: Same-session repetition never qualifies as a spaced
-retrieval, regardless of how many repetitions occur. `successfulSpacedRetrievals`
-stays at 0, evidence strength cannot exceed `early`, and mastery cannot
-advance past `learning` — no matter how large `meaningfulAttemptCount` grows.
+**Expected behavior:** Same-session repetition never qualifies as a genuinely spaced retrieval, regardless of how many repetitions occur.
 
-**Proof**:
-- `learning-engine-golden-scenarios.test.ts` — scenario 2 ("same-session
-  repetition does not fake mastery"): 5 correct answers in one session, still
-  `evidenceStrength: "early"`, `masteryCategory: "learning"`.
-- `retrieval-qualification.test.ts` — `SAME_SESSION` reason.
+Repeated correct answers inside one session must not manufacture longitudinal mastery.
+
+`successfulSpacedRetrievals` therefore remains unchanged by same-session repetition, and evidence/mastery cannot advance merely because the learner repeated the Question immediately.
+
+**Proof:**
+
+* `learning-engine-golden-scenarios.test.ts`
+
+  * same-session repetition does not fake mastery;
+* `retrieval-qualification.test.ts`
+
+  * `SAME_SESSION`.
 
 ---
 
 ## C. Spaced success
 
-**Story**: A learner answers correctly, then answers correctly again after a
-genuine gap in a different learning session.
+**Story:** A learner answers correctly, then later answers correctly again after a genuine gap in a different learning session.
 
-**Expected behavior**: The second (and later) correct answers qualify as
-spaced retrievals, moving `retrievalBaselineAt`/`retrievalBaselineLearningSessionId`
-forward, incrementing `successfulSpacedRetrievals`, and progressing mastery
-through `learning -> strengthening -> mastered` as policy thresholds are met
-(spacing count, evidence strength, retrievability, and absence of an
-unresolved lapse — all four gates, not just one).
+**Expected behavior:** Later qualifying correct retrievals can count as spaced retrieval evidence.
 
-**Proof**:
-- `learning-engine-golden-scenarios.test.ts` — scenario 3 ("healthy
-  longitudinal strengthening"), scenario 4 ("full path to mastered, never
-  earlier than policy allows" — proves each of the four gates individually
-  blocks mastery until satisfied).
-- `retrieval-qualification.test.ts` — `QUALIFYING_SPACED_RETRIEVAL` reason.
+They may:
+
+* move the retrieval baseline forward;
+* increment successful spaced retrieval evidence;
+* strengthen the learner's current state;
+* contribute toward mastery when all applicable gates are satisfied.
+
+Mastery must not be granted from one signal alone.
+
+**Proof:**
+
+* `learning-engine-golden-scenarios.test.ts`
+
+  * healthy longitudinal strengthening;
+  * full path to mastered;
+  * individual mastery gates prevent premature mastery;
+* `retrieval-qualification.test.ts`
+
+  * `QUALIFYING_SPACED_RETRIEVAL`.
 
 ---
 
 ## D. Lapse
 
-**Story**: A learner who previously succeeded (including reaching `mastered`)
-later answers incorrectly.
+**Story:** A learner who previously demonstrated successful knowledge later answers incorrectly.
 
-**Expected behavior**: A lapse increments `lapseCount`, sets `lastLapseAt`,
-and immediately makes the item ineligible for `mastered` via
-`hasUnresolvedLapse`. The lapse is NOT resolved by a same-session or
-too-short-gap correct answer afterward — only a later genuinely qualifying
-spaced retrieval (which moves `retrievalBaselineAt` past `lastLapseAt`)
-resolves it and allows mastery to be re-earned. Full attempt history before
-the lapse is never erased.
+**Expected behavior:** The lapse remains meaningful historical evidence.
 
-**Proof**:
-- `learning-engine-golden-scenarios.test.ts` — scenario 7 ("mastered -> lapse
-  -> recovery"): proves the lapse blocks mastery, that a same-session correct
-  answer does NOT resolve it, and that a later qualifying retrieval does.
-- `src/domain/learning/__tests__/lapse.test.ts` — `deriveHasUnresolvedLapse`
-  unit coverage.
-- `src/domain/learning/__tests__/next-best-action.test.ts` — `RELEARN_LAPSE`
-  candidate generation from the same unresolved-lapse signal.
+It:
+
+* increments lapse evidence;
+* records the lapse time;
+* can make previously strong knowledge require relearning;
+* is not erased by an immediate same-session correct answer.
+
+A later genuinely qualifying retrieval may resolve the active lapse condition and allow the learner state to strengthen again.
+
+Historical Attempts remain preserved throughout.
+
+**Proof:**
+
+* `learning-engine-golden-scenarios.test.ts`
+
+  * mastered → lapse → recovery;
+* `src/domain/learning/__tests__/lapse.test.ts`
+
+  * unresolved-lapse derivation;
+* `src/domain/learning/__tests__/next-best-action.test.ts`
+
+  * `RELEARN_LAPSE` candidate generation.
 
 ---
 
 ## E. Confident error
 
-**Story**: A learner answers incorrectly while reporting high confidence.
+**Story:** A learner answers incorrectly while reporting high confidence.
 
-**Expected behavior**: A clean (`FULL_EVIDENCE`), incorrect, high-confidence
-answer is simultaneously a `CONFIDENT_ERROR` (misconception signal) AND a
-`LAPSE` (memory signal) — both are recorded, neither silently drops the
-other. Misconception state escalates `none -> suspected -> active` based on
-policy-driven score thresholds, purely from confident-error evidence.
-Assisted, second-attempt, revealed-answer, or low/medium-confidence wrong
-answers never trigger this signal.
+**Expected behavior:** A clean incorrect high-confidence answer may simultaneously provide:
 
-**Proof**:
-- `learning-engine-golden-scenarios.test.ts` — scenario 5 ("confident
-  misconception emergence"), scenario 6 (misconception recovery over time),
-  scenario 8/9 (assisted/low-quality answers cannot repair or trigger it).
-- `src/domain/learning/__tests__/misconception.test.ts`,
-  `progress-update.test.ts` — the exact reason-collection logic
-  (`deriveStateUpdateReasons`) proving `CONFIDENT_ERROR` and `LAPSE` can
-  co-occur without one suppressing the other (a real bug this codebase fixed
-  once — see `progress-update.ts`'s module doc comment).
+* misconception evidence;
+* memory/lapse evidence.
+
+Neither signal should silently suppress the other.
+
+Assisted, revealed-answer, low-quality, or otherwise weak evidence must not automatically receive the same interpretation as a clean confident error.
+
+**Proof:**
+
+* `learning-engine-golden-scenarios.test.ts`
+
+  * confident misconception emergence;
+  * misconception recovery;
+  * weak/assisted evidence does not falsely trigger or repair strong signals;
+* `src/domain/learning/__tests__/misconception.test.ts`;
+* `src/domain/learning/__tests__/progress-update.test.ts`
+
+  * state-update reasons allow `CONFIDENT_ERROR` and `LAPSE` to coexist.
 
 ---
 
 ## F. Out-of-order evidence
 
-**Story**: Attempts for the same learner-question pair are recorded (or
-arrive over the network) out of chronological order — e.g. answers 1, 3, 2.
+**Story:** Attempts for the same learner-question pair are stored or arrive out of chronological order.
 
-**Expected behavior**: `UserQuestionProgress` after processing must be
-IDENTICAL regardless of arrival order, always equal to what canonical
-(`answeredAt` ascending, `createdAt` ascending, `id` ascending) replay would
-produce. `submitAnswer` detects an out-of-order Attempt and synchronously
-reconciles progress via a full canonical-order rebuild in the same
-transaction — there is no permanently-stale state and no async queue.
+Example:
 
-**Proof**:
-- `src/domain/learning/__tests__/rebuild.test.ts` — scenario 8 ("three
-  Attempts replayed in arrival order 1,3,2 produce the SAME progress as
-  canonical order 1,2,3"), scenario 9 (determinism), scenario 13 (createdAt
-  tie-break independent of input array position).
-- `learning-engine-golden-scenarios.test.ts` — scenario 11 (out-of-order
-  historical evidence boundary; a correct Attempt earlier than the existing
-  baseline throws `OutOfOrderRetrievalError` rather than silently computing a
-  negative gap), scenario 12 (deterministic replay).
-- `submit-answer.test.ts` — tests 5, 6, 8/9, 11, 12, 15 (out-of-order
-  Attempts at the application/transaction layer: preserved, reconciled,
-  deterministic under A,C,B vs A,B,C ordering, retried without a second
-  rebuild, rolled back cleanly on a failed rebuild, and correctly complete a
-  Today item).
+```text id="d5vu5k"
+Attempt 1
+Attempt 3
+Attempt 2
+```
 
----
+**Expected behavior:** Final `UserQuestionProgress` must be equivalent to canonical chronological replay.
 
-## G. Historical version integrity
+Canonical ordering uses stable Attempt ordering rather than arrival order.
 
-**Story**: A Question's content (options, correct answer) changes after
-learners have already answered an earlier version of it.
+When an out-of-order Attempt reaches the application path, learner progress is reconciled from immutable historical Attempts rather than permanently preserving stale derived state.
 
-**Expected behavior**: Editing a Question always creates a new immutable
-`QuestionVersion` (ADR-009) and repoints `Question.current_version_id` — the
-old `QuestionVersion` row is never mutated. Every `Attempt` is graded and
-remains gradable against the EXACT `QuestionVersion` id it references, never
-against `Question.current_version_id` at read time. Replay/rebuild never
-re-grades a historical Attempt's stored `isCorrect` — it only reinterprets
-already-computed correctness into learner state.
+**Proof:**
 
-**Proof**:
-- `supabase/tests/postgres/answer-correctness-checker.test.ts` — "historical
-  grading: an old QuestionVersion is graded by ITS OWN definition, never by
-  questions.current_version_id" (a real-Postgres integration test: creates
-  two versions with different correct answers, repoints `current_version_id`
-  to the newer one, and proves the older version still grades by its own
-  frozen definition).
-- `src/domain/learning/answer.ts`'s `evaluateAnswerCorrectness` — pure
-  function of exactly `(definition, selectedAnswer)`, no hidden
-  "current version" lookup (see ADR-014 Decision §2(K)/(L)).
-- ADR-012's rebuild contract — `rebuildUserQuestionProgress` replays
-  `Attempt.isCorrect` as already-decided historical fact; it never
-  recomputes correctness.
+* `src/domain/learning/__tests__/rebuild.test.ts`
+
+  * arrival order 1,3,2 produces the same derived progress as canonical 1,2,3;
+  * deterministic replay;
+  * stable tie-breaking;
+* `learning-engine-golden-scenarios.test.ts`
+
+  * out-of-order historical evidence boundary;
+  * deterministic replay;
+* `src/application/learning/__tests__/submit-answer.test.ts`
+
+  * out-of-order Attempts are preserved and reconciled;
+  * retries do not cause duplicate rebuilds;
+  * failed rebuilds roll back;
+  * applicable planned-item completion remains transactional.
 
 ---
 
-## H. Today session identity
+## G. Historical QuestionVersion integrity
 
-**Story**: A learner answers multiple Questions inside one Today session, and
-separately does manual practice outside of Today.
+**Story:** A Question's content changes after learners already answered an earlier version.
 
-**Expected behavior**: For a Today-attached Attempt, `learningSessionId` is
-always derived by the application from the persisted
-`TodaySessionItem.todaySessionId` — the client's claimed value is ignored
-entirely (not merely validated), so a buggy or malicious client cannot force
-every retrieval to appear as a new spaced session. For manual practice (no
-`TodaySessionItem`), the client supplies and owns a stable
-`learningSessionId` token, which participates in idempotency comparison like
-any other client-owned field.
+**Expected behavior:** Historical evidence remains interpretable.
 
-**Proof**:
-- `submit-answer.test.ts` — "learningSessionId ownership (pre-commit
-  correctness audit)" describe block, tests A ("a client CANNOT change
-  retrieval qualification by claiming a new learningSessionId on a
-  Today-attached Attempt") and B (a retry with a different client claim is
-  still a safe idempotent retry, not a conflict, because the client never
-  owned the field), plus the manual-practice regression test (a retry WITH a
-  different `learningSessionId` for manual practice IS rejected as a
-  conflict, since there the client does own it).
-- `src/domain/learning/__tests__/learning-session.test.ts` — the pure
-  `deriveIsSameLearningSession` comparison.
-- `src/application/learning/__tests__/today-session.test.ts` — Today session
-  creation/resume, confirming a `TodaySessionItem`'s `todaySessionId` is
-  stable across the session's lifetime.
+Editing Question content creates a new immutable `QuestionVersion`.
+
+An existing historical QuestionVersion is not rewritten.
+
+Every Attempt remains linked to the exact QuestionVersion presented to the learner.
+
+Historical Attempts are not later regraded against `Question.current_version_id`.
+
+**Proof:**
+
+* `supabase/tests/postgres/answer-correctness-checker.test.ts`
+
+  * an older QuestionVersion is graded according to its own frozen definition even after `current_version_id` changes;
+* `src/domain/learning/answer.ts`
+
+  * `evaluateAnswerCorrectness` evaluates the supplied frozen answer definition;
+* ADR-009;
+* ADR-012;
+* ADR-014.
 
 ---
 
-## I. Idempotent retry
+# Current Today / DailyPlan Scenarios
 
-**Story**: The same logical answer submission is sent twice (network retry,
-double-click, replayed request) with an identical `submissionId` and
-identical payload.
+The following scenarios represent the current primary Today model.
 
-**Expected behavior**: Exactly one `Attempt` is ever created. The second
-request returns the original result without re-invoking
-`applyAttemptToProgress`, without a second learning-state update, and (on the
-fast retry path) without even recomputing `isCorrect`/`suspiciousTiming` or
-re-running the QuestionVersion/TodaySessionItem consistency checks.
+`DailyPlan` / `DailyPlanItem` are the canonical current product terms.
 
-**Proof**:
-- `submit-answer.test.ts` — test 2 ("a duplicate identical submission returns
-  idempotently without double-processing"), "retry short-circuit: a genuine
-  retry never invokes isCorrect/suspiciousTiming or the consistency checks a
-  second time" (proves the FAST path performs no correctness recomputation,
-  per the Phase 1 requirement), test 11 ("a retry does not cause another
-  rebuild or progress increment").
+Legacy `TodaySession` behavior is documented separately later in this file.
 
 ---
 
-## J. Legitimate distinct repeat
+## H. Same learner-local day returns the same DailyPlan
 
-**Story**: A learner deliberately answers the same Question twice on purpose
-(e.g. manual practice retry) using two different `submissionId`s.
+**Story:** A learner opens Today more than once during the same learner-local calendar day.
 
-**Expected behavior**: Both Attempts are accepted and retained as separate
-historical records — this is not idempotency-deduplicated, and both
-contribute to accumulated progress (`attemptCount` increases by 2, not
-treated as 1).
+**Expected behavior:** The same persisted DailyPlan is returned.
 
-**Proof**:
-- `submit-answer.test.ts` — new test "J. two intentional answers to the same
-  question with different submissionIds are BOTH retained as distinct
-  Attempts (contrast with test 2's same-submissionId dedup)" (added during
-  this session — the existing suite proved the contrast implicitly across
-  several out-of-order tests using distinct submissionIds, but had no single
-  test stating this contract directly; see `docs/INVARIANT_MATRIX.md` for
-  the reasoning).
-- Contrast with test 3 ("the same submissionId with a different logical
-  command is rejected as an idempotency-key conflict") — the dividing line
-  between "same submissionId, different answer" (rejected) and "different
-  submissionId, different answer" (accepted, both retained) is what
-  distinguishes idempotency-key identity from genuine repeat practice.
+Today is not silently regenerated on:
+
+* refresh;
+* reopening;
+* navigating away and back;
+* repeated API/application calls on the same local day.
+
+The frozen plan remains the learner's Today plan for that local day.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/get-or-create-daily-plan-for-today.test.ts`
+
+  * `I. two calls on the same local day return the same persisted DailyPlan without regeneration`;
+* `src/application/dailyPlan/__tests__/generate-daily-plan-for-resolved-inputs.test.ts`
+
+  * `A. resumes an existing DailyPlan without re-reading progress/candidates/versions`;
+  * `K. resumes a persisted empty plan without regenerating on a second call`;
+* `supabase/tests/postgres/daily-plan-repository.test.ts`
+
+  * same `(user, date)` key returns the existing plan rather than creating a duplicate.
 
 ---
 
-## Deliberately excluded
+## I. Learner-local day, not UTC day, controls Today
 
-The Phase 1 brief for this session also suggested scenarios that depend on
-still-open product questions and are intentionally NOT modeled as golden
-scenarios yet:
+**Story:** A learner's timezone causes their local calendar date to differ from UTC.
 
-- **Starter/calibration experience** for a brand-new learner with zero
-  Course-wide evidence (`docs/OPEN_QUESTIONS.md` #4/#5) — `today-planner.ts`
-  deliberately returns an empty plan rather than inventing filler content;
-  see its own module doc comment.
-- **Today session boundary / "what counts as today"**
-  (`docs/OPEN_QUESTIONS.md` #3) — `plannedForDate` is treated as an opaque,
-  caller-supplied string throughout; no scenario asserts a specific
-  timezone/day-boundary behavior because none is decided.
-- **Exam urgency effects on ranking** (`docs/OPEN_QUESTIONS.md` #2) — not yet
-  a ranking input.
-- **Evidence-strength/mastery/misconception/retrieval-qualification
-  production threshold values** (`docs/OPEN_QUESTIONS.md` #11, #12, #13) —
-  every scenario above uses injected test policies, matching the domain
-  layer's explicit "no default production policy" design; the scenarios
-  prove the RULES, not any particular numeric threshold.
+**Expected behavior:** DailyPlan lookup/generation uses the learner's persisted IANA timezone to derive the learner-local date.
+
+The server must not use the UTC calendar date as a substitute for the learner's local day.
+
+A call after the learner crosses local midnight may produce/load a different DailyPlan.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/get-or-create-daily-plan-for-today.test.ts`
+
+  * Asia/Jerusalem local date is derived correctly when different from UTC;
+  * America/New_York local date is derived correctly when different from UTC;
+  * next local day produces a different DailyPlan;
+* `src/domain/user/__tests__/local-date.test.ts`;
+* `src/domain/user/__tests__/timezone.test.ts`;
+* `supabase/tests/postgres/daily-plan-repository.test.ts`
+
+  * `plannedForDate` round-trips exactly across a year boundary.
+
+---
+
+## J. Only eligible active LEARNER memberships participate automatically
+
+**Story:** The same user has different relationships with multiple Courses.
+
+Some may be:
+
+* `LEARNER`;
+* `OWNER`;
+* `INSTRUCTOR`;
+* archived;
+* revoked.
+
+**Expected behavior:** Automatic Global Today generation uses only eligible active `LEARNER` memberships.
+
+OWNER/INSTRUCTOR-only Courses do not automatically contribute Today work.
+
+Archived or revoked learner memberships are excluded.
+
+Duplicate membership input must not duplicate candidate processing.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/get-or-create-daily-plan-for-today.test.ts`
+
+  * `D. pools progress only from LEARNER-role Courses`;
+  * `E. excludes an archived LEARNER membership`;
+  * `F. excludes a revoked LEARNER membership`;
+  * `J. duplicate LEARNER memberships ... do not leak duplicated processing`;
+  * `L. new-material discovery reuses the SAME LEARNER-only eligible Course set`.
+
+---
+
+## K. Global DailyPlan ranks eligible work once across Courses
+
+**Story:** A learner participates in several eligible Courses and has learning needs in more than one.
+
+**Expected behavior:** Today is one Global DailyPlan.
+
+Eligible candidates from participating Courses are pooled and ranked together rather than independently generating competing per-Course Today sessions.
+
+The final persisted plan contains the selected globally ranked work.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/generate-daily-plan-for-resolved-inputs.test.ts`
+
+  * `B. pools progress across multiple Courses and ranks once globally`;
+  * `C. truncates to maxItems when more candidates are ranked than policy allows`;
+  * `D. persists exactly the ranked candidate count when fewer exist — no filler`;
+  * `I. deduplicates eligibleCourseIds`.
+
+Canonical product semantics:
+
+* ADR-016.
+
+---
+
+## L. DailyPlan freezes QuestionVersion identity at generation time
+
+**Story:** A DailyPlan is generated and later the underlying Question is edited.
+
+**Expected behavior:** The existing DailyPlan continues to refer to the QuestionVersion selected at generation time.
+
+Resuming the plan must not silently replace the item with a newer QuestionVersion.
+
+This protects reproducibility and historical integrity.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/generate-daily-plan-for-resolved-inputs.test.ts`
+
+  * `F. freezes the current QuestionVersion at generation time and never re-resolves it on resume`;
+* `supabase/tests/postgres/daily-plan-repository.test.ts`
+
+  * frozen item fields persist exactly.
+
+---
+
+## M. DailyPlan creation is atomic and race-safe
+
+**Story:** Plan persistence fails partway through, or two requests attempt to create the same learner/day plan concurrently.
+
+**Expected behavior:**
+
+A persistence failure must not leave a partial plan.
+
+Concurrent creation must not produce two valid DailyPlans for the same learner/local date.
+
+When another transaction wins the create race, the caller should return the persisted winner.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/generate-daily-plan-for-resolved-inputs.test.ts`
+
+  * `G. rolls back the whole transaction on a persistence failure`;
+  * `H. returns the concurrent winner rather than the locally generated plan`;
+* `supabase/tests/postgres/daily-plan-repository.test.ts`
+
+  * `createIfNotExists` is race-safe for `(user, date)`;
+* `supabase/tests/postgres/daily-plan-unit-of-work.test.ts`
+
+  * transaction behavior.
+
+---
+
+## N. Fresh learner receives New Material instead of an artificial empty Today
+
+**Story:** A learner has:
+
+* an active eligible LEARNER membership;
+* no Attempts;
+* no UserQuestionProgress;
+* eligible unseen Questions.
+
+**Expected behavior:** The learner can receive unseen Questions through the ADR-017 New Material fallback.
+
+The system must not interpret "no historical progress" as "nothing useful to study."
+
+New Material activates only when ordinary learning candidates are empty.
+
+It does not mix with ordinary candidates merely to fill plan size.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/get-or-create-daily-plan-for-today.test.ts`
+
+  * `K. fresh learner regression ... Today is non-empty`;
+* `src/application/dailyPlan/__tests__/generate-daily-plan-for-resolved-inputs.test.ts`
+
+  * `L. fresh learner ... receives exactly 3`;
+  * `M. only 2 eligible unseen questions → selects only those`;
+  * `N. normal candidate exists → unseen fallback NEVER activates`;
+  * `O. no normal or unseen candidate → legitimately empty`;
+  * `P. existing fallback plan does not re-query unseen questions`;
+  * `Q. new-material selection creates no UserQuestionProgress row`.
+
+Canonical product semantics:
+
+* ADR-017.
+
+---
+
+## O. New Material placement is not learning evidence
+
+**Story:** An unseen Question is selected into Today as New Material.
+
+**Expected behavior:** Merely placing the Question into DailyPlan does not create evidence that the learner knows it.
+
+Selection must not fabricate:
+
+* mastery;
+* Attempt history;
+* UserQuestionProgress;
+* successful retrieval evidence.
+
+Learning evidence begins when the learner actually interacts in a way the accepted learning model treats as evidence.
+
+**Proof:**
+
+* `generate-daily-plan-for-resolved-inputs.test.ts`
+
+  * `Q. new-material selection creates no UserQuestionProgress row`;
+* ADR-017.
+
+---
+
+## P. Answering a DailyPlanItem uses server-owned item identity
+
+**Story:** A learner submits an answer for one DailyPlanItem.
+
+**Expected behavior:** The application resolves the item and uses the authoritative persisted item identity.
+
+The answer command does not trust client-provided:
+
+* courseId;
+* questionId;
+* questionVersionId;
+* DailyPlan identity.
+
+The resolved DailyPlanItem supplies those values.
+
+An item belonging to another user must behave like a missing/not-owned resource rather than leak its existence.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/submit-daily-plan-item-answer.test.ts`
+
+  * nonexistent item → `ITEM_NOT_FOUND_OR_NOT_OWNED`;
+  * item owned by another user → same fail-closed result;
+  * matching owner → `submitAnswer` receives the looked-up item's own Course/Question/QuestionVersion/DailyPlan identity;
+  * the underlying answer path still performs its own consistency re-check;
+* `src/app/api/daily-plan/items/[itemId]/answer/__tests__/handle-submit-daily-plan-item-answer.test.ts`;
+* route auth/DB-ordering regression coverage under the same endpoint.
+
+---
+
+## Q. Answering a DailyPlanItem preserves the trusted learning transaction
+
+**Story:** A learner answers one Question from Today.
+
+**Expected behavior:** The DailyPlan answer path remains part of the trusted answer-submission transaction.
+
+The action must preserve:
+
+* immutable Attempt creation;
+* idempotency;
+* learner-progress update;
+* DailyPlanItem resolution;
+* ownership/identity consistency.
+
+A DailyPlan wrapper must not create a second independent learning-update implementation.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/submit-daily-plan-item-answer.test.ts`;
+* `src/application/learning/__tests__/submit-answer.test.ts`;
+* relevant PostgreSQL DailyPlan Unit-of-Work tests;
+* ADR-010;
+* ADR-016.
+
+---
+
+## R. Skip resolves Today without creating false evidence
+
+**Story:** A learner does not want to answer one Today item and chooses Skip.
+
+**Expected behavior:** Skip resolves the DailyPlanItem as `SKIPPED`.
+
+Skip must not:
+
+* create an incorrect Attempt;
+* create mastery evidence;
+* create replacement work automatically;
+* mutate an already-resolved item;
+* leak whether another learner owns a requested item.
+
+Repeated Skip is idempotent at the resolution level.
+
+**Proof:**
+
+* `src/application/dailyPlan/__tests__/skip-daily-plan-item.test.ts`
+
+  * owner can Skip pending item;
+  * nonexistent/not-owned items fail closed;
+  * completed/skipped items return `ALREADY_RESOLVED`;
+* `supabase/tests/postgres/daily-plan-repository.test.ts`
+
+  * `markSkipped` resolves a pending item exactly once;
+  * completed/skipped cross-status resolution is rejected as already resolved;
+* `supabase/tests/postgres/skip-daily-plan-item.test.ts`;
+* DailyPlan Skip API handler/route tests;
+* ADR-016.
+
+---
+
+# Core Answer-Submission Scenarios
+
+The following remain critical regardless of whether the Attempt originated from Today or Manual Practice.
+
+---
+
+## S. Idempotent retry
+
+**Story:** The same logical answer submission is sent twice due to:
+
+* network retry;
+* double-click;
+* replayed request.
+
+The requests use the same `submissionId` and identical canonical command identity.
+
+**Expected behavior:** Exactly one Attempt is created.
+
+The retry returns the original logical result without applying the learning update a second time.
+
+A reused `submissionId` with a different logical command is rejected rather than silently treated as the same submission.
+
+**Proof:**
+
+* `src/application/learning/__tests__/submit-answer.test.ts`
+
+  * duplicate identical submission returns idempotently;
+  * retry does not cause another progress increment/rebuild;
+  * mismatched logical command using the same submissionId is rejected;
+* database uniqueness on `(user_id, submission_id)` through the accepted persistence model;
+* ADR-010.
+
+---
+
+## T. Legitimate distinct repeat
+
+**Story:** A learner deliberately answers the same Question more than once, for example during Manual Practice, using different `submissionId`s.
+
+**Expected behavior:** Distinct intentional submissions remain separate immutable Attempts.
+
+Idempotency must not deduplicate real repeated practice merely because:
+
+* the Question is the same;
+* the learner is the same.
+
+The idempotency identity is the submission, not the user-question pair.
+
+**Proof:**
+
+* `src/application/learning/__tests__/submit-answer.test.ts`
+
+  * distinct submissions to the same Question are retained separately;
+* contrast with the same-submissionId idempotency tests.
+
+---
+
+# Legacy Compatibility Scenarios
+
+The repository still contains tests and code for the older `TodaySession` / `TodaySessionItem` path.
+
+These tests remain valuable where that compatibility path still exists.
+
+They are **not** the primary current Today model.
+
+---
+
+## U. Legacy TodaySession learning-session identity
+
+**Story:** An Attempt is attached to a legacy TodaySessionItem.
+
+**Expected behavior:** `learningSessionId` is derived from the trusted persisted TodaySessionItem relationship rather than from an untrusted client claim.
+
+This prevents a client from manufacturing a new apparent learning session and falsely changing spaced-retrieval qualification.
+
+For Manual Practice without a TodaySessionItem, the client may own the stable learning-session token according to the legacy answer contract.
+
+**Proof:**
+
+* `src/application/learning/__tests__/submit-answer.test.ts`
+
+  * legacy Today-attached learningSessionId ownership regression tests;
+  * Manual Practice contrast;
+* `src/domain/learning/__tests__/learning-session.test.ts`;
+* `src/application/learning/__tests__/today-session.test.ts`
+
+  * legacy TodaySession creation/resume behavior.
+
+**Classification:** LEGACY / COMPATIBILITY EVIDENCE.
+
+Do not use this scenario to redefine current DailyPlan semantics.
+
+---
+
+# Deliberately Excluded From This Evidence Map
+
+A Golden Scenario should only exist when the underlying product behavior is accepted and the repository has evidence that actually proves it.
+
+Do not turn an unresolved question into a Golden Scenario.
+
+Current exclusions include:
+
+## Exact exam-date hierarchy and urgency calibration
+
+Exam urgency is an accepted learning consideration, but the exact V1 exam-date hierarchy/calibration remains governed by current accepted decisions and `docs/OPEN_QUESTIONS.md`.
+
+Do not encode a disputed personal/group/course precedence here.
+
+## Exact production threshold values
+
+Numeric calibration for concepts such as:
+
+* evidence strength;
+* mastery transitions;
+* misconception transitions;
+* retrieval qualification;
+* other policy thresholds;
+
+should not be inferred from test fixtures.
+
+Many domain scenarios use injected policies specifically so tests prove behavioral rules rather than accidentally canonizing arbitrary numeric values.
+
+Current calibration status belongs in:
+
+`docs/OPEN_QUESTIONS.md`
+
+and relevant accepted ADRs.
+
+## Deferred product capabilities
+
+Do not create Golden Scenarios merely for future architecture such as:
+
+* deep Knowledge Graph;
+* autonomous AI coach;
+* sophisticated intervention models;
+* advanced institutional flows;
+* deferred analytics/ML capabilities.
+
+They become Golden Scenarios only when their behavior becomes accepted active scope.
+
+---
+
+# Evidence Interpretation Rules
+
+A test proves only the layer it actually exercises.
+
+Examples:
+
+```text id="f9rmta"
+domain unit test
+≠
+real PostgreSQL proof
+```
+
+```text id="kh2j2e"
+PGlite schema/integration test
+≠
+hosted Supabase verification
+```
+
+```text id="m8t5s5"
+route wiring test
+≠
+browser E2E
+```
+
+```text id="gqkswg"
+browser E2E
+≠
+proof of every concurrency condition
+```
+
+Use `docs/TESTING.md` for the conceptual testing strategy.
+
+Use the operational testing policy for deciding what verification is required for a current change.
+
+This file only maps important behavior to existing evidence.
+
+---
+
+# Maintenance Rule
+
+Update this document when:
+
+* a new product-critical invariant gains meaningful automated evidence;
+* the primary implementation path changes;
+* an accepted ADR changes the behavior represented by a scenario;
+* a referenced test is replaced or removed.
+
+Do not update it merely because:
+
+* a test file was mechanically reorganized;
+* a Run completed;
+* a reviewer made a non-behavioral observation.
+
+When old behavior remains only for compatibility, move its scenario under:
+
+`Legacy Compatibility Scenarios`
+
+rather than allowing historical behavior to remain indistinguishable from the current product model.
+
+---
+
+# Key Principle
+
+> Golden Scenarios describe important behavior the current product relies on and point to the evidence that proves it.
+
+> They do not create product policy.

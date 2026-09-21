@@ -1,20 +1,33 @@
-# UNLOCK Learning Engine V1 — Design Draft 0.2
+# UNLOCK Learning Engine V1 — Adopted Design Reference
 
-Status: ADOPTED — committed design reference for the current Learning Engine
-implementation (`src/domain/learning/`); cited by ADR-008 and
-`docs/OPEN_QUESTIONS.md` #12. Individual sub-decisions it describes may
-still be open — see `docs/OPEN_QUESTIONS.md` for exact status per item.
+Status: **ADOPTED** — canonical detailed design reference for the current Learning Engine implementation under `src/domain/learning/`.
 
-Scope: Learning Engine V1 only. This is not the full product roadmap.
+This document is cited by ADR-008 and by relevant entries in `docs/OPEN_QUESTIONS.md`.
 
-This version consolidates:
-- the current UNLOCK/Base44 prototype audit;
-- the earlier Learning Engine draft;
-- the later Claude research/conversations supplied by the product owner;
-- external verification of the strongest learning-science claims.
+Individual calibrations or sub-decisions described here may still remain open. Their current decision status is owned by `docs/OPEN_QUESTIONS.md` and accepted ADRs, not by historical draft language preserved inside this document.
+
+Scope: Learning Engine V1 only. This is not the full product roadmap, current Run plan, or implementation sequence.
+
+This document evolved from:
+
+* the historical UNLOCK/Base44 prototype audit;
+* earlier Learning Engine drafts;
+* later research and product-owner discussions;
+* external verification of key learning-science claims;
+* subsequent accepted UNLOCK Learning Engine decisions.
+
+Historical/prototype material is intentionally preserved where it explains design rationale.
+
+It must not be interpreted as current product or implementation authority when it conflicts with:
+
+1. accepted ADRs;
+2. current canonical product/scope documents;
+3. current committed implementation and tests;
+4. `docs/OPEN_QUESTIONS.md` for genuinely unresolved decisions.
 
 The Base44 prototype is historical evidence and inspiration. It is not the target architecture or algorithm.
 
+Current Today behavior is based on `DailyPlan` / `DailyPlanItem` and the accepted Global Today semantics in ADR-016. New Material fallback behavior is governed by ADR-017.
 ---
 
 # 1. Product Learning Thesis
@@ -1386,61 +1399,77 @@ Manual practice updates evidence but does not mutate an existing Today plan.
 
 ---
 
-# 50. What We Preserve From Base44
+# 50. Historical Design Rationale — What We Preserve From Base44
+
+> **Historical / rationale section.**
+> This section records useful behavior identified during the original Base44 prototype audit. It is not a current execution plan or independent source of product authority.
 
 Preserve:
-- learner-specific progress;
-- immutable answer history direction;
-- confidence capture;
-- confident-error misconception signal;
-- spaced review intent;
-- persistent daily session;
-- Today-selected Questions;
-- Quiz execution;
-- early/established interleaving idea;
-- exam-aware priority;
-- explainable “why this now” UX.
+
+* learner-specific progress;
+* immutable answer history direction;
+* confidence capture;
+* confident-error misconception signal;
+* spaced review intent;
+* persistent daily session;
+* Today-selected Questions;
+* Quiz execution;
+* early/established interleaving idea;
+* exam-aware priority;
+* explainable “why this now” UX.
 
 ---
 
-# 51. What We Replace From Base44
+# 51. Historical Design Rationale — What We Replace From Base44
+
+> **Historical / rationale section.**
+> These items explain why the adopted Learning Engine moved away from specific prototype behaviors.
 
 Replace:
-- 5-correct-streak mastery;
-- universal 30-second threshold;
-- fixed streak → interval table;
-- cumulative misconception counter;
-- permanent exclusion of mastered Questions;
-- rigid block quotas;
-- newest-Question onboarding;
-- duplicated persisted derived booleans;
-- non-transactional evidence writes;
-- averages that treat missing time as zero.
+
+* 5-correct-streak mastery;
+* universal 30-second threshold;
+* fixed streak → interval table;
+* cumulative misconception counter;
+* permanent exclusion of mastered Questions;
+* rigid block quotas;
+* newest-Question onboarding;
+* duplicated persisted derived booleans;
+* non-transactional evidence writes;
+* averages that treat missing time as zero.
 
 ---
 
-# 52. What We Explicitly Do Not Build Yet
+# 52. Deferred Learning-Engine Capabilities
 
 Not V1 blockers:
-- Elo/IRT/CAT;
-- inferred knowledge graph;
-- fatigue intervention;
-- AI teach-back;
-- voice mode;
-- leagues;
-- Wrapped;
-- autonomous coach;
-- external resource curator;
-- group psychometrics;
-- A/B learning experimentation;
-- public content intelligence;
-- sophisticated anomaly ML.
+
+* Elo/IRT/CAT;
+* inferred knowledge graph;
+* fatigue intervention;
+* AI teach-back;
+* voice mode;
+* leagues;
+* Wrapped;
+* autonomous coach;
+* external resource curator;
+* group psychometrics;
+* A/B learning experimentation;
+* public content intelligence;
+* sophisticated anomaly ML.
 
 Data structures should not prevent these later.
 
+This list does not schedule future work.
+
+Product sequencing remains owned by `docs/UNLOCK_ROADMAP.md`, and useful unscheduled technical follow-ups belong in `docs/FOLLOW_UP_BACKLOG.md`.
+
 ---
 
-# 53. Recommended Implementation Order
+# 53. Historical Implementation Sequence
+
+> **Historical / non-executable section.**
+> The sequence below records the implementation order originally recommended while the Learning Engine design was being developed. It is preserved as design history and must not be used as the current Run plan or roadmap.
 
 ```text
 1. Attempt contract
@@ -1460,17 +1489,26 @@ Data structures should not prevent these later.
 15. persistent Today execution loop
 ```
 
-Only then:
-- Basic Progress;
-- readiness;
-- QuestionStats;
-- AI/content intelligence.
+Historical follow-on sequence:
+
+* Basic Progress;
+* readiness;
+* QuestionStats;
+* AI/content intelligence.
+
+Current implementation sequencing is owned by:
+
+`docs/UNLOCK_ROADMAP.md`
+
+Current execution is owned by:
+
+`docs/CHATGPT_PLAN.md`
 
 ---
 
-# 54. Decisions Still Required Before Coding the Full Formula
+# 54. Calibration and Remaining Decision Boundaries
 
-Open:
+The following were identified during the Learning Engine design process as calibration or decision areas:
 
 1. Exact UNLOCK → FSRS scheduler-rating mapping.
 2. Initial desired retention configuration.
@@ -1483,7 +1521,17 @@ Open:
 9. Minimum Topic/Course structure needed for coverage.
 10. Whether `retrievability_estimate` is persisted or computed.
 
-These decisions should be resolved with Golden Scenarios, not intuition alone.
+This list is **not itself the authoritative unresolved-decision queue**.
+
+For each item, current status must be determined from:
+
+`docs/OPEN_QUESTIONS.md`
+
+and relevant accepted ADRs.
+
+If an item has already been decided elsewhere, this historical list must not reopen it.
+
+Remaining open calibrations should be resolved using evidence and Golden Scenarios rather than intuition alone.
 
 ---
 

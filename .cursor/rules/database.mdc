@@ -1,89 +1,301 @@
 ---
-description: Database principles for UNLOCK
-alwaysApply: true
+description: UNLOCK database and persistence guardrails for Cursor
+globs:
+  - "src/infrastructure/postgres/**"
+  - "supabase/migrations/**"
+  - "supabase/tests/postgres/**"
+  - "supabase/tests/schema.integration.test.ts"
+alwaysApply: false
+---
+# UNLOCK — Database & Persistence
+
+Canonical database design lives in:
+
+* `docs/DATABASE.md`
+* `docs/PERSISTENCE_SCHEMA_V1.md`
+* committed migrations
+* relevant ADRs
+
+This Cursor rule is a thin implementation guardrail.
+
+Do not treat it as a second database specification.
+
 ---
 
-# UNLOCK Database Rules
+## 1. Start From the Existing Schema
 
-These are principles only. Do not design or migrate a schema until a dedicated V1 data-model task.
+The V1 persistence model already exists.
 
-Do not turn conceptual entity lists into migrations without a database design review.
-## V1 data scope
+Do not redesign it from scratch.
 
-The V1 persistence model is already implemented and must be evolved from the current committed schema and migrations.
+Before schema work:
 
-Do not redesign the schema from scratch.
+* inspect committed migrations;
+* inspect the current repository model;
+* inspect the relevant ADR;
+* evolve forward from current state.
 
-Current core V1 entities include:
+Do not turn conceptual future entities into migrations merely because they appear in documentation.
 
-- User
-- Course
-- CourseMembership
-- Material
-- Question
-- QuestionVersion
-- Attempt
-- UserQuestionProgress
-- Exam Date
-- DailyPlan
-- DailyPlanItem
+---
 
-DailyPlan / DailyPlanItem are the accepted current model for Today persistence.
+## 2. Current Core Persistence Concepts
 
-The older Today Session / Today Session Items naming is superseded. See ADR-016 for the accepted current model.
+Current important V1 concepts include:
 
-For new schema changes:
+* User;
+* Course;
+* CourseMembership;
+* Material;
+* Topic;
+* Question;
+* QuestionVersion;
+* Attempt;
+* UserQuestionProgress;
+* DailyPlan;
+* DailyPlanItem;
+* accepted Course lifecycle / authoring state.
 
-- inspect the current committed migrations first
-- use forward-only migrations
-- do not edit accepted historical migrations for new behavior
-- do not introduce future-heavy schema beyond the current task
+`DailyPlan` / `DailyPlanItem` are the primary current Today persistence model.
 
-The schema should stay extensible for Institution, Instructor, Assignments, knowledge graphs, and intelligence modules without requiring those features now.
+Legacy `TodaySession` / `TodaySessionItem` may remain for compatibility/history.
 
-## Domain constraints already decided
+Do not treat legacy naming as the primary current model.
 
-Institution is optional. Course must be valid without a required `institution_id`.
+---
 
-Question and UserQuestionProgress are separate concerns. The same question can be strong for one learner and weak for another.
+## 3. Question Answer Model Is Decided
 
-Raw Attempts are immutable learning evidence. Derived mastery or progress must not replace attempt history.
+V1 Question answer storage is **not TBD**.
 
-Today requires a persisted DailyPlan. For the same user and local day, reopening Today must resume the same persisted DailyPlan rather than silently generating a different plan.
+ADR-014 defines the current model.
 
-Exam date precedence:
+Current V1 uses:
 
-1. personal exam date override
-2. otherwise group/course exam date
-3. otherwise no exam date — do not invent exam urgency
+* immutable `QuestionVersion`;
+* `question_type`;
+* structured JSON answer options;
+* structured correct-answer definition;
+* `SINGLE_CHOICE`;
+* `MULTIPLE_CHOICE`.
 
-Answer-option storage (normalized table vs structured JSON) remains TBD until database design.
+Do not introduce a normalized answer-option table unless a later accepted decision explicitly changes the model.
 
-Assignments, Institution administration, and intelligence-finding tables are architecture-ready. Do not create them in V1 unless a concrete use requires them.
+Do not mutate a historical QuestionVersion in place.
 
-## Security and ownership
+---
 
-If Supabase is used:
+## 4. Attempts and Progress
 
-- Row Level Security is required, not optional cleanup
-- RLS policies must be tested
-- users may access only authorized data
-- learner progress stays private
-- institution-level access stays isolated
-- service-role keys must never reach the browser
-- RLS is part of the intended security model, but policy changes must only be implemented as part of an explicit auth/security task or accepted decision.
-- Do not invent permissive placeholder policies.
+Preserve the distinction:
 
-Preserve ownership and provenance for materials, questions, generated content, and learner progress.
+```text
+Attempt
+= immutable historical evidence
 
-Do not share uploaded course material across unrelated users without explicit permission.
+UserQuestionProgress
+= current derived learner state
+```
 
-Collect only data with a defined product, learning, operational, or research purpose.
+Do not store learner mastery directly on shared Question content.
 
-## Migrations
+Do not rewrite historical Attempts to reflect newer learner-state conclusions.
 
-Schema changes must use a documented migration process when that process exists.
+---
 
-No coding agent may perform destructive database changes without explicit approval.
+## 5. DailyPlan Persistence
 
-Do not delete user data fields merely because they appear unused.
+Preserve accepted current Today semantics:
+
+* one DailyPlan per learner per learner-local day;
+* same-day reopen returns the persisted plan;
+* DailyPlanItems preserve selected QuestionVersion identity;
+* item resolution state remains coherent;
+* Skip is distinct from incorrect-answer evidence;
+* New Material planning does not fabricate progress;
+* only eligible active LEARNER memberships auto-participate.
+
+Product semantics are owned by ADR-016 and ADR-017.
+
+Do not redefine them in persistence code.
+
+---
+
+## 6. Exam-Date Policy Is Not Fully Settled
+
+Do not hard-code an exam-date precedence merely from old documentation.
+
+The exact V1 hierarchy remains governed by:
+
+`docs/OPEN_QUESTIONS.md`
+
+and future accepted decisions.
+
+Preserve only currently accepted behavior.
+
+In particular:
+
+* do not fabricate exam urgency when no valid exam context exists;
+* do not let fixtures silently become product policy.
+
+---
+
+## 7. Course / Institution Boundary
+
+Institution remains optional for V1.
+
+A Course must be valid without requiring `institution_id`.
+
+Do not build:
+
+* institutional tenancy;
+* Institution Admin;
+* assignment infrastructure;
+* deep Knowledge Graph persistence;
+
+unless explicitly activated by current scope.
+
+Architecture-ready does not mean implement now.
+
+---
+
+## 8. Migrations
+
+Schema changes use forward-only migrations.
+
+Do not:
+
+* edit accepted historical migrations for new behavior;
+* perform destructive schema changes without explicit approval;
+* invent backfills/defaults merely to make migration code convenient;
+* delete data fields casually.
+
+For new schema behavior:
+
+* add a new migration;
+* preserve compatibility where required;
+* protect existing data integrity.
+
+Committed migrations are the physical schema authority.
+
+---
+
+## 9. Constraints and Transactions
+
+Use database constraints for true persistence invariants where appropriate.
+
+Examples may include:
+
+* primary keys;
+* uniqueness;
+* foreign keys;
+* composite identity consistency;
+* CHECK constraints;
+* state/timestamp consistency.
+
+Use transactions/Unit of Work when multiple writes must succeed or fail atomically.
+
+Do not collapse scoped transactional boundaries into one global abstraction solely to reduce boilerplate.
+
+---
+
+## 10. PostgreSQL Infrastructure
+
+Follow the existing PostgreSQL repository architecture.
+
+Do not:
+
+* issue ad hoc SQL from UI components;
+* create a new `pg.Pool` per request;
+* bypass established application/repository boundaries;
+* rewrite persistence through Supabase JS merely because Supabase Auth exists.
+
+Detailed PostgreSQL implementation guidance lives in:
+
+`.claude/rules/postgres.md`
+
+when Claude Code is the active tool.
+
+---
+
+## 11. Security / RLS Baseline
+
+Do not automatically add or broaden RLS policies.
+
+Current V1 security relies on:
+
+* trusted server-side authentication;
+* application authorization;
+* ownership checks;
+* existing database controls.
+
+Existing RLS state/policies must be preserved where applicable.
+
+New RLS policy design requires explicit security/database scope or an accepted decision.
+
+Do not create permissive placeholder policies.
+
+Service-role credentials must never reach the browser.
+
+---
+
+## 12. Ownership and Privacy
+
+Preserve clear ownership/authorization paths for private learner data.
+
+Protect:
+
+* Attempts;
+* UserQuestionProgress;
+* DailyPlans;
+* private Course/material access;
+* learner-specific academic state.
+
+Do not share user-uploaded or Course-scoped material across unrelated users without explicit accepted behavior.
+
+Collect/store only data with a defined product, learning, operational, or research purpose.
+
+---
+
+## 13. Evidence Boundaries
+
+Local PostgreSQL/PGlite evidence does not automatically prove:
+
+* hosted Supabase Auth;
+* production connection pooling;
+* true multi-backend concurrency;
+* hosted RLS/role behavior;
+* every runtime decoding edge case.
+
+Do not overstate database verification.
+
+Testing philosophy lives in:
+
+`docs/TESTING.md`
+
+---
+
+## 14. Scope Discipline
+
+Do not let database work silently decide:
+
+* mastery thresholds;
+* misconception rules;
+* ranking weights;
+* Today composition;
+* exam-date hierarchy;
+* future institutional structure.
+
+If persistence work exposes a real unresolved product/security/data decision, surface it rather than encoding an answer in the schema.
+
+---
+
+## 15. Core Principle
+
+> Evolve the schema from committed reality.
+
+> Preserve immutable evidence and accepted domain boundaries.
+
+> Use constraints for real data invariants.
+
+> Do not invent product policy or RLS policy inside database cleanup.

@@ -1,366 +1,510 @@
-# UNLOCK Definition of Done
+# UNLOCK — Definition of Done
 
-Status: Active delivery standard
+Status: ACTIVE QUALITY STANDARD
 
-Purpose: define what "done" means for UNLOCK so features, fixes, refactors, domain logic, and infrastructure changes are not considered complete merely because code runs locally.
+Purpose: define the project-wide quality bar that must be satisfied before UNLOCK work is considered complete.
 
-A change is done only when it is correct, scoped, testable, maintainable, documented where needed, and safe to build on.
+This document defines **what Done means**.
 
----
+It does not define:
 
-## 1. Scope Is Correct
+* the current Run;
+* Slice sequencing;
+* exact verification commands;
+* reviewer selection;
+* checkpoint workflow;
+* commit workflow;
+* Git safety policy.
 
-The implemented work matches the approved task.
-
-The change should:
-
-- solve the intended problem;
-- stay within the agreed feature or technical scope;
-- avoid unrelated feature additions;
-- avoid speculative architecture;
-- avoid unnecessary refactors.
-
-If useful future work is discovered, document it separately rather than silently expanding the current task.
+Those responsibilities belong to their dedicated owners.
 
 ---
 
-## 2. Product Behavior Is Correct
+# 1. Scope Is Correct
 
-The implemented behavior matches:
+The completed work must:
 
-- `docs/MASTER_SPEC.md`;
-- `docs/PRODUCT.md`;
-- the relevant feature contract;
-- relevant ADRs;
-- the domain glossary.
+* solve the approved problem;
+* satisfy the active Slice/Run requirements;
+* remain inside explicit scope;
+* preserve explicit non-goals;
+* avoid unrelated feature additions;
+* avoid speculative architecture;
+* avoid opportunistic refactors that materially expand the change.
 
-Do not treat "the UI looks right" as proof that the product behavior is correct.
-
-If documentation conflicts, resolve the conflict before implementation is considered done.
-
----
-
-## 3. Type Safety Is Preserved
-
-TypeScript should remain meaningful.
-
-Requirements:
-
-- no unnecessary `any`;
-- domain types should be explicit where appropriate;
-- unsafe casts should be avoided;
-- important inputs and outputs should have clear contracts.
-
-A passing build does not justify weakening types.
+Useful non-blocking future work should be deferred deliberately rather than silently absorbed.
 
 ---
 
-## 4. Lint Passes
+# 2. Accepted Behavior Is Correct
 
-Relevant work must pass:
+Implementation must match the relevant accepted sources.
 
-```bash
-npm run lint
+Depending on the change, these may include:
+
+* accepted ADRs;
+* `docs/PRODUCT.md`;
+* `docs/UNLOCK_V1_SCOPE.md`;
+* `docs/ARCHITECTURE.md`;
+* `docs/DOMAIN_GLOSSARY.md`;
+* relevant domain documentation;
+* explicit feature contract where one exists.
+
+Open questions must remain open until explicitly resolved.
+
+Tests or implementation details must not silently create new product policy.
+
+---
+
+# 3. Repository Reality Is Coherent
+
+The final repository state must be internally understandable.
+
+There should be no unexplained:
+
+* partial implementation;
+* contradictory code paths;
+* accidental generated files;
+* unresolved merge artifacts;
+* stale authoritative documentation created by the change;
+* hidden dependency on temporary local state.
+
+A fresh developer should be able to understand the completed change from repository reality and the relevant canonical sources.
+
+---
+
+# 4. Architecture Boundaries Are Preserved
+
+The current layered modular-monolith boundaries should remain coherent.
+
+Primary structure:
+
+```text id="2m8fme"
+app
+→ application
+→ domain
+
+infrastructure
+→ persistence/provider implementation
 ```
 
-Do not disable lint rules merely to make the check pass unless the rule itself is intentionally changed and justified.
+A change is not Done if it works only by:
+
+* duplicating domain logic in UI/API code;
+* bypassing application boundaries;
+* embedding product policy in infrastructure;
+* creating unnecessary cross-layer coupling;
+* introducing speculative abstraction without a current need.
+
+Architecture may evolve when explicitly required, but it should not drift accidentally.
 
 ---
 
-## 5. Typecheck Passes
+# 5. Domain and Learning Integrity Are Preserved
 
-Relevant work must pass:
+Changes affecting learning behavior must preserve accepted invariants.
 
-```bash
-npm run typecheck
-```
+Relevant examples include:
 
-Type errors should be resolved rather than hidden.
+* Attempts remain immutable historical evidence;
+* QuestionVersions remain immutable content snapshots;
+* historical Attempts remain interpretable;
+* derived learner state remains distinct from raw evidence;
+* deterministic behavior remains deterministic;
+* replay/rebuild remains trustworthy where supported;
+* learner evidence is not fabricated from planning state.
 
----
-
-## 6. Relevant Tests Exist and Pass
-
-Tests should be added when the change introduces or modifies meaningful behavior.
-
-Testing should prioritize:
-
-- Learning Engine behavior;
-- domain rules;
-- data integrity;
-- ranking logic;
-- persistence behavior;
-- security boundaries;
-- regression-prone behavior.
-
-Run:
-
-```bash
-npm test
-```
-
-Do not add tests simply to increase a coverage number.
+A change that corrupts learning history or silently changes learning semantics is not Done.
 
 ---
 
-## 7. Production Build Passes When Relevant
+# 6. Today / DailyPlan Integrity Is Preserved
 
-Run:
+Changes affecting Today must preserve accepted current semantics.
 
-```bash
-npm run build
-```
+Relevant invariants include:
 
-when a change may affect:
+* `DailyPlan` / `DailyPlanItem` are the primary current Today model;
+* one DailyPlan per learner per learner-local calendar day;
+* same-day plan reuse;
+* frozen-plan behavior;
+* authoritative persisted item identity;
+* active `LEARNER` eligibility rules;
+* New Material placement is not learning evidence;
+* Skip is resolution, not an incorrect Attempt;
+* Manual Practice does not silently resolve Today.
 
-- routing;
-- Next.js runtime behavior;
-- application compilation;
-- server/client boundaries;
-- configuration;
-- deployment behavior;
-- major integration work.
+Legacy compatibility behavior may remain where explicitly supported.
 
-Before important milestones, the production build should pass even if the most recent task was small.
-
----
-
-## 8. Domain Boundaries Are Preserved
-
-Core learning and business logic should not leak into React components.
-
-Examples of logic that belongs outside presentation code:
-
-- mastery calculations;
-- review scheduling;
-- misconception updates;
-- exam-date resolution;
-- Next Best Action ranking;
-- Today planning.
-
-Quiz should not become the owner of Today selection logic.
-
-A feature is not done if it works only because responsibilities were mixed together incorrectly.
+It must not redefine the current model accidentally.
 
 ---
 
-## 9. Learning Data Integrity Is Preserved
+# 7. Data Integrity Is Preserved
 
-Any change affecting learner data must protect historical evidence.
+Persistence changes must protect canonical data invariants.
 
-Requirements include:
+Where relevant:
 
-- raw Attempts remain preserved;
-- current progress does not overwrite historical Attempts;
-- shared Question data remains separate from learner-specific progress;
-- important updates do not create inconsistent partial state;
-- engine behavior is versionable where required.
+* required operations are atomic;
+* partial writes do not create corrupted state;
+* constraints protect true database invariants;
+* idempotency prevents duplicate logical writes;
+* legitimate distinct actions remain distinct;
+* foreign-key relationships remain valid;
+* historical evidence is not rewritten.
 
-Do not silently mutate historical learning evidence to represent current state.
-
----
-
-## 10. RTL and Localization Are Correct
-
-User-facing interfaces must follow the product's Hebrew-first, RTL-first direction.
-
-Requirements:
-
-- default language is Hebrew;
-- default direction is RTL;
-- locale is `he-IL`;
-- user-facing copy should use the messages layer;
-- directional UI should be checked for RTL behavior;
-- mixed Hebrew/English content should remain readable.
-
-Do not scatter hardcoded user-facing strings across components where avoidable.
+Migration history must remain forward-only.
 
 ---
 
-## 11. Accessibility Is Addressed
+# 8. Authentication and Authorization Are Preserved
 
-For meaningful UI changes, consider:
+Security-sensitive changes must maintain trusted boundaries.
 
-- semantic HTML;
-- keyboard access;
-- focus behavior;
-- accessible labels;
-- error communication;
-- readable contrast;
-- mobile touch targets;
-- screen-reader meaning.
+Where relevant:
 
-Accessibility is part of feature quality, not a separate optional polish phase.
+* server-side verified identity is authoritative;
+* client-provided identity does not override trusted identity;
+* authentication and authorization remain distinct;
+* ownership is enforced at trusted boundaries;
+* protected mutation does not occur before required authorization;
+* unauthorized/private resource access fails safely;
+* privileged credentials remain server-only.
 
----
-
-## 12. Security Is Preserved
-
-A change is not done if it weakens security for convenience.
-
-Requirements may include:
-
-- secrets remain server-side;
-- authorization is enforced at trusted boundaries;
-- RLS is used and tested when Supabase is introduced;
-- ownership rules are respected;
-- user input is validated at important boundaries;
-- privileged credentials never reach browser code.
-
-Hiding UI controls is not authorization.
+UI visibility is not authorization.
 
 ---
 
-## 13. Dependencies Are Justified
+# 9. Secrets and Sensitive Data Remain Protected
 
-Do not add a package merely because it makes a task slightly easier.
+A change is not Done if it exposes:
 
-Before adding a dependency, consider:
+* `DATABASE_URL`;
+* service-role credentials;
+* tokens;
+* cookies;
+* passwords;
+* authorization headers;
+* private environment data;
+* sensitive raw internal errors.
 
-- can the existing stack solve the problem cleanly?
-- is the dependency actively needed now?
-- what runtime/bundle/maintenance cost does it introduce?
-- does it duplicate existing capability?
+Secrets must remain in appropriate server-side configuration.
 
-Large or foundational dependencies require explicit justification.
-
----
-
-## 14. Documentation Matches Behavior
-
-Documentation should be updated when a change materially affects:
-
-- product behavior;
-- domain terminology;
-- architecture;
-- persistence;
-- Learning Engine logic;
-- security;
-- feature behavior;
-- durable technical decisions.
-
-Do not update unrelated documentation just because a code change occurred.
-
-Do not leave important decisions only inside a chat or code comment.
+Do not commit secret material.
 
 ---
 
-## 15. ADR Is Added When Needed
+# 10. Error Behavior Is Controlled
 
-Create or update an Architecture Decision Record when a durable decision materially affects:
-
-- architecture;
-- data ownership;
-- core domain model;
-- persistence strategy;
-- external providers;
-- security model;
-- deployment topology;
-- learning-engine strategy.
-
-Small implementation details do not require ADRs.
-
-An ADR should explain why the decision exists, not merely what code was written.
-
----
-
-## 16. Git State Is Safe
-
-Before considering a task complete:
-
-- review `git status`;
-- review relevant diffs;
-- confirm no accidental files are included;
-- do not discard unrelated user work;
-- do not perform destructive Git operations without approval.
-
-Commit, push, merge, rebase, reset, or branch deletion should only happen when explicitly intended.
-
----
-
-## 17. Error and Edge States Are Considered
-
-A feature should not only work on the happy path.
+Meaningful failure paths should behave intentionally.
 
 Where relevant, handle:
 
-- missing data;
-- empty state;
-- duplicate submission;
-- refresh;
-- resume;
-- network failure;
-- unauthorized access;
-- invalid input;
-- insufficient learner evidence;
-- external provider failure.
+* invalid input;
+* unauthenticated access;
+* unauthorized access;
+* missing resources;
+* duplicate/replayed requests;
+* persistence failures;
+* external-provider failures;
+* empty/insufficient-data states;
+* unexpected internal failures.
 
-If an unresolved edge case changes product behavior, document it as an open question rather than inventing behavior.
+Client-facing errors should remain stable and non-sensitive.
 
----
-
-## 18. Analytics Match the Product Question
-
-If the feature requires analytics, events should exist only when they answer a defined question.
-
-For example:
-
-- Did users open Today?
-- Did they start?
-- Did they complete?
-- Did they abandon?
-
-Do not add speculative telemetry without a stated use.
+Do not hide material failures behind silent fallback.
 
 ---
 
-## 19. No False Precision
+# 11. Important Edge Cases Are Addressed
 
-Learner-facing estimates must not imply certainty the system does not have.
+A feature is not Done merely because the primary happy path works.
 
-For progress, readiness, mastery, or confidence-related displays:
+Consider the edge cases relevant to its risk surface.
 
-- use insufficient-data states when appropriate;
-- avoid exact-looking numbers without enough evidence;
-- communicate uncertainty when it matters.
+Examples:
 
-A polished number is not useful if it overstates what UNLOCK actually knows.
+* retry;
+* refresh;
+* resume;
+* duplicate submission;
+* already-resolved state;
+* missing timezone;
+* absent learner evidence;
+* ownership mismatch;
+* stale/legacy state;
+* concurrent write where relevant.
+
+Unresolved behavior that requires a product decision should remain an explicit open question rather than being guessed.
 
 ---
 
-## 20. Current Scope Classification Is Preserved
+# 12. Type and Contract Quality Is Preserved
+
+TypeScript contracts should remain meaningful.
+
+Avoid:
+
+* unnecessary `any`;
+* unsafe casts used to hide real contract mismatches;
+* anonymous repeated domain structures when a stable contract exists;
+* weakening types merely to satisfy compilation.
+
+Runtime boundaries must still validate untrusted external input where TypeScript alone cannot provide safety.
+
+---
+
+# 13. User-Facing Quality Is Appropriate
+
+For learner/instructor UI changes, quality includes the relevant product requirements.
+
+Where applicable:
+
+* Hebrew-first behavior;
+* RTL correctness;
+* `he-IL` locale behavior;
+* mobile usability;
+* readable mixed Hebrew/English content;
+* meaningful empty/error/loading states;
+* accessible semantic structure;
+* keyboard/focus behavior;
+* appropriate touch targets.
+
+Accessibility and localization are part of product quality, not optional polish.
+
+---
+
+# 14. Learner-Facing Claims Are Honest
+
+UNLOCK must not present certainty the evidence does not justify.
+
+For outputs involving:
+
+* mastery;
+* progress;
+* readiness;
+* confidence;
+* learning recommendations;
+
+avoid false precision.
+
+Use insufficient-data or uncertainty states where appropriate.
+
+A precise-looking number is not quality if the model cannot support it.
+
+---
+
+# 15. Dependencies Are Justified
+
+New dependencies must solve a real current need.
+
+A dependency should not be added merely because:
+
+* it is convenient;
+* it may be useful later;
+* it creates theoretical flexibility.
+
+Consider:
+
+* whether the existing stack already solves the problem;
+* bundle/runtime cost;
+* maintenance burden;
+* security implications;
+* duplication of existing capabilities.
+
+Foundational dependencies require stronger justification.
+
+---
+
+# 16. Relevant Evidence Exists
+
+Done requires sufficient evidence for the risks actually changed.
+
+Evidence may include, depending on scope:
+
+* domain/unit tests;
+* application tests;
+* route/API tests;
+* repository/schema integration;
+* browser E2E;
+* typecheck;
+* lint;
+* production build;
+* review;
+* hosted/manual verification.
+
+Not every change requires every evidence layer.
+
+Operational verification selection and freshness are owned by:
+
+`.claude/rules/testing.md`
+
+The requirement here is only:
+
+> material changed behavior has appropriate fresh evidence.
+
+---
+
+# 17. Evidence Claims Are Precise
+
+Do not overstate verification.
+
+Examples:
+
+Prefer:
+
+> PGlite migration/schema tests passed.
+
+over:
+
+> Production database verified.
+
+Prefer:
+
+> Route tests proved auth-before-DB ordering.
+
+over:
+
+> Security fully verified.
+
+Prefer:
+
+> Playwright proved the tested browser flow.
+
+over:
+
+> The whole application is production-safe.
+
+Done requires honest evidence language.
+
+---
+
+# 18. Material Review Findings Are Resolved
+
+When risk review is required:
+
+* BLOCKER findings must be resolved;
+* required CORRECTION findings must be resolved;
+* fixes must receive refreshed evidence where they invalidate prior checks.
+
+NON-BLOCKING observations do not automatically become current work.
+
+Reviewer selection belongs to:
+
+`/review-commit`
+
+---
+
+# 19. Durable Documentation Is Consistent
+
+Documentation should be updated only when durable truth changed.
+
+Potential owners include:
+
+* ADR → durable decision;
+* `DEV_STATUS` → current durable state;
+* `CHATGPT_PLAN` → current execution;
+* `OPEN_QUESTIONS` → unresolved decision;
+* `FOLLOW_UP_BACKLOG` → intentionally deferred technical work;
+* canonical product/domain docs → durable accepted behavior.
+
+Do not leave a material durable decision only in:
+
+* chat;
+* terminal output;
+* temporary scratch;
+* code comment.
+
+Do not update unrelated documentation ceremonially.
+
+---
+
+# 20. Scope Classification Is Preserved
 
 Changes should respect whether a capability is:
 
-- V1 REQUIRED;
-- ARCHITECTURE-READY;
-- DEFERRED.
+* V1 REQUIRED;
+* ARCHITECTURE-READY;
+* DEFERRED.
 
-Do not implement architecture-ready or deferred features merely because they are easy to add.
+Architecture-ready does not mean implement now.
 
----
+Deferred does not mean forgotten.
 
-## 21. Completion Report
-
-When finishing a meaningful task, summarize:
-
-1. what changed;
-2. which files changed;
-3. tests/checks run;
-4. known limitations;
-5. unresolved questions;
-6. any follow-up work intentionally left out.
-
-Do not claim a check passed if it was not run.
-
-Do not hide warnings or failures.
+Do not silently promote future scope into current implementation.
 
 ---
 
-## Final Standard
+# 21. Repository State Is Safe to Hand Off
 
-"Done" means:
+Before completion, repository state should be understood.
 
-> The approved behavior works, important rules are protected, the code is understandable, the relevant checks pass, documentation is consistent, and the next developer can safely build on the result.
+There should be no hidden uncertainty about:
 
-Code that merely runs is not automatically done.
+* intended changed files;
+* unrelated user work;
+* temporary files;
+* pending manual actions;
+* remote migration/deployment state.
+
+Git mutation policy belongs to `AGENTS.md` / `CLAUDE.md`.
+
+Definition of Done only requires that the resulting state be clear and safe to continue from.
+
+---
+
+# 22. Manual / Remote Boundaries Are Honest
+
+Local completion must not be confused with remote completion.
+
+Examples:
+
+```text id="7l0zwd"
+migration committed + locally/PGlite verified
+≠
+migration applied to hosted Supabase
+```
+
+```text id="5fgdei"
+build passes
+≠
+production deployed
+```
+
+```text id="7s8hkq"
+mocked auth tests pass
+≠
+hosted Supabase Auth verified
+```
+
+Pending manual gates must be stated clearly.
+
+---
+
+# 23. Definition of Done
+
+Work is Done when:
+
+* approved scope is complete;
+* accepted behavior is correct;
+* relevant architecture boundaries are preserved;
+* learning/data/security invariants remain trustworthy;
+* relevant edge cases are handled;
+* sufficient fresh evidence exists;
+* material review findings are resolved;
+* durable documentation matches current truth;
+* repository state is safe and understandable;
+* remaining manual/remote boundaries are explicit.
+
+---
+
+# Final Standard
+
+> Done means the approved change is correct, trustworthy, proportionally verified, documented where durable truth changed, and safe for the next developer to build on.
+
+> Done does not mean every available test was rerun.
+
+> Done does not mean every future improvement was implemented.
+
+> Done does not mean remote actions occurred when only local evidence exists.

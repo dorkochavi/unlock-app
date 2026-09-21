@@ -1,352 +1,531 @@
 ---
+
 name: checkpoint
-description: Run UNLOCK's standard read-only verification for the current Slice or repository state. Checks git state, required tests, typecheck, lint, architectural boundaries, Plan alignment, diff cleanliness, and reports what is actually verified. Never stages, commits, pushes, modifies code, or auto-fixes failures.
----
+description: Validate UNLOCK's current Slice evidence and repository state after review and final relevant verification. Read-only. Confirms that required evidence exists, remains fresh, findings are resolved, and state is understood. Does not rerun the full verification suite by default.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # /checkpoint
 
-Standard UNLOCK verification checkpoint.
+Use this skill after:
 
-This skill is strictly READ-ONLY.
+```text id="i9a20k"
+IMPLEMENT
+→ TARGETED VERIFICATION
+→ RISK REVIEW
+→ FIX MATERIAL FINDINGS
+→ FINAL RELEVANT VERIFICATION
+```
 
-It must never:
+Its job is to answer:
 
-- modify code
-- modify documentation
-- auto-fix failures
-- stage files
-- commit
-- push
-- reset
-- clean
-- delete files
+> Is the current Slice state supported by sufficient fresh evidence to proceed?
 
-Its job is to verify the current repository state and report whether the work is ready for the next step.
+This skill owns **evidence/state validation**.
+
+It does not own:
+
+* implementation;
+* test selection;
+* reviewer selection;
+* product decisions;
+* Run sequencing;
+* commit execution.
+
+This skill is strictly read-only.
+
+Never:
+
+* modify files;
+* modify documentation;
+* auto-fix failures;
+* stage;
+* commit;
+* push;
+* reset;
+* clean;
+* delete files.
 
 ---
 
-## Step 1 — Establish Current Run Context
+## 1. Establish Current Context
 
-Normally the current session already has the HOT context:
+Use current session context when already fresh.
 
-- `CLAUDE.md`
-- `docs/CHATGPT_PLAN.md`
-- `docs/DEV_STATUS.md`
+Load only what is necessary to identify:
 
-Re-read only when:
+* `PLAN_VERSION`;
+* `RUN_ID`;
+* current Slice;
+* Slice acceptance criteria;
+* expected lifecycle transition.
 
-- checkpoint is invoked standalone
-- checkpoint is invoked after `/clear`
-- one of those files changed
-- the current Run/Slice context is uncertain
+Primary sources:
+
+* `docs/CHATGPT_PLAN.md`;
+* `docs/DEV_STATUS.md`;
+* repository/Git reality.
+
+Do not infer the current task from historical Run Reports.
+
+---
+
+## 2. Establish Repository State
+
+Inspect enough Git state to understand what is being checkpointed.
+
+Typical minimum:
+
+```text id="f1nqf4"
+git status --short
+git status -sb
+git log --oneline --decorate -5
+git diff --check
+```
+
+Use additional diff inspection only when needed.
 
 Determine:
 
-- PLAN_VERSION
-- RUN_ID
-- BASE_HEAD
-- current Slice
-- current Slice acceptance criteria
-- required verification
-- required reviewers
-- expected stop condition
+* current branch;
+* HEAD;
+* ahead/behind state;
+* staged changes;
+* unstaged changes;
+* untracked files;
+* unexpected repository state.
 
-Do not infer the active Slice from DEV_STATUS.
-
-Current execution comes from `docs/CHATGPT_PLAN.md`.
+Do not modify anything.
 
 ---
 
-## Step 2 — Establish Repository State
+## 3. Confirm Slice Alignment
 
-If repository state is already fresh and unchanged, do not rerun equivalent commands unnecessarily.
+Compare the current implementation state with the active Slice.
 
-Otherwise use the minimum necessary from:
+Validate:
 
-- `git status`
-- `git status -sb`
-- `git log --oneline -5`
-- `git diff --stat`
-- `git diff --check`
+* intended Slice work is present;
+* acceptance criteria are addressed;
+* explicit non-goals remain respected;
+* unrelated work has not leaked into the Slice;
+* no unapproved product/architecture/security decision was introduced.
 
-Determine:
+If repository reality conflicts with the Plan, report:
 
-- current branch
-- current HEAD
-- ahead/behind state
-- staged files
-- unstaged files
-- untracked files
-- whether current HEAD is compatible with one of the two valid Run-start
-  states defined in `CLAUDE.md` Section 1 (BASE_HEAD Semantics)
-- whether unexpected files exist
+```text id="spjufj"
+PLAN_CONFLICT
+```
 
-An uncommitted `docs/CHATGPT_PLAN.md` modification alone (State A) is expected
-and is not an unexpected file or a blocker.
-
-If HEAD differs from `BASE_HEAD` because earlier Slices in the same Run
-already created expected focused commits, that is normal mid-Run state, not a
-mismatch to diagnose — `CLAUDE.md` Section 1's two Run-start states describe
-how a Run begins, not every valid HEAD position during it.
-
-Do not touch unexpected files.
+Do not fix or rewrite the Plan here.
 
 ---
 
-## Step 3 — Plan Alignment
+## 4. Validate Review State
 
-Compare the current worktree / commits with the current Slice in `docs/CHATGPT_PLAN.md`.
+Confirm that the required risk review occurred before checkpoint.
 
-Verify:
+Expected review source:
 
-- work matches the Slice goal
-- acceptance criteria appear satisfied
-- explicit non-goals were respected
-- unrelated refactors were not added
-- no new product decision was silently invented
-- no later Slice was pulled forward unnecessarily
+`/review-commit`
 
-If repository reality contradicts the Plan, report:
+Validate:
 
-`PLAN_CONFLICT`
+* appropriate reviewer type(s) were used for the actual risk surface;
+* no unresolved BLOCKER remains;
+* no required CORRECTION remains;
+* any material correction has been incorporated.
 
-Do not modify the Plan.
+Do not rerun review merely because checkpoint was invoked.
 
----
+If review has not happened when the lifecycle requires it:
 
-## Step 4 — Architectural Boundary Check
-
-Inspect changed paths first.
-
-Verify relevant architecture boundaries.
-
-At minimum, ensure no unexpected infrastructure/runtime imports crossed into:
-
-- `src/domain/`
-- `src/application/`
-
-Potential suspicious dependencies include:
-
-- `pg`
-- PostgreSQL infrastructure
-- `@electric-sql/pglite`
-- `@supabase/`
-- `next/`
-- browser/UI-specific modules
-
-Flag only genuine violations.
-
-Do not flag documented exceptions or intentional type-only references without checking context.
+checkpoint is not ready.
 
 ---
 
-## Step 5 — Temporary / Accidental File Check
+## 5. Validate Evidence Inventory
 
-Treat:
+Identify the evidence already produced for this Slice.
 
-`scratch/**`
+Possible evidence includes:
 
-as temporary, non-canonical run state unless the current Plan explicitly says otherwise.
+* focused domain/unit tests;
+* application tests;
+* API/route tests;
+* repository/PGlite integration;
+* schema migration tests;
+* auth/security regression tests;
+* Playwright E2E;
+* typecheck;
+* lint;
+* production build;
+* `git diff --check`;
+* hosted/manual verification where actually performed.
 
-Flag if scratch content is staged unexpectedly.
+Checkpoint should inspect the available evidence.
 
-Also report unexpected:
-
-- `.env*` secrets/config files
-- zip archives
-- generated reports
-- exported artifacts
-- temporary Supabase state
-- unrelated local files
-
-Do not delete, ignore, stage, or modify them automatically.
+It should not assume every category is required.
 
 ---
 
-## Step 6 — Verification Commands
+## 6. Validate Evidence Sufficiency
 
-Run:
-
-`npm run typecheck`
-
-`npm run lint`
-
-`npm test`
-
-`git diff --check`
-
-Run:
-
-`npm run test:schema`
-
-only when the current Slice changes or directly depends on:
-
-- migrations
-- database schema
-- SQL
-- PostgreSQL repositories
-- row mappers / serialization
-- persistence constraints
-- transactions
-- UnitOfWork
-- other database-specific integration behavior
-
-Full policy:
+Use:
 
 `.claude/rules/testing.md`
 
-If `test:schema` already passed earlier in the same Slice and no DB-relevant work changed afterward:
+to determine whether the evidence set is sufficient for the changed risk surface.
 
-- do not rerun it
-- report the earlier result
+Ask:
 
-If the current Plan requires additional verification, run it.
+```text id="2fjtdd"
+For every materially affected risk,
+is there an appropriate proving layer?
+```
 
-If one command fails, continue only when doing so is safe and useful for diagnosis.
+Examples:
 
-Do not auto-fix.
+* pure domain change → focused domain evidence may be sufficient;
+* SQL/constraint change → relevant schema/PGlite evidence is required;
+* route-auth change → route/auth evidence is required;
+* integrated learner path change → browser E2E may be required;
+* build/runtime-boundary change → build evidence may be required.
 
----
-
-## Step 7 — Interpret Failures
-
-For every failure, determine whether it appears to be:
-
-- production defect
-- test defect
-- environment/configuration issue
-- unrelated known flaky behavior
-- unclear and requiring investigation
-
-Known diagnostic clue:
-
-Canonical Attempt replay ordering has historically been timing-sensitive when multiple rows receive identical ordering timestamps and ordering falls back to random UUID `id`.
-
-If that failure appears:
-
-- inspect it
-- do not assume current work caused it
-- do not ignore it
-- report the uncertainty accurately
-
-Never weaken tests merely to produce a green checkpoint.
+Do not require unrelated checks.
 
 ---
 
-## Step 8 — Verification Honesty
+## 7. Validate Evidence Freshness
 
-Distinguish clearly between:
+For each important evidence result, ask:
 
-- unit-tested
-- route-wiring tested
-- PGlite integration-tested
-- reviewed by inspection
-- reasoned under PostgreSQL semantics
-- real PostgreSQL tested
-- real Supabase tested
-- browser E2E tested
+```text id="q0eyra"
+What changed after this check passed?
+```
 
-PGlite does NOT prove:
+If no later relevant change could affect what it proved:
 
-- real multi-connection PostgreSQL concurrency
-- real Supabase Auth behavior
-- GoTrue signup behavior
-- browser cookie/session behavior
-- deployed network behavior
+* evidence remains fresh.
 
-Do not overstate verification.
+If a later relevant change could affect it:
 
----
+* evidence is stale.
 
-## Step 9 — DEV_STATUS Consistency
+If uncertain:
 
-Compare durable repository reality against `docs/DEV_STATUS.md`.
+* treat it as stale.
 
-DEV_STATUS should describe what is currently true, not the active task.
+Checkpoint does not itself invent a new testing matrix.
 
-Check whether:
-
-- newly completed durable capability should eventually be reflected there
-- existing capability statements are now stale
-- migration state changed
-- verification baseline changed
-- known gaps were closed or introduced
-
-Do not edit DEV_STATUS inside this read-only skill.
-
-Report required status updates to the implementation workflow.
+Use the operational testing rule.
 
 ---
 
-## Step 10 — Report Format
+## 8. Do Not Rerun Valid Evidence
 
-Return exactly these sections:
+Checkpoint is not another QA cycle.
 
-### Plan / Slice
+Do not automatically rerun:
 
-Report:
+* `npm test`;
+* `npm run test:schema`;
+* `npm run typecheck`;
+* `npm run lint`;
+* `npm run build`;
+* Playwright;
 
-- PLAN_VERSION
-- RUN_ID
-- current Slice
-- Slice goal
-- Plan alignment: aligned / PLAN_CONFLICT
+merely because checkpoint began.
 
-### Branch + HEAD
+If evidence is missing or stale:
 
-Report:
+report exactly what must be refreshed.
 
-- branch
-- short SHA
-- ahead/behind origin
-- relationship to BASE_HEAD where relevant
+Return execution to the implementation/testing lifecycle.
 
-### Git State
+---
+
+## 9. Minimal Checkpoint-Owned Checks
+
+Checkpoint may perform small read-only state checks that validate the checkpoint itself.
+
+Examples:
+
+```text id="rrp0ml"
+git status --short
+git status -sb
+git diff --check
+```
+
+It may inspect:
+
+* diff scope;
+* staged file list;
+* repository cleanliness;
+* current HEAD;
+* documentation consistency relevant to the transition.
+
+These checks do not replace implementation verification.
+
+---
+
+## 10. Validate Verification Claims
+
+Ensure evidence descriptions do not overstate what was actually proved.
+
+Distinguish:
+
+* unit-tested;
+* application-tested;
+* route-wiring tested;
+* PGlite integration-tested;
+* browser E2E tested;
+* inspected by reviewer;
+* reasoned under PostgreSQL semantics;
+* hosted Supabase verified;
+* deployed environment verified.
+
+Do not promote local evidence into hosted/production evidence.
+
+---
+
+## 11. Validate Database Evidence Boundaries
+
+When database work is involved, checkpoint should ensure claims match reality.
+
+For example:
+
+PGlite may prove:
+
+* migration application;
+* constraints;
+* repository SQL;
+* transactional behavior supported by the environment.
+
+It does not automatically prove:
+
+* hosted Supabase Auth;
+* network behavior;
+* pooling;
+* every true multi-backend concurrency case;
+* hosted RLS/role behavior.
+
+Do not block valid local work merely because hosted verification is not part of the current Slice.
+
+Do report hosted/manual actions that remain intentionally pending.
+
+---
+
+## 12. Validate Hosted Migration State
+
+If the Slice creates a migration:
+
+distinguish clearly between:
+
+```text id="2wfglw"
+committed/local/PGlite verified
+```
+
+and:
+
+```text id="a27tsq"
+applied to hosted Supabase
+```
+
+Claude must not apply hosted migrations.
+
+If hosted application is a later manual gate:
+
+* checkpoint may still be locally ready;
+* report the manual action explicitly.
+
+Do not claim hosted completion prematurely.
+
+---
+
+## 13. Validate Temporary / Accidental Files
+
+Inspect for unintended files relevant to commit/handoff safety.
+
+Examples:
+
+* `.env*`;
+* secrets;
+* scratch files;
+* zip archives;
+* generated artifacts;
+* Supabase CLI temporary state;
+* unrelated local files.
+
+`scratch/**` is temporary local state and should not be staged.
+
+Do not delete or modify unexpected files.
+
+Report them.
+
+---
+
+## 14. Validate Durable Documentation Need
+
+Checkpoint may identify whether durable current truth now requires a documentation update.
+
+Typical owner:
+
+`docs/DEV_STATUS.md`
+
+Examples:
+
+* capability became real;
+* migration state changed;
+* durable blocker closed;
+* new current limitation appeared;
+* meaningful verification baseline changed.
+
+Checkpoint must not edit DEV_STATUS.
+
+Report the needed update to the implementation workflow.
+
+Do not demand DEV_STATUS updates for transient execution details.
+
+---
+
+## 15. Validate Commit Safety
+
+If the intended next step is commit readiness, inspect whether:
+
+* only intended files will be committed;
+* no secret/config leakage is visible;
+* scratch is not staged;
+* unrelated files are not staged;
+* material review findings are resolved;
+* evidence is sufficient and fresh;
+* `git diff --check` is clean.
+
+Checkpoint does not stage or commit.
+
+---
+
+## 16. Run-End Checkpoint
+
+If checkpoint is being used near the end of a Run, do not automatically require all Run checks again.
+
+Validate whether:
+
+* every Slice is complete;
+* any cross-Slice integration criterion still lacks evidence;
+* Run-level manual gates remain;
+* durable status/history updates are required;
+* final Git state is understood.
+
+Additional integration verification belongs only where a real evidence gap exists.
+
+---
+
+## 17. Verdict Model
+
+Checkpoint returns exactly one of these verdicts.
+
+### `READY`
+
+Use when:
+
+* current Slice is aligned;
+* required review is complete;
+* no blocking finding remains;
+* relevant evidence is sufficient;
+* evidence is fresh;
+* repository state is understood;
+* no current blocker prevents the next lifecycle action.
+
+### `NOT READY`
+
+Use when:
+
+* required evidence is missing/stale;
+* review is incomplete;
+* a material finding remains unresolved;
+* repository state is unclear;
+* acceptance criteria are not satisfied;
+* unsafe/unexpected files block the intended transition.
+
+### `BLOCKED`
+
+Use when safe continuation requires:
+
+* a human decision;
+* a manual remote action that is the current gate;
+* resolution of a genuine `PLAN_CONFLICT`;
+* repository safety intervention.
+
+Do not use multiple readiness tiers such as:
+
+* `READY FOR REVIEW`;
+* `READY FOR COMMIT`;
+* `READY FOR HANDOFF`.
+
+The active workflow already knows what transition comes next.
+
+Checkpoint only answers whether current evidence/state is ready for that transition.
+
+---
+
+## 18. Report Format
+
+Return exactly these sections.
+
+### Checkpoint Target
+
+* Run ID;
+* Slice;
+* branch;
+* HEAD;
+* intended next lifecycle action.
+
+### Repository State
 
 Summarize:
 
-- staged
-- unstaged
-- untracked
-- unexpected files
+* staged;
+* unstaged;
+* untracked;
+* unexpected state.
 
-### Tests
-
-Report:
-
-- targeted tests already run if relevant
-- `npm test` pass/total
-- `npm run test:schema` pass/total if run
-- or why `test:schema` was legitimately not run
-
-### Typecheck / Lint
+### Review State
 
 Report:
 
-- clean
+* reviewers used;
+* unresolved BLOCKERs;
+* unresolved CORRECTIONs.
 
-or the first relevant errors.
+### Evidence Inventory
 
-### Diff Integrity
+List only meaningful evidence actually available.
 
-Report:
+For each item:
 
-- `git diff --stat`
-- `git diff --check`
+```text id="j5de8k"
+Evidence
+Status: fresh / stale
+What it proves
+```
 
-### Architecture Boundary Check
+### Evidence Gaps
 
-State whether any relevant boundary violation was found.
+List any missing/stale evidence required by the changed risk surface.
 
-### Verification Level
+If none:
 
-State exactly what has actually been verified.
+`None.`
 
-### DEV_STATUS Consistency
+### Documentation / Manual Actions
 
-State whether DEV_STATUS remains accurate and what will need updating outside this read-only checkpoint.
+List only durable updates or manual gates still required.
 
-### Blockers Before Next Step
+If none:
+
+`None.`
+
+### Blockers
 
 List blockers.
 
@@ -354,36 +533,148 @@ If none:
 
 `None.`
 
-### Checkpoint Verdict
+### Verdict
 
-Choose exactly one:
+Exactly one:
 
-- `READY FOR REVIEW`
-- `READY FOR COMMIT`
-- `READY FOR HANDOFF`
-- `NOT READY`
+* `READY`
+* `NOT READY`
+* `BLOCKED`
 
-Use the strongest status justified by the actual Slice state.
+### Next Action
 
-Do not commit or push.
+Give exactly one next action.
 
-A green verdict here is not itself a Run stop condition. See `CLAUDE.md`
-Section 21 (Checkpoint Continuation Rule / Run Completion Protocol) for
-whether the Run continues, stops, or proceeds to commit/review/handoff.
+Examples:
+
+* create focused local commit;
+* refresh specific stale verification;
+* resolve review correction;
+* update DEV_STATUS then rerun checkpoint;
+* perform required human hosted migration;
+* resolve PLAN_CONFLICT.
+
+Do not perform the action.
 
 ---
 
-## Final Rules
+## 19. Evidence Gap Response
 
-- Read-only means read-only.
-- Current work comes from `CHATGPT_PLAN`, not DEV_STATUS.
-- A checkpoint verdict reports state; it does not decide Run continuation.
-- Do not modify the Plan.
-- Do not modify DEV_STATUS.
-- Do not stage.
-- Do not commit.
-- Do not push.
-- Do not auto-fix.
-- Do not delete unknown files.
-- Do not use destructive Git commands.
-- Report facts, not assumptions.
+If checkpoint finds stale/missing evidence, do not solve it by default.
+
+Report narrowly:
+
+```text id="73tv3m"
+Evidence gap:
+- affected risk
+- missing/stale evidence
+- reason it is required
+```
+
+The implementation workflow should then use `.claude/rules/testing.md` to run the appropriate check.
+
+Afterward, checkpoint may be rerun.
+
+---
+
+## 20. Failure Honesty
+
+Do not hide:
+
+* failed tests;
+* unresolved reviewer findings;
+* unexplained worktree changes;
+* pending hosted migration;
+* unverified real-environment assumptions.
+
+Likewise, do not exaggerate them.
+
+A known manual hosted action may be acceptable at a local checkpoint if the active Plan explicitly places that action later.
+
+State the boundary accurately.
+
+---
+
+## 21. Historical Artifacts
+
+Do not use:
+
+* old Run Reports;
+* historical Invariant Matrix;
+* stale scratch;
+* old test counts;
+
+as current readiness authority.
+
+Current readiness comes from:
+
+* active Plan;
+* repository state;
+* current review;
+* current relevant evidence.
+
+---
+
+## 22. Test Counts
+
+Do not require exact historical test counts for readiness.
+
+Counts may be useful as diagnostics.
+
+They are not acceptance criteria unless the active Plan explicitly makes them one.
+
+A changed count is not itself a defect.
+
+---
+
+## 23. No Automatic Scope Expansion
+
+If checkpoint discovers unrelated technical debt:
+
+* do not block current work unless it creates current risk;
+* do not fix it;
+* preserve it in `FOLLOW_UP_BACKLOG` only when genuinely useful.
+
+Checkpoint is not a cleanup phase.
+
+---
+
+## 24. Stop Condition
+
+Checkpoint ends when:
+
+1. current repository state is understood;
+2. review state is understood;
+3. relevant evidence has been inventoried;
+4. freshness and sufficiency have been evaluated;
+5. gaps/blockers are explicit;
+6. one verdict and one next action are returned.
+
+Do not continue into:
+
+* implementation;
+* test reruns;
+* documentation edits;
+* staging;
+* commit;
+* push.
+
+---
+
+## 25. Core Rules
+
+* Read-only.
+* Validate evidence; do not recreate it.
+* Validate state; do not mutate it.
+* Use the active Plan.
+* Use `.claude/rules/testing.md` for evidence sufficiency/freshness.
+* Review must precede checkpoint.
+* Reuse fresh evidence.
+* Do not rerun broad suites ceremonially.
+* Do not overstate verification.
+* Do not stage.
+* Do not commit.
+* Do not push.
+* Do not modify DEV_STATUS.
+* Do not delete unknown files.
+* Return one verdict and one next action.

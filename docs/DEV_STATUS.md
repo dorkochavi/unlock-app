@@ -1,742 +1,736 @@
 # UNLOCK — Development Status
 
-> Current-state snapshot for development sessions.
->
-> This file describes what is true NOW.
-> It is NOT a changelog, Run Report, ADR, product specification, or workflow manual.
->
-> Historical execution detail belongs in Git and `docs/RUNS/`.
-> Product decisions belong in `docs/DECISIONS/`.
-> Current work belongs in `docs/CHATGPT_PLAN.md`.
+Status: ACTIVE CURRENT-STATE SNAPSHOT
+
+Purpose: describe what is true about UNLOCK **now**.
+
+This file is not:
+
+* a changelog;
+* a Run Report;
+* a current execution plan;
+* a product specification;
+* a decision log;
+* a terminal/test diary.
+
+Historical execution belongs in Git and `docs/RUNS/**`.
+
+Current execution belongs in `docs/CHATGPT_PLAN.md`.
+
+Durable decisions belong in `docs/DECISIONS/**`.
+
+Unresolved decisions belong in `docs/OPEN_QUESTIONS.md`.
 
 ---
 
-## Repository State
+# 1. Repository / Development State
 
-Branch:
+Current product-development branch:
 
 `feature/project-foundation`
 
-Pushed HEAD:
+Baseline before Development OS V1.2 cleanup:
 
-`a03efa4` — `close Run 2026-09-20-005 as Course Authoring & Topics V1
-(COMPLETE)` (confirmed equal to `origin/feature/project-foundation`; this is
-also Run 006's `BASE_HEAD`).
+`0dd28ce51699c55b3e2cde338a4ab92697775552`
 
-Run 004 (`3568275`..`0e812a1`, learner shell/nav + My Courses + Course View
-+ Playwright E2E harness — see `docs/RUNS/2026-09-20-004.md`) and Run 005
-(`6090862`..`a03efa4`, Course Authoring & Topics V1, COMPLETE — see
-`docs/RUNS/2026-09-20-005.md`) are both fully pushed.
+Run 006 — Question Authoring & Publishing V1:
 
-Last pushed application-feature baseline (product code, pre-Development-OS-V1 documentation work):
+**COMPLETE AND PUSHED**
 
-`66df9f9` — `add open-course learner onboarding`
+Current active work:
 
-Remote:
+Development OS V1.2:
 
-`origin/feature/project-foundation`
+**COMPLETE — VERIFIED LOCALLY, PENDING COMMIT**
+
+The Development OS V1.2 cleanup completed:
+
+* authority/ownership reconciliation;
+* canonical governance cleanup;
+* testing/evidence ownership separation;
+* Claude operating-kernel compression;
+* workflow skill separation;
+* reviewer specialization;
+* scoped Claude implementation rules;
+* operational-document compression;
+* Cursor rule reconciliation and scoping;
+* repository navigation cleanup;
+* final stale-guidance / ownership / frontmatter / workflow verification.
+
+Final V1.2 verification confirmed:
+
+* `git diff --check` has no whitespace errors;
+* active `TodaySession` references are legacy/compatibility-only;
+* `.cursor/rules/workflow.mdc` is the only Cursor rule with `alwaysApply: true`;
+* database, Learning Engine, and RTL Cursor rules are path-scoped;
+* other specialist Cursor rules use intelligent relevance loading;
+* representative workflow simulations are coherent;
+* no Run 007 product implementation has started.
+
+The cleanup is currently present in the local working tree and has not yet been committed.
+
+Next product Run after Development OS V1.2:
+
+**Run 007 — Structured Import**
+
+Run 007 has not started.
+
+A new explicit execution Plan is required before product implementation resumes.
+
+Next product Run after Development OS V1.2:
+
+**Run 007 — Structured Import**
+
+Do not begin Run 007 until the Development OS cleanup reaches its explicit stop condition and a new execution Plan is activated.
 
 ---
 
-## Current Product Capabilities
+# 2. Current Product Architecture
 
-### Authentication / User
+UNLOCK is a layered modular monolith.
+
+Primary structure:
+
+```text id="8pqf07"
+src/app/
+    ↓
+src/application/
+    ↓
+src/domain/
+
+src/infrastructure/
+    implements persistence/provider boundaries
+```
+
+Current stack includes:
+
+* Next.js App Router;
+* TypeScript;
+* PostgreSQL;
+* Supabase Auth;
+* Supabase-hosted PostgreSQL;
+* Tailwind CSS;
+* Vitest;
+* PGlite-backed PostgreSQL/schema integration tests;
+* Playwright E2E.
+
+Current learner product is Hebrew-first, RTL-first, mobile-first.
+
+---
+
+# 3. Authentication / User
 
 Implemented:
 
-- Supabase browser/server authentication clients.
-- Trusted server identity through `supabase.auth.getUser()`.
-- `auth.users -> public.users` provisioning.
-- Email/password login and signup UI at `/login`.
-- Safe internal login return-path support through `next`.
-- Persisted learner IANA timezone.
-- Browser timezone detection only when the server reports that no timezone is persisted.
-- Auth-before-database route ordering on authenticated API paths.
-- Stable generic `INTERNAL_ERROR` boundary for unexpected server failures.
-- Hebrew-first / RTL application shell.
+* Supabase browser/server authentication clients;
+* trusted server identity through `supabase.auth.getUser()`;
+* `auth.users → public.users` provisioning;
+* email/password login and signup;
+* safe internal login return paths;
+* persisted learner IANA timezone;
+* browser timezone detection when no timezone is persisted;
+* auth-before-protected-DB ordering on authenticated API paths;
+* generic controlled internal-error responses.
 
-Security baseline:
+Current security baseline:
 
-- authoritative `userId` is never accepted from the client
-- database/service credentials remain server-only
-- raw SQL/errors/stack traces are not returned to clients
-- external/protocol-relative login redirects are rejected
+* authoritative `userId` is not accepted from the client;
+* database/service credentials remain server-only;
+* protected ownership/authorization is enforced at trusted server/application/database boundaries;
+* raw SQL, credentials, stack traces, and internal errors are not returned to clients;
+* external/protocol-relative login redirects are rejected.
+
+No new RLS policy should be introduced automatically.
 
 ---
 
-### Learner Navigation / Shell (Run 004)
+# 4. Learner Shell / Navigation
 
 Implemented:
 
-- shared mobile-first learner shell (`src/app/(learner)/layout.tsx` +
-  `learner-nav.tsx`) via a Next.js route group — a bottom Today/Courses tab
-  bar with active-state highlighting.
-- the route group changes no existing URL: `/today` kept its exact path
-  (pure file move, zero content diff).
-- `/`, `/login`, `/join/[courseId]` deliberately remain outside the shell
-  (pre-authentication/pre-product entry points).
-- RTL/Hebrew-first behavior preserved via the existing global `dir="rtl"`,
-  no hand-coded left/right logic in the nav.
+* learner route-group shell;
+* mobile bottom navigation;
+* Today tab;
+* Courses tab;
+* active-state highlighting;
+* Hebrew/RTL behavior.
+
+Current learner entry points include:
+
+* `/`
+* `/login`
+* `/today`
+* `/join/[courseId]`
+* `/courses`
+* `/courses/[courseId]`
+
+Pre-authentication entry points remain outside the learner shell where appropriate.
 
 ---
 
-### My Courses / Course View (Run 004)
+# 5. Course / Membership
 
 Implemented:
 
-- `GET /api/courses/mine` — authenticated learner's own active Courses
-  (reuses `CourseMembershipRepository.listActiveForUser` unchanged; role is
-  passed through, never downgraded/hidden for an OWNER/INSTRUCTOR's own
-  membership).
-- `/courses` (My Courses) — course list with a real, translated empty state
-  for a zero-course learner; no fabricated exam/progress/analytics data.
-- `GET /api/courses/:courseId/context` — authenticated, membership-gated
-  Course View read: fails closed to `NOT_AUTHORIZED` (no membership) or
-  `ACCESS_REVOKED` (revoked membership); never the same route as the
-  public unauthenticated `GET /api/courses/:courseId` join-page lookup.
-- `/courses/[courseId]` (Course View) — course title + the caller's own
-  membership role, with a link back to `/today`. Does not create a second
-  Today/plan system. No Manual Practice link (no such learner-facing flow
-  exists anywhere in this repo yet).
-- batched `CourseRepository.getCourseSummaries(courseIds)` (`= any($1::uuid[])`)
-  to avoid N+1 course-title lookups; same learner-safe `{id, title}`
-  projection as the existing single-course method.
+* Course persistence;
+* CourseMembership;
+* membership roles:
+
+  * `OWNER`
+  * `INSTRUCTOR`
+  * `LEARNER`
+* join policies:
+
+  * `OPEN`
+  * `AUTHORIZED_ONLY`
+* Course ownership/management authorization;
+* public-safe Course summary lookup;
+* OPEN-course self-join;
+* idempotent repeat join;
+* OWNER/INSTRUCTOR role preservation;
+* revoked membership fail-closed behavior;
+* authenticated learner Course listing;
+* membership-gated Course context.
+
+Only active `LEARNER` memberships automatically participate in DailyPlan generation.
+
+Revoked-membership rejoin behavior remains intentionally unresolved.
 
 ---
 
-### Courses / Membership
+# 6. Course Lifecycle / Instructor Authoring
 
 Implemented:
 
-- Course persistence.
-- `CourseMembership` model.
-- roles:
-  - `OWNER`
-  - `INSTRUCTOR`
-  - `LEARNER`
-- OPEN vs AUTHORIZED_ONLY join policy.
-- OWNER membership remains canonical authorization.
-- only active LEARNER memberships automatically participate in DailyPlan generation.
-- public-safe course summary lookup returning only learner-safe identifying information.
-- authenticated OPEN-course join API.
-- `/join/[courseId]` learner onboarding page.
-- repeat OPEN join is idempotent.
-- existing OWNER / INSTRUCTOR membership is preserved and never downgraded by self-join.
-- revoked membership currently fails closed; automatic rejoin semantics remain intentionally undecided.
+Course lifecycle:
 
-Ruppin demo onboarding path now exists conceptually as:
+* `DRAFT`
+* `PUBLISHED`
+* `ARCHIVED`
 
-join link / QR
-→ login if required
-→ return to join page
-→ join OPEN course
-→ `/today`
+Course metadata includes optional exam date.
 
----
+Instructor/owner authoring capabilities include:
 
-### Course Authoring (Run 005 — Course Authoring & Topics V1, COMPLETE)
+* create Course;
+* edit Course metadata;
+* change join policy;
+* publish Course;
+* archive Course;
+* view/manage instructor Courses.
 
-Implemented (Slice S2 — Course Lifecycle + Instructor Authorization Foundation):
+Instructor UI currently exists under:
 
-- `courses.status`: `DRAFT` / `PUBLISHED` / `ARCHIVED` (migration
-  `20260926000000_course_lifecycle_v1.sql`; existing rows backfilled to
-  `PUBLISHED`, no column default left behind — new Courses must state
-  status explicitly, matching `question_versions.question_type`'s
-  established precedent).
-- `courses.exam_date`: optional instructor-set date, metadata only — no
-  Exam Urgency ranking behavior exists yet (out of Run 005 scope).
-- authoring authorization: `canAuthorCourse` (OWNER/active INSTRUCTOR only;
-  fails closed on revoked OR archived management membership — deliberately
-  stricter than the pre-existing `isManagementRole` alone; a known,
-  currently-dormant asymmetry with `setCourseJoinPolicy`, which only checks
-  `revokedAt`, is tracked for reconciliation before that use case is ever
-  wired to a live route).
-- application use cases: `createCourse` (new Course starts DRAFT +
-  AUTHORIZED_ONLY, grants creator OWNER membership, both writes atomic via
-  a dedicated `CourseUnitOfWork`/`PostgresCourseUnitOfWork` transaction),
-  `getCourseForAuthoring`, `updateCourseMetadata`, `publishCourse`
-  (DRAFT -> PUBLISHED only), `archiveCourse` (DRAFT or PUBLISHED ->
-  ARCHIVED; ARCHIVED is terminal in V1, no un-archive path).
-- API: `POST /api/courses`, `GET`/`PATCH /api/courses/:courseId/manage`,
-  `POST /api/courses/:courseId/publish`, `POST /api/courses/:courseId/archive`
-  — all authenticated, auth-before-DB, authorization-before-existence
-  (an unauthorized caller never learns whether a `courseId` exists).
-- learner self-join (`joinCourse`) is now lifecycle-aware: a DRAFT or
-  ARCHIVED Course is never joinable even when `join_policy = OPEN`
-  (`canSelfJoinCourse`, replacing the plain `canSelfJoin` check inside
-  `joinCourse` specifically).
+`/instructor/courses`
 
-Implemented (Slice S3 — Instructor Course Management UI V1):
+and related Course-management routes.
 
-- `src/app/instructor/` — a desktop-oriented instructor authoring surface,
-  deliberately separate from the learner `(learner)` shell/bottom nav
-  (reached via a small text link on My Courses, not a nav tab):
-  `/instructor/courses` (list Courses the caller owns/instructs, filtered
-  client-side from `GET /api/courses/mine`, with a create-first-course
-  empty state), `/instructor/courses/new` (create form), and
-  `/instructor/courses/[courseId]` (manage: edit title/exam date, edit
-  join policy, explicit publish, explicit archive-with-confirm, and —
-  once PUBLISHED — a copyable `/join/:courseId` link).
-- `PATCH /api/courses/:courseId/join-policy` — the first live route wiring
-  of `setCourseJoinPolicy` (previously application-layer-only). Its
-  authorization is deliberately UNCHANGED (checks only `revokedAt`, not
-  `archivedAt`) — ADR-015's Addendum explicitly pins this as intended
-  ("archived-but-not-revoked management members retain management
-  rights"), a different, narrower policy than `canAuthorCourse`'s
-  Run-005-specific stricter gate; the two are not meant to converge.
-- archived-Course metadata/join-policy controls are disabled in the UI
-  (editing them has no product effect once a Course is terminal-ARCHIVED).
-
-Implemented (Slice S4 — Flat Topic Model + Topic Authoring V1):
-
-- `topics` table (migration `20260927000000_topics_v1.sql`): `id`,
-  `course_id` (FK, `on delete restrict`), `name`, `archived_at`,
-  timestamps. Flat only — no parent/nesting/prerequisite columns. No hard
-  delete: archiving excludes a Topic from listing but never removes the
-  row, preserving referential integrity ahead of a future Question<->Topic
-  association (planned for Run 006, see `docs/UNLOCK_ROADMAP.md`).
-- `src/domain/topic/`, `src/application/topic/` (createTopic /
-  listTopicsForCourse / renameTopic / archiveTopic), 
-  `src/infrastructure/postgres/topic-repository.ts` — authorization reuses
-  `canAuthorCourse` unchanged, same policy as every other Run-005
-  content-authoring action.
-- `renameTopic`/`archiveTopic` take both `courseId` (checked first, before
-  the Topic is ever loaded) and `topicId`, and collapse a Topic that
-  exists but belongs to a different Course into the same `TOPIC_NOT_FOUND`
-  outcome as a nonexistent one — closes "do not allow cross-Course Topic
-  association" without leaking which Course a Topic actually belongs to.
-- Three routes under `/api/courses/:courseId/topics/` (list/create,
-  rename, archive) plus a Topics section (list, inline rename, add,
-  archive-with-confirm, empty state) added to the instructor Course manage
-  page from S3.
-
-Run 005 closed intentionally after S4 — a coherent product boundary (Course
-lifecycle + instructor authoring UI + flat Topic model) — rather than
-continuing through its originally-planned S5-S10. See
-`docs/RUNS/2026-09-20-005.md` for the full scope-closure rationale.
+Course lifecycle and authoring authorization are server-enforced according to current accepted behavior.
 
 ---
 
-### Question Authoring & Publishing (Run 006, COMPLETE)
+# 7. Topics
 
-An authorized OWNER or active INSTRUCTOR can manually create a
-SINGLE_CHOICE or MULTIPLE_CHOICE Question in a Course, associate it with a
-Topic from that same Course, save/edit its draft, explicitly publish it as
-an immutable QuestionVersion, and later edit/re-publish without changing
-any historical version or Attempt reference.
+Implemented flat V1 Topic model.
+
+Capabilities include:
+
+* create Topic;
+* list Topics;
+* rename Topic;
+* archive Topic;
+* same-Course integrity;
+* non-leaking cross-Course behavior.
+
+The V1 Topic model is intentionally flat.
+
+No hierarchy, prerequisite graph, or nested-topic model is currently required.
+
+---
+
+# 8. Question Authoring / Publishing
 
 Implemented:
 
-- `questions.topic_id` (composite FK to `topics (id, course_id)` —
-  DB-enforced same-Course integrity) plus nullable `questions.draft_*`
-  columns (`draft_question_type`/`draft_prompt`/`draft_answer_options`/
-  `draft_correct_answer`/`draft_explanation`) — migration
-  `20260928000000_question_authoring_v1.sql`. No separate `QuestionDraft`
-  table (carried forward from Run 005). All existing published Questions
-  remain fully backward compatible; nothing reads `draft_*`/`topic_id`
-  outside the new authoring code paths.
-- `topic_id` is CURRENT (not versioned) Question metadata, deliberately
-  never snapshotted into `question_versions` — reassigning a Topic later
-  does not reinterpret any historical Attempt. Grading/correctness depends
-  only on the frozen QuestionVersion content.
-- One authoritative publish-ready validation contract
-  (`assertQuestionPublishReady`, `src/domain/question/types.ts`), reusing
-  the existing `assertValidQuestionAnswerDefinition` grading-shape checks
-  rather than duplicating them. SINGLE_CHOICE requires exactly one correct
-  option; MULTIPLE_CHOICE requires at least one.
-- `src/application/question/` — `createQuestionDraft`,
-  `updateQuestionDraft`, `getQuestionForAuthoring`,
-  `listQuestionsForCourse`, `validateQuestionPublishReadiness`,
-  `publishQuestion`. Authorization reuses `canAuthorCourse` unchanged
-  (same policy as Course/Topic authoring); cross-Course Question/Topic ids
-  collapse to the same not-found outcome as a nonexistent id, matching
-  Run 005's own non-leaking pattern.
-- `publishQuestion` is the one atomic publish/re-publish transaction (new
-  `QuestionUnitOfWork`/`PostgresQuestionUnitOfWork`, mirrors
-  `PostgresCourseUnitOfWork` exactly): authorize → reject a terminal
-  ARCHIVED Course → load the draft → reject when nothing is pending to
-  publish (`NOTHING_TO_PUBLISH`, distinct from `NOT_READY`) → validate →
-  insert a new immutable `question_versions` row → repoint
-  `current_version_id` and clear `draft_*` — all inside one transaction.
-  First publish: `current_version_id` starts `null`, becomes the new
-  version. Re-publish always INSERTs a new version (version_number =
-  previous max + 1); the old version row is never updated/deleted, so
-  every existing Attempt/DailyPlanItem composite-FK reference to it
-  remains valid.
-- Draft-only Question exclusion from learner eligibility requires zero new
-  code: every learner-facing/New-Material query already gates on
-  `current_version_id is not null`.
-- `/instructor/courses/[courseId]/questions/[questionId]` — dedicated
-  editor page (Topic/type/prompt/options/correct-answer/explanation form,
-  Save-draft vs. explicit Publish/Re-publish as separate actions, disabled
-  for an ARCHIVED Course, Publish hidden when there is nothing pending).
-- **Accepted V1 concurrency assumption** (documented on
-  `QuestionRepository.getNextVersionNumber`'s doc comment, not enforced by
-  a lock): two concurrent publishes of the SAME Question are fail-safe —
-  the DB's `UNIQUE (question_id, version_number)` constraint rejects the
-  loser's insert and its whole transaction rolls back cleanly — but the
-  loser currently sees a generic `INTERNAL_ERROR` rather than a typed
-  "someone already published, please retry" outcome. Acceptable for V1's
-  expected single-editor-per-draft usage.
-- Archived-Course authoring is enforced server-side only at publish (the
-  point that actually creates learner-facing content); `createQuestionDraft`/
-  `updateQuestionDraft` still rely on the existing UI-only disablement for
-  an ARCHIVED Course, matching Run 005's own `createTopic`/`renameTopic`
-  precedent — a deliberate, reviewed scope decision, not an oversight.
+* manual Question draft creation;
+* SINGLE_CHOICE;
+* MULTIPLE_CHOICE;
+* Topic association;
+* draft editing;
+* publish-readiness validation;
+* explicit publish;
+* re-publish through a new immutable QuestionVersion;
+* atomic publish transaction;
+* Course/Topic same-Course enforcement;
+* instructor Question editor UI.
 
-**Not yet implemented** (moved to future Runs per `docs/UNLOCK_ROADMAP.md`,
-not abandoned):
+Question is the stable logical identity.
 
-- Structured Import (JSON/spreadsheet adapters) — Run 007
-- next work requires a new Plan
+QuestionVersion is immutable content history.
+
+Publishing or republishing never rewrites a historical QuestionVersion.
+
+Historical Attempts remain linked to the exact version presented.
+
+Draft-only Questions are excluded from learner eligibility through the existing `current_version_id` contract.
+
+Structured Import is **not yet implemented**.
+
+That is the next product Run.
 
 ---
 
-### Learning Evidence / Engine
+# 9. Learning Evidence / Learning Engine
 
 Implemented:
 
-- immutable Attempt model.
-- immutable Question / QuestionVersion history.
-- persisted correctness.
-- deterministic learning-state processing.
-- learning-state rebuild / replay.
-- FSRS-backed memory scheduling.
-- retrieval qualification.
-- misconception tracking.
-- mastery/evidence processing.
-- Next Best Action candidate generation.
-- deterministic ranking/planning foundation.
-- production learning-policy composition.
-- Manual Practice path remains separate from Today.
-- replay/rebuild uses persisted Attempt correctness rather than re-grading historical responses.
+* immutable Attempts;
+* immutable QuestionVersion history;
+* persisted correctness;
+* deterministic learner-state processing;
+* replay/rebuild from historical evidence;
+* FSRS-backed memory scheduling;
+* retrieval qualification;
+* misconception tracking;
+* mastery/evidence processing;
+* Next Best Action candidate generation;
+* deterministic ranking foundation;
+* production learning-policy composition.
 
-Real-time learning-state decisions do not depend on LLM calls.
+Historical responses are replayed from persisted Attempt evidence rather than regraded against current Question content.
+
+Real-time learner-state decisions do not depend on an LLM.
+
+Manual Practice remains separate from Today.
 
 ---
 
-### DailyPlan / Today
+# 10. DailyPlan / Today
+
+`DailyPlan` / `DailyPlanItem` are the primary current Today model.
 
 Implemented:
 
-- one persisted DailyPlan per user per learner-local calendar day.
-- persisted DailyPlanItem rows.
-- global multi-course DailyPlan generation.
-- active LEARNER membership filtering.
-- deterministic item ordering.
-- frozen same-day plan semantics.
-- `getOrCreateDailyPlanForToday({ userId, now })`.
-- PostgreSQL DailyPlan repository and UnitOfWork.
-- `GET /api/daily-plan/today`.
-- learner-facing question content:
-  - question type
-  - prompt
-  - answer options
-- learner-facing read path does NOT select or return grading-only data such as:
-  - `correct_answer`
-  - `correctOptionIds`
-  - explanation/grading definition
-- exact persisted QuestionVersion is used for learner content and grading.
+* one persisted DailyPlan per learner per learner-local calendar day;
+* persisted DailyPlanItems;
+* Global Today across eligible Courses;
+* active-LEARNER membership filtering;
+* deterministic ordering;
+* frozen same-day plan behavior;
+* exact persisted QuestionVersion identity;
+* PostgreSQL repository / Unit-of-Work support;
+* learner-facing Today API;
+* learner-facing Today UI;
+* resume/reload behavior;
+* Today completion state.
 
-Today answer submission:
+Global Today and Course context refer to the same underlying DailyPlan.
 
-- `POST /api/daily-plan/items/:itemId/answer`
-- authenticated ownership enforcement
-- authoritative question/course/version/plan identity derived server-side
-- correctness evaluated server-side
-- immutable Attempt persisted
-- learning state updated through the existing learning-engine pipeline
-- exact DailyPlanItem resolved as completed
-- retry/idempotency protections prevent duplicate Attempts for the same submission
-- Manual Practice does NOT resolve matching Today items
-
-Today Skip:
-
-- `POST /api/daily-plan/items/:itemId/skip`
-- resolves exact DailyPlanItem as `skipped`
-- creates no Attempt
-- creates no incorrect-answer evidence
-- does not update mastery/misconception/scheduler state
-- creates no replacement item
-
-Today learner UI:
-
-- one active pending item at a time
-- SINGLE_CHOICE interaction
-- MULTIPLE_CHOICE interaction
-- explicit submit
-- correct / incorrect feedback
-- explicit continue after answered items
-- progress display
-- Skip action
-- resolved-state reconstruction after reload
-- handling of stale/already-resolved items through server refetch
-- loading/error/auth-expiry states
-- completion state when no pending items remain
+Legacy `TodaySession` infrastructure remains only where required for compatibility/history.
 
 ---
 
-### Starter / New Material V1
-
-Accepted decision:
-
-`docs/DECISIONS/017-starter-new-material-v1.md`
+# 11. Today Answer Submission
 
 Implemented:
 
-- unseen = no prior real Attempt for the Question
-- absence of UserQuestionProgress alone is NOT used as proof of unseen
-- ordinary review/repair/relearning/strengthening candidates are generated first
-- New Material activates only when there are ZERO ordinary candidates
-- no review + new-material mixing in V1
-- up to 3 unseen questions are selected
-- selection is deterministic
-- placement into Today is not learning evidence
-- UserQuestionProgress is not fabricated when unseen material is planned
-- first actual Attempt creates evidence normally
+`POST /api/daily-plan/items/:itemId/answer`
 
-Persisted DailyPlan vocabulary now supports:
+Current behavior includes:
 
-- action type: `NEW_LEARNING`
-- tier: `NEW_MATERIAL`
-- reason: `UNSEEN_MATERIAL`
+* authenticated ownership enforcement;
+* server-derived authoritative:
 
-The normal Next Best Action ranking model remains unchanged; New Material is a separate fallback path.
+  * Course;
+  * Question;
+  * QuestionVersion;
+  * DailyPlan;
+  * DailyPlanItem;
+* server-side correctness evaluation;
+* immutable Attempt creation;
+* idempotency protection;
+* Learning Engine update;
+* exact DailyPlanItem completion;
+* Manual Practice / Today separation.
 
----
-
-## Current API / Learner Entry Points
-
-Implemented application-facing paths include:
-
-- `/`
-- `/login`
-- `/today` (now under the `(learner)` route group; URL unchanged)
-- `/join/[courseId]`
-- `/courses` (My Courses)
-- `/courses/[courseId]` (Course View)
-
-Implemented relevant APIs include:
-
-- `GET /api/daily-plan/today`
-- `POST /api/daily-plan/items/:itemId/answer`
-- `POST /api/daily-plan/items/:itemId/skip`
-- `POST /api/user/timezone`
-- `GET /api/courses/:courseId` (public, unauthenticated join-page title lookup)
-- `POST /api/courses/:courseId/join`
-- `GET /api/courses/mine` (authenticated, My Courses)
-- `GET /api/courses/:courseId/context` (authenticated, membership-gated Course View)
-
-Run 005 instructor-authoring APIs (S2-S4 — see Course Authoring above for the
-`/instructor/` UI that consumes these):
-
-- `POST /api/courses` (create, DRAFT)
-- `GET`/`PATCH /api/courses/:courseId/manage` (authoring read / metadata update)
-- `POST /api/courses/:courseId/publish`
-- `POST /api/courses/:courseId/archive`
-- `PATCH /api/courses/:courseId/join-policy` (S3)
-- `GET`/`POST /api/courses/:courseId/topics` (list active / create, S4)
-- `PATCH /api/courses/:courseId/topics/:topicId` (rename, S4)
-- `POST /api/courses/:courseId/topics/:topicId/archive` (S4)
-
-Run 006 Question-authoring APIs (see Question Authoring & Publishing above
-for the dedicated editor page that consumes these):
-
-- `GET`/`POST /api/courses/:courseId/questions` (list all authoring
-  states / create draft)
-- `GET`/`PATCH /api/courses/:courseId/questions/:questionId` (authoring
-  read, including current published content / save draft)
-- `POST /api/courses/:courseId/questions/:questionId/publish` (atomic
-  publish/re-publish)
-
-This list is a current capability summary, not an exhaustive API specification.
-Use the API docs / source for full contracts.
+Learner-facing read paths do not expose grading-only data before answer submission.
 
 ---
 
-## Database / Migration State
+# 12. Today Skip
 
-### Applied to hosted Supabase
+Implemented:
 
-The full committed migration chain through:
+`POST /api/daily-plan/items/:itemId/skip`
+
+Skip:
+
+* resolves the DailyPlanItem;
+* creates no Attempt;
+* creates no incorrect-answer evidence;
+* does not update mastery/misconception/scheduler state;
+* creates no replacement item;
+* does not reopen already-resolved work.
+
+Skip is resolution, not evidence of incorrect knowledge.
+
+---
+
+# 13. New Material V1
+
+Accepted behavior:
+
+ADR-017.
+
+Implemented:
+
+* unseen = no previous real Attempt for the Question;
+* absence of UserQuestionProgress alone does not prove unseen;
+* ordinary learning candidates are considered first;
+* New Material activates only when ordinary candidates are empty;
+* no review + New Material mixing in V1;
+* deterministic selection;
+* up to the accepted fallback limit;
+* placement into Today does not create evidence;
+* UserQuestionProgress is not fabricated during planning;
+* first actual learner Attempt creates evidence normally.
+
+Persisted DailyPlan vocabulary supports New Material action/tier/reason metadata.
+
+---
+
+# 14. Current Major API Surface
+
+Relevant implemented APIs include:
+
+### Learner / Today
+
+* `GET /api/daily-plan/today`
+* `POST /api/daily-plan/items/:itemId/answer`
+* `POST /api/daily-plan/items/:itemId/skip`
+* `POST /api/user/timezone`
+
+### Course / learner access
+
+* public Course summary lookup;
+* Course join;
+* My Courses;
+* membership-gated Course context.
+
+### Instructor authoring
+
+Implemented APIs exist for:
+
+* Course creation;
+* Course metadata;
+* Course lifecycle;
+* join policy;
+* Topic management;
+* Question draft management;
+* Question publishing.
+
+Exact route contracts belong to implementation/API documentation rather than this snapshot.
+
+---
+
+# 15. Database / Migration State
+
+The committed migration chain currently contains **12 migrations**.
+
+## Applied to hosted Supabase
+
+Migrations #1–#9 are applied through:
 
 `20260925000000_daily_plan_new_material_v1.sql`
 
-is applied to the real hosted Supabase project. `npx supabase migration list`
-confirmed local/remote parity through this migration.
+This includes the current hosted foundations for:
 
-1. `20260917203000_initial_schema.sql`
-2. `20260918000000_question_answer_model_v1.sql`
-3. `20260919000000_course_membership_v1.sql`
-4. `20260920000000_user_timezone_v1.sql`
-5. `20260921000000_daily_plan_v1.sql`
-6. `20260922000000_daily_plan_item_state_consistency.sql`
-7. `20260923000000_auth_user_provisioning.sql`
-8. `20260924000000_daily_plan_answer_attempts.sql` — links Attempts to
-   DailyPlan / DailyPlanItem; supports Today answer submission.
-9. `20260925000000_daily_plan_new_material_v1.sql` — extends DailyPlanItem
-   constraints for New Material V1.
+* initial schema;
+* Question answer model;
+* CourseMembership;
+* learner timezone;
+* DailyPlan;
+* DailyPlan state consistency;
+* Auth user provisioning;
+* DailyPlan answer linkage;
+* New Material V1.
 
-Hosted Supabase now supports the answer/New Material flows.
+## Committed and locally verified, not yet applied to hosted Supabase
 
-Claude must not run `supabase db push` without explicit user authorization.
+Migration #10:
 
-### Committed locally, NOT yet applied to hosted Supabase
+`20260926000000_course_lifecycle_v1.sql`
 
-10. `20260926000000_course_lifecycle_v1.sql` (Run 005 S2) — adds
-    `courses.status`/`courses.exam_date`. PGlite-verified only (full
-    `npm run test:schema` suite green plus a dedicated atomicity/rollback
-    suite for the new `PostgresCourseUnitOfWork`); not yet pushed to the
-    real hosted project.
-11. `20260927000000_topics_v1.sql` (Run 005 S4) — adds the `topics` table
-    (flat, Course-scoped, archive-not-delete). PGlite-verified only (full
-    `npm run test:schema` suite green, 224/224 including 10 new
-    `topic-repository.test.ts` cases); not yet pushed to the real hosted
-    project.
-12. `20260928000000_question_authoring_v1.sql` (Run 006 S2) — adds
-    `topics_id_course_id_key` (unique, needed for the composite FK below),
-    `questions.topic_id` (composite FK to `topics (id, course_id)`), and
-    nullable `questions.draft_question_type`/`draft_prompt`/
-    `draft_answer_options`/`draft_correct_answer`/`draft_explanation`.
-    PGlite-verified only (full `npm run test:schema` suite green,
-    253/253); not yet pushed to the real hosted project.
+Migration #11:
+
+`20260927000000_topics_v1.sql`
+
+Migration #12:
+
+`20260928000000_question_authoring_v1.sql`
+
+These migrations are committed and verified through the local PostgreSQL-compatible/PGlite migration/schema suite.
+
+They remain pending explicit human hosted application.
+
+Claude must not run:
+
+* `supabase link`;
+* `supabase db push`;
+* hosted migration application.
 
 ---
 
-## Verification State
+# 16. Verification Baseline
 
-### Verified against real hosted Supabase / browser
+Last known clean runtime/product verification baseline before the documentation-only Development OS cleanup:
 
-Previously verified:
+* Unit tests: `911 / 911`
+* PostgreSQL/schema PGlite tests: `253 / 253`
+* Typecheck: clean
+* Lint: clean
+* Production build: clean
+* `git diff --check`: clean
+* final Run 006 reviewer result: approved / no blocking findings
 
-- hosted Supabase connectivity
-- real `DATABASE_URL`
-- full migration chain through New Material V1
-- real Auth user provisioning
-- real learner login
-- persisted learner timezone
-- authenticated browser → API → PostgreSQL Today request
-- populated Today plan retrieval
-- learner-facing question prompt/options rendering
-- same-day DailyPlan idempotency
-- correct learner-local planned date after the PostgreSQL DATE read-back fix
-- unauthenticated auth-before-DB behavior on protected routes
-- Hebrew / RTL rendering
-- hosted Today answer submission
-- hosted Today completion state
-- `AUTHORIZED_ONLY` self-join failing closed with `403`
-- a clean `OPEN` Course self-join succeeding and redirecting to `/today`
+These counts are snapshot information, not permanent acceptance requirements.
 
-### Locally verified after Run 004 (Slices 2-7)
+Current Development OS edits are documentation/rule/workflow changes and do not by themselves invalidate unrelated product runtime evidence.
 
-My Courses and Course View (membership listing/exclusion, role preservation,
-cross-user isolation, not-found/non-member/revoked outcomes), the
-`getCourseSummaries` batched query, auth-before-DB ordering on both new
-routes, and the malformed/non-UUID `courseId` fix across all three affected
-routes are each verified at unit / route-wiring / PGlite-integration layers
-as applicable — see `docs/RUNS/2026-09-20-004.md` for the per-Slice test
-inventory. Every pre-existing Slice 1-6 item below remains independently
-re-confirmed unaffected by this Run's diff.
-
-Previously verified (pre-Run-004), still current:
-
-- Today answer submission, DailyPlanItem ownership, answer idempotency, Attempt → DailyPlan linkage
-- Manual Practice / Today separation, Today Skip semantics, New Material discovery and fallback
-- no fake progress for unseen material
-- OPEN course join, OWNER / INSTRUCTOR role preservation, revoked membership fail-closed behavior
-- safe login redirect allowlist, join route auth-before-DB ordering, public course-summary projection
-- joinCourse against real Postgres repositories in PGlite
-
-### Browser-verified (real hosted-configured `next dev`, read-only)
-
-- malformed and well-formed-but-nonexistent join-link course ids each show
-  the controlled not-found UI state, not a 5xx (`e2e/join-errors.spec.ts`,
-  2/2 passed against this repo's own hosted-project `.env.local`, no
-  mutation performed).
-
-### Not yet executed: golden-path browser E2E
-
-`e2e/golden-path.spec.ts` (login → join OPEN course → Today → answer →
-feedback → continue → reload-safe state) is written and wired but was not
-executed in Run 004: it requires a real pre-existing hosted learner account
-and OPEN Course, and this repository's development environment has no local
-Supabase/Docker stack to provide that safely — only the real hosted Ruppin
-project is configured. Autonomously creating a hosted user/Course/membership
-to manufacture that fixture is out of bounds (`CLAUDE.md` §20). See
-`e2e/README.md` for the exact command to run it once a human decides how to
-provide real fixtures. This is a documented Plan-level blocker, not a
-silently skipped requirement.
-
-### Not yet manually verified against current hosted schema
-
-- real hosted Today Skip
-- hosted New Material fallback
-
-Neither is a demo blocker; both remain to be exercised manually against the
-hosted project.
-
-### Demo-journey coverage
-
-Demo journey (join → Today → answer → Skip → completion, plus New Material
-fallback) is verified at unit/application/PGlite layers with no defect found;
-see `docs/RUNS/2026-09-20-002.md` for the underlying test-body audit. The
-malformed/nonexistent join-link path is now also verified at the real
-browser level (above). The full golden path (login through completion) has a
-Playwright harness in place (`e2e/`) but has not yet been executed
-end-to-end — see "Not yet executed" above.
+Relevant Development OS verification still needs to occur before V1.2 closeout.
 
 ---
 
-## Current Test Baseline
+# 17. Browser / Hosted Verification State
 
-At local HEAD `d6a020b` (Run 006, COMPLETE — S2 through S6; pushed HEAD
-remains `a03efa4`, see Repository State):
+Previously verified against hosted/configured environments where applicable:
 
-- Unit tests: `911 / 911`
-- Schema/Postgres (PGlite): `253 / 253`
-- Typecheck: clean
-- Lint: clean
-- `npm run build` (production): succeeds
-- `git diff --check`: clean
-- Browser E2E: `join-errors.spec.ts` 2/2 passed against a real hosted-configured `next dev`; `golden-path.spec.ts` written, not yet executed (see Verification State). Run 006's new routes/pages were curled against a real local `next dev` (real 401 unauthenticated, real 200 page render) — not full interactive browser E2E.
+* real Auth provisioning;
+* real learner login;
+* persisted learner timezone;
+* authenticated Today retrieval;
+* populated Today rendering;
+* same-day DailyPlan persistence;
+* learner-facing prompt/options;
+* learner-local planned date;
+* protected-route auth-before-DB behavior;
+* Today answer submission;
+* Today completion;
+* AUTHORIZED_ONLY self-join fail-closed;
+* OPEN Course self-join;
+* malformed/nonexistent join-link browser behavior.
 
-These values are development checkpoints, not permanent numeric requirements.
+Still not fully exercised in the hosted environment:
 
-Future test counts may increase or decrease legitimately as the suite evolves.
+* hosted Today Skip;
+* hosted New Material fallback;
+* full login → join → Today → answer → completion golden-path Playwright flow.
 
----
+The golden-path E2E harness exists but requires a safe real fixture strategy.
 
-## Known Gaps / Limitations
-
-Current known items include:
-
-- production deployment is not yet complete.
-- final learner-facing visual/demo polish remains.
-- hosted Today Skip and hosted New Material fallback still need manual browser QA (see Verification State).
-- revoked CourseMembership rejoin policy remains intentionally unresolved.
-- full golden-path browser E2E (login through Today completion) is written but not yet executed; needs a human decision on how to safely provide a real fixture learner/course (see Verification State).
-- auth middleware is not currently implemented; existing Route Handler auth is sufficient for the current sequential request model, but middleware may need reassessment if authenticated Server Components or real multi-tab refresh races become relevant.
-- real multi-connection PostgreSQL concurrency is not fully proven by PGlite; concurrency claims must remain scoped to what has actually been tested or reasoned under PostgreSQL semantics.
-- PGlite DATE parsing is not identical to real `node-postgres` DATE parsing on all host timezones; dedicated row-validation tests cover the production `pg` convention.
-- concurrent publish of the SAME Question is not lock-serialized (accepted V1 assumption — see Question Authoring & Publishing above); fail-safe via a DB unique constraint, but the losing request currently surfaces as a generic `INTERNAL_ERROR` rather than a typed conflict outcome.
-- archived-Course authoring is enforced server-side only at Question publish, not at draft create/update (UI-only disablement there, matching Run 005's own Topic-authoring precedent) — a deliberate, reviewed V1 scope decision.
-
-Not currently implemented / not currently targeted:
-
-- mid-day adaptive mutation of an already-frozen Today plan
-- automatic carry-over of unresolved Today items
-- per-course fairness quota
-- mixing New Material with ordinary review candidates in V1
+Do not manufacture hosted users/Courses automatically.
 
 ---
 
-## Current Product Decisions Relevant to Active Development
+# 18. Known Current Limitations
 
-Authoritative decisions live in ADRs.
+Known non-blocking limitations include:
 
-Most relevant accepted ADRs:
+* production deployment is not yet complete;
+* final learner-facing demo/visual polish remains;
+* hosted Skip and New Material manual QA remain;
+* full golden-path browser E2E remains unexecuted;
+* revoked CourseMembership rejoin semantics remain unresolved;
+* true multi-backend PostgreSQL concurrency is not fully proven by PGlite;
+* concurrent publish of the same Question is fail-safe through DB uniqueness but currently returns generic internal failure to the losing request;
+* archived-Course draft create/update follows the currently accepted V1 boundary and is not fully server-blocked until publication;
+* Structured Import is not yet implemented.
 
-- `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
-  - CourseMembership roles / authorization / join model
+These limitations do not automatically become current execution tasks.
 
-- `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md`
-  - one DailyPlan per local day
-  - Global Today / Course Today semantics
-  - frozen-plan behavior
-  - Manual Practice separation
-  - Skip semantics
-
-- `docs/DECISIONS/017-starter-new-material-v1.md`
-  - unseen definition
-  - fallback-only New Material policy
-  - deterministic up-to-3 selection
-  - no fabricated evidence
-
-Do not duplicate these ADRs here.
-Read the specific ADR only when a task requires its details.
+Current execution is defined only by `docs/CHATGPT_PLAN.md`.
 
 ---
 
-## Current Blockers
+# 19. Current Explicit Non-Capabilities
 
-No known code blocker.
+Not currently implemented as product behavior:
 
-No remote migration gate remains for previously-applied migrations. Run 005 S2/S4 and Run 006 S2
-add three new migrations (`20260926000000_course_lifecycle_v1.sql`, `20260927000000_topics_v1.sql`,
-`20260928000000_question_authoring_v1.sql`) that are committed locally and PGlite-verified only —
-not yet applied to hosted Supabase (see Database / Migration State).
+* mid-day automatic reranking of an existing frozen DailyPlan;
+* automatic carry-over of unresolved Today items;
+* per-Course fairness quotas;
+* mixing ordinary review candidates and New Material in V1;
+* deep Knowledge Graph;
+* autonomous learning coach;
+* advanced institutional multi-tenancy;
+* native mobile applications.
 
----
-
-## Manual Actions Required
-
-1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
-2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
-3. Apply `20260926000000_course_lifecycle_v1.sql`, `20260927000000_topics_v1.sql`, and `20260928000000_question_authoring_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
-4. Production deployment remains outstanding.
-
-Do not perform hosted mutations automatically.
+Do not infer these capabilities from architecture-ready language.
 
 ---
 
-## Immediate Development Checkpoint
+# 20. Current Development OS State
 
-Pushed product/application baseline:
+Development OS V1.2 is complete and locally verified.
 
-`66df9f9`
+Current ownership model:
 
-Current pushed HEAD:
+- `AGENTS.md` — tool-agnostic repository baseline;
+- `CLAUDE.md` — Claude operating kernel;
+- `docs/CHATGPT_PLAN.md` — current execution;
+- `docs/DEV_STATUS.md` — current durable snapshot;
+- `docs/CONTEXT_MAP.md` — navigation/GPS;
+- `docs/TESTING.md` — testing philosophy;
+- `.claude/rules/testing.md` — operational verification and evidence freshness;
+- `/implement-slice` — Slice orchestration;
+- `/review-commit` — reviewer selection/orchestration;
+- `/checkpoint` — evidence/state validation;
+- `.cursor/rules/**` — thin Cursor-specific projections.
+Development OS telemetry is now installed and locally smoke-tested.
 
-`a03efa4`
+Telemetry ownership:
 
-Current local HEAD (not yet pushed):
+* `docs/RUN_TELEMETRY.md` — canonical measurement policy;
+* `.claude/telemetry/**` — local collection and deterministic summarization;
+* `.claude/settings.json` — Claude Code hook/status-line wiring;
+* `docs/RUNS/RUN_TEMPLATE.md` — durable Run telemetry reporting shape.
 
-`d6a020b`
+Raw telemetry remains local under `scratch/telemetry/**` and must not be committed.
 
-Run 005 is closed and pushed (Slices S1-S4 — see `docs/RUNS/2026-09-20-005.md`
-for the full Run Report and scope-closure rationale). Run 006 (Question
-Authoring & Publishing V1) is now COMPLETE locally — 5 commits ahead of
-`a03efa4` (S2 `99d45eb`, S3 `58e8634`, S4 `dac7555`, S5 `260eb82`, S6
-`d6a020b`) — see `docs/RUNS/2026-09-20-006.md` for the full Run Report.
-Structured Import (Run 007) requires a new Plan.
+Development OS V1.2 itself is not treated as a valid telemetry baseline because instrumentation was added only near the end of the Run.
 
-Do not infer next work from historical run context beyond what
-`docs/UNLOCK_ROADMAP.md` and `docs/DEV_STATUS.md` currently state. See
-`docs/RUNS/2026-09-20-004.md` for Run 004's full handoff,
-`docs/RUNS/2026-09-20-005.md` for Run 005's completed Run Report, and
-`docs/RUNS/2026-09-20-006.md` for Run 006's completed Run Report.
+Run 007 is intended to be the first fully instrumented baseline Run.
+
+Cursor loading model:
+
+- `workflow.mdc` — always active;
+- database / Learning Engine / RTL-i18n — path-scoped;
+- architecture / coding / security / product / AI — intelligent relevance loading.
+
+Current repository state:
+
+- V1.2 cleanup exists locally in the working tree;
+- no commit has yet been created for the cleanup;
+- no push has occurred;
+- product development remains stopped before Run 007.
 
 ---
 
-## Current Documentation Model
+# 21. Current Blockers
+
+No known blocker to committing Development OS V1.2.
+
+No known product-code blocker.
+
+Run 007 must not begin until:
+
+1. the Development OS V1.2 changes are deliberately committed;
+2. repository state is clean/understood;
+3. a new explicit Run 007 execution Plan is activated.
+
+Hosted migrations #10–#12 remain pending human application and are separate from the Development OS closeout.
+
+---
+
+# 22. Manual Actions Still Required
+
+Current human-controlled actions include:
+
+1. apply migrations #10–#12 to hosted Supabase when explicitly ready;
+2. manually exercise hosted Today Skip;
+3. manually exercise hosted New Material fallback;
+4. decide/provide a safe fixture strategy for full golden-path Playwright E2E;
+5. complete production deployment when pilot readiness reaches that stage;
+6. push Development OS commits only after the cleanup has been reviewed and deliberately committed.
+
+Do not perform remote mutations automatically.
+
+---
+
+# 23. Current Documentation Ownership
 
 Use:
 
-- `CLAUDE.md`
-  - HOW Claude works
+* `AGENTS.md`
 
-- `docs/CHATGPT_PLAN.md`
-  - WHAT Claude should execute now
+  * tool-agnostic repository baseline
 
-- `docs/DEV_STATUS.md`
-  - WHAT is currently true
+* `CLAUDE.md`
 
-- `docs/MASTER_SPEC.md`
-  - WHAT UNLOCK is intended to become
+  * Claude operating kernel
 
-- `docs/OPEN_QUESTIONS.md`
-  - WHAT is still undecided
+* `docs/CHATGPT_PLAN.md`
 
-- `docs/DECISIONS/*`
-  - WHAT has been decided and WHY
+  * current execution
 
-- `docs/CONTEXT_MAP.md`
-  - WHERE relevant code/docs/rules are located
+* `docs/DEV_STATUS.md`
 
-- `docs/RUNS/*`
-  - historical execution archive
+  * current durable state
 
-- `scratch/development_checkpoint.md`
-  - temporary in-run state only
+* `docs/CONTEXT_MAP.md`
 
-Historical Run Reports are restricted context and must not be used as normal working memory.
+  * task/document/code GPS
+
+* `docs/MASTER_SPEC.md`
+
+  * product constitution
+
+* `docs/PRODUCT.md`
+
+  * practical product map
+
+* `docs/UNLOCK_V1_SCOPE.md`
+
+  * V1 destination
+
+* `docs/UNLOCK_ROADMAP.md`
+
+  * product sequencing
+
+* `docs/DECISIONS/**`
+
+  * accepted durable decisions
+
+* `docs/OPEN_QUESTIONS.md`
+
+  * unresolved decisions
+
+* `docs/FOLLOW_UP_BACKLOG.md`
+
+  * deferred technical follow-ups
+
+* `docs/RUNS/**`
+
+  * historical execution archive
+
+* `scratch/development_checkpoint.md`
+
+  * temporary local resume state
+
+Historical Run Reports and the historical Invariant Matrix are not default working context.
+
+---
+
+# 24. Immediate State
+
+Development OS V1.2:
+
+**COMPLETE — VERIFIED LOCALLY, PENDING COMMIT**
+
+Current product implementation:
+
+**PAUSED**
+
+Next product capability:
+
+**Run 007 — Structured Import**
+
+Run 007:
+
+**NOT STARTED**
+
+Immediate next action:
+
+**Create the deliberate Development OS V1.2 commit(s), inspect final Git state, then stop.**
+
+Do not begin product implementation from this snapshot.

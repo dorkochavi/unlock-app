@@ -1,854 +1,1048 @@
-# UNLOCK — Working Instructions for Claude Code
+# UNLOCK — Claude Code Operating Kernel
 
-This file defines HOW Claude Code works inside the UNLOCK repository.
+Status: ACTIVE
+Purpose: define how Claude Code operates safely and efficiently inside the UNLOCK repository.
 
-It does NOT define the current development roadmap.
-Current work is defined in `docs/CHATGPT_PLAN.md`.
+This file is Claude-specific operating guidance.
 
-The repository is the persistent source of truth.
-Do not rely on prior chat/session memory.
+It does not own:
+
+* product scope;
+* roadmap sequencing;
+* detailed architecture;
+* testing philosophy;
+* verification-selection details;
+* reviewer implementation;
+* checkpoint implementation;
+* telemetry definitions;
+* historical Run state.
+
+Use the dedicated owner for each responsibility.
+
+The repository is persistent memory.
+
+Do not rely on prior conversation memory when repository evidence exists.
 
 ---
 
-## 1. Start Every Development Run from Repository State
+## 1. Start From Repository Reality
 
-At the beginning of a substantial development run:
+At the beginning of a substantial development Run:
 
 1. Read:
-   - `CLAUDE.md`
-   - `docs/CHATGPT_PLAN.md`
-   - `docs/DEV_STATUS.md`
 
-2. Inspect repository state:
-   - `git status --short`
-   - `git status -sb`
-   - `git log --oneline --decorate -10`
+   * `AGENTS.md`
+   * `CLAUDE.md`
+   * `docs/CHATGPT_PLAN.md`
+   * `docs/DEV_STATUS.md`
 
-3. Compare the current repository state with the `BASE_HEAD` and assumptions in
-   `docs/CHATGPT_PLAN.md`.
+2. Inspect:
 
-   `BASE_HEAD` means: the committed repository baseline the current Plan was
-   authored against.
+   * `git status --short`
+   * `git status -sb`
+   * `git log --oneline --decorate -5`
 
-   There are exactly two valid Run-start states:
+3. Compare repository reality with the assumptions and `BASE_HEAD` in the active Plan.
 
-   - **State A (preferred/default):** `HEAD == BASE_HEAD`, and
-     `docs/CHATGPT_PLAN.md` is the only uncommitted modification. This is
-     expected, not unexplained dirty state — the Plan document is normally
-     authored/edited on top of a committed baseline and is not committed
-     until Run handoff (Section 21).
-   - **State B (supported alternative):** `HEAD` is exactly one dedicated
-     Plan-only commit above `BASE_HEAD`, and that commit's only changed path
-     is `docs/CHATGPT_PLAN.md`.
+4. Load additional context only when the current Slice requires it.
 
-   Any other relationship between `HEAD` and `BASE_HEAD` — including HEAD
-   differing for a reason other than earlier Slice commits in the same Run —
-   must be diagnosed before editing code. Do not silently continue. If
-   repository reality contradicts the Plan materially, report `PLAN_CONFLICT`
-   (Section 10).
+Never infer repository state from an earlier chat.
 
-4. Read additional context only when the current slice requires it.
-
-Never assume implementation state from an earlier conversation.
-
-If repository state contradicts the current Plan, investigate before editing code.
+Code, tests, migrations, configuration, and Git state outrank stale narrative documentation.
 
 ---
 
-## 2. Context Loading Policy
+## 2. Authority Model
 
-UNLOCK uses four context levels.
+Use one owner per responsibility.
 
-### HOT — Read at the start of every substantial run
+### Repository reality
 
-- `CLAUDE.md`
-- `docs/CHATGPT_PLAN.md`
-- `docs/DEV_STATUS.md`
+Primary evidence:
 
-These files provide:
-- working rules
-- current execution plan
-- current repository/product state
+* committed code;
+* tests;
+* migrations;
+* configuration;
+* Git state.
 
-### WARM — Read only when relevant to the current slice
-
-- `docs/MASTER_SPEC.md`
-- `docs/CONTEXT_MAP.md`
-- `docs/OPEN_QUESTIONS.md`
-
-Use these when:
-- product intent is relevant
-- repository location is unclear
-- an unresolved decision may affect implementation
-
-Do not read them ceremonially if the slice does not need them.
-
-### COLD — Read only when specifically relevant
-
-- individual ADRs under `docs/DECISIONS/`
-- individual `.claude/rules/*`
-- individual `.claude/skills/*`
-- tests or design documents referenced by the current slice
-
-Prefer the exact ADR/rule/skill named by the Plan.
-
-Do not load every ADR or every rule at session start.
-
-### RESTRICTED — Do not read without explicit authorization
-
-- `docs/RUNS/**`
-- historical scratch notes
-- old investigation artifacts
-- obsolete temporary planning documents
-
-`docs/RUNS/**` is historical archive, NOT working memory.
-
-Do not read, search, summarize, or use a prior Run Report unless:
-
-1. `docs/CHATGPT_PLAN.md` explicitly names that exact run file, or
-2. the user explicitly authorizes reading it.
-
-`docs/DEV_STATUS.md` is the canonical current-state summary.
-
----
-
-## 3. Source-of-Truth Responsibilities
-
-Each type of information has one primary home.
-
-### Product vision / intended system
+### Product constitution
 
 `docs/MASTER_SPEC.md`
 
-Use it for:
-- product vision
-- North Star
-- overall system intent
-- long-term product boundaries
+### Practical product map
 
-Do not use it as an operational development log.
+`docs/PRODUCT.md`
 
-### Accepted architectural/product decisions
+### V1 boundary
 
-`docs/DECISIONS/*`
+`docs/UNLOCK_V1_SCOPE.md`
 
-Accepted ADRs define decided behavior.
+### Product sequencing
 
-Do not silently override an accepted ADR during implementation.
+`docs/UNLOCK_ROADMAP.md`
 
-If a decision changes, create or update decision documentation only when the
-current Plan explicitly authorizes that decision work.
+### Current Run execution
+
+`docs/CHATGPT_PLAN.md`
+
+### Current durable snapshot
+
+`docs/DEV_STATUS.md`
+
+### Accepted durable decisions
+
+`docs/DECISIONS/**`
 
 ### Unresolved decisions
 
 `docs/OPEN_QUESTIONS.md`
 
-Use this for genuinely unresolved product or architecture questions.
+### Current terminology
 
-Do not invent an answer to an unresolved question.
+`docs/DOMAIN_GLOSSARY.md`
 
-### Current execution plan
+### Architecture
 
-`docs/CHATGPT_PLAN.md`
+`docs/ARCHITECTURE.md`
 
-This defines:
-- what to build now
-- slice order
-- constraints
-- acceptance criteria
-- required reviewers/tests
-- expected stopping point
+### Testing philosophy
 
-Claude may execute the Plan.
+`docs/TESTING.md`
 
-Claude must NOT rewrite or re-scope `docs/CHATGPT_PLAN.md`.
+### Operational verification
 
-If the Plan conflicts with repository reality, use the conflict protocol in
-Section 10.
+`.claude/rules/testing.md`
 
-### Current repository/product state
+### Run telemetry semantics
 
-`docs/DEV_STATUS.md`
+`docs/RUN_TELEMETRY.md`
 
-This is a concise snapshot of what is true NOW.
+### Deferred technical follow-ups
 
-It is NOT:
-- a changelog
-- a Run Report
-- an ADR
-- a debugging diary
-- a place for long historical narratives
+`docs/FOLLOW_UP_BACKLOG.md`
 
-It must never override:
-- committed code
-- migrations
-- accepted ADRs
-- tests that prove actual behavior
+### Historical Run records
 
-### Historical execution record
+`docs/RUNS/**`
 
-`docs/RUNS/*`
+### Temporary local state
 
-Each completed development run may create one immutable-style Run Report.
+`scratch/**`
 
-Run Reports preserve:
-- what was attempted
-- what completed
-- commits
-- test results
-- reviewer findings
-- blockers
-- discoveries
-- required manual follow-up
-
-They are archive material and are not normal Claude working context.
-
-### Temporary run state
-
-`scratch/`
-
-Scratch content is ephemeral and non-canonical.
-
-The current Plan may authorize a file such as:
-
-`scratch/development_checkpoint.md`
-
-for temporary in-run state.
-
-Scratch files:
-- must not override canonical documentation
-- must not be committed unless explicitly requested
-- should be ignored after the current run ends
+Do not let a lower-authority document silently override a higher-authority source.
 
 ---
 
-## 4. One Fact, One Home
+## 3. One Fact, One Home
 
-Avoid duplicating durable information across documents.
+Do not duplicate durable information across multiple documents.
 
 Examples:
 
-- accepted product behavior belongs in an ADR, not duplicated in DEV_STATUS
-- historical implementation detail belongs in a Run Report, not DEV_STATUS
-- current capability belongs in DEV_STATUS, not every Run Report
-- execution instructions belong in CLAUDE/rules/skills, not repeated in every Plan
-- current tasks belong in CHATGPT_PLAN, not CLAUDE.md
+* current tasks → `CHATGPT_PLAN`;
+* current state → `DEV_STATUS`;
+* accepted decisions → ADRs;
+* unresolved decisions → `OPEN_QUESTIONS`;
+* verification selection/freshness → `.claude/rules/testing.md`;
+* telemetry definitions → `RUN_TELEMETRY.md`;
+* deferred technical opportunities → `FOLLOW_UP_BACKLOG`;
+* historical execution → `RUNS`;
+* temporary resume/telemetry data → `scratch`.
 
-Cross-reference the authoritative source instead of reproducing long explanations.
-
-This is important for:
-- consistency
-- lower context usage
-- lower token usage
-- easier maintenance
+Cross-reference instead of copying long explanations.
 
 ---
 
-## 5. Architecture Boundary
+## 4. Context Loading
 
-Dependency direction is one-way:
+Load the minimum context needed for the current Slice.
 
-domain → application → infrastructure → runtime/API
+### HOT
 
-Rules:
+Normally load:
 
-- `src/domain/` contains domain and learning logic.
-- `src/application/` orchestrates use cases, ports, transactions, and explicit inputs.
-- `src/infrastructure/` implements persistence, Supabase, PostgreSQL, schedulers, and external adapters.
-- `src/app/` is the Next.js runtime/UI/API boundary.
-- Domain/application code must not depend on Next.js, browser APIs, Supabase SDK, `pg`, or PGlite.
-- Learning policy must not be duplicated inside API routes or UI code.
-- Persistence constraints enforce data integrity, not learning policy.
+* `AGENTS.md`
+* `CLAUDE.md`
+* `docs/CHATGPT_PLAN.md`
+* `docs/DEV_STATUS.md`
 
-Prefer explicit ports/repositories over generic abstractions.
+### WARM
 
-Do not introduce a generic `Repository<T>` abstraction.
+Load when relevant:
 
-Do not create architecture merely for hypothetical future flexibility.
+* `docs/CONTEXT_MAP.md`
+* `docs/PRODUCT.md`
+* `docs/ARCHITECTURE.md`
+* `docs/DOMAIN_GLOSSARY.md`
+* `docs/OPEN_QUESTIONS.md`
 
----
+### COLD
 
-## 6. Product / Learning Invariants
+Load selectively:
 
-Do not silently change accepted product behavior during unrelated work.
+* `docs/MASTER_SPEC.md`
+* individual ADRs;
+* `docs/LEARNING_ENGINE.md`;
+* `docs/GOLDEN_SCENARIOS.md`;
+* `docs/FOLLOW_UP_BACKLOG.md`;
+* `docs/RUN_TELEMETRY.md`;
+* feature contracts;
+* scoped rules;
+* skills.
 
-Important invariants include:
+### RESTRICTED / historical
 
-- Attempts are immutable historical evidence.
-- QuestionVersion snapshots are immutable historical evidence.
-- Replay/rebuild uses persisted Attempt correctness and does not re-grade history.
-- Learning Engine behavior should remain deterministic for the same persisted state, policy, and explicit time.
-- Real-time learning-state/ranking logic does not depend on LLM calls.
-- One DailyPlan exists per user per local calendar day.
-- Global Today and Course Today are views of the same DailyPlan.
-- Only active `LEARNER` memberships participate automatically in personal DailyPlan generation.
-- Manual Practice is separate from Today.
-- Manual Practice must not resolve a Today item.
-- Skip is not an incorrect answer.
-- Today remains frozen according to accepted DailyPlan semantics.
-- Client code must never supply authoritative `userId`.
-- Exact persisted QuestionVersion identity must be preserved where learning evidence depends on it.
+Do not use as default working memory:
 
-For detailed domain rules, load the relevant scoped rule under `.claude/rules/`
-only when the current slice touches that domain.
+* `docs/RUNS/**`;
+* `docs/INVARIANT_MATRIX.md`;
+* raw telemetry under `scratch/telemetry/**`;
+* old scratch artifacts;
+* obsolete investigation files.
 
----
+Read historical artifacts only when the current task specifically requires them.
 
-## 7. Authentication / Security
-
-For authenticated server operations:
-
-- trusted `userId` comes only from verified server-side authentication
-- use `supabase.auth.getUser()` for trusted identity
-- never trust client-supplied `userId`
-- authenticate before constructing/using database runtime when the route permits it
-- keep `DATABASE_URL` and service-role credentials server-only
-- never expose raw errors, stack traces, SQL, connection strings, or credentials in API responses
-- do not create permissive placeholder RLS policies
-- do not use service-role credentials merely to bypass authorization
-- derive authoritative object ownership and identity from persisted server state
-- do not expose grading-only learning data to learner-facing read paths
-
-Do not disable Windows or operating-system security features.
-
-Do not connect, link, push, or mutate a hosted Supabase project unless the user
-explicitly authorizes that action.
-
----
-
-## 8. Database / Migration Discipline
-
-- Migrations are forward-only.
-- Do not edit accepted historical migrations to implement new behavior.
-- A migration that is still uncommitted inside the current slice may be corrected before commit if necessary.
-- Use the existing PostgreSQL repository / UnitOfWork architecture.
-- Do not rewrite persistence using Supabase JS unless explicitly requested.
-- Do not create a new `pg.Pool` per request.
-- Distinguish PGlite behavior from real PostgreSQL/Supabase behavior.
-- Do not claim real multi-connection concurrency is tested unless it actually is.
-- Avoid N+1 query patterns.
-- Preserve transactional invariants for multi-step mutations.
-- Use database constraints for integrity where appropriate, not as substitutes for application learning policy.
-
-Use `.claude/rules/postgres.md` for detailed database guidance when the current
-slice touches PostgreSQL/schema/persistence behavior.
-
----
-
-## 9. Strict Scope Containment
-
-Work one development slice at a time.
-
-Do not apply the Boy Scout Rule during autonomous development.
-
-Do not opportunistically:
-- refactor unrelated code
-- rename unrelated APIs
-- clean old lint/style issues
-- reorganize unrelated modules
-- alter product behavior outside the slice
-- introduce abstractions solely because they appear cleaner
-
-Examples of forbidden scope leakage:
-
-- Auth work changing mastery semantics
-- API work changing ranking weights
-- UI work changing misconception logic
-- infrastructure work changing Today product semantics
-
-If an unrelated issue is discovered:
-
-1. determine whether it blocks the current slice
-2. if not blocking, record it briefly in the current checkpoint/Run Report
-3. do not fix it unless the Plan explicitly allows it
-
-A critical security/data-integrity problem that directly affects the current work
-may justify stopping or expanding the slice, but it must be reported explicitly.
-
----
-
-## 10. Engineering Veto / Plan Conflict Protocol
-
-Claude is not a blind executor.
-
-Before implementation, verify that the Plan is compatible with the actual repository.
-
-If the Plan assumes X but the repository guarantees Y, do NOT silently force X.
-
-Classify the conflict.
-
-### Compatible implementation adjustment
-
-If the Plan's product intent is unchanged and an existing repository pattern
-provides a clearly safer/correct implementation:
-
-- use the existing pattern
-- document the adjustment briefly
-- continue
-
-### Genuine decision conflict
-
-If implementation requires a new product or architectural decision:
-
-record:
-
-PLAN_CONFLICT:
-- Plan assumption
-- Repository reality
-- Why implementation as written is unsafe/incorrect
-- Decision required
-- Dependent slices
-
-Do not invent the decision.
-
-Continue with independent safe work where possible.
-
----
-
-## 11. Token / Context Efficiency
+Read raw telemetry only when diagnosing the telemetry system itself.
 
 Search before reading broadly.
 
+---
+
+## 5. Context Efficiency
+
 Prefer:
 
-hypothesis
+```text
+question
 → targeted search
-→ smallest relevant files
+→ smallest relevant source
 → implementation
-→ targeted tests
+→ targeted evidence
+```
 
-Use `docs/CONTEXT_MAP.md` as a GPS when location is unclear.
+Avoid:
 
-Do not:
-- scan the entire repository without reason
-- read every ADR
-- read every rule
-- read historical Runs
-- repeatedly reread unchanged HOT context during the same context window
-- paste large test logs into documentation
-- add long comments explaining obvious code
-- invoke multiple reviewers ceremonially
+* reading the whole repository;
+* loading every ADR;
+* loading every rule;
+* rereading unchanged context repeatedly;
+* using historical Run Reports as normal working memory;
+* loading raw telemetry into model context;
+* copying large logs into documentation.
 
-Expand context only when evidence requires it.
+Use `docs/CONTEXT_MAP.md` as a GPS when ownership or location is unclear.
+
+Use subagents for high-volume disposable exploration when doing so keeps unnecessary material out of the primary context.
+
+Do not optimize context metrics at the expense of correctness.
 
 ---
 
-## 12. Repository Skills
+## 6. Scope Discipline
 
-Use repository skills as reusable workflow implementations.
+Work only inside the active Plan/Slice.
 
-For substantial implementation work:
+Do not opportunistically:
+
+* refactor unrelated code;
+* rename unrelated APIs;
+* fix unrelated style debt;
+* redesign architecture;
+* change learning policy;
+* clean unrelated tests;
+* add speculative abstractions.
+
+When discovering an unrelated issue:
+
+1. determine whether it blocks the current work;
+2. if blocking, address or escalate it;
+3. if not blocking but worth preserving, add it to `docs/FOLLOW_UP_BACKLOG.md`;
+4. otherwise leave it alone.
+
+Do not turn discovery into automatic scope expansion.
+
+---
+
+## 7. Plan Conflict Protocol
+
+Claude is not required to implement a Plan literally when repository reality proves that doing so would be incorrect.
+
+### Compatible implementation adjustment
+
+If repository patterns provide a clearly safer implementation without changing accepted intent:
+
+* follow the existing architecture;
+* keep scope unchanged;
+* continue.
+
+### Genuine decision conflict
+
+If implementation requires a new product, architecture, security, or data decision, report:
+
+```text
+PLAN_CONFLICT
+- Plan assumption
+- Repository reality
+- Why the requested implementation would be unsafe/incorrect
+- Decision required
+- Affected Slice(s)
+```
+
+Do not invent the missing decision.
+
+Continue independent safe work when possible.
+
+---
+
+## 8. Canonical Development Lifecycle
+
+For implementation work, use:
+
+```text
+INSPECT
+→ IMPLEMENT
+→ TARGETED VERIFICATION
+→ RISK REVIEW
+→ FIX MATERIAL FINDINGS
+→ FINAL RELEVANT VERIFICATION
+→ EVIDENCE CHECKPOINT
+→ COMMIT
+```
+
+Do not rearrange this into repeated full QA loops.
+
+In particular:
+
+* review happens before final relevant verification;
+* fixes may invalidate earlier evidence;
+* only invalidated evidence needs refreshing;
+* checkpoint validates evidence/state;
+* checkpoint is not another full test runner.
+
+---
+
+## 9. Run-End Lifecycle
+
+At the end of a Run:
+
+```text
+complete executable Slices
+→ integration acceptance only if still needed
+→ update DEV_STATUS
+→ generate telemetry summary when available
+→ create/update Run Report
+→ verify final Git state
+→ stop at the Plan boundary
+```
+
+Run-end acceptance exists only to prove integration that Slice-level evidence did not already prove.
+
+Do not replay every Slice verification solely because the Run is ending.
+
+Before final Run closeout:
+
+* ensure relevant evidence is still fresh;
+* ensure material reviewer findings are resolved;
+* distinguish local/committed/pushed/deployed/hosted state;
+* record required manual follow-up;
+* do not automatically begin the next Product Run.
+
+---
+
+## 10. Run Telemetry
+
+UNLOCK measures Development OS efficiency through local Run telemetry.
+
+Canonical telemetry policy:
+
+`docs/RUN_TELEMETRY.md`
+
+Runtime implementation:
+
+* `.claude/telemetry/collect.mjs`
+* `.claude/telemetry/statusline.mjs`
+* `.claude/telemetry/summarize.mjs`
+* `.claude/settings.json`
+
+Raw local telemetry:
+
+`scratch/telemetry/<RUN_ID>/`
+
+Durable reporting shape:
+
+`docs/RUNS/RUN_TEMPLATE.md`
+
+### During normal work
+
+Telemetry is passive infrastructure.
+
+Do:
+
+* allow configured hooks/status-line collection to operate normally;
+* continue normal implementation if telemetry is unavailable;
+* use targeted reads and scoped context normally;
+* use subagents when appropriate for disposable broad exploration.
+
+Do not:
+
+* manually maintain a telemetry diary;
+* load raw telemetry into model context during ordinary work;
+* inspect raw telemetry unless diagnosing telemetry itself;
+* add tool calls merely to improve measurement completeness;
+* alter implementation behavior to improve telemetry numbers;
+* treat repeated reads, cache ratio, subagent count, or context size as standalone quality scores.
+
+### Data minimization
+
+Telemetry must not intentionally persist:
+
+* prompts;
+* file contents;
+* secrets;
+* complete tool-response bodies;
+* arbitrary terminal output.
+
+Prefer metadata such as:
+
+* file path;
+* tool;
+* duration;
+* success/failure;
+* response size;
+* session;
+* instruction-load reason;
+* agent identity.
+
+### Run closeout
+
+At Run closeout:
+
+```text
+node .claude/telemetry/summarize.mjs
+→ read scratch/telemetry/<RUN_ID>/summary.md
+→ copy only useful aggregate evidence into the Run Report
+```
+
+Do not routinely load:
+
+* raw JSONL;
+* full session telemetry;
+* telemetry implementation code.
+
+Never invent missing:
+
+* duration;
+* token counts;
+* context usage;
+* cost;
+* cache data;
+* file-access counts;
+* instruction-load data.
+
+Qualitative observations such as Context Misses or unnecessary rechecks may be added only when materially observed.
+
+Telemetry observes the workflow.
+
+It does not decide:
+
+* required verification;
+* reviewer selection;
+* product behavior;
+* architectural correctness.
+
+---
+
+## 11. Repository Skills
+
+Use repository skills for workflow orchestration.
+
+### Implementation
 
 `/implement-slice`
 
-At meaningful development checkpoints:
+Owns Slice workflow orchestration.
 
-`/checkpoint`
-
-Before a local commit:
+### Review
 
 `/review-commit`
 
-Do not repeatedly reload the same skill in one context unless context compaction
-caused its instructions to be lost.
+Owns reviewer selection and review orchestration.
 
-Skills supplement this file; they do not override accepted ADRs or the current Plan.
+### Evidence checkpoint
 
----
+`/checkpoint`
 
-## 13. Reviewer Agents
+Owns evidence/state validation.
 
-Available reviewers:
+Skills must not redefine accepted product behavior or duplicate another skill's responsibility.
 
-- `unlock-reviewer`
-- `unlock-db-reviewer`
-- `unlock-security-reviewer`
-
-Reviewer agents are read-only.
-
-Use reviewers based on risk, not ceremony.
-
-Typical triggers:
-
-### `unlock-security-reviewer`
-Use for:
-- auth
-- authorization
-- data exposure
-- redirects
-- privilege boundaries
-- sensitive learner-facing APIs
-
-### `unlock-db-reviewer`
-Use for:
-- migrations
-- transactions
-- SQL
-- constraints
-- repository behavior
-- concurrency
-- DB-specific integrity
-
-### `unlock-reviewer`
-Use for:
-- significant cross-cutting implementation
-- integration consistency
-- general code review where a specialist is not enough
-
-Prefer reviewing:
-- the current slice diff
-- a specific commit
-- a bounded commit range
-
-Do not ask a reviewer to reread the whole repository unless genuinely necessary.
-
-Do not ask reviewers to justify the implementation author's choices.
-They must inspect code independently.
-
-Resolve material findings before marking a slice complete.
+Do not repeatedly reload unchanged skill instructions in the same context.
 
 ---
 
-## 14. Testing / Verification
+## 12. Verification Policy
 
-Use targeted tests while developing.
+Operational verification selection is owned by:
 
-Do not rerun expensive full suites after every edit.
+`.claude/rules/testing.md`
 
-At a slice checkpoint, follow `.claude/rules/testing.md`.
+That rule decides:
 
-Distinguish verification levels accurately:
+* which evidence is required;
+* which previous evidence is still fresh;
+* which evidence became stale;
+* when broader verification is justified.
 
-- unit-tested
-- mocked route-tested
-- PGlite integration-tested
-- reviewed by inspection
-- reasoned under PostgreSQL semantics
-- real PostgreSQL tested
-- real Supabase tested
-- browser manually verified
-- browser E2E tested
+Conceptual testing philosophy lives in:
 
-Never claim a stronger verification level than actually performed.
+`docs/TESTING.md`
 
-`npm run test:schema` is NOT a ceremonial default.
+Do not reproduce detailed verification matrices here.
 
-Run it when the slice:
-- changes schema/migrations
-- changes Postgres repository behavior
-- changes DB row mapping
-- changes DB-specific transactions/constraints
-- directly depends on DB behavior that requires integration proof
+Core rule:
 
-If it already passed after the final DB-relevant change in the same slice, do not
-rerun it merely because UI/docs changed afterward.
+> Evidence remains valid until a relevant later change invalidates what it proved.
+
+Do not rerun expensive checks ceremonially.
+
+Telemetry may record verification activity, but telemetry does not decide what verification is required.
 
 ---
 
-## 15. Definition of Done for a Slice
+## 13. Review Policy
 
-A slice is `COMPLETE` only when all applicable conditions are satisfied:
+Reviewer selection and orchestration are owned by:
 
-- implementation is complete
-- acceptance criteria are satisfied
-- targeted tests pass
-- required checkpoint tests pass
-- required reviewers have completed
-- material reviewer findings are resolved
-- durable current-state changes are reflected concisely in DEV_STATUS
-- current run checkpoint/report is updated
-- focused local commit is created when the Plan authorizes commits
-- working tree is clean or any remaining changes are explicitly understood
+`/review-commit`
 
-Do not mark a slice COMPLETE merely because code was written.
+Available specialist reviewers currently include:
 
-If a slice cannot be completed cleanly:
+* general reviewer;
+* database reviewer;
+* security reviewer.
 
-- classify it PARTIAL or BLOCKED
-- preserve green work
-- record the exact remaining work
-- do not disguise incomplete work as complete
+Use review based on risk.
+
+Do not invoke every reviewer by default.
+
+Reviewers should inspect bounded evidence/diffs rather than rebuild the entire project context.
+
+Material findings must be addressed before commit readiness.
 
 ---
 
-## 16. DEV_STATUS Maintenance Rules
+## 14. Checkpoint Policy
 
-`docs/DEV_STATUS.md` is a current snapshot.
+`/checkpoint` validates whether the current evidence and repository state are sufficient for the intended transition.
 
-Keep it concise.
+Checkpoint should answer questions such as:
 
-Target size:
-approximately 150–300 lines under normal conditions.
+* Is relevant evidence present?
+* Is it still fresh?
+* Are findings resolved?
+* Are blockers visible?
+* Is the repository state understood?
 
-It should contain:
+Checkpoint must not blindly rerun the full suite.
 
-- current branch/head state where useful
-- current product capabilities
-- database/migration state
-- verification state
-- current test baseline
-- current known gaps/limitations
-- blockers
-- required manual actions
-- immediate next checkpoint
+A successful checkpoint is not automatically a Run stop condition.
 
-It should NOT contain:
-
-- chronological development history
-- long descriptions of how a bug was discovered
-- per-slice implementation diaries
-- reviewer transcripts
-- large test inventories
-- detailed commit history
-- old superseded state
-- workflow instructions already defined here
-- duplicated ADR reasoning
-- next-task queue content (that belongs in `docs/CHATGPT_PLAN.md`)
-
-Historical detail belongs in `docs/RUNS/` and Git.
-
-Preferred compression pattern — instead of narrating what a specific Run
-audited:
-
-> Every non-UI "Must verify" item for the join → Today → answer flow was
-> individually re-confirmed against actual existing test bodies in Run X:
-> repeated-join idempotency, AUTHORIZED_ONLY fail-closed, ...
-
-prefer a short current-state statement:
-
-> Demo journey locally verified at unit/application/PGlite layers;
-> browser/hosted status: see Verification State.
-
-Point to the Run Report only when historical detail is genuinely useful.
-
-When updating DEV_STATUS:
-replace stale state rather than appending another historical section.
+Continue according to the active Plan unless its stop condition has been reached.
 
 ---
 
-## 17. Run Report Rules
+## 15. Architecture Boundary
 
-When the current Plan requests a completed Run Report, create a new file under:
+UNLOCK is a layered modular monolith.
 
-`docs/RUNS/`
+Primary dependency structure:
 
-Use the Run ID defined by `docs/CHATGPT_PLAN.md`.
+```text
+src/app/
+    ↓
+src/application/
+    ↓
+src/domain/
 
-A Run Report should normally be approximately 50–150 lines.
+src/infrastructure/
+    implements persistence/provider boundaries
+```
 
-Include:
+General responsibilities:
 
-- Plan version
-- Run ID
-- Base HEAD
-- End HEAD
-- overall status
-- concise handoff summary
-- slices attempted/completed/blocked
-- commits
-- test results
-- reviewer findings
-- important discoveries
-- decisions required
-- manual actions required
-- recommended next step
+* `src/domain/` → deterministic business/learning rules;
+* `src/application/` → use cases and ports;
+* `src/infrastructure/` → PostgreSQL, Supabase, repositories, providers;
+* `src/app/` → Next.js UI/API/runtime composition.
 
-Do not reproduce:
-- full diffs
-- terminal logs
-- entire test output
-- detailed source-code walkthroughs already recoverable from Git
+Do not duplicate domain policy in routes or UI.
 
-A completed historical Run Report should normally be treated as immutable archive.
+Do not introduce generic abstractions purely for theoretical flexibility.
 
-Do not read prior Run Reports during future runs unless explicitly authorized.
+Load the relevant scoped architecture rule when needed.
 
 ---
 
-## 18. Temporary Development Checkpoint
+## 16. Learning Guardrails
 
-Long autonomous runs may use:
+Do not silently change accepted Learning Engine or Today behavior.
 
-`scratch/development_checkpoint.md`
+Important current guardrails include:
 
-or another checkpoint path explicitly named by the current Plan.
+* Attempts are immutable historical evidence;
+* QuestionVersions are immutable content snapshots;
+* historical Attempts are not regraded against newer QuestionVersions;
+* Learning Engine behavior is deterministic for the same accepted inputs;
+* real-time learning ranking does not depend on an LLM;
+* `DailyPlan` / `DailyPlanItem` are the primary current Today model;
+* one DailyPlan exists per learner per learner-local calendar day;
+* Global Today and Course Today are views of that same persisted plan;
+* Today is frozen according to accepted DailyPlan semantics;
+* only eligible active `LEARNER` memberships participate automatically;
+* New Material placement is not learning evidence;
+* Manual Practice does not resolve Today;
+* Skip is resolution, not an incorrect Attempt;
+* persisted QuestionVersion identity must remain trustworthy.
 
-Keep it small:
-approximately 30–60 lines.
-
-Recommended fields:
-
-START_HEAD:
-CURRENT_HEAD:
-CURRENT_SLICE:
-COMPLETED:
-DECISIONS:
-TESTS_ALREADY_GREEN:
-BLOCKERS:
-REVIEWER_FINDINGS:
-NEXT_ACTION:
-
-Update it at slice boundaries.
-
-If context compaction occurs:
-
-1. read the current checkpoint
-2. inspect recent git history/status
-3. reopen only context relevant to the active slice
-4. continue
-
-Do not use historical Run Reports to recover normal working context.
-
-The checkpoint is temporary RAM, not durable project memory.
+Detailed behavior belongs in ADRs and relevant domain documents.
 
 ---
 
-## 19. Git Safety
+## 17. Authentication and Authorization Guardrails
 
-Never push unless the user performs it manually outside Claude Code.
+For authenticated server behavior:
 
-`git push` is hard-blocked at tool-permission level.
+* trusted user identity comes from verified server-side authentication;
+* use `supabase.auth.getUser()` for trusted identity;
+* never trust a client-supplied authoritative `userId`;
+* authenticate before protected database work when the flow permits it;
+* derive authoritative ownership/identity from persisted server state;
+* do not expose grading-only information to learner-facing read paths;
+* do not expose raw internal errors or credentials.
 
-Never run destructive commands such as:
+Authorization must be enforced at trusted server/application/database boundaries.
 
-- `git reset --hard`
-- `git clean -fd`
-- destructive checkout/restore operations
-- force-push
-- history rewriting
+UI visibility is not authorization.
 
-without explicit approval.
+---
 
-Do not delete or ignore unknown untracked files automatically.
+## 18. RLS Baseline
+
+Do not invent or broaden RLS policies automatically.
+
+Current V1 security relies on accepted server-side authentication/authorization plus existing database controls.
+
+If a task explicitly changes RLS behavior:
+
+* load the relevant database/security sources;
+* preserve least privilege;
+* test the real intended access path;
+* distinguish local evidence from hosted Supabase role behavior.
+
+RLS work requires explicit scope.
+
+---
+
+## 19. Database and Migration Guardrails
+
+Migrations are forward-only.
+
+Do not edit accepted historical migrations to introduce new behavior.
+
+Use new migrations for new schema changes.
+
+Preserve the existing PostgreSQL repository / Unit-of-Work architecture.
+
+Do not:
+
+* rewrite persistence through Supabase JS without explicit scope;
+* create a `pg.Pool` per request;
+* claim PGlite proves behavior it cannot prove;
+* collapse scoped Units of Work into a mega-transaction abstraction merely to reduce duplication.
+
+Use:
+
+`.claude/rules/postgres.md`
+
+when the Slice materially touches PostgreSQL, schema, migrations, repositories, or transactional behavior.
+
+---
+
+## 20. API Guardrails
+
+For API/route work:
+
+* authenticate at the trusted boundary;
+* validate untrusted input;
+* derive authoritative identifiers server-side;
+* call application use cases rather than reproducing domain behavior;
+* map failures to controlled responses;
+* do not leak implementation details.
+
+Use:
+
+`.claude/rules/api.md`
+
+when route/API behavior is materially affected.
+
+---
+
+## 21. Learning-Engine Rule
+
+For Learning Engine work, use:
+
+`.claude/rules/learning-engine.md`
+
+That rule is a compact implementation guardrail over accepted ADRs/design.
+
+It must not become a second Learning Engine specification.
+
+---
+
+## 22. Auth Rule
+
+For authentication-specific work, use:
+
+`.claude/rules/auth.md`
+
+It owns detailed trusted-identity and authentication ordering guidance.
+
+Do not duplicate those details broadly across unrelated files.
+
+---
+
+## 23. Git Safety
+
+Never run destructive Git operations without explicit approval.
+
+Examples include:
+
+* `git reset --hard`;
+* `git clean -fd`;
+* destructive restore/checkout operations;
+* history rewriting;
+* force-push.
+
+Do not delete unknown untracked files automatically.
 
 Do not rewrite shared/pushed history casually.
 
 Before a local commit:
 
-- use `/review-commit`
-- inspect intended diff
-- verify no secrets
-- verify `.env*` is not staged
-- verify scratch files are not staged
-- verify temporary Supabase CLI state is not staged
-- verify the intended tests/reviews are green
-
-Before the user pushes, report:
-- current HEAD
-- commits ahead of origin
-- working-tree state
-- migrations requiring remote application
+* inspect the intended diff;
+* ensure secrets are not staged;
+* ensure `.env*` is not staged;
+* ensure ignored scratch state is not staged;
+* ensure raw telemetry is not staged;
+* ensure temporary Supabase CLI state is not staged;
+* ensure relevant evidence/review is complete.
 
 ---
 
-## 20. Remote / Hosted Environment Safety
+## 24. Push Policy
 
-Claude must NOT perform without explicit user authorization:
+Claude must not push Git commits.
 
-- `git push`
-- `supabase link`
-- `supabase db push`
-- hosted migrations
-- hosted data mutation
-- hosted user creation
-- hosted membership creation
-- real learner answer submission
-- real learner Skip
-- destructive remote operations
+`git push` remains a human action.
 
-Read-only hosted checks may be used only when they are safe and relevant.
+Before handing off for a human push, report when relevant:
 
-Never print or request secrets that already exist in configured environment files.
+* current HEAD;
+* commits ahead of origin;
+* working-tree state;
+* hosted migrations still awaiting manual application.
 
 ---
 
-## 21. Run Lifecycle
+## 25. Hosted Supabase Safety
 
-A normal substantial development run follows:
+Claude must not perform hosted Supabase mutation workflows.
 
-1. `/clear` is performed by the user before the run when a fresh context is desired.
-2. Claude reads HOT context.
-3. Claude verifies repository state against the Plan.
-4. Claude creates/refreshes the temporary development checkpoint if the Plan requests it.
-5. Claude executes slices in order.
-6. Each slice:
-   - inspect
-   - implement
-   - targeted tests
-   - required checkpoint verification
-   - required review
-   - DEV_STATUS update if durable state changed
-   - checkpoint update
-   - focused local commit when authorized
-7. At the Plan's stopping point, follow the Run Completion Protocol below.
-8. Do NOT continue beyond the Plan's explicit stopping point.
+Do not run:
 
-### Checkpoint Continuation Rule
+* `supabase link`;
+* `supabase db push`;
+* hosted migration application;
+* destructive hosted data mutation;
+* hosted user/member creation for convenience;
+* real learner answer/Skip operations.
 
-`/checkpoint` is a read-only verification operation. It is not itself a Run
-stop condition, whether invoked inline during a Slice or standalone.
+Hosted migrations are applied manually by Dor.
 
-After a checkpoint completes:
+Local committed migration work may be prepared and verified.
 
-- inspect the active Plan
-- if required Plan work remains and there is no blocker/gate, continue
-  automatically to that work
-- do not end the turn merely because the checkpoint verdict is
-  `READY FOR REVIEW`, `READY FOR COMMIT`, or `READY FOR HANDOFF`
+Clearly distinguish:
 
-Stop only when:
+```text
+committed/local/PGlite verified
+```
 
-- the Plan is actually complete, or
-- an explicit stop/gate defined by the Plan is reached, or
-- a real blocker or `PLAN_CONFLICT` requires Dor
+from:
 
-### Run Completion Protocol
+```text
+applied to hosted Supabase
+```
 
-This is the one canonical end-of-Run sequence:
-
-1. complete all executable slices;
-2. run required final verification/checkpoint;
-3. run risk-appropriate reviewer(s);
-4. address blocking/relevant findings;
-5. update `docs/DEV_STATUS.md` with durable current truth only;
-6. create immutable `docs/RUNS/<RUN_ID>.md`;
-7. verify final Git state and `git diff --check`;
-8. report the explicit Plan stop token/status;
-9. stop.
-
-If a Run ends at a manual gate rather than full Plan completion, the Run
-Report must contain the exact manual handoff and distinguish:
-
-- locally verified;
-- hosted/externally verified;
-- still unverified.
-
-Do not intentionally run `/clear` in the middle of an autonomous run.
-
-If context compacts naturally, recover from repository state and the current
-temporary checkpoint.
+Never claim the latter without actual human-performed hosted application/evidence.
 
 ---
 
-## 22. Handoff Discipline
+## 26. Secrets
 
-The goal of this system is to make repository state sufficient for a fresh AI context.
+Never print, expose, commit, or request secrets unnecessarily.
 
-At the end of a run, another fresh Claude session should be able to understand
-the current development state by reading only:
+Keep server-only credentials server-only.
 
-- `CLAUDE.md`
-- `docs/CHATGPT_PLAN.md`
-- `docs/DEV_STATUS.md`
+Do not place secrets in:
 
-and then loading additional context only when the Plan requires it.
+* source files;
+* docs;
+* test snapshots;
+* browser bundles;
+* public environment variables;
+* Run Reports;
+* telemetry.
 
-If this is not possible, improve the durable project documentation rather than
-depending on conversational memory.
+Use existing configured environment mechanisms.
+
+---
+
+## 27. DEV_STATUS
+
+`docs/DEV_STATUS.md` is a snapshot, not a diary.
+
+Update it only when durable current truth changes.
+
+Keep:
+
+* current capabilities;
+* current migration/hosted state;
+* current meaningful verification state;
+* real gaps/blockers;
+* required manual actions;
+* immediate project state.
+
+Do not append:
+
+* chronological narratives;
+* reviewer transcripts;
+* terminal logs;
+* per-Slice diaries;
+* telemetry raw logs;
+* duplicate ADR reasoning;
+* old superseded state.
+
+Replace stale state instead of accumulating history.
+
+---
+
+## 28. Run Reports
+
+`docs/RUNS/**` stores historical completed-Run evidence.
+
+Use:
+
+`docs/RUNS/RUN_TEMPLATE.md`
+
+as the reporting shape for new Runs.
+
+Run Reports may include:
+
+* Run identity;
+* baseline/end state;
+* completed/blocked work;
+* commits;
+* verification evidence;
+* reviewer findings;
+* compact telemetry summary;
+* meaningful Context Misses / recheck observations;
+* manual follow-up.
+
+Run Reports must not contain raw telemetry.
+
+They are archive material.
+
+Do not use them as default context for future Runs.
+
+Do not rewrite old Run Reports to make history match current terminology.
+
+---
+
+## 29. Temporary Checkpoint and Scratch
+
+`scratch/**` is temporary RAM.
+
+Current temporary resume state may live in:
+
+`scratch/development_checkpoint.md`
+
+Raw Run telemetry may live in:
+
+`scratch/telemetry/<RUN_ID>/`
+
+Keep scratch small and disposable.
+
+It should contain no durable project truth that exists nowhere else.
+
+Do not commit scratch telemetry.
+
+Overwrite or discard temporary context when no longer needed.
+
+Because `scratch/` is ignored, do not depend on it for long-term handoff.
+
+---
+
+## 30. Follow-Up Backlog
+
+`docs/FOLLOW_UP_BACKLOG.md` is for worthwhile technical work intentionally deferred from current execution.
+
+Use it when:
+
+* the issue is real;
+* it is not required for the active Plan;
+* preserving it will help a later deliberate decision.
+
+Do not use it for:
+
+* current blockers;
+* current Plan tasks;
+* unresolved product decisions;
+* bugs that must be fixed now;
+* historical narrative.
+
+Backlog priority does not override the active Plan or Roadmap.
+
+---
+
+## 31. Documentation Change Discipline
+
+Do not update documentation merely because a file was touched.
+
+Update the owner of the fact that actually changed.
+
+Examples:
+
+* accepted decision changed → ADR;
+* current state changed → `DEV_STATUS`;
+* Run scope changed → `CHATGPT_PLAN`;
+* telemetry semantics changed → `RUN_TELEMETRY`;
+* unresolved decision discovered → `OPEN_QUESTIONS`;
+* deferred improvement discovered → `FOLLOW_UP_BACKLOG`.
+
+Avoid cascading documentation edits without a real ownership reason.
+
+---
+
+## 32. Commit Discipline
+
+Prefer focused local commits at meaningful accepted boundaries.
+
+Do not commit incomplete or knowingly broken state unless the Plan explicitly requires a checkpoint commit.
+
+Before commit readiness:
+
+```text
+implementation complete
+→ risk review complete
+→ material findings fixed
+→ final relevant evidence fresh
+→ checkpoint validates state
+→ telemetry summary recorded when applicable
+→ inspect diff
+→ commit
+```
+
+Commit policy must not force unnecessary test reruns.
+
+Telemetry failure alone should not block an otherwise valid product commit unless the active Plan explicitly makes telemetry itself the subject of the work.
+
+---
+
+## 33. Stop Conditions
+
+Stop execution when:
+
+* the active Plan is complete;
+* the Plan defines a manual gate;
+* a genuine blocker prevents safe continuation;
+* a `PLAN_CONFLICT` requires a human decision;
+* the requested task has been completed.
+
+Do not continue into the next Product Run automatically.
+
+In particular:
+
+> Development OS cleanup completion does not itself authorize starting Run 007.
+
+Run 007 begins only from an explicit active Plan/handoff.
+
+---
+
+## 34. Context Recovery
+
+If context is compacted or a fresh Claude session resumes work:
+
+1. read `AGENTS.md`;
+2. read `CLAUDE.md`;
+3. read `docs/CHATGPT_PLAN.md`;
+4. read `docs/DEV_STATUS.md`;
+5. inspect Git;
+6. read `scratch/development_checkpoint.md` only if present/useful;
+7. load only task-relevant additional context.
+
+Do not recover normal state by reading historical Run Reports.
+
+Do not load raw telemetry as part of ordinary context recovery.
+
+---
+
+## 35. Handoff Principle
+
+A fresh agent should be able to recover current project state primarily from:
+
+* repository reality;
+* `AGENTS.md`;
+* `CLAUDE.md`;
+* `docs/CHATGPT_PLAN.md`;
+* `docs/DEV_STATUS.md`.
+
+Additional documents should be loaded only when the task needs them.
 
 The repository is the memory.
-The Plan is the current instruction.
+
+The Plan is the current execution contract.
+
 DEV_STATUS is the current snapshot.
+
+ADRs are durable decisions.
+
 Git is the technical ledger.
-Run Reports are historical archive.
+
+Run Reports are history.
+
+Telemetry measures the development process.
+
 Scratch is temporary RAM.
+
+---
+
+## 36. Core Operating Principle
+
+> Inspect reality before acting.
+
+> Load only the context the task needs.
+
+> Keep one owner per responsibility.
+
+> Follow the active Plan without silently changing accepted behavior.
+
+> Review before final relevant verification.
+
+> Reuse fresh evidence.
+
+> Measure the Development OS without turning measurement into cognitive workload.
+
+> Treat remote mutation and push as human-controlled actions.
+
+> Stop at the defined boundary.

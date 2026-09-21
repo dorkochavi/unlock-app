@@ -2,7 +2,7 @@
 
 STATUS: ACTIVE V1 BOUNDARY
 PURPOSE: Define what must be true for UNLOCK V1 to be considered complete
-RELATIONSHIP: This document defines scope; `docs/UNLOCK_ROADMAP.md` defines sequencing
+RELATIONSHIP: This document defines V1 scope; `docs/UNLOCK_ROADMAP.md` defines product sequencing
 
 ---
 
@@ -10,19 +10,17 @@ RELATIONSHIP: This document defines scope; `docs/UNLOCK_ROADMAP.md` defines sequ
 
 UNLOCK V1 is a learning product in which:
 
-- an instructor can create a course;
-- add reviewed learning content — manually authored, structured-imported, or (later) AI-generated;
-- publish and share that course;
-- learners can join;
-- UNLOCK creates a personalized daily learning plan;
-- learner actions update a persistent learner model;
-- UNLOCK uses that model to choose what matters next;
-- learners can understand their progress/readiness;
-- instructors can understand meaningful cohort learning signals.
+* an instructor can create a course;
+* add or generate reviewed learning content;
+* publish and share that course;
+* learners can join;
+* UNLOCK creates a personalized daily learning plan;
+* learner actions update a persistent learner model;
+* UNLOCK uses that model to choose what matters next;
+* learners can understand their progress/readiness;
+* instructors can understand meaningful cohort learning signals.
 
 The product must operate end to end without requiring direct SQL, seed manipulation, or developer intervention for normal use.
-
-The earliest usable/pilot-ready V1 is defined narrowly as: real learning material + real questions + an adaptive learner model / personalized Today + learner progress + basic instructor insights. Native PDF ingestion and in-product AI question generation are not required to reach this point — see Section 9.
 
 ---
 
@@ -42,38 +40,37 @@ It does not need to prove every future product idea.
 
 A Learner can:
 
-- authenticate;
-- join an eligible course;
-- view active courses;
-- study through Today;
-- answer;
-- Skip;
-- receive feedback;
-- complete Today;
-- reload without losing state;
-- view basic course context;
-- view Progress / Learning Profile;
-- understand basic exam readiness when applicable.
+* authenticate;
+* join an eligible course;
+* view active courses;
+* study through Today;
+* answer;
+* Skip;
+* receive feedback;
+* complete Today;
+* reload without losing state;
+* view basic course context;
+* view Progress / Learning Profile;
+* understand basic exam readiness when applicable.
 
 ## Instructor / Owner
 
 An Instructor or Owner can:
 
-- create a course;
-- edit course metadata;
-- set join policy;
-- set exam date;
-- archive a course;
-- add and edit questions manually;
-- import a structured set of externally prepared questions (e.g. CSV / JSON / spreadsheet-style);
-- organize questions into basic topics;
-- publish course content;
-- generate/share a join link or QR;
-- upload supported course material where AI content generation is available;
-- review AI-proposed questions where AI content generation is available;
-- approve/edit/reject proposed questions;
-- view enrolled learners;
-- view basic course learning insights.
+* create a course;
+* edit course metadata;
+* set join policy;
+* set exam date;
+* archive a course;
+* add and edit questions;
+* organize questions into basic topics;
+* publish course content;
+* generate/share a join link or QR;
+* upload supported course material;
+* review AI-proposed questions;
+* approve/edit/reject proposed questions;
+* view enrolled learners;
+* view basic course learning insights.
 
 ---
 
@@ -99,16 +96,16 @@ V1 must support this journey without developer intervention:
 
 The product must also handle:
 
-- no courses;
-- empty Today;
-- already completed Today;
-- invalid course link;
-- course not found;
-- AUTHORIZED_ONLY join;
-- revoked membership;
-- unauthenticated join;
-- expired session/auth;
-- generic server/network failure.
+* no courses;
+* empty Today;
+* already completed Today;
+* invalid course link;
+* course not found;
+* AUTHORIZED_ONLY join;
+* revoked membership;
+* unauthenticated join;
+* expired session/auth;
+* generic server/network failure.
 
 ---
 
@@ -119,23 +116,25 @@ V1 must support this journey without developer intervention:
 1. instructor authenticates;
 2. creates a course;
 3. defines:
-   - title;
-   - optional description;
-   - exam date when relevant;
-   - join policy;
+
+   * title;
+   * optional description;
+   * exam date when relevant;
+   * join policy;
 4. creates initial topic structure;
-5. creates questions manually, imports a structured question set, or (where available) imports source material for AI-assisted generation;
+5. creates questions manually OR imports material;
 6. reviews/edit questions;
 7. publishes usable course content;
 8. shares a join link / QR;
 9. learners join and study;
 10. instructor sees:
-   - enrollment;
-   - activity;
-   - weak topics;
-   - high-error questions;
-   - recurring misconceptions where supported;
-   - basic readiness/mastery signals.
+
+* enrollment;
+* activity;
+* weak topics;
+* high-error questions;
+* recurring misconceptions where supported;
+* basic readiness/mastery signals.
 
 ---
 
@@ -143,7 +142,7 @@ V1 must support this journey without developer intervention:
 
 V1 must maintain trustworthy learner state based on real learning evidence.
 
-Required major signal families. Memory Need, Mastery Need, Misconception Need, and New Material are required for the earliest pilot-ready V1 (Section 1). Exam Urgency and Confidence Gap deepen the model in Learning Intelligence Expansion (Run 007) and are not required to reach the pilot-ready point.
+Required major signal families:
 
 ## Memory Need
 
@@ -173,8 +172,8 @@ Exam urgency is an amplifier, not a gate.
 
 V1 should capture confidence with answers and derive at least a basic signal from mismatches such as:
 
-- high confidence + incorrect;
-- low confidence + correct.
+* high confidence + incorrect;
+* low confidence + correct.
 
 Confidence is evidence, not truth.
 
@@ -184,19 +183,19 @@ Confidence is evidence, not truth.
 
 V1 must preserve the accepted Today model:
 
-- one persisted DailyPlan per user per learner-local calendar day;
-- Global Today and course context refer to the same underlying DailyPlan;
-- Today is frozen by default after creation;
-- same-day reload returns the same persisted plan/state;
-- no automatic carry-over;
-- next day recalculates from current learner state;
-- plan size may be dynamic;
-- Today has a real finish line;
-- extra practice remains separate;
-- Manual Practice never silently resolves a Today item;
-- Skip resolves without incorrect-answer evidence;
-- archived/inactive memberships do not auto-participate;
-- only active LEARNER memberships auto-participate.
+* one persisted DailyPlan per user per learner-local calendar day;
+* Global Today and course context refer to the same underlying DailyPlan;
+* Today is frozen by default after creation;
+* same-day reload returns the same persisted plan/state;
+* no automatic carry-over;
+* next day recalculates from current learner state;
+* plan size may be dynamic;
+* Today has a real finish line;
+* extra practice remains separate;
+* Manual Practice never silently resolves a Today item;
+* Skip resolves without incorrect-answer evidence;
+* archived/inactive memberships do not auto-participate;
+* only active LEARNER memberships auto-participate.
 
 ---
 
@@ -211,28 +210,26 @@ Course
 
 Question requirements:
 
-- SINGLE_CHOICE;
-- MULTIPLE_CHOICE;
-- prompt;
-- answer options;
-- correct answer definition;
-- explanation or feedback content where applicable;
-- topic association;
-- immutable version history after publication/use.
+* SINGLE_CHOICE;
+* MULTIPLE_CHOICE;
+* prompt;
+* answer options;
+* correct answer definition;
+* explanation or feedback content where applicable;
+* topic association;
+* immutable version history after publication/use.
 
-A lightweight structured question import capability (e.g. CSV / JSON / spreadsheet-style) is required before native PDF/AI generation, so instructors can bring in externally prepared question sets without developer intervention. The exact file format is an implementation detail, not a premature lock-in.
-
-Content/source ingestion sufficient for AI-assisted generation is a later capability — see Section 9 — and is not required for the earliest usable V1.
+Content/source ingestion should support a narrow V1 source model sufficient for AI-assisted generation.
 
 A deep Knowledge Graph is not required for V1.
 
 ---
 
-# 9. AI Content Behavior (Post-Pilot Capability)
+# 9. Required AI Content Behavior
 
-PDF/content ingestion and AI question generation remain strategically important, but are not required for the Ruppin pilot or the earliest usable V1 (Section 1). Questions may instead come from the lecturer, manual authoring, external AI tools, or structured import (Section 8).
+AI-generated learning content must remain reviewable and non-authoritative.
 
-When native AI content generation is built, it must remain reviewable and non-authoritative. Required behavior:
+Required behavior:
 
 1. instructor uploads supported source;
 2. source text is extracted;
@@ -245,10 +242,10 @@ When native AI content generation is built, it must remain reviewable and non-au
 
 AI must not:
 
-- directly create learner mastery;
-- silently publish questions;
-- overwrite historical QuestionVersion evidence;
-- replace the deterministic Learning Engine.
+* directly create learner mastery;
+* silently publish questions;
+* overwrite historical QuestionVersion evidence;
+* replace the deterministic Learning Engine.
 
 ---
 
@@ -272,14 +269,14 @@ Answers:
 
 Should surface a useful subset of:
 
-- overall learning progress;
-- topic-level strength;
-- material needing reinforcement;
-- misconceptions where reliable;
-- questions/material seen vs unseen;
-- recent activity;
-- Today completion history;
-- exam readiness when applicable.
+* overall learning progress;
+* topic-level strength;
+* material needing reinforcement;
+* misconceptions where reliable;
+* questions/material seen vs unseen;
+* recent activity;
+* Today completion history;
+* exam readiness when applicable.
 
 Avoid false precision.
 
@@ -291,11 +288,11 @@ Answers:
 
 Should provide:
 
-- active courses;
-- course title;
-- exam date when applicable;
-- basic progress/context;
-- access to course-specific context and Manual Practice.
+* active courses;
+* course title;
+* exam date when applicable;
+* basic progress/context;
+* access to course-specific context and Manual Practice.
 
 The learner UI should not expose internal engine implementation concepts unnecessarily.
 
@@ -319,20 +316,16 @@ Understand enrollment and activity.
 
 Understand learning patterns that matter.
 
-This is an explicit V1 hypothesis to test, not a validated capability:
+Minimum useful insight set:
 
-> Can UNLOCK help an instructor understand what the class understands, what it does not understand, and what should be emphasized in the next lesson?
+* active learner count;
+* inactivity;
+* weak topics;
+* high-error questions;
+* recurring misconceptions where reliable;
+* readiness/mastery distribution.
 
-Minimum useful insight set to test that hypothesis:
-
-- active learner count;
-- inactivity;
-- weak topics;
-- high-error questions;
-- recurring misconceptions where reliable;
-- readiness/mastery distribution.
-
-Do not build a generic BI dashboard. Do not describe instructor insights as already validated — the pilot is how this hypothesis gets tested.
+Do not build a generic BI dashboard.
 
 ---
 
@@ -340,20 +333,19 @@ Do not build a generic BI dashboard. Do not describe instructor insights as alre
 
 V1 must expose meaningful learner progress.
 
-Topic-level strength/weakness is the primary product direction for Progress. It must not imply precision that the evidence does not justify.
+It must not imply precision that the evidence does not justify.
 
-A V1 Progress view should surface, at minimum:
+Readiness should be derived from actual learner state and relevant course/exam context.
 
-- strong topics;
-- weak topics;
-- material needing reinforcement;
-- unseen material;
-- misconceptions where reliable;
-- recent learning activity.
+A V1 Progress view may show qualitative or bounded quantitative outputs, for example:
 
-An exam-readiness percentage may exist alongside these, derived from actual learner state and relevant course/exam context, but it is secondary to topic-level strength/weakness and must not replace it.
+* strong;
+* developing;
+* needs reinforcement;
+* unseen;
+* at risk of forgetting.
 
-If a percentage is shown, its derivation must be documented and defensible. Avoid false precision.
+If a percentage is shown, its derivation must be documented and defensible.
 
 ---
 
@@ -361,20 +353,20 @@ If a percentage is shown, its derivation must be documented and defensible. Avoi
 
 Before V1 is considered pilot-ready:
 
-- production deployment exists;
-- critical learner golden path has browser-level E2E coverage;
-- core instructor authoring path has appropriate test coverage;
-- basic error monitoring exists;
-- core product analytics events exist;
-- malformed input receives controlled responses;
-- authentication/session edge cases are handled;
-- server trust boundaries remain enforced;
-- secrets remain server-only;
-- destructive/privileged database operations are controlled;
-- basic rate limiting is added where abuse risk justifies it;
-- privacy/basic legal pages exist;
-- backup/recovery assumptions are known;
-- key flows perform acceptably for pilot-scale usage.
+* production deployment exists;
+* critical learner golden path has browser-level E2E coverage;
+* core instructor authoring path has appropriate test coverage;
+* basic error monitoring exists;
+* core product analytics events exist;
+* malformed input receives controlled responses;
+* authentication/session edge cases are handled;
+* server trust boundaries remain enforced;
+* secrets remain server-only;
+* destructive/privileged database operations are controlled;
+* basic rate limiting is added where abuse risk justifies it;
+* privacy/basic legal pages exist;
+* backup/recovery assumptions are known;
+* key flows perform acceptably for pilot-scale usage.
 
 V1 does not require enterprise compliance certification.
 
@@ -382,7 +374,7 @@ V1 does not require enterprise compliance certification.
 
 # 14. V1 Definition of Done
 
-The earliest usable, pilot-ready V1 is complete when the following scenario can be performed without opening SQL, Cursor, or Claude, and without native PDF ingestion or in-product AI question generation:
+UNLOCK V1 is complete when the following scenario can be performed without opening SQL, Cursor, or Claude:
 
 An instructor logs in.
 
@@ -390,9 +382,11 @@ Creates:
 
 > Introduction to Economics — Exam 12.11.2026
 
-Adds topics.
+Adds topics and teaching material.
 
-Adds questions — manually authored and/or imported through structured import from the lecturer, an external AI tool, or another prepared source.
+UNLOCK proposes questions from the material.
+
+The instructor reviews them and publishes an approved set.
 
 UNLOCK provides a join link / QR.
 
@@ -402,28 +396,35 @@ A learner opens UNLOCK and sees a real Today plan.
 
 The learner answers questions and can Skip.
 
-A wrong answer becomes meaningful evidence.
+A high-confidence wrong answer becomes meaningful evidence.
+
+Correct but low-confidence answers are distinguishable from strong evidence.
 
 The learner completes Today.
 
-Future Today plans reflect the learner's evolving state — at minimum memory risk, mastery, misconceptions, and unseen material. Confidence gap and exam urgency deepen this further as Learning Intelligence Expansion (Run 007) lands, but are not required to reach this pilot-ready point.
+Future Today plans reflect:
+
+* memory risk;
+* mastery;
+* misconceptions;
+* confidence gap;
+* unseen material;
+* exam urgency.
 
 The learner opens Progress and can understand:
 
-- what is strong;
-- what is weak;
-- what needs reinforcement;
-- what remains unseen;
-- misconceptions where reliable;
-- recent learning activity.
+* what is strong;
+* what needs reinforcement;
+* what remains unseen;
+* basic readiness for the exam.
 
-The instructor can open the course and get a first real signal — tested as a pilot hypothesis, not assumed proven — of:
+The instructor can open the course and understand:
 
-- who is active;
-- what topics are weak;
-- which questions generate difficulty;
-- meaningful shared misconceptions where supported;
-- the cohort's broad learning/readiness state.
+* who is active;
+* what topics are weak;
+* which questions generate difficulty;
+* meaningful shared misconceptions where supported;
+* the cohort's broad learning/readiness state.
 
 The system is deployed, monitored at a basic level, and usable by a real pilot cohort.
 
@@ -433,25 +434,25 @@ The system is deployed, monitored at a basic level, and usable by a real pilot c
 
 The following are not required for V1:
 
-- native iOS app;
-- native Android app;
-- social feed;
-- learner-to-learner chat;
-- community features;
-- complex gamification;
-- leaderboards;
-- live classrooms;
-- general-purpose AI tutor chat;
-- deep Knowledge Graph;
-- adaptive video;
-- mid-day automatic Today re-planning;
-- carry-over of unresolved Today items;
-- per-course fairness quotas;
-- complex instructor permission matrices;
-- institutional SSO;
-- billing/subscription system;
-- advanced ML recommender;
-- real-time collaborative content editing.
+* native iOS app;
+* native Android app;
+* social feed;
+* learner-to-learner chat;
+* community features;
+* complex gamification;
+* leaderboards;
+* live classrooms;
+* general-purpose AI tutor chat;
+* deep Knowledge Graph;
+* adaptive video;
+* mid-day automatic Today re-planning;
+* carry-over of unresolved Today items;
+* per-course fairness quotas;
+* complex instructor permission matrices;
+* institutional SSO;
+* billing/subscription system;
+* advanced ML recommender;
+* real-time collaborative content editing.
 
 These may become future roadmap items after V1 evidence.
 
@@ -473,10 +474,10 @@ If it does not support one of these, defer it unless a real pilot dependency eme
 
 When scope pressure appears, prefer:
 
-- completing a vertical loop;
-- preserving learning-state trust;
-- reducing developer intervention;
-- improving learner/instructor comprehension.
+* completing a vertical loop;
+* preserving learning-state trust;
+* reducing developer intervention;
+* improving learner/instructor comprehension.
 
 Do not trade these for feature breadth.
 
@@ -484,17 +485,17 @@ Do not trade these for feature breadth.
 
 # 17. Relationship to Product Runs
 
-The current planned V1 sequence is:
+This document defines **what must be true for UNLOCK V1 to be complete**.
 
-- Run 004 — Complete Learner Product Loop V1
-- Run 005 — Course & Question Authoring + Structured Import V1
-- Run 006 — Learner Progress + Instructor Insights V1
-- Run 007 — Learning Intelligence Expansion
-- Run 008 — PDF / AI Content Pipeline V1
-- Run 009 — Production / Scale Hardening
+It does not own the implementation sequence or Run numbering used to reach that destination.
 
-The earliest usable, pilot-ready V1 (Section 1, Section 14) is reached after Run 006. Runs 007–009 deepen and harden it but are not required to validate the Ruppin pilot.
+The authoritative product sequencing document is:
 
-The Run sequence may change if implementation reality or pilot evidence justifies it.
+`docs/UNLOCK_ROADMAP.md`
 
-The V1 Definition of Done should remain stable unless Dor explicitly changes product scope.
+If the Roadmap changes because implementation reality, pilot evidence, or prioritization changes, this V1 boundary does not need to change unless the actual product scope changes.
+
+The V1 Definition of Done should remain stable unless the product scope itself is explicitly changed.
+
+> `UNLOCK_V1_SCOPE.md` owns the destination.
+> `UNLOCK_ROADMAP.md` owns the route.

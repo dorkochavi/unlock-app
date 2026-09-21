@@ -1,16 +1,39 @@
 # UNLOCK Feature Contract Template
 
-Status: Active feature-specification template
+Status: OPTIONAL / ON-DEMAND feature-specification template
 
-Purpose: define the minimum product, domain, data, analytics, and delivery contract required before implementing a meaningful UNLOCK feature.
+Load level: COLD
 
-Create one file per significant feature under:
+Purpose: provide a structured product/domain contract when a feature is complex enough to benefit from durable feature-specific documentation.
+
+A Feature Contract is **not required for every meaningful code change**.
+
+Use this template when a feature has enough behavioral complexity, cross-layer impact, or durable product rules that a dedicated contract will materially improve implementation and future understanding.
+
+Do not create a Feature Contract merely because:
+
+* a code change is non-trivial;
+* multiple files are affected;
+* a workflow says documentation should exist;
+* the feature could theoretically be documented in more detail.
+
+Prefer existing canonical sources when they already define the behavior sufficiently:
+
+* `docs/MASTER_SPEC.md`
+* `docs/PRODUCT.md`
+* `docs/UNLOCK_V1_SCOPE.md`
+* `docs/ARCHITECTURE.md`
+* `docs/DOMAIN_GLOSSARY.md`
+* `docs/DECISIONS/**`
+* `docs/OPEN_QUESTIONS.md`
+
+When a dedicated Feature Contract is genuinely useful, create one file under:
 
 ```text
 docs/FEATURES/
 ```
 
-Recommended naming:
+Recommended naming examples:
 
 ```text
 TODAY.md
@@ -20,7 +43,17 @@ COURSE.md
 PROGRESS.md
 ```
 
-Do not create a feature contract for trivial implementation details.
+Feature Contracts are supporting product/domain documentation.
+
+They do not own:
+
+* current Run sequencing;
+* generic testing policy;
+* reviewer selection;
+* Development OS workflow;
+* repository current state.
+
+Do not create a Feature Contract for trivial implementation details.
 
 ---
 
@@ -50,7 +83,7 @@ What is the user trying to achieve?
 
 Example:
 
-> As a learner, I want to resume today's learning session so I do not lose progress when I leave and return later.
+> As a learner, I want to resume today's learning plan so I do not lose progress when I leave and return later.
 
 ---
 
@@ -60,10 +93,9 @@ Who uses this feature?
 
 Examples:
 
-- Learner
-- Instructor
-- Institution Admin
-- Platform Admin
+* Learner
+* Instructor
+* Platform Admin
 
 For V1, prefer the minimum required roles.
 
@@ -77,11 +109,11 @@ How does the user reach this feature?
 
 Examples:
 
-- home / Today screen;
-- Course page;
-- post-onboarding flow;
-- direct deep link;
-- session resume.
+* home / Today screen;
+* Course page;
+* post-onboarding flow;
+* direct deep link;
+* resume of an existing persisted flow.
 
 List only real entry points.
 
@@ -93,11 +125,11 @@ What must already be true before this feature can work?
 
 Examples:
 
-- learner is authenticated;
-- Course exists;
-- learner has access to Course;
-- Questions exist;
-- Today Session has been generated.
+* learner is authenticated;
+* Course exists;
+* learner has access to Course;
+* Questions exist;
+* DailyPlan has been generated for the learner-local day, when the feature depends on Today.
 
 Do not hide prerequisites inside implementation code.
 
@@ -111,15 +143,17 @@ Example:
 
 ```text
 1. Learner opens Today
-2. Existing active Today Session is checked
-3. Existing session is resumed if valid
-4. Otherwise a new plan is generated
-5. Learner starts
-6. Quiz executes prepared Today Session Items
-7. Session completes
+2. Existing DailyPlan for the learner-local day is checked
+3. Existing persisted plan is reused when present
+4. Otherwise a new DailyPlan is generated
+5. Learner starts or resumes
+6. Learner executes persisted DailyPlanItems
+7. DailyPlan reaches completion when all relevant items are resolved
 ```
 
 Keep the flow product-focused.
+
+Do not use legacy `TodaySession` semantics as the default model for current Today behavior.
 
 ---
 
@@ -130,9 +164,10 @@ List the rules that must always hold.
 Examples:
 
 ```text
-- Quiz does not choose Today Questions
-- A valid active Today Session must be resumed
-- Attempts are immutable
+- Quiz does not independently choose Today Questions
+- A valid persisted DailyPlan is reused for the same learner-local day
+- Attempts are immutable historical evidence
+- DailyPlan placement alone does not create learner evidence
 - A Course does not require an Institution
 ```
 
@@ -149,20 +184,20 @@ Example:
 ```text
 EMPTY
 READY
-STARTED
 IN_PROGRESS
 COMPLETED
-EXPIRED
 ERROR
 ```
 
 For each state, define:
 
-- what it means;
-- how the feature enters it;
-- how it leaves it.
+* what it means;
+* how the feature enters it;
+* how it leaves it.
 
 Do not add states simply because they sound useful.
+
+Use existing domain/application state where it already exists rather than inventing a second feature-level state machine.
 
 ---
 
@@ -172,22 +207,25 @@ What data does the feature need?
 
 Examples:
 
-- user_id;
-- course_id;
-- Today Session;
-- Today Session Items;
-- UserQuestionProgress;
-- effective exam date.
+* user identity;
+* Course identity;
+* DailyPlan;
+* DailyPlanItems;
+* QuestionVersion;
+* UserQuestionProgress;
+* learner timezone;
+* valid exam context where relevant.
 
-Separate:
+Separate where useful:
 
 ```text
 source data
 derived data
-session state
+persisted plan state
+learner evidence
 ```
 
-where useful.
+Do not require data that the feature does not actually use.
 
 ---
 
@@ -197,10 +235,17 @@ What changes when the feature runs?
 
 Examples:
 
-- Attempt created;
-- Today Session status updated;
-- UserQuestionProgress updated;
-- analytics event emitted.
+* Attempt created;
+* DailyPlanItem resolved;
+* UserQuestionProgress updated;
+* analytics event emitted.
+
+Separate:
+
+* durable writes;
+* derived-state updates;
+* user-visible output;
+* analytics/observability.
 
 Do not omit side effects that matter for data integrity.
 
@@ -210,17 +255,21 @@ Do not omit side effects that matter for data integrity.
 
 Who may:
 
-- view;
-- create;
-- update;
-- delete;
-- complete;
+* view;
+* create;
+* update;
+* resolve;
+* manage;
 
 the feature's data?
 
 Define the authorization boundary.
 
+Authentication does not automatically grant authorization.
+
 Do not rely on UI visibility for security.
+
+Prefer trusted server-derived identity and ownership.
 
 ---
 
@@ -230,18 +279,23 @@ Document relevant edge cases.
 
 Examples:
 
-- missing data;
-- no Questions available;
-- duplicate submission;
-- refresh;
-- returning after long inactivity;
-- session expired;
-- invalid Course access;
-- insufficient learner evidence;
-- network failure;
-- concurrent requests.
+* missing data;
+* no Questions available;
+* duplicate submission;
+* retry;
+* refresh;
+* returning after inactivity;
+* already-resolved item;
+* invalid Course access;
+* missing learner timezone;
+* insufficient learner evidence;
+* network failure;
+* concurrent requests;
+* stale or legacy persisted state.
 
 If behavior is unresolved, reference `docs/OPEN_QUESTIONS.md`.
+
+Do not invent product policy merely to make an edge case easy to implement.
 
 ---
 
@@ -251,15 +305,17 @@ What must be validated?
 
 Examples:
 
-- request payloads;
-- identifiers;
-- ownership;
-- Question response shape;
-- structured AI output;
-- dates;
-- status transitions.
+* request payloads;
+* identifiers;
+* ownership;
+* Question response shape;
+* status transitions;
+* dates/timezone input;
+* structured AI output.
 
 Distinguish TypeScript compile-time types from runtime validation.
+
+Untrusted network/user/AI input must not be trusted merely because it has a TypeScript type.
 
 ---
 
@@ -280,13 +336,14 @@ Events:
 ```text
 today_opened
 today_started
-session_completed
-session_abandoned
+today_completed
 ```
 
 For each event, define useful properties only.
 
 Do not add analytics fields without a reason.
+
+Do not turn analytics terminology into product/domain state unless explicitly intended.
 
 ---
 
@@ -322,17 +379,20 @@ TBD
 
 If YES, define:
 
-- exact purpose;
-- input;
-- output schema;
-- provider boundary;
-- fallback behavior;
-- verification requirements;
-- whether output can directly affect learner state.
+* exact purpose;
+* input;
+* output schema;
+* provider boundary;
+* fallback behavior;
+* validation/review requirements;
+* source/provenance requirements where relevant;
+* whether output can directly affect trusted application state.
 
 Critical rule:
 
 AI must not silently replace deterministic Learning Engine behavior.
+
+Model output should be treated as untrusted external input until appropriately validated.
 
 ---
 
@@ -342,11 +402,13 @@ Does the feature read from or write to learning state?
 
 Define:
 
-- inputs into the engine;
-- outputs from the engine;
-- version dependencies;
-- when recalculation occurs;
-- whether a controlled clock is required.
+* evidence consumed;
+* learner-state inputs;
+* learner-state outputs;
+* version dependencies;
+* when recalculation occurs;
+* whether replay/rebuild behavior is affected;
+* whether a controlled clock is required.
 
 If the feature does not interact with learning logic, write:
 
@@ -354,9 +416,42 @@ If the feature does not interact with learning logic, write:
 NONE
 ```
 
+Do not invent new mastery, misconception, scheduling, or ranking rules inside a Feature Contract.
+
+Reference the relevant accepted Learning Engine sources instead.
+
 ---
 
-## 18. RTL / Localization
+## 18. Today / DailyPlan Interaction
+
+If the feature interacts with Today, define:
+
+* whether it reads or creates the DailyPlan;
+* whether it resolves a DailyPlanItem;
+* whether it creates an Attempt;
+* whether it affects future learner state;
+* whether it can change an already-persisted plan;
+* how learner-local day boundaries apply.
+
+Current assumptions unless explicitly superseded:
+
+```text
+DailyPlan / DailyPlanItem = primary Today model
+same learner-local day = same persisted plan
+plan is frozen by default after generation
+Skip = resolution, not incorrect evidence
+Manual Practice is separate from Today resolution
+```
+
+If the feature does not interact with Today, write:
+
+```text
+NONE
+```
+
+---
+
+## 19. RTL / Localization
 
 Define user-facing requirements.
 
@@ -368,55 +463,61 @@ direction: RTL
 locale: he-IL
 ```
 
-All learner-facing copy should use the messages layer where practical.
+All learner-facing copy should use the messages/localization layer where practical.
 
 Check:
 
-- directional icons;
-- navigation;
-- mixed Hebrew/English text;
-- numbers;
-- dates;
-- forms;
-- progress UI.
+* directional icons;
+* navigation;
+* mixed Hebrew/English text;
+* numbers;
+* dates;
+* forms;
+* progress UI.
+
+Do not treat RTL as later visual polish.
 
 ---
 
-## 19. Accessibility
+## 20. Accessibility
 
 Consider:
 
-- semantic HTML;
-- keyboard access;
-- focus order;
-- labels;
-- error communication;
-- disabled states;
-- touch target size;
-- screen-reader meaning.
+* semantic HTML;
+* keyboard access;
+* focus order;
+* labels;
+* error communication;
+* disabled states;
+* touch target size;
+* screen-reader meaning.
 
 List any feature-specific accessibility risks.
 
 ---
 
-## 20. Error Behavior
+## 21. Error Behavior
 
 Define how the feature should behave when key operations fail.
 
 Examples:
 
-- data load fails;
-- Attempt creation fails;
-- progress update fails;
-- authorization fails;
-- AI provider fails;
-- session persistence fails.
+* data load fails;
+* Attempt creation fails;
+* progress update fails;
+* authorization fails;
+* AI/provider fails;
+* persistence fails;
+* plan generation fails;
+* required trusted state is missing.
 
 Avoid silent failure for learning-critical operations.
 
+Do not expose raw internal errors, SQL, credentials, or private implementation details to the client.
+
 ---
 
-## 21. Loading Behavior
+## 22. Loading Behavior
 
 Define what the user sees while required data is loading.
 
@@ -432,18 +533,21 @@ when the real state is:
 still loading
 ```
 
+Loading, empty, unauthorized, error, and completed are different states.
+
 ---
 
-## 22. Empty State
+## 23. Empty State
 
 Define the true empty state.
 
 Examples:
 
-- no Course exists;
-- no Questions exist;
-- insufficient learner evidence;
-- nothing currently due.
+* no Course exists;
+* no Questions exist;
+* insufficient learner evidence;
+* nothing currently due;
+* Today is genuinely complete.
 
 These states may require different user experiences.
 
@@ -451,7 +555,7 @@ Do not collapse all of them into one generic empty screen.
 
 ---
 
-## 23. Data Integrity Invariants
+## 24. Data Integrity Invariants
 
 List invariants that must remain true.
 
@@ -459,38 +563,44 @@ Examples:
 
 ```text
 - One Attempt represents one submitted answer event
+- Attempts remain immutable historical evidence
 - Shared Question content is not learner progress
-- Today Session Items preserve the generated plan
+- QuestionVersions remain immutable
+- DailyPlanItems preserve the generated plan and frozen QuestionVersion identity
+- Planning alone does not create learner evidence
 - Progress updates do not rewrite Attempt history
+- Client-provided IDs do not override trusted ownership
 ```
 
-These should influence database constraints and tests.
+These should influence database constraints, application behavior, and tests.
 
 ---
 
-## 24. Performance Expectations
+## 25. Performance Expectations
 
 Only define meaningful expectations.
 
 Examples:
 
-- Today should open without requiring an LLM call;
-- Question navigation should feel immediate;
-- current session retrieval should use indexed queries.
+* Today should open without requiring an LLM call;
+* Question navigation should feel immediate;
+* persisted DailyPlan retrieval should use appropriate indexed queries;
+* repeated reopening should not regenerate the same learner-day plan.
 
 Do not create arbitrary performance targets without evidence.
 
 ---
 
-## 25. Cost Expectations
+## 26. Cost Expectations
 
 State any meaningful cost constraints.
 
 Examples:
 
-- no AI call per Question answer;
-- reuse persisted Today Session;
-- avoid repeated expensive content processing.
+* no AI call per Question answer;
+* reuse persisted DailyPlan;
+* avoid repeated expensive content processing;
+* avoid unnecessary provider calls on high-frequency learner paths.
 
 If no special cost issue exists, write:
 
@@ -500,7 +610,7 @@ No feature-specific cost requirement beyond project defaults.
 
 ---
 
-## 26. Out of Scope
+## 27. Out of Scope
 
 Explicitly state what this feature does not include.
 
@@ -510,53 +620,58 @@ Example:
 
 ```text
 Out of scope for Today V1:
+
 - leaderboards
 - social sharing
-- instructor dashboard
-- AI Coach
-- manual session builder
+- instructor dashboard expansion
+- autonomous AI Coach
+- manual DailyPlan builder
 ```
+
+Do not implement architecture-ready or deferred functionality merely because this feature touches an adjacent area.
 
 ---
 
-## 27. Open Questions
+## 28. Open Questions
 
 List unresolved decisions.
 
 Each meaningful unresolved question should either:
 
-- link to `docs/OPEN_QUESTIONS.md`;
-- be added there;
-- be resolved before implementation if it affects correctness.
+* link to `docs/OPEN_QUESTIONS.md`;
+* be added there;
+* be resolved before implementation if it affects correctness.
 
-Do not bury unresolved behavior in TODO comments.
+Do not bury unresolved behavior in TODO comments or silently encode an answer in implementation.
 
 ---
 
-## 28. Dependencies
+## 29. Dependencies
 
 List required product/technical dependencies.
 
 Examples:
 
-- Course access;
-- Question model;
-- Learning Engine;
-- authentication;
-- database;
-- messages layer.
+* Course access;
+* Question model;
+* Learning Engine;
+* authentication;
+* PostgreSQL;
+* DailyPlan;
+* messages/localization layer.
 
 Do not list speculative future integrations.
 
 ---
 
-## 29. Related Documents
+## 30. Related Documents
 
 Examples:
 
 ```text
 docs/MASTER_SPEC.md
 docs/PRODUCT.md
+docs/UNLOCK_V1_SCOPE.md
 docs/ARCHITECTURE.md
 docs/DOMAIN_GLOSSARY.md
 docs/DATABASE.md
@@ -567,77 +682,95 @@ docs/DECISIONS/<relevant-adr>.md
 
 Include only documents relevant to the feature.
 
+Do not copy large sections of canonical documentation into the Feature Contract.
+
+Reference the owner instead.
+
 ---
 
-## 30. Required Tests
+## 31. Evidence / Required Tests
 
-List tests before implementation.
+Define the behavior that requires evidence.
 
-Organize where useful into:
+Organize by layer only when useful.
 
-### Unit
+### Domain / Unit
 
 Example:
 
 ```text
 - deterministic ranking rule
-- status transition
+- state transition
+- pure validation rule
 ```
 
-### Integration
+### Application
 
 Example:
 
 ```text
-- submission creates Attempt and updates progress
+- submission creates Attempt and updates progress atomically
+- persisted DailyPlan is reused
 ```
 
-### UI
+### Persistence / Integration
 
 Example:
 
 ```text
-- resume action is visible for active session
+- migration preserves existing data
+- unique/foreign-key constraint protects invariant
+- transaction behaves atomically
 ```
 
-### E2E
+### API
 
 Example:
 
 ```text
-- start → leave → return → resume same session
+- unauthenticated request fails before protected work
+- client cannot override trusted ownership
 ```
 
-Do not require every test type for every feature.
+### UI / E2E
+
+Example:
+
+```text
+- open → leave → return → same DailyPlan is resumed
+```
+
+Do not require every evidence layer for every feature.
+
+Operational verification selection and evidence freshness belong to the project's testing workflow, not to this template.
 
 ---
 
-## 31. Definition of Done
+## 32. Feature-Specific Definition of Done
 
-Feature-specific completion requirements.
+List only feature-specific completion requirements.
 
-At minimum, the feature should satisfy:
+Examples:
 
-- approved behavior implemented;
-- important edge cases handled;
-- tests pass;
-- lint/typecheck pass;
-- build passes when relevant;
-- RTL reviewed;
-- accessibility reviewed;
-- analytics implemented if required;
-- docs updated;
-- no unresolved correctness question remains hidden.
+* approved behavior implemented;
+* important feature-specific edge cases handled;
+* required authorization behavior enforced;
+* learner-facing RTL/accessibility requirements addressed;
+* feature-specific analytics implemented where required;
+* durable documentation updated where behavior changed;
+* no unresolved correctness question is hidden.
 
-Also follow:
+Project-wide quality requirements live in:
 
 ```text
 docs/DEFINITION_OF_DONE.md
 ```
 
+Do not duplicate the global Definition of Done here.
+
 ---
 
-## 32. Rollout / Feature Flag
+## 33. Rollout / Feature Flag
 
 Choose:
 
@@ -649,15 +782,15 @@ TBD
 
 If REQUIRED, define:
 
-- who gets access;
-- default state;
-- rollback behavior.
+* who gets access;
+* default state;
+* rollback behavior.
 
 Do not add a generalized feature-flag platform unless justified.
 
 ---
 
-## 33. Migration / Existing Data Impact
+## 34. Migration / Existing Data Impact
 
 Does the feature affect existing persisted data?
 
@@ -671,30 +804,38 @@ TBD
 
 If YES, define:
 
-- migration;
-- backfill;
-- version compatibility;
-- rollback considerations.
+* migration;
+* backfill;
+* version compatibility;
+* rollback/recovery considerations;
+* local vs hosted application state.
+
+Do not edit accepted historical migrations to implement new behavior.
 
 ---
 
-## 34. Security Review
+## 35. Security Review
 
 List any feature-specific security concerns.
 
 Examples:
 
-- access to private Course data;
-- cross-user progress leakage;
-- privileged server action;
-- uploaded content;
-- AI prompt injection from source content.
+* access to private Course data;
+* cross-user learner-state leakage;
+* privileged server action;
+* uploaded content;
+* ownership enforcement;
+* AI prompt injection from source content;
+* service-role usage;
+* redirect safety.
 
 If none beyond project defaults, say so explicitly.
 
+Do not create new RLS or authorization policy merely because this section exists.
+
 ---
 
-## 35. Change Log
+## 36. Change Log
 
 Use a lightweight record.
 
@@ -712,7 +853,7 @@ Do not mirror Git history line by line.
 
 # Feature Contract Rule
 
-A feature contract should remove ambiguity before code makes ambiguity expensive.
+A Feature Contract should remove ambiguity before code makes ambiguity expensive.
 
 The goal is not exhaustive paperwork.
 
@@ -720,12 +861,29 @@ The goal is to make sure everyone can answer:
 
 ```text
 What is this feature?
+
 Who is it for?
+
 What rules must hold?
+
 What data changes?
+
 What can fail?
-How do we test it?
+
+How do we prove it works?
+
 What is explicitly not included?
 ```
 
 If those answers are clear, the contract has done its job.
+
+A Feature Contract is a supporting document.
+
+It must not become a second owner of:
+
+* product-wide policy;
+* Development OS workflow;
+* verification policy;
+* reviewer selection;
+* current repository state;
+* current Run sequencing.

@@ -8,15 +8,21 @@ not silently invent an answer.
 
 This file contains ONLY unresolved questions.
 
-Resolved decisions belong in:
-- `docs/DECISIONS/`
-- feature contracts
-- committed code
-- `docs/DEV_STATUS.md` for current-state summaries
+Resolved durable decisions belong in:
+
+* `docs/DECISIONS/`
+* committed code and tests where they implement the accepted decision
+
+Current-state summaries belong in:
+
+* `docs/DEV_STATUS.md`
+
+Optional feature-specific behavior contracts may document an accepted feature where useful, but they are not the canonical decision queue.
 
 Historical investigation belongs in:
-- Git history
-- `docs/RUNS/`
+
+* Git history
+* `docs/RUNS/`
 
 Question IDs are stable.
 

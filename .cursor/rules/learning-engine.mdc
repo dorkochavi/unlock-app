@@ -1,60 +1,306 @@
 ---
-description: Learning Engine rules for UNLOCK
-alwaysApply: true
+description: UNLOCK Learning Engine guardrails for Cursor
+globs:
+  - "src/domain/learning/**"
+  - "src/domain/dailyPlan/**"
+  - "src/application/learning/**"
+  - "src/application/dailyPlan/**"
+alwaysApply: false
+---
+# UNLOCK — Learning Engine
+
+Canonical Learning Engine guidance lives in:
+
+* `docs/LEARNING_ENGINE.md`
+* relevant accepted ADRs
+* `docs/OPEN_QUESTIONS.md`
+* current implementation/tests
+
+This Cursor rule is a compact implementation guardrail.
+
+Do not treat it as a second Learning Engine specification.
+
 ---
 
-# UNLOCK Learning Engine Rules
+## 1. Preserve Historical Evidence
 
-The Learning Engine is core product logic.
+Attempts are immutable historical evidence.
 
-Do not redesign, replace, or simplify validated learning behavior without explicit approval.
+Do not:
 
-Core learner-state signals include:
-- mastery_level
-- next_review_date
-- misconception_hits
-- confidence_level
-- average_time_seconds
+* overwrite past Attempts;
+* rewrite historical answers to match current state;
+* regrade old Attempts against a newer QuestionVersion;
+* replace raw evidence with derived learner state.
 
-Raw Attempts must be preserved.
+QuestionVersions are immutable content snapshots.
 
-Learner state is derived from attempt history and must not replace it.
+Historical evidence must remain interpretable against the version the learner actually saw.
 
-The Learning Engine must be:
-- deterministic where possible
-- versioned
-- testable
-- reproducible
-- observable
+---
 
-The engine should answer:
+## 2. Derived Learner State
 
-What is the most valuable next learning action for this learner?
+Learner-state signals are derived from evidence.
 
-Today must consume a prepared session plan.
+Current signals may include concepts such as:
 
-Quiz must not independently select questions when operating in Today mode.
+* mastery;
+* review timing;
+* misconception evidence;
+* confidence;
+* response time.
 
-Do not use an LLM to decide question priority or Today composition.
+Do not assume one stored field or one formula is the entire Learning Engine.
 
-Prototype recovery is focused and just-in-time. Do not block foundation work or the first V1 learning loop on a full-system prototype inventory.
+Do not rename or redesign these concepts during unrelated work.
 
-Before implementing a learning behavior, audit only that behavior. For V1, the required subset is how the prototype calculates or updates:
-- mastery_level
-- next_review_date
-- misconception_hits
+---
 
-Capture only the inputs those rules actually use.
+## 3. Deterministic Behavior
 
-Unknown or non-essential behavior should be documented as:
-- UNKNOWN
-- NOT REQUIRED FOR V1
-- DEFERRED FOR LATER AUDIT
+Core learning decisions should remain deterministic for the same accepted inputs.
 
-Do not invent a replacement formula because the current one is not fully documented.
+Preserve where applicable:
 
-Do not introduce a new learning algorithm without:
-1. documenting the change
-2. versioning the engine
-3. adding tests
-4. defining expected behavior
+* deterministic learner-state updates;
+* deterministic replay/rebuild;
+* explicit ordering and tie-breaking;
+* reproducible DailyPlan candidate selection;
+* stable behavior from persisted evidence.
+
+Avoid hidden wall-clock or environment-dependent behavior inside deterministic domain logic.
+
+---
+
+## 4. Replay / Rebuild
+
+Where learner state is rebuildable from historical evidence, preserve replay correctness.
+
+Do not let:
+
+* incidental database ordering;
+* request arrival order;
+* implementation refactors;
+
+silently change reconstructed learner state.
+
+If replay semantics materially change, inspect whether engine versioning or a durable decision is required.
+
+---
+
+## 5. AI Boundary
+
+Do not use an LLM to decide:
+
+* answer correctness;
+* mastery;
+* misconception state;
+* review scheduling;
+* Next Best Action ranking;
+* DailyPlan composition.
+
+AI may support content-generation workflows elsewhere.
+
+It is not the deterministic real-time Learning Engine.
+
+---
+
+## 6. Next Best Action
+
+The Learning Engine should answer the practical question:
+
+> What is the most valuable next learning action for this learner?
+
+Ranking is driven by accepted learning need.
+
+Do not introduce:
+
+* Course fairness quotas;
+* guaranteed Course representation;
+* arbitrary balancing;
+* hidden new ranking weights;
+
+unless explicitly accepted.
+
+Courses without exam dates remain eligible through normal learning need.
+
+---
+
+## 7. DailyPlan / Today
+
+`DailyPlan` / `DailyPlanItem` are the primary current Today model.
+
+Preserve current accepted behavior such as:
+
+* one persisted plan per learner-local day;
+* same-day reuse;
+* global ranking across eligible learner Courses;
+* frozen plan semantics;
+* exact persisted QuestionVersion identity;
+* finite completion.
+
+Do not reintroduce a separate generic “session plan” abstraction merely because older prototype language used one.
+
+Legacy `TodaySession` behavior may remain where compatibility requires it.
+
+It is not the primary current model.
+
+---
+
+## 8. New Material
+
+New Material behavior is governed by the accepted ADR.
+
+Preserve:
+
+* ordinary learning candidates take precedence;
+* unseen means no prior real Attempt;
+* planning alone creates no learner evidence;
+* New Material is not filler for arbitrary plan size;
+* selection remains deterministic.
+
+Do not invent new fallback/calibration behavior in unrelated work.
+
+---
+
+## 9. Evidence Quality
+
+Do not treat every interaction as equally strong evidence.
+
+Preserve meaningful distinctions between behaviors such as:
+
+* clean retrieval;
+* assisted/revealed response;
+* repeated same-session exposure;
+* spaced retrieval;
+* confident error;
+* misconception pattern.
+
+Do not silently turn weak evidence into strong mastery evidence.
+
+---
+
+## 10. Mastery / Misconception Guardrails
+
+Do not assume:
+
+* one correct answer proves mastery;
+* one normal wrong answer proves a misconception;
+* elapsed time alone resolves a misconception;
+* mastered content is permanently finished.
+
+Exact thresholds and transition rules belong to accepted Learning Engine decisions.
+
+Do not invent new formulas because a value seems intuitive.
+
+---
+
+## 11. Memory Scheduling
+
+FSRS-backed scheduling is the current memory-scheduling foundation.
+
+Do not replace it with:
+
+* ad hoc review intervals;
+* arbitrary maintenance quotas;
+* locally invented forgetting rules;
+
+without an explicit accepted decision.
+
+Previously strong knowledge may become relevant again as forgetting risk changes.
+
+---
+
+## 12. Engine Versioning
+
+Material changes to learning semantics may require engine-version handling.
+
+Examples include changes to:
+
+* learner-state derivation;
+* replay semantics;
+* ranking behavior;
+* DailyPlan planning semantics.
+
+Do not bump engine versions for unrelated UI, routing, formatting, or infrastructure work.
+
+Do not invent versioning policy locally.
+
+---
+
+## 13. No Prototype Recovery Workflow
+
+Do not perform broad prototype archaeology by default.
+
+Do not block current work on reconstructing every historical prototype rule.
+
+If a current task depends on an undocumented historical behavior:
+
+* inspect the narrow relevant evidence;
+* compare against accepted current decisions;
+* surface genuine uncertainty;
+* do not invent a replacement formula.
+
+Historical prototype material is supporting evidence, not current authority.
+
+---
+
+## 14. Open Questions Stay Open
+
+Do not silently decide unresolved issues such as:
+
+* exact calibration;
+* threshold values;
+* ranking weights;
+* exam urgency curve;
+* other explicitly unresolved Learning Engine policy.
+
+Use:
+
+`docs/OPEN_QUESTIONS.md`
+
+when the task reaches a real unresolved boundary.
+
+---
+
+## 15. Scope Discipline
+
+Do not let unrelated work change Learning Engine behavior.
+
+Examples:
+
+* API work should not redefine mastery;
+* persistence cleanup should not change ranking;
+* UI work should not change misconception semantics;
+* auth work should not change Today composition.
+
+If correct implementation requires a new learning decision, surface it explicitly.
+
+---
+
+## 16. Verification
+
+Learning Engine changes require evidence proportional to the changed behavior.
+
+Use the relevant domain/application/repository tests and accepted Golden Scenarios.
+
+Do not use this Cursor rule as a testing matrix.
+
+Testing philosophy lives in:
+
+`docs/TESTING.md`
+
+---
+
+## 17. Core Principle
+
+> Preserve immutable evidence.
+
+> Keep learning decisions deterministic and reproducible.
+
+> Let accepted learning need drive ranking.
+
+> Keep DailyPlan semantics current.
+
+> Do not resurrect prototype policy or invent new learning formulas.

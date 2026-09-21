@@ -1,180 +1,280 @@
 ---
+
 paths:
-  - "src/app/api/**"
-  - "docs/API_V1_DRAFT.md"
----
 
-# UNLOCK — API Route Rules
-
-These rules apply whenever working on Next.js API Route Handlers or API-boundary documentation.
-
-This file defines API implementation constraints.
-
-It does NOT define the current task or execution queue.
-
-Current work comes from `docs/CHATGPT_PLAN.md`.
+* "src/app/api/**"
+* "docs/API_V1_DRAFT.md"
 
 ---
 
-## Route Responsibility
+# UNLOCK — API Boundary Rule
 
-Route files should remain thin.
+Status: ACTIVE
+Purpose: define Next.js API/HTTP boundary guardrails for UNLOCK.
 
-A route should normally be responsible for:
+This rule owns:
 
-- reading the HTTP request boundary
-- constructing request-scoped infrastructure
-- authenticating the caller
-- validating route/request inputs
-- mapping trusted request data into an application command
-- invoking application logic
-- mapping application outcomes into stable HTTP responses
+* request parsing;
+* boundary validation;
+* trusted identity propagation;
+* route composition;
+* application delegation;
+* DTO mapping;
+* HTTP response/error contracts.
 
-Do not place learning/domain rules directly inside route files.
+It does not own:
 
----
+* authentication policy;
+* authorization policy;
+* PostgreSQL implementation;
+* product/domain behavior;
+* testing policy;
+* reviewer selection;
+* Git workflow.
 
-## Authentication
-
-For authenticated routes:
-
-1. create the request-scoped Supabase server client
-2. resolve the authenticated user using `requireAuthenticatedUser`
-3. return immediately if unauthenticated
-4. only then construct PostgreSQL/runtime dependencies
-5. invoke authorized application logic
-
-The only trusted `userId` source is authenticated server-side identity.
-
-Never accept authoritative `userId` from:
-
-- query parameters
-- request body
-- custom headers
-- URL path values
-- manually parsed cookies
-- client metadata
+Use the dedicated owner for those responsibilities.
 
 ---
 
-## Auth Before Database
+## 1. Keep Routes Thin
 
-Authentication must happen before PostgreSQL runtime construction for authenticated routes.
+Route handlers should normally:
 
-An unauthenticated request must not unnecessarily:
+1. read the HTTP boundary;
+2. establish trusted caller identity where required;
+3. validate request inputs;
+4. derive authoritative server-owned values;
+5. construct/request application dependencies;
+6. invoke an application use case;
+7. map the result to a stable HTTP response.
 
-- call `getPool()`
-- require `DATABASE_URL`
-- construct database repositories
-- construct DailyPlan runtime ports
-- invoke application persistence
-
-This ordering is security-relevant.
-
-Protect it with a regression test when the route wiring makes the ordering meaningful.
+Do not place domain or Learning Engine rules directly in route files.
 
 ---
 
-## Authorization
+## 2. Trusted Identity
 
-Authentication does not replace authorization.
+For authenticated routes, trusted identity comes from the server-side auth boundary.
 
-After identity is established:
+Do not accept authoritative `userId` from:
 
-- resolve the relevant resource
-- enforce the accepted ownership/membership rule
-- fail closed when authorization policy requires it
-- do not invent unresolved role semantics
+* query parameters;
+* request bodies;
+* path parameters;
+* custom headers;
+* browser state;
+* client metadata.
 
-Authorization must happen before protected mutation.
+Detailed authentication rules live in:
 
-If required authorization semantics are unresolved and cannot be safely derived from an accepted ADR/product rule:
+`.claude/rules/auth.md`
 
-report `PLAN_CONFLICT`.
-
----
-
-## Runtime
-
-Routes using `pg` must use:
-
-`export const runtime = "nodejs";`
-
-Do not switch such routes to Edge runtime.
-
-Use the existing runtime foundation:
-
-- `getPool()`
-- `PgConnectionProvider`
-- production composition factories
-
-Do not create a new `Pool` inside a request handler.
+The API layer should receive/propagate trusted identity, not redefine auth policy.
 
 ---
 
-## Time
+## 3. Authentication Before Protected Runtime Construction
 
-Create request time exactly once at the HTTP boundary when the operation depends on "now".
+For protected routes, reject unauthenticated callers before constructing protected database/application dependencies when the flow allows early rejection.
 
 Preferred shape:
 
-`const now = new Date();`
+```text id="fph5mf"
+create request-scoped auth client
+→ resolve trusted user
+→ reject if unauthenticated
+→ construct protected runtime/application dependencies
+→ authorize
+→ execute
+```
 
-Pass the exact same value downward.
-
-Do not introduce hidden `Date.now()` or `new Date()` calls deeper in the same deterministic application flow unless explicitly required.
-
----
-
-## Dependency Construction
-
-Prefer existing composition roots.
-
-Do not manually recreate repositories or policy settings in a route when a production composition function already exists.
-
-Routes must not duplicate:
-
-- learning policy
-- TodayPlanner policy
-- engine version policy
-- repository construction logic
-- transaction logic
+Do not make an unauthenticated request require protected DB configuration merely to return `401`.
 
 ---
 
-## DTOs
+## 4. Authorization Boundary
 
-Do not automatically return raw domain/application objects.
+Authentication does not grant resource access automatically.
 
-Use explicit route-layer DTO mapping when objects contain:
+Routes should delegate accepted authorization behavior to the appropriate application/domain layer.
 
-- internal identity fields
-- Date objects
-- persistence-only fields
-- redundant parent IDs
-- implementation details not needed by the UI
-- grading-only information
+Before protected mutation:
+
+* establish trusted user identity;
+* resolve authoritative resource state;
+* enforce the accepted authorization rule;
+* fail closed where required.
+
+Do not invent unresolved role or ownership semantics inside the route.
+
+If behavior requires a new decision, report `PLAN_CONFLICT`.
+
+---
+
+## 5. Runtime
+
+Routes using `pg`/PostgreSQL infrastructure must use:
+
+```ts id="za1ezg"
+export const runtime = "nodejs";
+```
+
+Do not move PostgreSQL-backed routes to Edge runtime.
+
+Use existing runtime/composition infrastructure.
+
+Do not create a new `pg.Pool` inside a request handler.
+
+Detailed persistence rules live in:
+
+`.claude/rules/postgres.md`
+
+---
+
+## 6. Composition
+
+Prefer existing production composition roots/factories.
+
+Routes should not manually reconstruct:
+
+* repositories;
+* Unit-of-Work behavior;
+* Learning Engine policy;
+* DailyPlan policy;
+* engine versions;
+* transaction semantics;
+
+when an established composition path already owns them.
+
+The route composes dependencies.
+
+It does not become a second application layer.
+
+---
+
+## 7. Time at the Boundary
+
+When an operation depends on "now", create the relevant request time once at the trusted boundary where appropriate.
+
+Example:
+
+```ts id="vrch77"
+const now = new Date();
+```
+
+Pass that value downward.
+
+Avoid multiple hidden `new Date()` / `Date.now()` calls across one deterministic application flow when they could create inconsistent behavior.
+
+Do not force boundary-created time when the accepted application/domain contract owns time differently.
+
+---
+
+## 8. Request Validation
+
+Treat all request input as untrusted.
+
+Validate:
+
+* required fields;
+* supported value shapes;
+* identifiers;
+* optional/null semantics;
+* query/path/body boundaries.
+
+Use runtime validation where the input contract warrants it.
+
+TypeScript types alone do not validate network input.
+
+Do not add client inputs for values already owned authoritatively by server/application state.
+
+---
+
+## 9. Server-Owned Values
+
+Where the server can derive a value from trusted persisted state, do not move that authority to the client.
+
+Examples:
+
+* authenticated user;
+* learner timezone;
+* learner-local date;
+* Course eligibility;
+* resource ownership;
+* DailyPlanItem Course/Question/QuestionVersion identity.
+
+A client may provide a resource selector.
+
+It must not redefine trusted state.
+
+---
+
+## 10. GET Request Discipline
+
+Do not read a request body from GET routes unless an explicit API contract genuinely requires it.
+
+Prefer:
+
+* path parameters;
+* query parameters;
+
+for client-controlled GET inputs.
+
+Do not introduce parameters simply because they are technically possible.
+
+---
+
+## 11. Application Delegation
+
+Routes should call application use cases.
+
+Do not duplicate in the route:
+
+* learner-state updates;
+* DailyPlan generation;
+* ranking;
+* membership semantics;
+* transaction coordination;
+* persistence mutation logic.
+
+The route is an HTTP adapter.
+
+Application/domain layers own behavior.
+
+---
+
+## 12. DTO Mapping
+
+Do not automatically expose raw application/domain/database objects.
+
+Use explicit client-facing mapping when the underlying object contains:
+
+* internal IDs not needed by the UI;
+* persistence-only metadata;
+* `Date` objects;
+* redundant parent identifiers;
+* server-only state;
+* grading-only content;
+* implementation details.
 
 DTO rules:
 
-- expose only required client-facing fields
-- convert Date values explicitly to ISO strings
-- preserve null intentionally
-- do not invent fields
-- do not rename domain concepts casually
-- do not leak correct-answer/grading data before product policy allows it
+* expose only needed fields;
+* serialize dates explicitly;
+* preserve meaningful `null`;
+* do not invent fields;
+* do not casually rename domain concepts;
+* do not leak correct-answer/grading data before allowed.
 
 ---
 
-## Stable Error Contracts
+## 13. Stable Error Contracts
 
-Expected client-visible failures must use stable machine-readable error codes.
+Expected client-visible failures should map to stable machine-readable outcomes.
 
-Do not return raw exception text.
+Example:
 
-Unexpected failures should map to a generic response such as:
-
-```json
+```json id="pqu498"
 {
   "error": {
     "code": "INTERNAL_ERROR"
@@ -182,200 +282,250 @@ Unexpected failures should map to a generic response such as:
 }
 ```
 
-Do not expose:
+Unexpected internal failures must not expose:
 
-- stack traces
-- SQL
-- connection strings
-- Supabase credentials
-- PostgreSQL driver details
-- internal filesystem paths
-- raw SDK messages
-- secret environment values
+* raw exception text;
+* stack traces;
+* SQL;
+* PostgreSQL driver errors;
+* connection strings;
+* credentials;
+* Supabase tokens/keys;
+* filesystem paths;
+* environment values.
 
----
-
-## DailyPlan Today Route
-
-Current route:
-
-`GET /api/daily-plan/today`
-
-Accepted semantics:
-
-- no client-supplied `userId`
-- no client-supplied `courseId`
-- no client-supplied planned date
-- user comes from verified Supabase Auth
-- local date is derived by the application from persisted user timezone
-- eligible Courses are discovered by the application
-- route uses Node runtime
-
-Current HTTP mapping includes:
-
-- `READY` → `200`
-- `UNAUTHENTICATED` → `401`
-- `TIMEZONE_NOT_SET` → `422`
-- `USER_NOT_FOUND` → `500` with `USER_PROVISIONING_INCONSISTENT`
-- unexpected failure → `500` with `INTERNAL_ERROR`
-
-Do not treat authenticated `USER_NOT_FOUND` as an ordinary 404 when the accepted provisioning model requires Auth users to exist in `public.users`.
-
-If runtime behavior intentionally changes this contract, update the relevant API documentation and accepted decision/state rather than leaving conflicting sources.
+Keep client contracts stable even when internal implementation changes.
 
 ---
 
-## DailyPlan Item Mutations
+## 14. Error Boundary Placement
 
-For Today item answer/Skip routes:
+Failures can occur before the application use case runs.
 
-- authenticated identity is authoritative
-- item ownership is derived server-side
-- Course/Question/QuestionVersion identity is not trusted from client input
-- resolved-state conflicts must produce controlled behavior
-- retry/idempotency behavior must preserve immutable Attempt semantics
-- Skip must not be converted into incorrect-answer evidence
-- Manual Practice behavior must remain separate from DailyPlan resolution
+Route-level handling should account for relevant failures from:
 
-Do not expose learner-inaccessible grading information before submission.
+* server auth-client construction;
+* authentication helpers;
+* runtime configuration;
+* dependency composition;
+* `getPool()`/infrastructure setup;
+* application invocation.
 
----
-
-## Request Inputs
-
-For GET routes, do not read a request body unless API design explicitly requires it.
-
-Do not introduce client parameters merely because a value could theoretically be configurable.
-
-When server/application state already owns:
-
-- user identity
-- timezone
-- local date
-- Course eligibility
-- resource ownership
-
-do not move that authority to the client.
+Do not assume a `try/catch` around only the final use-case call protects earlier boundary failures.
 
 ---
 
-## Error Boundary Placement
+## 15. Logging
 
-Infrastructure failures may occur before application logic.
-
-Route-level handling must account for relevant failures from:
-
-- Supabase client construction
-- authentication helpers
-- environment validation
-- `getPool()`
-- infrastructure composition
-- application invocation
-
-Do not assume an application-level `try/catch` protects code that executes before the application handler is called.
-
----
-
-## Logging
-
-For V1, `console.error` is acceptable for unexpected server-side failures when no structured logging system exists.
+For current V1, server-side `console.error` is acceptable when no structured logger exists.
 
 Rules:
 
-- log internally
-- return a stable generic client error
-- never include secrets in client-visible responses
-- do not log credentials
-- avoid duplicate logging at several layers for the same exception when practical
+* keep useful internal failure detail server-side;
+* return controlled client errors;
+* never log credentials/tokens/cookies;
+* avoid repeatedly logging the same exception at many layers when practical.
+
+Logging does not replace error handling.
 
 ---
 
-## Testability
+## 16. DailyPlan Today Route
 
-Important route behavior should be testable without real external network dependencies.
+Current route:
 
-Prefer small injected seams for:
+```text id="shmlwg"
+GET /api/daily-plan/today
+```
 
-- authentication outcome
-- database/runtime construction
-- application invocation
-- explicit time
+Protect accepted behavior:
 
-Do not create a large custom framework merely to unit-test a route.
+* no client-authoritative `userId`;
+* no client-authoritative `courseId`;
+* no client-authoritative planned date;
+* authenticated user comes from trusted server auth;
+* learner-local date comes from persisted timezone through application behavior;
+* eligible Courses are resolved by application logic;
+* Node runtime is used.
 
-A real route-wiring test is especially valuable for behavior such as:
+Current response mapping includes:
 
-- authentication before DB construction
-- authorization before mutation
-- validation before persistence
-- safe redirect handling
+* `READY` → `200`;
+* `UNAUTHENTICATED` → `401`;
+* `TIMEZONE_NOT_SET` → `422`;
+* authenticated missing public User/provisioning inconsistency → controlled server error;
+* unexpected failure → generic internal error.
 
----
-
-## Verification Levels
-
-Do not confuse local tests with hosted verification.
-
-Distinguish:
-
-- unit-tested
-- route-wiring tested
-- PGlite integration-tested
-- real Supabase tested
-- browser E2E tested
-- deployed environment tested
-
-Hosted/manual verification should be performed when the current `CHATGPT_PLAN.md` requires it or when the behavior genuinely depends on the real environment.
-
-Examples include:
-
-- real Auth cookie/session roundtrip
-- `auth.getUser()` against hosted Supabase
-- signup provisioning into `public.users`
-- hosted `DATABASE_URL`
-- real PostgreSQL persistence
-- browser navigation/login redirect behavior
-
-Do not claim these are verified from mocks or PGlite.
+Do not silently reinterpret an Auth/public-user provisioning inconsistency as a normal resource `404` unless accepted behavior changes.
 
 ---
 
-## Documentation
+## 17. DailyPlan Item Answer
 
-When an API contract materially changes:
+For Today item answer routes:
 
-- update relevant API documentation
-- distinguish implemented behavior from draft behavior
-- document important HTTP outcome mappings
-- document trusted identity sources where relevant
-- document real-environment verification status honestly
+* authenticated identity is authoritative;
+* item ownership is resolved server-side;
+* Course/Question/QuestionVersion identity comes from the persisted item;
+* client input must not override that identity;
+* answer submission must flow through the accepted application transaction;
+* idempotency semantics must remain intact;
+* grading-only information must not be exposed before submission.
 
-Do not let API documentation claim behavior that actual route ordering/runtime does not guarantee.
+Do not implement a separate route-local learner-progress update path.
 
 ---
 
-## Scope Discipline
+## 18. DailyPlan Item Skip
+
+For Skip routes:
+
+* authenticated identity is authoritative;
+* ownership is derived server-side;
+* not-owned resources fail closed;
+* Skip resolves the item according to accepted DailyPlan semantics;
+* Skip does not become an incorrect Attempt;
+* already-resolved state maps to a controlled outcome.
+
+Do not create replacement Today work in the route.
+
+---
+
+## 19. Manual Practice Separation
+
+Manual Practice and DailyPlan execution are separate product paths.
+
+Do not let API wiring cause Manual Practice to:
+
+* resolve a DailyPlanItem;
+* inherit DailyPlan ownership incorrectly;
+* pretend to be Today evidence.
+
+Shared answer-submission logic may be reused where accepted.
+
+The route must preserve the distinction.
+
+---
+
+## 20. Safe Resource Errors
+
+Where ownership-sensitive lookup is involved, avoid leaking whether another user's private resource exists.
+
+Use fail-closed outcomes when accepted behavior requires them.
+
+Example:
+
+```text id="mtl66a"
+not found
+and
+not owned
+```
+
+may intentionally map to the same client-visible result.
+
+Do not leak private existence through error detail.
+
+---
+
+## 21. Redirects
+
+When API/auth flows accept a redirect/return path:
+
+* prefer application-local targets;
+* reject arbitrary external URLs unless explicitly required;
+* reject scheme-relative external targets;
+* validate encoded input safely.
+
+Detailed auth/redirect trust rules live in:
+
+`.claude/rules/auth.md`
+
+---
+
+## 22. Draft API Documentation
+
+`docs/API_V1_DRAFT.md` is API-boundary documentation, not stronger authority than implemented accepted behavior.
+
+When API behavior materially changes:
+
+* update relevant API documentation;
+* distinguish draft from implemented behavior;
+* document important status/error mappings;
+* document trusted identity sources where relevant.
+
+Do not let draft API text override accepted ADRs or current implementation truth.
+
+---
+
+## 23. Scope Discipline
 
 API work must not silently change:
 
-- mastery semantics
-- misconception semantics
-- ranking weights
-- DailyPlan sizing/calibration
-- CourseMembership role semantics
-- unrelated database schema
-- Today/New Material product behavior
+* mastery semantics;
+* misconception semantics;
+* ranking/calibration;
+* DailyPlan sizing/composition;
+* New Material policy;
+* CourseMembership role semantics;
+* database schema;
+* unresolved exam-date behavior.
 
-If such a change is genuinely required to satisfy the current Slice:
+If the route cannot be implemented without a new product/architecture/security decision:
 
-- determine whether accepted intent already defines the answer
-- adapt minimally when safe
-- otherwise report `PLAN_CONFLICT`
+report:
 
-Do not opportunistically create another Slice or product decision yourself.
+```text id="kg1m8n"
+PLAN_CONFLICT
+- assumption
+- repository reality
+- why it matters
+- decision required
+```
+
+Do not invent the decision in the HTTP layer.
 
 ---
 
-## Git Safety
+## 24. Verification Ownership
 
-Follow repository-wide Git safety rules in `CLAUDE.md`.
+This rule does not define which route tests, builds, or E2E checks must run.
+
+Use:
+
+`.claude/rules/testing.md`
+
+for:
+
+* route/API verification selection;
+* auth-before-DB regression evidence;
+* evidence freshness;
+* browser escalation;
+* hosted/real-environment verification decisions.
+
+Do not confuse mocked route evidence with hosted Supabase/browser evidence.
+
+---
+
+## 25. Review Relationship
+
+Material API changes receive risk-based review through:
+
+`/review-commit`
+
+General/security reviewers inspect the relevant cross-layer/trust risks.
+
+This rule defines implementation guardrails only.
+
+---
+
+## 26. Core Principle
+
+> Keep HTTP routes thin.
+
+> Trust server-derived identity and ownership.
+
+> Validate untrusted input at the boundary.
+
+> Delegate behavior to application/domain code.
+
+> Return stable, minimal, non-sensitive responses.

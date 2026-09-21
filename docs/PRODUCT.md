@@ -51,17 +51,17 @@ The primary V1 user is an individual learner.
 
 Initial use cases may include:
 
-- university students;
-- college students;
-- learners preparing for exams;
-- learners studying structured academic material.
+* university students;
+* college students;
+* learners preparing for exams;
+* learners studying structured academic material.
 
 V1 must work without requiring:
 
-- an Institution;
-- an Instructor;
-- a classroom;
-- an organization account.
+* an Institution;
+* an Instructor;
+* a classroom;
+* an organization account.
 
 Institutional capabilities are architecture-ready but are not V1 blockers.
 
@@ -71,12 +71,12 @@ Institutional capabilities are architecture-ready but are not V1 blockers.
 
 Learners may already have:
 
-- notes;
-- PDFs;
-- questions;
-- summaries;
-- course materials;
-- exam dates.
+* notes;
+* PDFs;
+* questions;
+* summaries;
+* course materials;
+* exam dates.
 
 But they still often need to decide:
 
@@ -132,26 +132,35 @@ The learner should not need to manually build a daily quiz from all available co
 
 ---
 
-## 6. Persistent Today Sessions
+## 6. Persistent DailyPlan
 
-A Today Session is persistent.
+Today is backed by a persisted `DailyPlan` for one learner and one learner-local calendar day.
 
-If a learner starts a session, leaves, refreshes, or returns later within the applicable session period, the existing session should continue.
+If a learner starts Today, leaves, refreshes, or returns later during the same learner-local day, the existing DailyPlan and its resolved state should continue.
 
 Example:
 
 ```text
-08:00 — Today started
-12:30 — Learner stops after question 3
+08:00 — Today opened
+12:30 — Learner stops after item 3
 20:00 — Learner returns
 
 Result:
-Resume the same Today Session.
+Resume the same DailyPlan and resolved state.
 ```
 
-Do not silently generate a different plan while an active Today Session should still exist.
+Do not silently generate a different valid same-day plan.
 
-Exact session-boundary behavior belongs in the Today feature contract.
+Accepted V1 semantics include:
+
+* one DailyPlan per learner per learner-local calendar day;
+* Global Today and course-context Today refer to the same underlying DailyPlan;
+* the plan is frozen by default after creation;
+* same-day reload returns the same persisted plan/state;
+* unresolved items do not automatically carry into the next learner-local day;
+* the next learner-local day recalculates from current learner state.
+
+Detailed Global Today semantics are defined by ADR-016. New Material fallback behavior is defined by ADR-017.
 
 ---
 
@@ -189,19 +198,19 @@ A small product with a correct adaptive loop is preferable to a large product wi
 
 V1 requires:
 
-- User
-- Course
-- Material
-- Question
-- Attempt
-- UserQuestionProgress
-- Exam Date
-- Learner State
-- Next Best Action
-- Today Session
-- Today Session Item
-- Quiz
-- Basic Progress
+* User
+* Course
+* Material
+* Question
+* Attempt
+* UserQuestionProgress
+* Exam Date
+* Learner State
+* Next Best Action
+* DailyPlan
+* DailyPlanItem
+* Quiz
+* Basic Progress
 
 These concepts do not imply large management interfaces.
 
@@ -223,11 +232,11 @@ A learning source associated with a Course.
 
 Examples may include:
 
-- PDF;
-- lecture notes;
-- presentation;
-- chapter;
-- instructor material.
+* PDF;
+* lecture notes;
+* presentation;
+* chapter;
+* instructor material.
 
 ### Question
 
@@ -245,12 +254,12 @@ Attempts preserve what happened.
 
 They may include evidence such as:
 
-- correctness;
-- selected answer;
-- response time;
-- confidence;
-- timestamp;
-- relevant engine version.
+* correctness;
+* selected answer;
+* response time;
+* confidence;
+* timestamp;
+* relevant engine version.
 
 Attempts must not be rewritten to represent current progress.
 
@@ -260,11 +269,11 @@ The learner-specific evolving state for a Question.
 
 Known signals include:
 
-- `mastery_level`
-- `next_review_date`
-- `misconception_hits`
-- `confidence_level`
-- `average_time_seconds`
+* `mastery_level`
+* `next_review_date`
+* `misconception_hits`
+* `confidence_level`
+* `average_time_seconds`
 
 Attempt history and UserQuestionProgress are different concepts.
 
@@ -278,13 +287,13 @@ Learner State is UNLOCK's current estimate of the learner's learning condition.
 
 It may reflect:
 
-- mastery;
-- weaknesses;
-- review needs;
-- misconceptions;
-- confidence;
-- response speed;
-- relevant academic urgency.
+* mastery;
+* weaknesses;
+* review needs;
+* misconceptions;
+* confidence;
+* response speed;
+* relevant academic urgency.
 
 Learner State is derived state, not raw history.
 
@@ -294,11 +303,11 @@ Next Best Action represents what UNLOCK believes should happen next.
 
 Possible factors include:
 
-- mastery;
-- review timing;
-- misconceptions;
-- learner history;
-- exam urgency.
+* mastery;
+* review timing;
+* misconceptions;
+* learner history;
+* exam urgency.
 
 In V1, Learner State and Next Best Action must be deterministic, testable, and reproducible.
 
@@ -381,11 +390,11 @@ V1 should show enough progress information for the learner to understand that UN
 
 Potential signals may include:
 
-- Today completion;
-- recent learning activity;
-- Question or topic progress;
-- upcoming review;
-- simple Course progress.
+* Today completion;
+* recent learning activity;
+* Question or topic progress;
+* upcoming review;
+* simple Course progress.
 
 V1 does not require a complex analytics dashboard.
 
@@ -405,10 +414,10 @@ This KPI tests the central product hypothesis:
 
 At minimum, the product should support events such as:
 
-- `today_opened`
-- `today_started`
-- `session_completed`
-- `session_abandoned`
+* `today_opened`
+* `today_started`
+* `session_completed`
+* `session_abandoned`
 
 Additional telemetry should only be collected when there is a defined product, learning, operational, or research reason.
 
@@ -422,19 +431,19 @@ AI is an enabling layer, not the Learning Engine.
 
 Potential uses include:
 
-- question generation;
-- explanations;
-- content extraction;
-- content verification;
-- future tutoring;
-- future content intelligence.
+* question generation;
+* explanations;
+* content extraction;
+* content verification;
+* future tutoring;
+* future content intelligence.
 
 AI must not decide by default:
 
-- mastery;
-- review timing;
-- Today prioritization;
-- Next Best Action ranking.
+* mastery;
+* review timing;
+* Today prioritization;
+* Next Best Action ranking.
 
 AI should be used only where it adds meaningful value beyond deterministic logic.
 
@@ -446,12 +455,12 @@ AI-generated Questions require a verification process before becoming learner-fa
 
 Expected lifecycle may include:
 
-- UNVERIFIED
-- SOURCE_LINKED
-- RULE_VALIDATED
-- AI_VERIFIED
-- HUMAN_APPROVED
-- REJECTED
+* UNVERIFIED
+* SOURCE_LINKED
+* RULE_VALIDATED
+* AI_VERIFIED
+* HUMAN_APPROVED
+* REJECTED
 
 The process includes:
 
@@ -463,11 +472,11 @@ Create a structured candidate Question with source provenance.
 
 Check:
 
-- whether the cited source supports the correct answer;
-- whether one answer is clearly correct;
-- whether the explanation is supported;
-- whether distractors are ambiguous;
-- whether citations are relevant.
+* whether the cited source supports the correct answer;
+* whether one answer is clearly correct;
+* whether the explanation is supported;
+* whether distractors are ambiguous;
+* whether citations are relevant.
 
 Verification happens during creation/approval time, not every time the learner answers the Question.
 
@@ -483,10 +492,10 @@ UNLOCK should reduce the number of learning decisions the learner needs to make.
 
 Where sufficient evidence exists, the system should help decide:
 
-- what to study;
-- what to review;
-- what matters most;
-- where to resume.
+* what to study;
+* what to review;
+* what matters most;
+* where to resume.
 
 ### Evidence over assumptions
 
@@ -506,9 +515,9 @@ Where useful, the product may explain why an activity is recommended.
 
 Examples:
 
-- "מומלץ לחזור על הנושא הזה"
-- "המבחן מתקרב"
-- "זוהתה טעות שחזרה מספר פעמים"
+* "מומלץ לחזור על הנושא הזה"
+* "המבחן מתקרב"
+* "זוהתה טעות שחזרה מספר פעמים"
 
 ### Avoid false precision
 
@@ -516,10 +525,10 @@ Do not display precise-looking learning metrics when the evidence does not justi
 
 Prefer:
 
-- insufficient data;
-- early estimate;
-- confidence indication;
-- qualitative progress;
+* insufficient data;
+* early estimate;
+* confidence indication;
+* qualitative progress;
 
 over misleading exact numbers.
 
@@ -529,11 +538,11 @@ over misleading exact numbers.
 
 UNLOCK is:
 
-- Hebrew-first;
-- RTL-first;
-- `he-IL` by default;
-- Web/PWA-first;
-- mobile-first.
+* Hebrew-first;
+* RTL-first;
+* `he-IL` by default;
+* Web/PWA-first;
+* mobile-first.
 
 Technical identifiers remain in English.
 
@@ -543,13 +552,13 @@ Accessibility is part of product quality from the beginning.
 
 New interfaces should consider:
 
-- keyboard access;
-- semantic HTML;
-- focus behavior;
-- readable contrast;
-- screen-reader meaning;
-- mobile touch targets;
-- RTL behavior.
+* keyboard access;
+* semantic HTML;
+* focus behavior;
+* readable contrast;
+* screen-reader meaning;
+* mobile touch targets;
+* RTL behavior.
 
 Native mobile applications may be considered later after the core product behavior has been validated.
 
@@ -561,16 +570,16 @@ Native mobile applications may be considered later after the core product behavi
 
 The architecture should not prevent future support for:
 
-- Institution;
-- Instructor;
-- Institution Admin;
-- enrollment groups;
-- Assignments;
-- Knowledge Graph;
-- advanced analytics;
-- advanced Content Intelligence;
-- System Auditor;
-- intervention personalization.
+* Institution;
+* Instructor;
+* Institution Admin;
+* enrollment groups;
+* Assignments;
+* Knowledge Graph;
+* advanced analytics;
+* advanced Content Intelligence;
+* System Auditor;
+* intervention personalization.
 
 Architecture-ready does not mean implement-now.
 
@@ -578,21 +587,21 @@ Architecture-ready does not mean implement-now.
 
 Do not allow the following to distract from the V1 learning loop:
 
-- social/community features;
-- challenges;
-- leaderboards;
-- advanced profiles;
-- Parent experience;
-- heavy LMS functionality;
-- advanced institution management;
-- autonomous learning agents;
-- Personal AI Coach;
-- Web Resource Curator;
-- Class Digest;
-- advanced semantic Content QA;
-- advanced Knowledge Graph automation;
-- complex gamification;
-- native mobile apps.
+* social/community features;
+* challenges;
+* leaderboards;
+* advanced profiles;
+* Parent experience;
+* heavy LMS functionality;
+* advanced institution management;
+* autonomous learning agents;
+* Personal AI Coach;
+* Web Resource Curator;
+* Class Digest;
+* advanced semantic Content QA;
+* advanced Knowledge Graph automation;
+* complex gamification;
+* native mobile apps.
 
 ---
 
@@ -600,22 +609,22 @@ Do not allow the following to distract from the V1 learning loop:
 
 V1 is intended to test whether learners:
 
-- understand Today;
-- start Today;
-- complete meaningful sessions;
-- return on multiple separate days;
-- experience increasingly relevant recommendations;
-- trust the system enough to continue using it.
+* understand Today;
+* start Today;
+* complete meaningful sessions;
+* return on multiple separate days;
+* experience increasingly relevant recommendations;
+* trust the system enough to continue using it.
 
 Potential warning signals include:
 
-- learners repeatedly ignore Today;
-- users consistently prefer manually selecting Questions;
-- Today feels repetitive or irrelevant;
-- sessions are frequently abandoned;
-- learners do not understand why content is being selected;
-- adaptive prioritization does not improve as evidence grows;
-- users create/import content but do not return to learn.
+* learners repeatedly ignore Today;
+* users consistently prefer manually selecting Questions;
+* Today feels repetitive or irrelevant;
+* sessions are frequently abandoned;
+* learners do not understand why content is being selected;
+* adaptive prioritization does not improve as evidence grows;
+* users create/import content but do not return to learn.
 
 These are product-learning signals, not automatically technical failures.
 
@@ -623,38 +632,36 @@ These are product-learning signals, not automatically technical failures.
 
 ## 22. Feature Development Rule
 
-Before implementing a significant product feature, create or update a feature contract under:
-
-```text
-docs/FEATURES/
-```
-
-A feature contract should define:
-
-- purpose;
-- user goal;
-- entry points;
-- core flow;
-- business rules;
-- states;
-- required data;
-- outputs / side effects;
-- permissions;
-- edge cases;
-- analytics;
-- out-of-scope items;
-- open questions;
-- Definition of Done.
-
 Do not invent missing product behavior during implementation.
 
 If an ambiguity affects product behavior, learning logic, data integrity, security, or architecture, surface it before implementing.
+
+Use a feature contract under `docs/FEATURES/` when a feature is complex enough to benefit from a durable behavior contract.
+
+Feature contracts are optional and proportional. They are not required for every meaningful code change.
+
+When used, a feature contract may define:
+
+* purpose;
+* user goal;
+* entry points;
+* core flow;
+* business rules;
+* states;
+* required data;
+* outputs / side effects;
+* permissions;
+* edge cases;
+* analytics;
+* out-of-scope items;
+* open questions;
+* Definition of Done.
 
 ---
 
 ## 23. Product Documentation Hierarchy
 
-Use the following hierarchy:
+Use the following ownership model:
 
 ### Product constitution
 
@@ -664,27 +671,42 @@ Use the following hierarchy:
 
 `docs/PRODUCT.md`
 
+### V1 boundary
+
+`docs/UNLOCK_V1_SCOPE.md`
+
+### Product sequencing
+
+`docs/UNLOCK_ROADMAP.md`
+
 ### Shared domain terminology
 
 `docs/DOMAIN_GLOSSARY.md`
-
-### Feature-specific behavior
-
-`docs/FEATURES/*.md`
 
 ### Durable decisions
 
 `docs/DECISIONS/*.md`
 
-### Implementation discipline
+### Unresolved decisions
 
-`.cursor/rules/*.mdc`
+`docs/OPEN_QUESTIONS.md`
+
+### Optional feature-specific behavior
+
+`docs/FEATURES/*.md`
+
+### Repository operating baseline
+
+`AGENTS.md`
+
+### Tool-specific operating guidance
+
+* `CLAUDE.md` and `.claude/**` for Claude Code;
+* `.cursor/rules/**` for Cursor.
 
 If documents conflict, do not silently choose an interpretation.
 
-Surface the conflict.
-
-For current V1 activation, the V1 Core Activation Plan and Immediate Next Steps in the Master Spec take precedence over broader earlier checklists where explicitly specified.
+Accepted ADRs override older conflicting design descriptions. `docs/UNLOCK_V1_SCOPE.md` owns what belongs in V1, while `docs/UNLOCK_ROADMAP.md` owns the sequencing used to reach it.
 
 ---
 

@@ -1,6 +1,6 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED LOCALLY** — nine forward-only migrations exist:
+Status: **IMPLEMENTED IN REPOSITORY** — twelve forward-only migrations exist:
 
 1. `20260917203000_initial_schema.sql` — initial PostgreSQL/Supabase schema (ADR-013)
 2. `20260918000000_question_answer_model_v1.sql` — Question answer model (ADR-014)
@@ -11,34 +11,35 @@ Status: **IMPLEMENTED LOCALLY** — nine forward-only migrations exist:
 7. `20260923000000_auth_user_provisioning.sql` — Auth user → `public.users` provisioning
 8. `20260924000000_daily_plan_answer_attempts.sql` — DailyPlan-linked Attempts / answer flow persistence
 9. `20260925000000_daily_plan_new_material_v1.sql` — New Material action/tier persistence support (ADR-017)
+10. `20260926000000_course_lifecycle_v1.sql` — Course lifecycle status + optional exam-date metadata
+11. `20260927000000_topics_v1.sql` — flat Topic model for Course authoring
+12. `20260928000000_question_authoring_v1.sql` — Question draft authoring, Topic association, and publishing persistence support
 
-The first seven migrations have been applied to the hosted Supabase project.
-The final two are committed/local and remain pending explicit remote application.
-The full local migration chain is exercised by the repository's
-Postgres-compatible/PGlite schema integration suite. No later migration edits
-an earlier accepted migration. This
-document remains the design-contract companion to those migrations and to
-`docs/DATABASE.md` (conceptual data model) and
-`docs/DECISIONS/009-question-versioning.md` / `010-answer-submission-transaction-model.md`
-/ `012-attempt-replayability-and-rebuild-semantics.md` / `013-supabase-postgresql-as-v1-persistence-provider.md`
-/ `014-question-answer-model-v1.md` / `015-user-course-membership-and-join-authorization-model.md`
-/ `016-global-daily-plan-and-today-view-semantics.md`
-(the durable decisions this schema implements). The composite-FK and
-CHECK-constraint choices below were produced by iterative adversarial
-review of this schema against the actual domain/application code; the
-migration files themselves and the cross-table invariant table below are
-the authoritative record of that reasoning.
+Hosted Supabase migration state at this Development OS V1.2 baseline:
 
-The implementation-detail choices this document was previously
-non-committal about are now DECIDED, in the migration itself: closed,
-already-decided value sets use `text` + `CHECK (... IN (...))`, not a
-native Postgres `ENUM` (see the migration file's own header comment for the
-reasoning); numeric precision is left unconstrained (plain `numeric`),
-matching this document's original stance. If this document and the
-migration ever disagree, the migration is authoritative — see its own
-header for anything genuinely re-evaluated (rather than just transcribed)
-during that pass, and update this document to match rather than the
-reverse.
+* migrations #1–#9 have been applied to the hosted Supabase project;
+* migrations #10–#12 are committed and locally/PGlite verified but remain pending explicit human remote application.
+
+Hosted migration state is operational status, not physical-schema authority. It may advance independently of this document and should be tracked in `docs/DEV_STATUS.md`.
+
+The full committed migration chain is exercised by the repository's PostgreSQL-compatible/PGlite schema integration suite. No later migration edits an earlier accepted migration.
+
+This document remains the design-contract companion to the committed migration chain and to `docs/DATABASE.md` (conceptual data model) and the relevant durable decisions, including:
+
+* `009-question-versioning.md`
+* `010-answer-submission-transaction-model.md`
+* `012-attempt-replayability-and-rebuild-semantics.md`
+* `013-supabase-postgresql-as-v1-persistence-provider.md`
+* `014-question-answer-model-v1.md`
+* `015-user-course-membership-and-join-authorization-model.md`
+* `016-global-daily-plan-and-today-view-semantics.md`
+* `017-daily-plan-new-material-v1.md`
+
+The composite-FK and CHECK-constraint choices below were produced by iterative adversarial review of this schema against the actual domain/application code. The committed migration files themselves and the cross-table invariant table below are the authoritative record of that reasoning.
+
+The implementation-detail choices this document was previously non-committal about are DECIDED where the committed migrations decide them. Closed value sets use `text` + `CHECK (... IN (...))`, not native PostgreSQL `ENUM`, unless a later accepted migration explicitly changes that approach. Numeric precision remains unconstrained (`numeric`) where documented.
+
+If this document and a committed migration disagree, the migration is authoritative. Update this document to match the migration rather than rewriting accepted migration history.
 
 ---
 

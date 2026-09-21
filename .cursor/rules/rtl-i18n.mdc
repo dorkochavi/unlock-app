@@ -1,50 +1,242 @@
 ---
-description: Hebrew, RTL and localization rules for UNLOCK
-alwaysApply: true
+description: UNLOCK Hebrew, RTL and localization guardrails for Cursor
+globs:
+  - "src/app/**"
+  - "src/components/**"
+  - "src/messages/**"
+  - "src/lib/locale.ts"
+alwaysApply: false
+---
+# UNLOCK — RTL & i18n
+
+UNLOCK is:
+
+* Hebrew-first;
+* RTL-first;
+* `he-IL` by default;
+* mobile-first.
+
+This rule contains compact implementation guardrails.
+
+Canonical product behavior lives in:
+
+`docs/PRODUCT.md`
+
 ---
 
-# UNLOCK RTL and i18n Rules
+## 1. Default Product Locale
 
-UNLOCK is Hebrew-first and RTL-first.
+Default learner-facing language:
 
-Default product language:
+```text
 Hebrew
+```
 
 Default direction:
+
+```text
 RTL
+```
 
 Default locale:
+
+```text
 he-IL
+```
 
-Technical identifiers remain in English.
+Do not treat Hebrew/RTL as optional polish to be added after implementation.
 
-This includes:
-- variables
-- functions
-- database fields
-- API names
-- logs
-- technical documentation
+---
 
-User-facing copy should be stored through a messages/translation layer where practical.
+## 2. Technical Identifiers
 
-Do not scatter hard-coded Hebrew UI strings throughout components.
+Keep technical identifiers in English.
 
-The architecture must remain i18n-ready.
+Examples:
 
-RTL must be tested for:
-- navigation
-- forms
-- cards
-- quiz answers
-- modals
-- tables
-- charts
-- icons
-- directional controls
-- mixed Hebrew/English text
-- numbers
-- percentages
-- dates
+* variables;
+* functions;
+* types;
+* database fields;
+* API names;
+* route names;
+* logs;
+* technical file names.
 
-Use locale-aware formatting.
+Do not translate technical identifiers merely because the UI is Hebrew.
+
+---
+
+## 3. User-Facing Copy
+
+Prefer the existing messages/localization layer for reusable product copy.
+
+Current relevant area includes:
+
+`src/messages/`
+
+Do not scatter repeated hard-coded Hebrew strings across many components when a shared message already exists or clearly belongs in the localization layer.
+
+Small local labels may remain local when introducing abstraction would add no value.
+
+Do not build a large i18n framework speculatively.
+
+---
+
+## 4. RTL Layout
+
+Use RTL-aware layout rather than manually mirroring every component.
+
+Where possible, prefer logical layout concepts over physical left/right assumptions.
+
+Be careful with:
+
+* flex/grid alignment;
+* margins/padding;
+* text alignment;
+* directional icons;
+* back/forward controls;
+* progress direction;
+* mixed-direction content.
+
+Do not assume RTL means every visual element should be reversed.
+
+---
+
+## 5. Mixed Hebrew / English Content
+
+UNLOCK may display mixed content such as:
+
+* Hebrew explanations;
+* English technical terms;
+* formulas;
+* numbers;
+* URLs;
+* Question content;
+* code or identifiers.
+
+Preserve readability when bidirectional text is mixed.
+
+Use explicit direction handling only where normal browser bidi behavior is insufficient.
+
+---
+
+## 6. Locale-Aware Formatting
+
+Use locale-aware formatting where user-facing values require it.
+
+Examples may include:
+
+* dates;
+* times;
+* numbers;
+* percentages.
+
+Prefer `he-IL` behavior for Hebrew product surfaces unless the accepted feature explicitly requires another locale.
+
+Do not hand-build formatting that the platform/runtime can handle reliably.
+
+---
+
+## 7. Forms and Interactive Controls
+
+For Hebrew/RTL UI, verify the relevant interaction still feels natural.
+
+Pay particular attention to:
+
+* inputs;
+* labels;
+* validation messages;
+* quiz options;
+* buttons;
+* navigation;
+* modals;
+* tables;
+* directional controls.
+
+Do not encode semantic order based only on visual left/right position.
+
+---
+
+## 8. Icons
+
+Directional icons require semantic judgment.
+
+Examples:
+
+* back/forward arrows may need RTL-aware direction;
+* play, download, close, search, check, warning, and similar semantic icons usually should not be mirrored merely because the page is RTL.
+
+Prefer meaning over mechanical mirroring.
+
+---
+
+## 9. Data / Domain Boundary
+
+Localization belongs primarily at the presentation boundary.
+
+Do not translate canonical:
+
+* domain enum values;
+* database values;
+* API identifiers;
+* persisted technical keys;
+
+for display purposes.
+
+Map canonical values to localized presentation copy instead.
+
+---
+
+## 10. Accessibility
+
+RTL/localization changes should preserve relevant accessibility behavior.
+
+Where applicable, keep:
+
+* semantic labels;
+* logical reading order;
+* keyboard navigation;
+* focus behavior;
+* understandable validation/error text.
+
+Visual RTL correctness alone is not sufficient.
+
+---
+
+## 11. Verification
+
+Verify RTL/i18n behavior proportionally to the UI actually changed.
+
+Do not use this rule as a fixed testing checklist.
+
+Testing philosophy lives in:
+
+`docs/TESTING.md`
+
+Use browser/E2E verification when the risk genuinely depends on rendered RTL, interaction, or browser behavior.
+
+---
+
+## 12. Scope Discipline
+
+Do not use ordinary UI work to:
+
+* redesign the localization architecture;
+* add unnecessary translation infrastructure;
+* convert technical identifiers to Hebrew;
+* introduce multilingual product scope that V1 does not require.
+
+Preserve i18n readiness without overbuilding it.
+
+---
+
+## 13. Core Principle
+
+> Hebrew and RTL are product defaults.
+
+> Keep technical contracts canonical and English.
+
+> Localize at the presentation boundary.
+
+> Prefer semantic RTL behavior over mechanical mirroring.

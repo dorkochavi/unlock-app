@@ -1,511 +1,596 @@
 ---
+
 name: review-commit
-description: Run a read-only adversarial review of an UNLOCK Slice commit or current diff using the appropriate risk-based reviewer agents. Checks Plan intent, actual runtime behavior, architecture, security, database integrity, tests, and verification claims. Never modifies, stages, commits, or pushes.
----
+description: Run a read-only risk-based review of the current UNLOCK Slice commit or worktree diff. Selects the appropriate reviewer agents, gives them a bounded review packet, merges findings, and returns a concise verdict without modifying repository state.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # /review-commit
 
-Read-only review workflow for UNLOCK.
+Use this skill to review a completed Slice implementation before final relevant verification.
 
-Use this skill to independently assess a completed Slice commit or current diff.
+This skill owns:
 
-This skill must never:
+* review-target selection;
+* reviewer selection;
+* reviewer orchestration;
+* review packet construction;
+* findings consolidation;
+* review verdict.
 
-- modify code
-- edit documentation
-- stage files
-- commit
-- push
-- reset
-- clean
-- delete files
-- auto-fix findings
+This skill does **not** own:
 
-Its job is to inspect actual repository behavior and return findings.
+* implementation;
+* test selection;
+* evidence freshness;
+* checkpoint readiness;
+* product decisions;
+* Git mutation.
+
+It is read-only.
+
+Never:
+
+* modify files;
+* stage;
+* commit;
+* push;
+* reset;
+* clean;
+* delete;
+* auto-fix findings.
 
 ---
 
-## Step 1 — Load Current Context
+## 1. Establish Review Context
 
-Normally the current session already contains:
+Use the current session context when already available.
 
-- `CLAUDE.md`
-- `docs/CHATGPT_PLAN.md`
-- `docs/DEV_STATUS.md`
+Load only what is needed to identify:
 
-Re-read only if needed.
+* active `RUN_ID`;
+* relevant Slice;
+* Slice goal;
+* accepted behavior;
+* explicit non-goals;
+* review target.
+
+Primary current sources:
+
+* `docs/CHATGPT_PLAN.md`;
+* `docs/DEV_STATUS.md`;
+* repository/Git reality.
+
+Do not read historical Run Reports by default.
+
+---
+
+## 2. Establish Repository State
+
+Inspect the minimum required Git state.
+
+Typical commands:
+
+```text
+git status --short
+git status -sb
+git log --oneline --decorate -5
+```
 
 Determine:
 
-- PLAN_VERSION
-- RUN_ID
-- current/relevant Slice
-- intended Slice goal
-- accepted invariants
-- required reviewer types
-- expected verification
+* branch;
+* HEAD;
+* ahead/behind;
+* staged changes;
+* unstaged changes;
+* untracked files.
 
-Do not use historical Run Reports as default review context.
-
----
-
-## Step 2 — Establish Repository State
-
-Run the minimum necessary commands such as:
-
-- `git status`
-- `git status -sb`
-- `git log --oneline -5`
-
-Identify:
-
-- current branch
-- current HEAD
-- ahead/behind state
-- staged changes
-- unstaged changes
-- untracked files
-- whether the requested commit exists
-
-Do not touch unexpected files.
+Do not mutate repository state.
 
 ---
 
-## Step 3 — Determine Review Target
+## 3. Determine Review Target
 
-If an exact commit/ref is supplied:
+If the active workflow supplies a specific commit/ref:
 
-review that exact commit.
+* review exactly that commit/ref.
 
-Useful commands may include:
+If the Slice is not yet committed:
 
-`git show --stat <commit>`
+* review the relevant current worktree diff.
 
-`git show --format=fuller <commit>`
+If target selection is ambiguous:
 
-`git diff <commit>^ <commit> --`
+* resolve it from the active Slice when possible;
+* otherwise report the ambiguity rather than guessing.
 
-If no commit is supplied:
-
-- review the current relevant diff
-- state clearly that the target is the worktree
-
-If multiple commits could reasonably be the target:
-
-- do not guess
-- derive the correct target from the current Slice only when unambiguous
-- otherwise report ambiguity
+The review target must be explicit in the final report.
 
 ---
 
-## Step 4 — Compare Against the Slice Contract
+## 4. Compare Against the Slice Contract
 
-Review against the relevant Slice in `docs/CHATGPT_PLAN.md`.
-
-Determine:
-
-- does the implementation satisfy the actual Slice goal?
-- are Must requirements met?
-- are Do-not constraints respected?
-- were non-goals kept out?
-- were acceptance/Exit criteria actually achieved?
-- did repository reality require a justified minimal adaptation?
-- was a product decision silently invented?
-
-If the commit solves a different problem than the Plan requested, report it even if the code is technically sound.
-
----
-
-## Step 5 — Select Reviewers by Risk
-
-### General Reviewer
-
-Use:
-
-`unlock-reviewer`
-
-for:
-
-- general application logic
-- architecture
-- cross-layer changes
-- DailyPlan/application behavior
-- major Slice changes
-- mixed commits
-- important test/documentation review
-
-### Database Reviewer
-
-Also use:
-
-`unlock-db-reviewer`
-
-when the change touches or materially depends on:
-
-- `supabase/migrations/**`
-- PostgreSQL repositories
-- SQL
-- UnitOfWork
-- transactions
-- `pg.Pool`
-- connection providers
-- constraints
-- triggers
-- SECURITY DEFINER functions
-- database concurrency
-- Supabase-managed database schemas
-
-### Security Reviewer
-
-Also use:
-
-`unlock-security-reviewer`
-
-when the change touches or materially depends on:
-
-- Supabase Auth
-- API authentication
-- authorization
-- cookies/session handling
-- user identity
-- safe redirects
-- server/client trust boundaries
-- environment secrets
-- service-role credentials
-- API error leakage
-- security-sensitive execution ordering
-
-Do not invoke every reviewer automatically.
-
-Use only the reviewers justified by actual risk.
-
----
-
-## Step 6 — Preserve Reviewer Independence
-
-Reviewer agents must inspect real code.
-
-Do not prime them with conclusions such as:
-
-- this is probably safe
-- implementation is correct
-- tests already prove it
-- previous reviewer approved it
-
-Provide:
-
-- exact commit/ref or diff
-- intended Slice
-- relevant accepted invariant
-- known bug/behavior being addressed
-
-Let the reviewer determine findings independently.
-
----
-
-## Step 7 — Mandatory Review Questions
-
-Regardless of reviewer type, determine:
-
-- Does the implementation actually satisfy the Slice?
-- Does runtime control flow match documented behavior?
-- Are accepted product decisions preserved?
-- Are trust boundaries preserved?
-- Are application/domain boundaries preserved?
-- Are there hidden environment assumptions?
-- Are failure paths controlled?
-- Are tests meaningful?
-- Would key tests fail if the regression existed?
-- Are verification claims accurate?
-- Did the change introduce unrelated scope?
-- Did the change create a new product/architecture decision without authorization?
-
----
-
-## Step 8 — Test Evidence Review
-
-Do not stop at test counts.
-
-Inspect what meaningful tests actually prove.
+The implementation must be reviewed against the actual active Slice.
 
 Check:
 
-- runtime wiring
-- negative paths
-- ordering
-- ownership
-- authorization
-- transaction semantics
-- failure behavior
-- persistence constraints
-- idempotency
-- whether mocks hide production behavior
-- whether PGlite is overstated
-- whether real hosted/browser verification remains pending
+* required behavior;
+* Must requirements;
+* Do-not constraints;
+* explicit non-goals;
+* acceptance criteria;
+* relevant accepted invariants.
 
-Using already-produced verification results is preferred.
+A technically sound implementation that solves the wrong problem is still a review failure.
 
-A focused read-only test command may be run if it materially improves confidence.
-
-Do not modify tests.
+Do not silently reinterpret the Plan.
 
 ---
 
-## Step 9 — Security-Sensitive Ordering
+## 5. Select Reviewers by Risk
 
-When routes/protected operations are involved, trace actual execution order.
+Choose only reviewers justified by the actual change.
 
-Examples:
+### General reviewer
 
-- authentication before database construction
-- authorization before mutation
-- validation before persistence
-- safe redirect validation before navigation
-- transaction start before atomic writes
+Use `unlock-reviewer` when the change involves:
 
-Do not assume helper correctness guarantees correct orchestration.
+* general application behavior;
+* architecture;
+* domain/application boundaries;
+* cross-layer implementation;
+* DailyPlan/application behavior;
+* mixed or substantial Slice changes;
+* changed tests/documentation that materially affect runtime meaning.
 
----
+### Database reviewer
 
-## Step 10 — Database-Sensitive Review
+Also use `unlock-db-reviewer` when the change materially touches or depends on:
 
-When database behavior is involved, inspect:
+* migrations;
+* SQL;
+* PostgreSQL repositories;
+* constraints;
+* triggers;
+* transactions;
+* Unit of Work;
+* connection handling;
+* persistence concurrency;
+* Supabase-managed database boundaries.
 
-- forward-only migration history
-- constraint correctness
-- migration compatibility with existing data
-- transaction-bound connection usage
-- rollback behavior
-- connection acquisition/release
-- repository atomicity
-- concurrency claims
-- PGlite limitations
-- Supabase-managed schema boundaries
+### Security reviewer
 
-Distinguish:
+Also use `unlock-security-reviewer` when the change materially touches or depends on:
 
-- proven under PGlite
-- reasoned under PostgreSQL semantics
-- actually tested on real PostgreSQL/Supabase
+* authentication;
+* authorization;
+* user identity;
+* protected API routes;
+* ownership;
+* session/cookie behavior;
+* safe redirects;
+* secrets;
+* service-role credentials;
+* trust-boundary ordering;
+* security-sensitive errors.
 
----
+Do not invoke all reviewers by default.
 
-## Step 11 — Security-Sensitive Review
-
-When Auth/API security is involved, inspect:
-
-- trusted user identity source
-- `auth.getUser()` usage where relevant
-- client inability to override identity
-- Course/record ownership enforcement
-- authorization ordering
-- server-only secrets
-- service-role usage
-- error leakage
-- unauthenticated short-circuit behavior
-- safe redirect handling when relevant
-
-Fail closed where product policy requires it.
+Use risk, not ceremony.
 
 ---
 
-## Step 12 — Documentation Accuracy
+## 6. Build a Compact Review Packet
 
-Review changed durable documentation against actual repository behavior.
+Each reviewer should receive only the context required to review the target.
 
-Flag documentation that:
+Include:
 
-- claims functionality not implemented
-- claims verification not performed
-- says hosted/E2E when only mocked
-- duplicates history into DEV_STATUS
-- changes an accepted decision without ADR/authorization
-- places unresolved decisions outside OPEN_QUESTIONS
-- contradicts current Plan or code
+* exact target commit/ref or diff;
+* Slice goal;
+* relevant acceptance criteria;
+* relevant accepted invariant/ADR when needed;
+* known risk surface;
+* existing verification summary if useful.
 
-Do not use old historical Run Reports as a source of truth.
+Do not send:
+
+* full repository history;
+* entire `DEV_STATUS`;
+* every ADR;
+* all Run Reports;
+* implementation conclusions;
+* "this looks correct" framing.
+
+Reviewers should inspect actual code independently.
 
 ---
 
-## Step 13 — Severity
+## 7. Preserve Reviewer Independence
+
+Do not prime reviewers with approval-oriented language.
+
+Avoid statements such as:
+
+* implementation is correct;
+* tests already prove it;
+* previous reviewer approved;
+* this should be safe.
+
+Provide facts and boundaries.
+
+Let reviewers determine findings.
+
+---
+
+## 8. General Review Focus
+
+The general reviewer should assess cross-cutting correctness such as:
+
+* Slice alignment;
+* runtime behavior;
+* architecture boundaries;
+* domain/application separation;
+* failure handling;
+* hidden assumptions;
+* scope discipline;
+* meaningful regression protection;
+* documentation accuracy where changed.
+
+It should not duplicate specialist review in unnecessary detail.
+
+---
+
+## 9. Database Review Focus
+
+The database reviewer should focus on persistence-specific risks such as:
+
+* migration compatibility;
+* constraints;
+* SQL correctness;
+* transaction semantics;
+* connection use;
+* rollback;
+* repository atomicity;
+* concurrency assumptions;
+* PostgreSQL vs PGlite evidence boundaries.
+
+It should not independently re-review unrelated product/UI concerns.
+
+---
+
+## 10. Security Review Focus
+
+The security reviewer should focus on trust-boundary risks such as:
+
+* trusted identity source;
+* authentication ordering;
+* authorization;
+* ownership;
+* client-controlled identifiers;
+* fail-closed behavior;
+* secrets;
+* privileged credentials;
+* error leakage;
+* redirect/session safety where relevant.
+
+It should not duplicate unrelated DB/application review.
+
+---
+
+## 11. Review Is Not Verification Selection
+
+Reviewers may identify missing or weak evidence.
+
+They may say:
+
+* a regression test is missing;
+* an integration boundary is unproven;
+* a security path lacks evidence.
+
+But reviewers do not own the operational decision of exactly which commands to run next.
+
+That belongs to:
+
+`.claude/rules/testing.md`
+
+Review identifies the risk.
+
+Testing policy chooses the verification response.
+
+---
+
+## 12. Review Existing Evidence Honestly
+
+Reviewers may inspect already-produced evidence.
+
+They should distinguish:
+
+* focused unit/application evidence;
+* route/API evidence;
+* PGlite/database integration evidence;
+* browser E2E;
+* hosted/real-environment evidence;
+* inspection/reasoning only.
+
+Do not infer stronger verification than was actually performed.
+
+---
+
+## 13. Severity Model
+
+Use only these finding severities.
 
 ### BLOCKER
 
-Must be fixed before the Slice may be considered complete.
+Must be fixed before the Slice can proceed.
 
 Examples:
 
-- trust-boundary violation
-- data-integrity risk
-- incorrect core runtime behavior
-- migration failure
-- secret leakage
-- broken transaction semantics
-- accepted product invariant regression
-- implementation materially fails Slice acceptance criteria
+* trust-boundary violation;
+* data-integrity risk;
+* incorrect core behavior;
+* broken transaction semantics;
+* migration incompatibility;
+* secret leakage;
+* accepted invariant regression;
+* material failure of Slice acceptance criteria.
 
 ### CORRECTION
 
-Should be fixed before Slice completion when practical.
+Should be fixed before Slice completion.
 
 Examples:
 
-- important missing regression test
-- misleading documentation
-- fragile wiring
-- meaningful but non-catastrophic error behavior
-- preventable architecture drift
+* meaningful regression gap;
+* fragile but important wiring;
+* misleading durable documentation;
+* material architecture drift;
+* preventable error-handling weakness.
 
-### NON-BLOCKING OBSERVATION
+### NON-BLOCKING
 
-Useful future work that does not belong in the current Slice.
+Useful observation that does not belong in the current Slice.
 
-Do not turn preferences or unrelated cleanup into blockers.
+Examples:
+
+* maintainability improvement;
+* unrelated cleanup;
+* future abstraction opportunity.
+
+Do not inflate preferences into blockers.
 
 ---
 
-## Step 14 — Combine Reviewer Findings
+## 14. Merge Findings Across Reviewers
 
 When multiple reviewers are used:
 
-- merge duplicates
-- preserve the strongest evidence-based severity
-- do not inflate severity because multiple reviewers noticed the same issue
-- resolve contradictions by inspecting actual code
-- keep unrelated observations out of current scope
+* merge duplicates;
+* preserve the strongest evidence-based severity;
+* resolve apparent contradictions from actual code;
+* keep specialist evidence attached to the relevant finding;
+* keep unrelated observations out of current execution.
 
-The implementation agent, not the reviewer skill, performs fixes later.
+The number of reviewers noticing the same issue does not increase severity.
+
+---
+
+## 15. Do Not Auto-Fix
 
 This skill remains read-only.
 
+It must not:
+
+* edit the implementation;
+* modify tests;
+* update docs;
+* stage corrections;
+* create commits.
+
+Findings return to the implementation workflow.
+
+`/implement-slice` owns correction execution.
+
 ---
 
-## Step 15 — Final Report
+## 16. Review Verdict
 
-Return exactly these sections:
+After consolidating findings, choose exactly one verdict:
+
+### `NO BLOCKING FINDINGS`
+
+Use when:
+
+* no BLOCKER exists;
+* no required CORRECTION remains before final verification.
+
+### `CORRECTIONS REQUIRED`
+
+Use when:
+
+* one or more CORRECTION findings should be fixed before proceeding;
+* no unresolved BLOCKER exists.
+
+### `BLOCKED`
+
+Use when:
+
+* at least one BLOCKER exists;
+* or a genuine Plan/decision conflict prevents safe completion.
+
+Do not use approval language that implies commit/checkpoint readiness.
+
+Review is only one stage of the lifecycle.
+
+---
+
+## 17. Plan Conflict
+
+If review finds that implementation required or introduced an unapproved product/architecture/security decision, report:
+
+```text
+PLAN_CONFLICT
+- Plan assumption
+- Repository reality
+- Why the implementation conflicts
+- Decision required
+- Affected Slice
+```
+
+A Plan conflict is not merely a code-quality suggestion.
+
+Do not resolve it inside the review.
+
+---
+
+## 18. Final Review Report
+
+Return only the following sections.
 
 ### Review Target
 
-Report:
-
-- Slice
-- commit/ref or worktree diff
-- commit message if applicable
-- branch
-- HEAD
-- ahead/behind state
-
-### Plan Alignment
-
-State:
-
-- aligned
-
-or:
-
-- `PLAN_CONFLICT`
-
-with concise evidence.
+* Slice;
+* commit/ref or worktree;
+* branch;
+* HEAD.
 
 ### Reviewers Used
 
-List only reviewers actually used.
+List only reviewers actually invoked.
 
-### A. Blockers Before Completion
+### Findings
 
-List blockers.
+For each finding:
+
+```text
+[BLOCKER | CORRECTION | NON-BLOCKING]
+Title
+Evidence
+Why it matters
+```
 
 If none:
 
 `None.`
 
-### B. Corrections Worth Making Now
+### Evidence Assessment
 
-List required/recommended corrections.
+Briefly state:
 
-If none:
+* what existing evidence materially supports the implementation;
+* what evidence limitation remains, if any.
 
-`None.`
+Do not prescribe a full test plan here.
 
-### C. Non-Blocking Observations
+### Verdict
 
-Keep brief.
+Exactly one:
 
-### D. Test and Verification Assessment
+* `NO BLOCKING FINDINGS`
+* `CORRECTIONS REQUIRED`
+* `BLOCKED`
 
-State:
+### Next Lifecycle Action
 
-- what is unit-tested
-- what is route-wiring tested
-- what is PGlite integration-tested
-- what was inspection only
-- what remains real-environment-only
+Give exactly one next action:
 
-### E. Architecture Assessment
+* return to implementation for corrections;
+* perform final relevant verification;
+* resolve Plan conflict.
 
-State whether relevant UNLOCK boundaries are preserved.
-
-### F. Security Assessment
-
-If relevant, state:
-
-- trusted identity source
-- auth/authorization ordering
-- ownership behavior
-- safe redirect behavior
-- secret/error handling
-
-If not relevant:
-
-`No material security-boundary change in this Slice.`
-
-### G. Database Assessment
-
-If relevant, state:
-
-- migration/schema status
-- transaction behavior
-- constraints
-- concurrency assumptions
-- PGlite vs real PostgreSQL/Supabase limitations
-
-If not relevant:
-
-`No material database-boundary change in this Slice.`
-
-### H. Slice Verdict
-
-Choose exactly one:
-
-- `APPROVED FOR CHECKPOINT`
-- `APPROVED AFTER CORRECTIONS`
-- `BLOCKED`
-
-### I. Recommended Next Action
-
-Give exactly one next action within the current Slice lifecycle.
-
-Examples:
-
-- run checkpoint
-- address listed blocker
-- rerun affected tests
-
-Do not propose unrelated future product work.
+Do not suggest unrelated future work.
 
 ---
 
-## Final Rules
+## 19. Findings Quality Standard
 
-- Review actual code, not the implementation summary.
-- Review against CHATGPT_PLAN.
-- Be adversarial but evidence-based.
-- Preserve strict Slice scope.
-- Do not modify anything.
-- Do not stage.
-- Do not commit.
-- Do not push.
-- Do not auto-fix.
-- Do not delete unknown files.
-- Do not read historical Runs unless explicitly authorized.
-- Do not use destructive Git commands.
+Every BLOCKER or CORRECTION should be:
+
+* specific;
+* actionable;
+* tied to actual code/behavior;
+* supported by evidence;
+* relevant to current Slice scope.
+
+Avoid vague findings such as:
+
+* "consider improving architecture";
+* "maybe add more tests";
+* "could be cleaner".
+
+Explain the concrete risk.
+
+---
+
+## 20. Documentation Review
+
+When durable documentation changed, review only the facts materially affected.
+
+Flag when documentation:
+
+* claims unimplemented behavior;
+* claims verification not performed;
+* conflicts with accepted ADRs;
+* places unresolved decisions outside `OPEN_QUESTIONS`;
+* turns historical state into current authority;
+* duplicates facts into the wrong owner.
+
+Do not review every documentation file merely because one doc changed.
+
+---
+
+## 21. Legacy and Historical Artifacts
+
+Do not use:
+
+* old Run Reports;
+* historical invariant snapshots;
+* obsolete scratch notes;
+
+as current authority.
+
+They may be consulted only when the change explicitly depends on historical behavior.
+
+Current repository reality and accepted current sources control.
+
+---
+
+## 22. Review Stop Condition
+
+Review is complete when:
+
+1. the target is understood;
+2. appropriate reviewers have completed their bounded review;
+3. findings are deduplicated and classified;
+4. evidence limitations are stated honestly;
+5. one verdict is returned.
+
+Do not continue into:
+
+* corrections;
+* final verification;
+* checkpoint;
+* commit.
+
+Those belong to later lifecycle stages.
+
+---
+
+## 23. Core Rules
+
+* Read-only.
+* Review actual code, not summaries.
+* Review against the active Slice.
+* Select reviewers by risk.
+* Send compact review packets.
+* Preserve reviewer independence.
+* Merge duplicate findings.
+* Do not inflate severity.
+* Do not auto-fix.
+* Do not stage.
+* Do not commit.
+* Do not push.
+* Do not run destructive Git commands.
+* Do not use historical Runs as default authority.
+* Return one clear verdict and one next lifecycle action.

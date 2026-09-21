@@ -1,62 +1,220 @@
 ---
-description: Core product rules for UNLOCK
-alwaysApply: true
+description: UNLOCK product guardrails for Cursor
+alwaysApply: false
+---
+# UNLOCK — Product
+
+Canonical product guidance lives in:
+
+* `docs/PRODUCT.md`
+* `docs/UNLOCK_V1_SCOPE.md`
+* `docs/MASTER_SPEC.md`
+* relevant accepted ADRs
+* `docs/OPEN_QUESTIONS.md`
+
+This Cursor rule is a compact product guardrail.
+
+Do not treat it as a second product specification.
+
 ---
 
-# UNLOCK Product Rules
+## 1. Product Identity
 
-UNLOCK is a Hebrew-first, RTL-first adaptive learning application.
+UNLOCK is a:
 
-The primary product experience is Today.
+* Hebrew-first;
+* RTL-first;
+* mobile-first;
+* adaptive learning product.
 
-The core product loop is:
+Its core value is not simply delivering questions.
 
+It is maintaining useful learner state over time and using that state to determine the next valuable learning action.
+
+---
+
+## 2. Core Learning Loop
+
+The current product loop is broadly:
+
+```text id="bq6ymo"
 User
--> Course
--> Material / Questions
--> Today
--> Quiz
--> Attempt
--> Learner State update
--> Next Today
+→ Course
+→ learning content / Questions
+→ Today
+→ learner action
+→ Attempt / resolution
+→ learner-state update
+→ future learning decision
+```
 
-The product should optimize for repeat learning behavior, especially Today completion and return frequency.
+`DailyPlan` / `DailyPlanItem` are the primary current Today model.
 
-Do not introduce product behavior that conflicts with committed code, accepted ADRs, or current canonical product documentation.
+Do not reintroduce superseded Today-session terminology as the main product model.
 
-`docs/MASTER_SPEC.md` provides high-level product context, but it does not override committed code or accepted ADRs.
+---
 
-Do not invent product requirements when the specification is unclear.
+## 3. Today Is a Primary Experience
 
-If a requirement is unclear, mark it as TBD or ask for clarification.
+Today is a central learner-facing product surface.
 
-Do not add features merely because they are technically possible.
+Preserve accepted properties such as:
 
-Prefer the smallest implementation that supports the validated V1 learning loop.
+* clear finite work;
+* persistence across reopen;
+* learner-local day semantics;
+* learning-need-driven selection;
+* honest completion;
+* separation from Manual Practice.
 
-Brains are conceptual capability boundaries only. They do not imply separate services, agents, processes, models, databases, or deployment units.
+Do not turn Today into an endless feed merely to increase activity.
 
-V1 MUST prioritize (Master Spec §102):
+---
 
-- User
-- Course
-- Material
-- Question
-- Attempt
-- UserQuestionProgress
-- Exam Date
-- Learner State
-- Next Best Action
-- DailyPlan
-- DailyPlanItem
-- Quiz
-- Basic Progress
-DailyPlan / DailyPlanItem are the accepted current Today persistence model. The older Today Session / Today Session Items naming is superseded by ADR-016.
+## 4. V1 Restraint
 
-Institution is architecture-ready and is not a V1 blocker. A Course must be valid without an Institution.
+Prefer the smallest implementation that strengthens the validated V1 learning loop.
 
-Exam Date (including personal override precedence) is V1. Assignments are architecture-ready and must not block V1 unless a later documented need requires them.
+Do not add functionality merely because it is:
 
-If product documents appear to conflict, do not silently choose between sections. Check the relevant accepted ADR, current committed behavior, and `docs/OPEN_QUESTIONS.md`, then surface any unresolved conflict before implementation.
+* technically easy;
+* architecturally interesting;
+* useful someday;
+* common in other learning platforms.
 
-Do not allow deferred features to delay the V1 learning loop.
+V1 scope is owned by:
+
+`docs/UNLOCK_V1_SCOPE.md`
+
+Future sequencing is owned by:
+
+`docs/UNLOCK_ROADMAP.md`
+
+Do not duplicate those lists here.
+
+---
+
+## 5. Architecture-Ready Is Not Current Scope
+
+Concepts may be architecture-ready without being required now.
+
+Examples may include:
+
+* deeper institutional capabilities;
+* assignment systems;
+* advanced Knowledge Graph features;
+* autonomous coaching;
+* richer enterprise controls.
+
+Do not implement architecture-ready functionality unless current scope explicitly activates it.
+
+A Course must remain valid without requiring an Institution.
+
+---
+
+## 6. Learning Value Over Cosmetic Activity
+
+Product behavior should optimize for meaningful learning rather than artificial activity.
+
+Do not:
+
+* fill Today only to reach a visual quota;
+* manufacture learner evidence;
+* reward repeated low-quality interaction as mastery;
+* add Course fairness merely to make the plan look balanced;
+* create fake urgency when valid exam context is absent.
+
+The Learning Engine owns learning decisions.
+
+---
+
+## 7. Honest Learner Feedback
+
+Do not present stronger certainty than learner evidence supports.
+
+For concepts such as:
+
+* mastery;
+* readiness;
+* progress;
+* confidence;
+* recommendations;
+
+prefer honest uncertainty or insufficient-data states over false precision.
+
+Learner trust is a product requirement.
+
+---
+
+## 8. Hebrew / RTL Default
+
+Learner-facing product work should assume:
+
+* Hebrew-first copy;
+* RTL layout;
+* `he-IL` locale behavior;
+* mobile usability.
+
+English technical terms may appear where appropriate.
+
+Do not treat RTL/localization as later polish.
+
+---
+
+## 9. Product Decisions
+
+Do not invent product requirements when documentation is unclear.
+
+When product sources appear to conflict:
+
+1. inspect the relevant accepted ADR;
+2. inspect current canonical product/scope documentation;
+3. inspect repository reality;
+4. inspect `docs/OPEN_QUESTIONS.md`.
+
+If a genuine unresolved product decision remains, surface it instead of silently choosing a behavior.
+
+---
+
+## 10. Brain Terminology
+
+A Brain is a conceptual capability boundary.
+
+It does not automatically imply:
+
+* a service;
+* an agent;
+* a process;
+* a model;
+* a database;
+* a deployment unit.
+
+Do not turn conceptual product language into infrastructure without explicit architecture scope.
+
+---
+
+## 11. Deferred Features
+
+Deferred functionality must not delay the core V1 learning loop.
+
+At the same time, do not delete or contradict architecture-ready decisions merely because they are not implemented now.
+
+Preserve the distinction between:
+
+* current V1 scope;
+* architecture-ready capability;
+* deferred capability.
+
+---
+
+## 12. Core Principle
+
+> Strengthen the learner-state-driven learning loop.
+
+> Keep Today finite, useful, and honest.
+
+> Preserve Hebrew/RTL/mobile defaults.
+
+> Build only what current V1 requires.
+
+> Do not let product ambition become uncontrolled scope.

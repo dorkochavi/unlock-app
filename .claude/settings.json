@@ -1,21 +1,155 @@
 {
-    "permissions": {
-      "deny": [
-        "Bash(git push*)",
-        "Bash(git reset --hard*)",
-        "Bash(git clean -fd*)",
-        "Bash(git clean -df*)",
-        "Bash(git clean -xdf*)",
-        "Bash(git clean -fxd*)",
-        "Bash(git checkout -- *)",
-        "Bash(git restore *)",
-        "Bash(git branch -D *)",
-        "Bash(git tag -d *)",
-        "Bash(rm -rf *)",
-        "Bash(rmdir /s /q *)",
-        "Bash(del /f /s /q *)",
-        "Bash(supabase link*)",
-        "Bash(supabase db push*)"
-      ]
-    }
+  "permissions": {
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -fd*)",
+      "Bash(git clean -df*)",
+      "Bash(git clean -xdf*)",
+      "Bash(git clean -fxd*)",
+      "Bash(git checkout -- *)",
+      "Bash(git restore *)",
+      "Bash(git branch -D *)",
+      "Bash(git tag -d *)",
+      "Bash(rm -rf *)",
+      "Bash(rmdir /s /q *)",
+      "Bash(del /f /s /q *)",
+      "Bash(supabase link*)",
+      "Bash(supabase db push*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read|Grep|Glob|Edit|Write|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Read|Grep|Glob|Edit|Write|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/telemetry/collect.mjs"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/telemetry/statusline.mjs\""
   }
+}

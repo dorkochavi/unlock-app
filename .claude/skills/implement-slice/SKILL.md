@@ -1,492 +1,593 @@
 ---
+
 name: implement-slice
-description: Implement one focused UNLOCK Slice from the current CHATGPT_PLAN. Reconstructs the minimum Run context, validates repository state and BASE_HEAD assumptions, loads only relevant context, implements the smallest correct change, verifies it, uses risk-based reviewers when required, updates durable status/reporting, creates a focused commit when the Slice Definition of Done requires it, and never pushes.
----
+description: Implement one focused UNLOCK Slice from the active CHATGPT_PLAN using the canonical Development OS lifecycle. Orchestrates inspection, implementation, verification, review, checkpoint, and commit boundaries without duplicating the policies owned by testing, review, or checkpoint.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # /implement-slice
 
-Use this skill to implement one focused development Slice from the current UNLOCK Run.
+Use this skill to execute one focused Slice from the current UNLOCK Run.
 
-Do not assume prior chat context.
+This skill owns **workflow orchestration**.
 
-Do not infer work from historical Runs.
+It does not own:
+
+* product decisions;
+* testing policy;
+* reviewer selection policy;
+* checkpoint policy;
+* architecture rules;
+* Git safety policy;
+* Run history.
+
+Use the dedicated owner for each of those responsibilities.
 
 Do not push.
 
 ---
 
-## Step 1 — Load HOT Context
+## 1. Load Current Execution Context
 
 Read:
 
-- `CLAUDE.md`
-- `docs/CHATGPT_PLAN.md`
-- `docs/DEV_STATUS.md`
-
-Determine from the current Plan:
-
-- PLAN_VERSION
-- RUN_ID
-- BASE_HEAD
-- RUN_GOAL
-- current Slice
-- Slice MODE
-- Slice goal
-- relevant context
-- Must
-- Do not
-- Tests
-- Review
-- Exit criteria
-- expected Run stop
-
-Current execution comes only from `docs/CHATGPT_PLAN.md`.
-
-DEV_STATUS describes current reality.
-
-It does not define the next task.
-
----
-
-## Step 2 — Validate Repository State
-
-Run the minimum necessary commands such as:
-
-- `git status`
-- `git status -sb`
-- `git log --oneline -5`
+* `AGENTS.md`
+* `CLAUDE.md`
+* `docs/CHATGPT_PLAN.md`
+* `docs/DEV_STATUS.md`
 
 Determine:
 
-- current branch
-- current HEAD
-- ahead/behind state
-- staged/unstaged/untracked files
-- whether repository state matches one of the two valid Run-start states
-  defined in `CLAUDE.md` Section 1 (BASE_HEAD Semantics)
+* `PLAN_VERSION`
+* `RUN_ID`
+* `BASE_HEAD`
+* current Slice
+* Slice mode
+* Slice goal
+* required deliverables
+* explicit non-goals
+* relevant acceptance criteria
+* expected stop condition
 
-`HEAD == BASE_HEAD` with only `docs/CHATGPT_PLAN.md` uncommitted (State A) is
-the expected default. It is not unexplained dirty state.
+`CHATGPT_PLAN` owns current execution.
 
-If HEAD differs from BASE_HEAD because earlier Slices in the same Run created
-expected focused commits, that is normal.
+`DEV_STATUS` owns current durable state.
 
-If HEAD differs for an unexplained reason, or matches neither valid Run-start
-state:
-
-- investigate before editing
-- do not reset
-- do not overwrite work
-- report `PLAN_CONFLICT` if the Plan assumptions are no longer valid
-
-Do not modify anything yet.
+Do not infer the next task from historical Run Reports.
 
 ---
 
-## Step 3 — Identify the Current Slice
+## 2. Inspect Repository Reality
+
+Inspect at minimum:
+
+```text
+git status --short
+git status -sb
+git log --oneline --decorate -5
+```
+
+Determine:
+
+* current branch;
+* current HEAD;
+* ahead/behind state;
+* staged/unstaged/untracked work;
+* whether repository reality is compatible with the active Plan.
+
+Do not edit yet.
+
+If repository reality contradicts a material Plan assumption, investigate before continuing.
+
+Do not reset, clean, overwrite, or discard unknown work.
+
+---
+
+## 3. Identify the Executable Slice
 
 Execute only the earliest incomplete Slice whose prerequisites are satisfied.
 
 Do not:
 
-- skip ahead because a later Slice looks easier
-- repeat an already-completed Slice
-- infer new work from DEV_STATUS
-- automatically consume historical Run Reports
+* skip ahead for convenience;
+* repeat completed work;
+* infer new work from `DEV_STATUS`;
+* consume `docs/RUNS/**` as normal working context.
 
-If the Plan marks the current Slice:
+If the Slice is investigation-only, investigate only.
 
-`MODE: INVESTIGATE`
-
-perform investigation only.
-
-Do not change production code unless the Plan explicitly allows it.
-
-If the Slice is:
-
-`MODE: IMPLEMENT`
-
-continue with implementation.
+If the Slice permits implementation, continue.
 
 ---
 
-## Step 4 — Load Minimum Relevant Context
+## 4. Load Minimum Relevant Context
 
-Use `docs/CONTEXT_MAP.md` only as a GPS.
+Load only the sources required by the Slice.
 
-Load only what the current Slice requires.
+Potential sources include:
 
-Potential context includes:
+* relevant ADRs;
+* relevant Open Questions;
+* `docs/CONTEXT_MAP.md` as GPS;
+* relevant `.claude/rules/**`;
+* relevant domain/application/infrastructure code;
+* relevant tests;
+* relevant canonical docs.
 
-- specific accepted ADR
-- specific Open Question
-- relevant `.claude/rules/*`
-- relevant tests
-- relevant application/domain/infrastructure code
-- MASTER_SPEC only when product-level intent is actually needed
+Do not reconstruct the entire project history.
 
-Do NOT read/search/summarize:
+Search first.
 
-`docs/RUNS/**`
-
-unless the Plan names an exact Run or the user explicitly authorizes it.
-
-Do not reconstruct the whole project history.
+Read narrowly.
 
 ---
 
-## Step 5 — Confirm Slice Boundaries
+## 5. Confirm the Slice Boundary
 
-Before editing, establish:
+Before changing code, establish:
 
-- exact goal
-- acceptance criteria
-- likely code areas
-- invariants that must remain unchanged
-- explicit non-goals
-- whether DB/auth/security/Learning Engine boundaries are involved
-- required reviewers
-- required verification
+* exact problem being solved;
+* acceptance criteria;
+* affected layers;
+* invariants that must remain unchanged;
+* explicit non-goals;
+* trust boundaries involved;
+* likely verification needs;
+* whether review specialization may be needed.
 
-Use Guided Search:
-
-the Plan may point to likely areas/files, but verify repository reality rather than blindly assuming paths are still correct.
+Do not expand the Slice merely because nearby cleanup opportunities exist.
 
 ---
 
-## Step 6 — Handle Plan Conflict Correctly
+## 6. Handle Plan Conflict
 
-If repository reality contradicts the Plan:
+If implementation reality differs from the Plan:
 
-### Adapt Minimally
+### Compatible adjustment
 
-If the same accepted intent can be achieved safely without a new product/architecture decision:
+When the same accepted intent can be achieved safely through the repository's actual architecture:
 
-- adapt the implementation minimally
-- document the discovery
+* adapt minimally;
+* preserve scope;
+* continue.
 
-### PLAN_CONFLICT
+### Genuine conflict
 
-If the discrepancy requires:
+When continuing requires:
 
-- a new product decision
-- a new architecture decision
-- invalidation of later Slice assumptions
-- unsafe expansion of scope
+* a new product decision;
+* a new architecture decision;
+* a security-policy decision;
+* invalidating dependent Slice assumptions;
+* unsafe scope expansion;
 
 report:
 
-`PLAN_CONFLICT`
-
-Block the dependent work.
-
-Continue independent Plan work only when doing so is clearly safe.
+```text
+PLAN_CONFLICT
+- Plan assumption
+- Repository reality
+- Why the mismatch matters
+- Decision required
+- Affected Slice(s)
+```
 
 Do not invent the missing decision.
 
+Continue only independent safe work.
+
 ---
 
-## Step 7 — Implement the Smallest Correct Change
+## 7. Implement the Smallest Correct Change
 
-Make only the changes required to satisfy the Slice.
-
-Do not:
-
-- perform Boy Scout refactors
-- rename unrelated domain concepts
-- migrate unrelated enums
-- change calibration without authorization
-- rewrite repositories for convenience
-- add dependencies without concrete need
-- fix unrelated cosmetic issues
-- opportunistically redesign architecture
+Change only what is required to satisfy the Slice.
 
 Preserve:
 
-- domain/application boundaries
-- trusted identity boundaries
-- transaction semantics
-- immutable evidence
-- deterministic Learning Engine behavior
-- accepted product decisions
+* domain/application/infrastructure boundaries;
+* trusted identity boundaries;
+* transactional semantics;
+* immutable historical evidence;
+* deterministic Learning Engine behavior;
+* accepted ADRs;
+* current DailyPlan semantics.
 
-If an unrelated issue is discovered:
+Do not opportunistically:
 
-- blocking correctness/security issue → fix the minimum required
-- non-blocking issue → record it in the Run Report / handoff, not by expanding scope
+* refactor unrelated code;
+* rename unrelated concepts;
+* add speculative abstractions;
+* change calibration;
+* redesign persistence;
+* add dependencies without need;
+* fix unrelated cosmetic debt.
 
-Do not automatically add every discovery to OPEN_QUESTIONS.
+When an unrelated non-blocking issue is worth preserving, use:
 
----
+`docs/FOLLOW_UP_BACKLOG.md`
 
-## Step 8 — Add Meaningful Tests
-
-Add the narrowest tests that protect the new or corrected behavior.
-
-Prefer tests that would fail without the intended change.
-
-When relevant, test:
-
-- negative paths
-- ordering
-- ownership
-- authorization
-- trust boundaries
-- transaction rollback
-- persistence constraints
-- explicit time propagation
-- idempotency
-- error leakage
-- Manual Practice / Today separation
-- deterministic Learning Engine behavior
-
-Do not add tests merely to increase counts.
+Do not expand current execution automatically.
 
 ---
 
-## Step 9 — Targeted Verification
+## 8. Produce Targeted Evidence
 
-Run the narrowest relevant checks during implementation.
+After meaningful implementation progress, produce targeted verification.
+
+Operational selection is owned by:
+
+`.claude/rules/testing.md`
+
+Follow that rule for:
+
+* which checks to run;
+* evidence freshness;
+* invalidation;
+* escalation.
+
+Do not embed a separate verification matrix in this skill.
+
+The goal at this stage is:
+
+> prove the changed behavior with the narrowest sufficient evidence.
+
+---
+
+## 9. Run Risk Review
+
+After implementation and targeted verification, run the appropriate review workflow:
+
+`/review-commit`
+
+That skill owns:
+
+* reviewer selection;
+* review packet;
+* specialist invocation;
+* findings format;
+* review verdict.
+
+Do not choose or invoke reviewers independently here except through that workflow.
+
+---
+
+## 10. Fix Material Findings
+
+Address:
+
+* BLOCKER findings;
+* required CORRECTION findings.
+
+Do not automatically implement non-blocking suggestions.
+
+If a review correction changes code:
+
+* identify which prior evidence became stale;
+* refresh only the affected evidence.
+
+Use `.claude/rules/testing.md` for that decision.
+
+---
+
+## 11. Final Relevant Verification
+
+After material review corrections are complete, ensure all materially affected risks have fresh evidence.
+
+This may reuse earlier evidence that remains valid.
+
+Do not rerun:
+
+* the full unit suite;
+* schema suite;
+* build;
+* E2E;
+
+merely because review finished.
+
+Refresh only evidence invalidated by relevant later changes or required by unresolved integration risk.
+
+---
+
+## 12. Run Evidence Checkpoint
+
+Invoke:
+
+`/checkpoint`
+
+Checkpoint owns evidence/state validation.
+
+It should evaluate whether:
+
+* relevant evidence exists;
+* it is fresh;
+* findings are resolved;
+* blockers are visible;
+* repository state is understood.
+
+Checkpoint is not another implementation phase and not another full verification cycle.
+
+If checkpoint reports not ready:
+
+* fix only the identified current-Slice issue;
+* refresh invalidated evidence;
+* rerun checkpoint as needed.
+
+---
+
+## 13. Update Durable State
+
+After the Slice is genuinely complete, update:
+
+`docs/DEV_STATUS.md`
+
+only if durable current truth changed.
 
 Examples:
 
-- focused Vitest file/directory
-- focused PGlite test
-- typecheck
-- lint
+* a new capability now exists;
+* a migration state changed;
+* a durable gap closed;
+* a new current limitation exists;
+* a significant verified baseline changed.
 
-Fix only:
+Do not add execution narrative.
 
-- issues caused by the Slice
-- issues that block Slice correctness/safety
-
-Do not silently fix unrelated repository problems.
+`DEV_STATUS` is a snapshot, not a diary.
 
 ---
 
-## Step 10 — Risk-Based Review
+## 14. Update Run History When Required
 
-Use the Plan's `Review:` field and actual changed paths.
-
-Reviewer selection:
-
-- general application / architecture / major Slice:
-  - `unlock-reviewer`
-
-- migrations / SQL / repositories / transactions / UnitOfWork:
-  - `unlock-db-reviewer`
-
-- auth / authorization / API trust / secrets / sensitive ordering:
-  - `unlock-security-reviewer`
-
-Do not invoke every reviewer automatically.
-
-Reviewer findings must be addressed before completion when they are BLOCKER or required CORRECTION.
-
-After changes made in response to review:
-
-- rerun affected targeted tests
-- rerun broader verification when required
-
----
-
-## Step 11 — Full Checkpoint
-
-Invoke the `checkpoint` skill in the same session context.
-
-Do not run it as an isolated subagent.
-
-Checkpoint remains read-only.
-
-If checkpoint reports:
-
-`NOT READY`
-
-do not commit.
-
-Fix only current-Slice blockers, then re-check as needed.
-
----
-
-## Step 12 — Update Durable Current State
-
-After the Slice is actually complete:
-
-update `docs/DEV_STATUS.md` only when durable current reality changed.
-
-Examples:
-
-- new capability became implemented
-- migration state changed
-- test baseline changed
-- known gap was closed
-- new durable limitation appeared
-
-DEV_STATUS must remain a concise current snapshot.
-
-Do not add Slice history or a mini Run Report there.
-
----
-
-## Step 13 — Update Current Run Report
-
-Maintain the current Run Report under:
+If the active Run uses a Run Report, update only the current Run Report under:
 
 `docs/RUNS/<RUN_ID>.md`
 
-Only the current Run Report may be written during the Run.
+Record concise historical evidence such as:
 
-Do not read historical Run Reports.
+* Slice completion;
+* commit;
+* material verification;
+* review result;
+* blockers;
+* manual actions.
 
-Record concise information such as:
+Do not read historical Run Reports unless explicitly needed.
 
-- Slice status
-- commit
-- tests
-- reviewer
-- discoveries
-- blockers
-- manual actions
-
-The Run Report should explain execution history without duplicating Git diffs.
+Do not duplicate Git diffs.
 
 ---
 
-## Step 14 — Commit the Completed Slice
+## 15. Commit the Slice
 
-UNLOCK's default Slice Definition of Done includes a focused commit.
-
-After:
-
-- implementation complete
-- required tests pass
-- checkpoint passes
-- required reviewer findings are addressed
-- DEV_STATUS is current where needed
-- current Run Report is updated
-
-create one focused commit for the Slice.
+Create a focused local commit when the active Plan/Definition of Done requires it.
 
 Before committing:
 
-- stage only intended files
-- inspect staged diff
-- ensure no secrets / `.env` / scratch / unrelated artifacts are staged
-- use a concise imperative commit message unless the Plan specifies one
+* ensure implementation is complete;
+* ensure required review is complete;
+* ensure material findings are resolved;
+* ensure final relevant evidence is fresh;
+* ensure checkpoint is ready;
+* inspect the intended diff;
+* stage only intended files;
+* verify no secrets, `.env`, scratch, or unrelated files are staged.
+
+Use a concise commit message.
 
 Do not push.
 
-If the Plan explicitly says a Slice must remain uncommitted, obey the Plan.
+If the Plan explicitly requires uncommitted handoff, follow the Plan.
 
 ---
 
-## Step 15 — Continue or Stop
+## 16. Continue or Stop
 
-After the focused commit:
+After Slice completion:
 
-- mark the Slice complete in the current Run Report
-- inspect the next Slice in CHATGPT_PLAN
+* inspect the active Plan;
+* determine whether another Slice may begin.
 
-Continue autonomously when:
+Continue only when:
 
-- the next Slice is independent or its prerequisites are now satisfied
-- no user/manual action is required
-- no PLAN_CONFLICT exists
-- the Run has not reached EXPECTED_STOP
+* prerequisites are satisfied;
+* no manual gate exists;
+* no `PLAN_CONFLICT` exists;
+* the Plan has not reached its stop condition.
 
 Stop when:
 
-- EXPECTED_STOP is reached
-- a manual remote action is required
-- a product decision is required
-- a blocking Plan conflict exists
-- repository safety requires user involvement
+* expected stop is reached;
+* a manual remote action is required;
+* a product/architecture/security decision is required;
+* repository safety requires human involvement;
+* the Run is complete.
 
-Do not push at Run end.
+Do not start the next Product Run automatically.
 
 ---
 
-## Step 16 — Final Run Handoff
+## 17. Run-End Behavior
 
-At the end of the Run, report:
+When the final Slice in the active Run is complete:
 
-### Run
+1. perform additional integration acceptance **only if relevant Run-level behavior still lacks evidence**;
+2. update `DEV_STATUS`;
+3. generate the deterministic Run telemetry summary when telemetry is available;
+4. read only the compact telemetry summary, not the raw telemetry;
+5. update/create the current Run Report;
+6. inspect final Git state;
+7. stop at the Run boundary.
 
-- RUN_ID
-- PLAN_VERSION
-- BASE_HEAD
-- END_HEAD
-- status
+Run-end acceptance is not a replay of every Slice verification.
 
-### Completed Slices
+Do not rerun checks merely because the Run is ending.
 
-For each:
+Use existing fresh evidence unless a relevant later change invalidated what it proved.
 
-- status
-- commit
-- essential verification
-- reviewer used if any
+---
 
-### Blocked / Deferred
+## 18. Telemetry During Slice Execution
 
-State anything not completed and why.
+Run telemetry is passive infrastructure.
 
-### Discoveries
+Canonical telemetry policy:
 
-Only material findings.
+`docs/RUN_TELEMETRY.md`
 
-### Decisions Needed
+Runtime collection may be performed automatically through:
 
-List unresolved decisions requiring user/ChatGPT input.
+* `.claude/telemetry/collect.mjs`;
+* `.claude/telemetry/statusline.mjs`;
+* `.claude/settings.json`.
 
-### Verification
+During a Slice:
 
-State exact verification levels:
+* allow configured telemetry hooks/status-line collection to operate normally;
+* do not manually update telemetry after individual reads, searches, tool calls, or edits;
+* do not inspect raw telemetry unless diagnosing the telemetry system itself;
+* do not add extra tool calls merely to improve telemetry completeness;
+* do not change implementation behavior to optimize telemetry metrics;
+* do not treat repeated reads, subagent usage, cache behavior, or context size as quality scores;
+* continue normal Slice execution if telemetry is unavailable.
 
-- unit
-- schema/Postgres
-- typecheck
-- lint
-- build if run
-- hosted/manual verification if actually performed
+Prefer normal context-efficient behavior:
 
-### Pending Manual Actions
+* targeted reads over broad loading;
+* search before opening large unrelated documents;
+* scoped rules instead of loading every rule;
+* subagents for high-volume disposable exploration when appropriate;
+* fresh evidence over ritual reruns.
+
+Telemetry collection must remain observational.
+
+It does not determine:
+
+* implementation scope;
+* verification requirements;
+* reviewer selection;
+* architecture;
+* product correctness.
+
+---
+
+## 19. Telemetry at Run Closeout
+
+Telemetry summarization belongs to Run closeout, not normal Slice execution.
+
+When telemetry is available:
+
+```text
+node .claude/telemetry/summarize.mjs
+→ read scratch/telemetry/<RUN_ID>/summary.md
+→ add useful aggregate evidence to the Run Report
+```
+
+Do not routinely read:
+
+* raw `.jsonl` telemetry;
+* complete session snapshots;
+* telemetry implementation files.
+
+Do not invent missing:
+
+* token values;
+* duration;
+* cost;
+* cache data;
+* file reads;
+* instruction loads;
+* context usage.
+
+Qualitative observations such as:
+
+* Context Misses;
+* unnecessary rechecks;
+* excessive COLD-context loading;
+* unexpectedly broad instruction loading;
+
+should be recorded only when materially observed.
+
+If telemetry is unavailable or incomplete:
+
+1. continue the normal Run closeout;
+2. state the measurement limitation honestly;
+3. do not reconstruct missing metrics from memory or estimates.
+
+Telemetry failure by itself does not invalidate otherwise sufficient implementation evidence unless telemetry itself is the subject of the active Slice.
+
+---
+
+## 20. Final Handoff
+
+At a Run or manual stop boundary, report only useful current information:
+
+### Run state
+
+* Run ID;
+* Plan version;
+* baseline;
+* current/end HEAD;
+* completion status.
+
+### Completed work
+
+* completed Slices;
+* focused commits;
+* material capabilities added.
+
+### Evidence
+
+State exact evidence levels actually produced, for example:
+
+* focused unit/application tests;
+* schema/PGlite;
+* route/auth tests;
+* Playwright;
+* typecheck;
+* lint;
+* build;
+* hosted/manual verification if actually performed.
+
+### Review
+
+* reviewer types used;
+* material findings and resolution state.
+
+### Pending manual actions
 
 Examples:
 
-- remote migrations
-- hosted QA
-- push
+* hosted migration application;
+* hosted QA;
+* push.
 
-### Git State
+### Git state
 
-Report:
+* branch;
+* HEAD;
+* ahead/behind;
+* worktree state.
 
-- branch
-- HEAD
-- ahead/behind
-- worktree state
+Do not overstate verification.
 
-### Push
-
-Always state:
-
-`Nothing pushed.`
-
-unless repository policy has explicitly changed and the user directly authorized a push.
+Do not claim remote actions occurred when they did not.
 
 ---
 
-## Final Rules
+## 19. Core Rules
 
-- CHATGPT_PLAN defines current work.
-- DEV_STATUS defines current reality.
-- One Slice at a time.
-- Commit completed Slices as focused commits.
-- Do not push.
-- Do not invent product decisions.
-- Do not expand scope unnecessarily.
-- Do not read historical Runs.
-- Do not use destructive Git commands.
-- Do not delete unknown files.
-- Do not overstate verification.
+* `CHATGPT_PLAN` defines current work.
+* `DEV_STATUS` defines current durable state.
+* One Slice at a time.
+* Load only relevant context.
+* Implement the smallest correct change.
+* Testing policy belongs to `.claude/rules/testing.md`.
+* Reviewer selection belongs to `/review-commit`.
+* Evidence validation belongs to `/checkpoint`.
+* Review happens before final relevant verification.
+* Reuse fresh evidence.
+* Commit focused completed work when required.
+* Never push.
+* Never invent product decisions.
+* Never expand scope casually.
+* Never use destructive Git commands without explicit approval.
+* Stop at the active Plan boundary.

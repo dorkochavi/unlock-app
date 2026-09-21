@@ -18,22 +18,22 @@ UNLOCK is built as a **modular monolith**.
 
 This means:
 
-- one primary application;
-- one deployment unit;
-- clear internal domain boundaries;
-- shared infrastructure where appropriate;
-- no premature microservices.
+* one primary application;
+* one deployment unit;
+* clear internal domain boundaries;
+* shared infrastructure where appropriate;
+* no premature microservices.
 
 Modules should be separated by responsibility in code, not by independent infrastructure unless a future requirement clearly justifies it.
 
 A modular monolith allows UNLOCK to remain:
 
-- simple to develop;
-- simple to test;
-- simple to deploy;
-- easy to refactor;
-- low-cost;
-- structurally ready to evolve.
+* simple to develop;
+* simple to test;
+* simple to deploy;
+* easy to refactor;
+* low-cost;
+* structurally ready to evolve.
 
 ---
 
@@ -41,19 +41,23 @@ A modular monolith allows UNLOCK to remain:
 
 Current stack:
 
-- Next.js
-- TypeScript
-- App Router
-- Tailwind CSS
-- PostgreSQL
-- Supabase direction for database/auth when introduced
-- Vercel
-- GitHub
-- Cursor
+* Next.js
+* TypeScript
+* App Router
+* Tailwind CSS
+* PostgreSQL
+* Supabase Auth
+* Supabase-hosted PostgreSQL
+* Vercel
+* GitHub
 
 Testing foundation:
 
-- Vitest
+* Vitest
+* PGlite-backed schema/integration tests
+* Playwright for browser-level E2E coverage
+
+Development tools such as Claude Code and Cursor support implementation, but they are not part of the runtime architecture.
 
 Future tools should only be added when a real requirement justifies them.
 
@@ -63,28 +67,65 @@ Do not add infrastructure because it may be useful later.
 
 ## 3. High-Level System Shape
 
-Conceptually, UNLOCK is divided into the following layers:
+UNLOCK is currently structured as a layered modular monolith.
+
+Primary application layers:
 
 ```text
-UI / Routes
-↓
-Application / Feature Logic
-↓
+src/app/
+    ↓
+src/application/
+    ↓
+src/domain/
+
+src/infrastructure/
+    implements application/domain-facing persistence and provider boundaries
+```
+
+Conceptually:
+
+```text
+Presentation / HTTP Boundary
+        ↓
+Application Use Cases
+        ↓
 Domain Logic
-↓
-Data Access / Services
-↓
+        ↑
+Infrastructure Adapters
+        ↓
 Database / External Providers
 ```
 
+Primary repository locations:
+
+```text
+src/app/              Next.js UI, routes, API composition
+src/application/      use cases and application ports
+src/domain/           business and learning rules
+src/infrastructure/   PostgreSQL, Supabase, repositories, Units of Work
+```
+
+Additional supporting folders may include:
+
+```text
+src/components/
+src/features/
+src/lib/
+src/messages/
+src/services/
+src/types/
+```
+
+These supporting folders do not replace the primary dependency boundaries above.
+
 Cross-cutting concerns include:
 
-- localization;
-- security;
-- analytics;
-- testing;
-- AI provider abstraction;
-- configuration.
+* localization;
+* security;
+* analytics;
+* testing;
+* AI provider abstraction;
+* configuration.
 
 The boundaries are conceptual responsibilities.
 
@@ -94,92 +135,113 @@ They do not require separate processes or deployments.
 
 ## 4. Presentation Layer
 
-Primary location:
+Primary locations:
 
 ```text
 src/app/
 src/components/
+src/features/   where presentation-oriented feature code actually exists
 ```
 
 Responsibilities:
 
-- render UI;
-- handle routing;
-- collect user input;
-- display state;
-- call application/domain operations.
+* render UI;
+* handle routing;
+* collect user input;
+* map HTTP/UI inputs into application calls;
+* display application/domain results.
 
 The presentation layer should not contain core learning decisions.
 
-React components should not calculate:
+React components and route handlers should not calculate:
 
-- mastery;
-- review dates;
-- Next Best Action;
-- Today ranking;
-- exam urgency formulas.
+* mastery;
+* review dates;
+* Next Best Action;
+* DailyPlan ranking;
+* exam urgency formulas.
 
-UI should consume already-calculated domain results.
+Presentation code should consume behavior provided by the application/domain layers rather than reimplementing it.
 
 ---
 
-## 5. Feature Layer
+## 5. Application Layer
 
 Primary location:
 
 ```text
-src/features/
+src/application/
 ```
 
-Feature modules organize product behavior around meaningful product capabilities.
+The application layer coordinates use cases and defines the ports required to execute them.
 
-Possible feature areas include:
+Current areas include:
 
 ```text
 course/
-materials/
-questions/
-today/
-quiz/
-progress/
-exams/
+dailyPlan/
+learning/
+question/
+topic/
+user/
 ```
 
-A feature may contain:
+Responsibilities may include:
 
-- UI components specific to that feature;
-- application logic;
-- feature-specific types;
-- feature-specific validation;
-- feature-specific tests.
+* orchestrating domain operations;
+* enforcing use-case sequencing;
+* defining repository/Unit-of-Work interfaces;
+* coordinating transactional application behavior;
+* translating trusted inputs into domain operations;
+* returning application-level results to routes/UI.
 
-Feature folders should not become independent mini-applications.
+The application layer should not depend on Next.js presentation details.
 
-Shared domain behavior belongs in the appropriate domain/service layer rather than being duplicated.
+It should also avoid embedding PostgreSQL-specific implementation details that belong in infrastructure.
+
+Feature-oriented folders elsewhere in the repository may organize UI or supporting code, but they do not replace the application layer as the home of use-case orchestration.
 
 ---
 
 ## 6. Domain Logic
 
-Core business and learning behavior must remain independent from the presentation layer.
+Primary location:
 
-Examples:
+```text
+src/domain/
+```
 
-- learner state calculations;
-- review scheduling;
-- misconception tracking;
-- Next Best Action ranking;
-- Today planning;
-- exam urgency calculations;
-- verification-state transitions.
+Core business and learning behavior must remain independent from the presentation and infrastructure layers.
+
+Current domain areas include:
+
+```text
+course/
+dailyPlan/
+learning/
+question/
+topic/
+user/
+```
+
+Examples of domain behavior:
+
+* learner state calculations;
+* review scheduling;
+* misconception tracking;
+* Next Best Action ranking;
+* DailyPlan planning;
+* exam urgency calculations;
+* question/content invariants.
 
 Domain logic should be:
 
-- deterministic where specified;
-- testable without rendering React;
-- explicit about inputs and outputs;
-- reproducible;
-- versionable when behavior affects learning outcomes.
+* deterministic where specified;
+* testable without rendering React;
+* independent from Next.js, Supabase SDK, and PostgreSQL implementation details;
+* explicit about inputs and outputs;
+* reproducible;
+* versionable when behavior affects learning outcomes.
 
 Where possible, domain functions should be pure.
 
@@ -191,29 +253,29 @@ UNLOCK uses conceptual intelligence boundaries called **Brains**.
 
 Examples:
 
-- Learner State Brain
-- Next Best Action Brain
-- Content Intelligence
-- System Auditor
-- Intervention Effectiveness
+* Learner State Brain
+* Next Best Action Brain
+* Content Intelligence
+* System Auditor
+* Intervention Effectiveness
 
 A Brain represents responsibility.
 
 A Brain does NOT automatically imply:
 
-- microservice;
-- autonomous agent;
-- LLM;
-- separate database;
-- separate process;
-- separate deployment.
+* microservice;
+* autonomous agent;
+* LLM;
+* separate database;
+* separate process;
+* separate deployment.
 
 For V1:
 
-- Learner State Brain is active;
-- Next Best Action Brain is active;
-- both are deterministic;
-- advanced Brains remain inactive or architecture-ready unless specifically required.
+* Learner State Brain is active;
+* Next Best Action Brain is active;
+* both are deterministic;
+* advanced Brains remain inactive or architecture-ready unless specifically required.
 
 ---
 
@@ -223,19 +285,19 @@ The Learning Engine is responsible for core adaptive learning behavior.
 
 Its responsibilities include:
 
-- updating learner signals;
-- determining review needs;
-- interpreting learning evidence;
-- supporting Next Best Action ranking;
-- contributing to Today planning.
+* updating learner signals;
+* determining review needs;
+* interpreting learning evidence;
+* supporting Next Best Action ranking;
+* contributing to Today planning.
 
 Known learner signals include:
 
-- `mastery_level`
-- `next_review_date`
-- `misconception_hits`
-- `confidence_level`
-- `average_time_seconds`
+* `mastery_level`
+* `next_review_date`
+* `misconception_hits`
+* `confidence_level`
+* `average_time_seconds`
 
 The exact V1 formulas should be based on validated prototype behavior where applicable.
 
@@ -245,7 +307,7 @@ Do not invent new learning formulas without explicit documentation and tests.
 
 ## 9. Today Planning
 
-Today is generated before Quiz execution.
+Today is represented by a persisted `DailyPlan` for the learner's current learner-local calendar day.
 
 Expected conceptual flow:
 
@@ -256,20 +318,24 @@ Academic Context
 +
 Eligible Learning Content
 ↓
-Next Best Action / Today Planning
+Next Best Action / DailyPlan Planning
 ↓
-Today Session
+DailyPlan
 ↓
-Today Session Items
+DailyPlanItems
 ↓
 Quiz
 ```
 
 Today planning determines what should be studied.
 
-Quiz executes the prepared plan.
+Quiz executes the prepared DailyPlan.
 
-Quiz must not independently select learning content in Today mode.
+Quiz must not independently select replacement learning content in Today mode.
+
+The accepted Global Today semantics are defined by ADR-016.
+
+New Material fallback behavior is defined by ADR-017.
 
 ---
 
@@ -279,11 +345,11 @@ Quiz is an execution layer.
 
 Quiz responsibilities:
 
-- display the current Question;
-- collect a learner response;
-- collect relevant response metadata;
-- record an Attempt;
-- move through the prepared session.
+* display the current Question;
+* collect a learner response;
+* collect relevant response metadata;
+* record an Attempt;
+* move through the prepared DailyPlan.
 
 Quiz must not own adaptive prioritization.
 
@@ -299,29 +365,33 @@ The database model should distinguish between:
 
 Examples:
 
-- Course
-- Material
-- Question
+* Course
+* Topic
+* Material
+* Question
+* QuestionVersion
 
 ### Historical evidence
 
 Example:
 
-- Attempt
+* Attempt
 
 ### Derived learner state
 
 Examples:
 
-- UserQuestionProgress
-- Learner State
+* UserQuestionProgress
+* Learner State
 
-### Session state
+### Persisted daily-plan state
 
 Examples:
 
-- Today Session
-- Today Session Item
+* DailyPlan
+* DailyPlanItem
+
+Legacy `TodaySession` / `TodaySessionItem` structures may still exist in historical code, tests, or migrations, but they are not the primary current product/domain model for Today.
 
 Do not collapse these categories into the same records merely for convenience.
 
@@ -335,10 +405,10 @@ Attempts should be immutable after creation except for narrowly defined technica
 
 Do not update old Attempts to reflect:
 
-- current mastery;
-- new algorithms;
-- revised progress;
-- new review dates.
+* current mastery;
+* new algorithms;
+* revised progress;
+* new review dates.
 
 Derived state may be recalculated.
 
@@ -352,37 +422,46 @@ Derived state represents the system's current interpretation of historical evide
 
 Examples:
 
-- UserQuestionProgress;
-- Learner State;
-- Next Best Action results.
+* UserQuestionProgress;
+* Learner State;
+* Next Best Action results.
 
 Derived state may change as:
 
-- new Attempts arrive;
-- algorithms evolve;
-- academic context changes.
+* new Attempts arrive;
+* algorithms evolve;
+* academic context changes.
 
 Where learning behavior changes materially, engine versioning should allow results to be understood and reproduced.
 
 ---
 
-## 14. Today Session Persistence
+## 14. DailyPlan Persistence
 
-Today Session is persistent application state.
+`DailyPlan` is persisted application/domain state for one learner and one learner-local calendar day.
 
-Once generated, a session should not be recreated unnecessarily.
+The system must be able to:
 
-The system should be able to:
+* create the plan when needed;
+* retrieve the same valid same-day plan;
+* resume unresolved work;
+* update DailyPlanItem resolution state;
+* detect completion.
 
-- create a session;
-- retrieve it;
-- resume it;
-- update item/session progress;
-- mark it completed.
+Accepted V1 semantics include:
 
-Session generation and session execution must remain separate operations.
+* one DailyPlan per learner per learner-local day;
+* Global Today and course-context Today use the same underlying DailyPlan;
+* the plan is frozen by default after generation;
+* same-day reload does not silently regenerate the plan;
+* unresolved items do not automatically carry into the next learner-local day;
+* the next learner-local day recalculates from current learner state.
 
-Exact persistence rules belong in the Today feature contract.
+Plan generation and plan execution remain separate responsibilities.
+
+Detailed product semantics are owned by ADR-016 and ADR-017.
+
+Legacy `TodaySession` persistence may remain where still technically required, but new architecture should not treat it as the primary Today model.
 
 ---
 
@@ -414,9 +493,9 @@ Do not introduce mandatory multi-tenant institutional complexity into V1.
 
 Academic urgency may depend on an effective exam date.
 
-Status: OPEN — see `docs/OPEN_QUESTIONS.md` #2. The exact V1 hierarchy is
-not yet decided. Illustrative candidate resolution order, not a settled
-rule:
+Status: OPEN — see `docs/OPEN_QUESTIONS.md` #2. The exact V1 hierarchy is not yet decided.
+
+Illustrative candidate resolution order, not a settled rule:
 
 ```text
 personal_exam_date
@@ -454,11 +533,11 @@ External AI provider
 
 This allows:
 
-- provider replacement;
-- testing with mocks;
-- cost tracking;
-- feature flags;
-- graceful failure.
+* provider replacement;
+* testing with mocks;
+* cost tracking;
+* feature flags;
+* graceful failure.
 
 Do not call an LLM for deterministic learning decisions.
 
@@ -498,11 +577,11 @@ External providers should be wrapped behind project-owned interfaces when their 
 
 Examples may eventually include:
 
-- AI;
-- authentication;
-- storage;
-- analytics;
-- email/notifications.
+* AI;
+* authentication;
+* storage;
+* analytics;
+* email/notifications.
 
 Do not create abstract provider systems before the provider is actually introduced.
 
@@ -512,29 +591,42 @@ One real implementation does not automatically justify a complex abstraction hie
 
 ## 20. Database Access
 
-Database access should not be scattered randomly throughout UI components.
+Primary persistence implementation lives under:
 
-Prefer clear server/application boundaries for:
+```text
+src/infrastructure/
+src/infrastructure/postgres/
+src/infrastructure/supabase/
+```
 
-- reads;
-- writes;
-- authorization-sensitive operations;
-- domain state updates.
+Database access should not be scattered randomly throughout UI components or route handlers.
 
-When Supabase is introduced:
+Prefer clear application/infrastructure boundaries for:
 
-- service-role credentials remain server-side;
-- RLS is required;
-- policies are tested;
-- users only access authorized data.
+* reads;
+* writes;
+* authorization-sensitive operations;
+* transactional domain state updates.
 
-The exact repository/data-access pattern should remain simple unless complexity requires more abstraction.
+Current infrastructure uses PostgreSQL with Supabase for hosted database/auth capabilities.
+
+Current security baseline:
+
+* trusted identity is resolved server-side;
+* authorization is enforced at trusted server/application/database boundaries;
+* service-role and database credentials remain server-only;
+* existing accepted RLS behavior must be preserved where present;
+* do not introduce or broaden RLS policies automatically unless an explicit security/database task or accepted decision requires it.
+
+The repository/application boundary should remain simple and explicit.
+
+Do not bypass application/domain rules by issuing ad hoc persistence mutations from presentation code.
 
 ---
 
 ## 21. Transactions and Learning Updates
 
-Operations that logically belong together should preserve data consistency.
+Operations that must remain atomic should preserve data consistency through the existing Unit-of-Work / transaction boundaries.
 
 Example:
 
@@ -545,12 +637,16 @@ Attempt is recorded
 ↓
 Relevant learner progress is updated
 ↓
-Session item/session state is updated
+DailyPlanItem / DailyPlan state is updated when applicable
 ```
 
-The system should avoid states where one step succeeds and another silently fails in a way that corrupts learning data.
+The system should avoid states where one required step succeeds and another silently fails in a way that corrupts learning data.
 
-The exact transaction strategy will be defined with the database implementation.
+Current PostgreSQL infrastructure contains scoped Unit-of-Work implementations for different transactional boundaries.
+
+Do not replace those scoped contracts with one broad global transaction abstraction merely to reduce duplication.
+
+Shared transaction mechanics may be considered later only when they preserve the existing bounded responsibilities.
 
 ---
 
@@ -560,11 +656,11 @@ Inputs crossing important boundaries should be validated.
 
 Examples:
 
-- forms;
-- API/server inputs;
-- AI structured outputs;
-- external-provider responses;
-- uploaded/imported content.
+* forms;
+* API/server inputs;
+* AI structured outputs;
+* external-provider responses;
+* uploaded/imported content.
 
 Validation should happen at boundaries rather than relying on TypeScript types alone.
 
@@ -590,9 +686,9 @@ src/lib/
 
 Default:
 
-- language: Hebrew;
-- direction: RTL;
-- locale: `he-IL`.
+* language: Hebrew;
+* direction: RTL;
+* locale: `he-IL`.
 
 Technical identifiers remain English.
 
@@ -606,12 +702,12 @@ Failures should be explicit.
 
 Do not silently hide failures involving:
 
-- learning-state updates;
-- Attempt creation;
-- Today persistence;
-- authorization;
-- data integrity;
-- AI verification.
+* learning-state updates;
+* Attempt creation;
+* DailyPlan persistence;
+* authorization;
+* data integrity;
+* AI verification.
 
 User-facing error messages should remain understandable and should not expose sensitive implementation details.
 
@@ -621,29 +717,37 @@ Logging/observability infrastructure should be introduced when there is a concre
 
 ## 25. Testing Architecture
 
-Testing should mirror system risk.
+Testing should mirror system risk and use the narrowest layer that proves the required behavior.
+
+The canonical testing strategy is defined in `docs/TESTING.md`.
+
+Operational verification selection, freshness, reuse, and escalation are owned by `.claude/rules/testing.md` for Claude Code.
 
 ### Domain tests
 
-Highest priority.
+Highest priority for deterministic learning and business rules.
 
 Use for:
 
-- Learning Engine;
-- Next Best Action;
-- exam precedence;
-- verification transitions;
-- deterministic calculations.
+* Learning Engine;
+* Next Best Action;
+* DailyPlan planning;
+* accepted exam-date behavior once decided;
+* deterministic calculations.
 
-### Integration tests
+### Application / integration tests
 
-Use when multiple system boundaries must work together.
+Use when multiple boundaries must work together.
 
 Examples:
 
-- Attempt → progress update;
-- Today session persistence;
-- database authorization.
+* Attempt → progress update;
+* DailyPlan persistence;
+* transactional use cases;
+* route/application wiring;
+* database authorization behavior where applicable.
+
+PGlite-backed schema/integration tests provide valuable local evidence but do not prove every real PostgreSQL, pooling, hosted Supabase, or concurrency behavior.
 
 ### UI tests
 
@@ -653,25 +757,31 @@ Avoid testing framework implementation details.
 
 ### End-to-end tests
 
-Introduce when core flows are stable enough to justify browser automation.
+Playwright is part of the current repository testing stack.
 
-Likely future examples:
+Browser-level E2E should remain focused on critical product flows rather than attempting exhaustive coverage.
 
-- onboarding → Today;
-- Today → Quiz → completion;
-- resume Today session.
+Current or expected examples include:
 
-Do not introduce heavy E2E tooling before these flows exist.
+* authentication/join behavior;
+* learner golden path;
+* Today / DailyPlan execution;
+* important instructor flows as they become pilot-critical.
+
+Do not rerun expensive test layers merely because a lifecycle boundary was reached if valid relevant evidence already exists.
 
 ---
 
-## 26. Project Folder Direction
+## 26. Project Folder Structure
 
-Expected high-level structure:
+Current high-level structure:
 
 ```text
 src/
 ├── app/
+├── application/
+├── domain/
+├── infrastructure/
 ├── components/
 ├── features/
 ├── lib/
@@ -680,11 +790,24 @@ src/
 └── types/
 ```
 
-The exact structure may evolve as real code appears.
+The primary architectural dependency boundaries are:
+
+```text
+app / presentation
+        ↓
+application
+        ↓
+domain
+
+infrastructure
+        → implements persistence/provider boundaries used by application/domain
+```
+
+Existing folders should be evolved deliberately rather than replaced with a parallel speculative structure.
 
 Do not create deep folder hierarchies before they are needed.
 
-Prefer discoverability over theoretical purity.
+Prefer discoverability and current repository conventions over theoretical purity.
 
 ---
 
@@ -714,9 +837,9 @@ Domain-specific logic should remain associated with its domain.
 
 Possible future examples:
 
-- AI provider service;
-- storage service;
-- analytics service.
+* AI provider service;
+* storage service;
+* analytics service.
 
 Do not create empty service abstractions for future ideas.
 
@@ -728,17 +851,19 @@ Domain types should be explicit.
 
 Avoid representing meaningful domain concepts as anonymous object shapes repeated across the codebase.
 
-As implementation begins, concepts such as:
+Current domain concepts such as:
 
-- Attempt;
-- LearnerState;
-- QuestionProgress;
-- TodayPlan;
-- NextBestAction;
+* Attempt;
+* UserQuestionProgress;
+* DailyPlan;
+* DailyPlanItem;
+* Question;
+* QuestionVersion;
+* Next Best Action;
 
-should have clear TypeScript contracts.
+should have clear TypeScript contracts in the appropriate existing layer.
 
-Do not define large speculative models before the data/domain design is approved.
+Do not define large speculative models before the relevant product/data decision is accepted.
 
 ---
 
@@ -752,13 +877,13 @@ Never assume that hiding a button prevents unauthorized actions.
 
 Security includes:
 
-- authentication;
-- authorization;
-- data ownership;
-- RLS where applicable;
-- secret management;
-- validation;
-- safe external-provider access.
+* authentication;
+* authorization;
+* data ownership;
+* accepted data-access controls, including RLS where explicitly applicable;
+* secret management;
+* validation;
+* safe external-provider access.
 
 ---
 
@@ -768,10 +893,10 @@ Learner data belongs to its authorized context.
 
 Do not allow unrelated users to access:
 
-- Attempts;
-- progress;
-- uploaded private Materials;
-- personal academic data.
+* Attempts;
+* progress;
+* uploaded private Materials;
+* personal academic data.
 
 Institutional sharing rules will be defined when institutional capabilities are introduced.
 
@@ -801,10 +926,10 @@ Recurring infrastructure cost should have a concrete reason.
 
 Cost efficiency must not compromise:
 
-- data integrity;
-- security;
-- correctness;
-- essential reliability.
+* data integrity;
+* security;
+* correctness;
+* essential reliability.
 
 ---
 
@@ -812,14 +937,14 @@ Cost efficiency must not compromise:
 
 Do not introduce without demonstrated need:
 
-- microservices;
-- message brokers;
-- queues;
-- background-worker platforms;
-- event buses;
-- vector databases;
-- multiple databases;
-- generalized plugin frameworks.
+* microservices;
+* message brokers;
+* queues;
+* background-worker platforms;
+* event buses;
+* vector databases;
+* multiple databases;
+* generalized plugin frameworks.
 
 Future requirements may justify them.
 
@@ -854,18 +979,26 @@ Favor cheap extension points over speculative implementation.
 
 ## 36. Documentation and Contracts
 
-Before a significant feature is implemented, the relevant architecture and product contracts should be clear.
+Significant implementation work should be grounded in the relevant accepted sources.
 
-Relevant sources may include:
+Depending on the task, these may include:
 
-- `docs/MASTER_SPEC.md`
-- `docs/PRODUCT.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DOMAIN_GLOSSARY.md`
-- `docs/FEATURES/*.md`
-- `docs/DECISIONS/*.md`
+* `docs/MASTER_SPEC.md`;
+* `docs/PRODUCT.md`;
+* `docs/UNLOCK_V1_SCOPE.md`;
+* `docs/UNLOCK_ROADMAP.md`;
+* `docs/ARCHITECTURE.md`;
+* `docs/DOMAIN_GLOSSARY.md`;
+* `docs/DECISIONS/*.md`;
+* `docs/OPEN_QUESTIONS.md`.
 
-Code should implement documented behavior.
+Feature contracts under `docs/FEATURES/` are optional and proportional.
+
+Use one when a complex feature benefits from a durable feature-specific behavior contract.
+
+Do not require or create a large Feature Contract for every meaningful code change.
+
+Code should implement accepted behavior.
 
 Code should not silently redefine product concepts.
 
@@ -875,14 +1008,14 @@ Code should not silently redefine product concepts.
 
 A change should be treated as architectural if it materially affects:
 
-- module boundaries;
-- data ownership;
-- persistence strategy;
-- core domain contracts;
-- external providers;
-- security model;
-- learning-engine behavior;
-- deployment topology.
+* module boundaries;
+* data ownership;
+* persistence strategy;
+* core domain contracts;
+* external providers;
+* security model;
+* learning-engine behavior;
+* deployment topology.
 
 Before making such a change:
 
@@ -898,14 +1031,14 @@ Before making such a change:
 
 The current goal is not to build every architectural capability.
 
-The goal is to make this loop structurally clean:
+The goal is to keep this loop structurally clean:
 
 ```text
 Course / Content
 ↓
-Today Planning
+DailyPlan Planning
 ↓
-Today Session
+DailyPlan
 ↓
 Quiz
 ↓
@@ -915,7 +1048,7 @@ Learner State Update
 ↓
 Next Best Action
 ↓
-Future Today
+Future DailyPlan / Today
 ```
 
 If an architectural choice does not help this loop, protect it, or avoid a clear future dead end, it is probably not a current priority.
