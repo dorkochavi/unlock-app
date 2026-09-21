@@ -215,13 +215,80 @@ lifecycle + instructor authoring UI + flat Topic model) — rather than
 continuing through its originally-planned S5-S10. See
 `docs/RUNS/2026-09-20-005.md` for the full scope-closure rationale.
 
+---
+
+### Question Authoring & Publishing (Run 006, COMPLETE)
+
+An authorized OWNER or active INSTRUCTOR can manually create a
+SINGLE_CHOICE or MULTIPLE_CHOICE Question in a Course, associate it with a
+Topic from that same Course, save/edit its draft, explicitly publish it as
+an immutable QuestionVersion, and later edit/re-publish without changing
+any historical version or Attempt reference.
+
+Implemented:
+
+- `questions.topic_id` (composite FK to `topics (id, course_id)` —
+  DB-enforced same-Course integrity) plus nullable `questions.draft_*`
+  columns (`draft_question_type`/`draft_prompt`/`draft_answer_options`/
+  `draft_correct_answer`/`draft_explanation`) — migration
+  `20260928000000_question_authoring_v1.sql`. No separate `QuestionDraft`
+  table (carried forward from Run 005). All existing published Questions
+  remain fully backward compatible; nothing reads `draft_*`/`topic_id`
+  outside the new authoring code paths.
+- `topic_id` is CURRENT (not versioned) Question metadata, deliberately
+  never snapshotted into `question_versions` — reassigning a Topic later
+  does not reinterpret any historical Attempt. Grading/correctness depends
+  only on the frozen QuestionVersion content.
+- One authoritative publish-ready validation contract
+  (`assertQuestionPublishReady`, `src/domain/question/types.ts`), reusing
+  the existing `assertValidQuestionAnswerDefinition` grading-shape checks
+  rather than duplicating them. SINGLE_CHOICE requires exactly one correct
+  option; MULTIPLE_CHOICE requires at least one.
+- `src/application/question/` — `createQuestionDraft`,
+  `updateQuestionDraft`, `getQuestionForAuthoring`,
+  `listQuestionsForCourse`, `validateQuestionPublishReadiness`,
+  `publishQuestion`. Authorization reuses `canAuthorCourse` unchanged
+  (same policy as Course/Topic authoring); cross-Course Question/Topic ids
+  collapse to the same not-found outcome as a nonexistent id, matching
+  Run 005's own non-leaking pattern.
+- `publishQuestion` is the one atomic publish/re-publish transaction (new
+  `QuestionUnitOfWork`/`PostgresQuestionUnitOfWork`, mirrors
+  `PostgresCourseUnitOfWork` exactly): authorize → reject a terminal
+  ARCHIVED Course → load the draft → reject when nothing is pending to
+  publish (`NOTHING_TO_PUBLISH`, distinct from `NOT_READY`) → validate →
+  insert a new immutable `question_versions` row → repoint
+  `current_version_id` and clear `draft_*` — all inside one transaction.
+  First publish: `current_version_id` starts `null`, becomes the new
+  version. Re-publish always INSERTs a new version (version_number =
+  previous max + 1); the old version row is never updated/deleted, so
+  every existing Attempt/DailyPlanItem composite-FK reference to it
+  remains valid.
+- Draft-only Question exclusion from learner eligibility requires zero new
+  code: every learner-facing/New-Material query already gates on
+  `current_version_id is not null`.
+- `/instructor/courses/[courseId]/questions/[questionId]` — dedicated
+  editor page (Topic/type/prompt/options/correct-answer/explanation form,
+  Save-draft vs. explicit Publish/Re-publish as separate actions, disabled
+  for an ARCHIVED Course, Publish hidden when there is nothing pending).
+- **Accepted V1 concurrency assumption** (documented on
+  `QuestionRepository.getNextVersionNumber`'s doc comment, not enforced by
+  a lock): two concurrent publishes of the SAME Question are fail-safe —
+  the DB's `UNIQUE (question_id, version_number)` constraint rejects the
+  loser's insert and its whole transaction rolls back cleanly — but the
+  loser currently sees a generic `INTERNAL_ERROR` rather than a typed
+  "someone already published, please retry" outcome. Acceptable for V1's
+  expected single-editor-per-draft usage.
+- Archived-Course authoring is enforced server-side only at publish (the
+  point that actually creates learner-facing content); `createQuestionDraft`/
+  `updateQuestionDraft` still rely on the existing UI-only disablement for
+  an ARCHIVED Course, matching Run 005's own `createTopic`/`renameTopic`
+  precedent — a deliberate, reviewed scope decision, not an oversight.
+
 **Not yet implemented** (moved to future Runs per `docs/UNLOCK_ROADMAP.md`,
 not abandoned):
 
-- manual question authoring (SINGLE_CHOICE/MULTIPLE_CHOICE) — Run 006
-- QuestionVersion publish/edit lifecycle — Run 006
 - Structured Import (JSON/spreadsheet adapters) — Run 007
-- end-to-end authoring workflow integration — Run 008
+- next work requires a new Plan
 
 ---
 
@@ -372,6 +439,16 @@ Run 005 instructor-authoring APIs (S2-S4 — see Course Authoring above for the
 - `PATCH /api/courses/:courseId/topics/:topicId` (rename, S4)
 - `POST /api/courses/:courseId/topics/:topicId/archive` (S4)
 
+Run 006 Question-authoring APIs (see Question Authoring & Publishing above
+for the dedicated editor page that consumes these):
+
+- `GET`/`POST /api/courses/:courseId/questions` (list all authoring
+  states / create draft)
+- `GET`/`PATCH /api/courses/:courseId/questions/:questionId` (authoring
+  read, including current published content / save draft)
+- `POST /api/courses/:courseId/questions/:questionId/publish` (atomic
+  publish/re-publish)
+
 This list is a current capability summary, not an exhaustive API specification.
 Use the API docs / source for full contracts.
 
@@ -416,6 +493,13 @@ Claude must not run `supabase db push` without explicit user authorization.
     `npm run test:schema` suite green, 224/224 including 10 new
     `topic-repository.test.ts` cases); not yet pushed to the real hosted
     project.
+12. `20260928000000_question_authoring_v1.sql` (Run 006 S2) — adds
+    `topics_id_course_id_key` (unique, needed for the composite FK below),
+    `questions.topic_id` (composite FK to `topics (id, course_id)`), and
+    nullable `questions.draft_question_type`/`draft_prompt`/
+    `draft_answer_options`/`draft_correct_answer`/`draft_explanation`.
+    PGlite-verified only (full `npm run test:schema` suite green,
+    253/253); not yet pushed to the real hosted project.
 
 ---
 
@@ -505,14 +589,16 @@ end-to-end — see "Not yet executed" above.
 
 ## Current Test Baseline
 
-At pushed HEAD `a03efa4` (Run 005 close; see Repository State) — Run 006 S2 is in progress on top of this baseline, not yet committed at the time these counts were last confirmed:
+At local HEAD `d6a020b` (Run 006, COMPLETE — S2 through S6; pushed HEAD
+remains `a03efa4`, see Repository State):
 
-- Unit tests: `778 / 778`
-- Schema/Postgres (PGlite): `224 / 224`
+- Unit tests: `911 / 911`
+- Schema/Postgres (PGlite): `253 / 253`
 - Typecheck: clean
 - Lint: clean
+- `npm run build` (production): succeeds
 - `git diff --check`: clean
-- Browser E2E: `join-errors.spec.ts` 2/2 passed against a real hosted-configured `next dev`; `golden-path.spec.ts` written, not yet executed (see Verification State)
+- Browser E2E: `join-errors.spec.ts` 2/2 passed against a real hosted-configured `next dev`; `golden-path.spec.ts` written, not yet executed (see Verification State). Run 006's new routes/pages were curled against a real local `next dev` (real 401 unauthenticated, real 200 page render) — not full interactive browser E2E.
 
 These values are development checkpoints, not permanent numeric requirements.
 
@@ -532,6 +618,8 @@ Current known items include:
 - auth middleware is not currently implemented; existing Route Handler auth is sufficient for the current sequential request model, but middleware may need reassessment if authenticated Server Components or real multi-tab refresh races become relevant.
 - real multi-connection PostgreSQL concurrency is not fully proven by PGlite; concurrency claims must remain scoped to what has actually been tested or reasoned under PostgreSQL semantics.
 - PGlite DATE parsing is not identical to real `node-postgres` DATE parsing on all host timezones; dedicated row-validation tests cover the production `pg` convention.
+- concurrent publish of the SAME Question is not lock-serialized (accepted V1 assumption — see Question Authoring & Publishing above); fail-safe via a DB unique constraint, but the losing request currently surfaces as a generic `INTERNAL_ERROR` rather than a typed conflict outcome.
+- archived-Course authoring is enforced server-side only at Question publish, not at draft create/update (UI-only disablement there, matching Run 005's own Topic-authoring precedent) — a deliberate, reviewed V1 scope decision.
 
 Not currently implemented / not currently targeted:
 
@@ -573,10 +661,10 @@ Read the specific ADR only when a task requires its details.
 
 No known code blocker.
 
-No remote migration gate remains for previously-applied migrations. Run 005 S2/S4 add two new
-migrations (`20260926000000_course_lifecycle_v1.sql`, `20260927000000_topics_v1.sql`) that are
-committed locally and PGlite-verified only — not yet applied to hosted Supabase (see
-Database / Migration State).
+No remote migration gate remains for previously-applied migrations. Run 005 S2/S4 and Run 006 S2
+add three new migrations (`20260926000000_course_lifecycle_v1.sql`, `20260927000000_topics_v1.sql`,
+`20260928000000_question_authoring_v1.sql`) that are committed locally and PGlite-verified only —
+not yet applied to hosted Supabase (see Database / Migration State).
 
 ---
 
@@ -584,7 +672,7 @@ Database / Migration State).
 
 1. Manually exercise hosted Today Skip and hosted New Material fallback (the two Verification State items not yet confirmed against the hosted project).
 2. Decide how to safely provide golden-path E2E fixtures (a dedicated non-production Supabase project, or a manually created hosted test learner + OPEN course), then run `npx playwright install chromium && npm run test:e2e` per `e2e/README.md`.
-3. Apply `20260926000000_course_lifecycle_v1.sql` and `20260927000000_topics_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
+3. Apply `20260926000000_course_lifecycle_v1.sql`, `20260927000000_topics_v1.sql`, and `20260928000000_question_authoring_v1.sql` to hosted Supabase when ready (requires explicit authorization — Claude must not run `supabase db push`).
 4. Production deployment remains outstanding.
 
 Do not perform hosted mutations automatically.
@@ -601,15 +689,22 @@ Current pushed HEAD:
 
 `a03efa4`
 
+Current local HEAD (not yet pushed):
+
+`d6a020b`
+
 Run 005 is closed and pushed (Slices S1-S4 — see `docs/RUNS/2026-09-20-005.md`
 for the full Run Report and scope-closure rationale). Run 006 (Question
-Authoring & Publishing V1, `docs/CHATGPT_PLAN.md`) is in progress on top of
-`a03efa4`; see that Plan for current Slice status.
+Authoring & Publishing V1) is now COMPLETE locally — 5 commits ahead of
+`a03efa4` (S2 `99d45eb`, S3 `58e8634`, S4 `dac7555`, S5 `260eb82`, S6
+`d6a020b`) — see `docs/RUNS/2026-09-20-006.md` for the full Run Report.
+Structured Import (Run 007) requires a new Plan.
 
 Do not infer next work from historical run context beyond what
 `docs/UNLOCK_ROADMAP.md` and `docs/DEV_STATUS.md` currently state. See
-`docs/RUNS/2026-09-20-004.md` for Run 004's full handoff and
-`docs/RUNS/2026-09-20-005.md` for Run 005's completed Run Report.
+`docs/RUNS/2026-09-20-004.md` for Run 004's full handoff,
+`docs/RUNS/2026-09-20-005.md` for Run 005's completed Run Report, and
+`docs/RUNS/2026-09-20-006.md` for Run 006's completed Run Report.
 
 ---
 
