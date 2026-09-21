@@ -6,7 +6,7 @@ Updated: 2026-09-21
 ## Repository
 
 - Branch: `feature/project-foundation`
-- Last confirmed remote baseline before the Final Compression Patch: `c545284`
+- Last confirmed remote baseline before the Final Compression Patch: `ef7497c`
 - Dor manually pushed that baseline to `origin/feature/project-foundation`.
 - Product/runtime code is unchanged by the Development OS V1.2 cleanup snapshot.
 - Hosted/remote mutation remains human-controlled.

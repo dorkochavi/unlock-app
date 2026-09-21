@@ -2,7 +2,7 @@
 
 PLAN_VERSION: DEVOS-1.2-FINAL-COMPRESSION
 RUN_ID: 2026-09-21-DEVOS-V1.2-FINAL
-BASELINE_REMOTE_HEAD: `c545284` (`feature/project-foundation`, manually pushed by Dor)
+BASELINE_REMOTE_HEAD: `ef7497c` (`feature/project-foundation`, manually pushed by Dor)
 STATUS: COMPLETE
 
 ## 1. Goal
