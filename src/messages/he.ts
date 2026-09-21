@@ -195,6 +195,13 @@ export const he = {
     rowNumber: "שורה {number}",
     rowValid: "תקינה",
     rowInvalid: "שגויה",
+    confirmDisabledHint: "לא ניתן לאשר ייבוא כל עוד יש שורות שגויות. יש לתקן את הקובץ ולהפיק תצוגה מקדימה מחדש.",
+    confirmAction: "אישור הייבוא",
+    confirming: "מייבא...",
+    confirmSuccess: "יובאו {createdCount} שאלות חדשות כטיוטות.",
+    confirmError: "לא ניתן היה לאשר את הייבוא. נסו שוב.",
+    confirmStateChangedError: "משהו השתנה בקורס מאז התצוגה המקדימה. יש להפיק תצוגה מקדימה מחדש ולנסות שוב.",
+    viewQuestionsAction: "מעבר לרשימת השאלות בקורס",
   },
   questionEditor: {
     backToCourse: "חזרה לניהול הקורס",

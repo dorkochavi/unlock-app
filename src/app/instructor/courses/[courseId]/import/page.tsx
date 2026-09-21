@@ -1,14 +1,22 @@
 "use client";
 
 /**
- * Instructor Structured Import Preview page (Run 007 S3). Minimal UI under
- * the existing Course authoring surface: format choice, paste/upload input,
- * a "Preview" action, and a valid/invalid count summary with a per-row
- * error table — consuming `POST /api/courses/:courseId/import/preview`
- * (Run 007 S3, stateless, no writes).
+ * Instructor Structured Import Preview + Confirm page (Run 007 S3/S5).
+ * Minimal UI under the existing Course authoring surface: format choice,
+ * paste/upload input, a "Preview" action with a valid/invalid count summary
+ * and per-row error table, and — once the current preview shows zero
+ * invalid rows — a "Confirm" action that resubmits the SAME raw
+ * `format`/`sourceText` to `POST /api/courses/:courseId/import/confirm`
+ * (Run 007 S4). Confirm is disabled whenever the current preview is stale
+ * (`idle`/`loading`/`error`) or contains any invalid row — the server
+ * re-validates independently regardless, but the UI never offers an action
+ * it already knows will be rejected.
  *
- * Confirm/persistence is Run 007 S4/S5 — this page has no confirm action
- * yet.
+ * On a successful confirm, this page shows a success state and links back
+ * to the existing (Run 006) Course manage page, where every imported
+ * Question already appears as an ordinary `DRAFT_ONLY` Question in the
+ * unmodified Question list/editor/publish flow — Run 007 §12 "no separate
+ * imported-question lifecycle, list, editor, or publish mechanism."
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -49,6 +57,12 @@ type PreviewState =
   | { kind: "loading" }
   | { kind: "error"; message: string }
   | { kind: "ready"; preview: PreviewImportDto };
+
+type ConfirmState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "error"; message: string }
+  | { kind: "success"; createdCount: number };
 
 function interpolate(template: string, values: Record<string, string>): string {
   return Object.entries(values).reduce(
@@ -95,6 +109,7 @@ export default function InstructorImportPage() {
   const [format, setFormat] = useState<ImportFormat>("JSON");
   const [sourceText, setSourceText] = useState("");
   const [previewState, setPreviewState] = useState<PreviewState>({ kind: "idle" });
+  const [confirmState, setConfirmState] = useState<ConfirmState>({ kind: "idle" });
 
   useEffect(() => {
     let cancelled = false;
@@ -128,17 +143,34 @@ export default function InstructorImportPage() {
     };
   }, [courseId, retryCount]);
 
+  /** Any change to what would actually be sent to preview/confirm invalidates the current preview/confirm state — never leave a stale valid/invalid summary or a stale confirm success banner on screen describing input that no longer matches. */
+  function resetPreviewAndConfirm() {
+    setPreviewState({ kind: "idle" });
+    setConfirmState({ kind: "idle" });
+  }
+
+  function handleFormatChange(nextFormat: ImportFormat) {
+    setFormat(nextFormat);
+    resetPreviewAndConfirm();
+  }
+
+  function handleSourceTextChange(nextSourceText: string) {
+    setSourceText(nextSourceText);
+    resetPreviewAndConfirm();
+  }
+
   async function handleUploadFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     const text = await file.text();
-    setSourceText(text);
+    handleSourceTextChange(text);
     event.target.value = "";
   }
 
   async function handlePreview() {
     if (previewState.kind === "loading") return;
     setPreviewState({ kind: "loading" });
+    setConfirmState({ kind: "idle" });
     try {
       const response = await fetch(`/api/courses/${courseId}/import/preview`, {
         method: "POST",
@@ -173,6 +205,63 @@ export default function InstructorImportPage() {
       setPreviewState({ kind: "ready", preview: body.preview });
     } catch {
       setPreviewState({ kind: "error", message: messages.importQuestions.previewError });
+    }
+  }
+
+  async function handleConfirm() {
+    if (previewState.kind !== "ready" || previewState.preview.invalidCount > 0) return;
+    if (confirmState.kind === "loading") return;
+    setConfirmState({ kind: "loading" });
+    try {
+      const response = await fetch(`/api/courses/${courseId}/import/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format, sourceText }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setConfirmState({ kind: "error", message: messages.importQuestions.signedOutTitle });
+          return;
+        }
+        if (response.status === 403) {
+          setConfirmState({ kind: "error", message: messages.importQuestions.notAuthorizedBody });
+          return;
+        }
+        if (response.status === 413) {
+          setConfirmState({ kind: "error", message: messages.importQuestions.sourceTooLargeError });
+          return;
+        }
+        try {
+          const body = (await response.json()) as { error?: { code?: string; message?: string } };
+          if (body.error?.code === "MALFORMED_SOURCE" && body.error.message) {
+            setConfirmState({
+              kind: "error",
+              message: interpolate(messages.importQuestions.malformedSourceError, {
+                message: body.error.message,
+              }),
+            });
+            return;
+          }
+          if (body.error?.code === "INVALID_ROWS" || body.error?.code === "STATE_CHANGED") {
+            setConfirmState({ kind: "error", message: messages.importQuestions.confirmStateChangedError });
+            return;
+          }
+          if (body.error?.code === "COURSE_ARCHIVED") {
+            setConfirmState({ kind: "error", message: messages.importQuestions.archivedNotice });
+            return;
+          }
+        } catch {
+          // fall through to the generic error below
+        }
+        setConfirmState({ kind: "error", message: messages.importQuestions.confirmError });
+        return;
+      }
+
+      const body = (await response.json()) as { createdCount: number; createdQuestionIds: string[] };
+      setConfirmState({ kind: "success", createdCount: body.createdCount });
+    } catch {
+      setConfirmState({ kind: "error", message: messages.importQuestions.confirmError });
     }
   }
 
@@ -247,7 +336,7 @@ export default function InstructorImportPage() {
                 <span className="mb-1 block text-sm font-medium">{messages.importQuestions.formatLabel}</span>
                 <select
                   value={format}
-                  onChange={(event) => setFormat(event.target.value as ImportFormat)}
+                  onChange={(event) => handleFormatChange(event.target.value as ImportFormat)}
                   className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                 >
                   <option value="JSON">{messages.importQuestions.formatOption.JSON}</option>
@@ -259,7 +348,7 @@ export default function InstructorImportPage() {
                 <span className="mb-1 block text-sm font-medium">{messages.importQuestions.sourceLabel}</span>
                 <textarea
                   value={sourceText}
-                  onChange={(event) => setSourceText(event.target.value)}
+                  onChange={(event) => handleSourceTextChange(event.target.value)}
                   placeholder={messages.importQuestions.sourcePlaceholder}
                   rows={10}
                   className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -339,6 +428,44 @@ export default function InstructorImportPage() {
                     </li>
                   ))}
                 </ul>
+
+                {previewState.preview.invalidCount > 0 ? (
+                  <p className="mt-4 text-sm text-amber-700 dark:text-amber-400">
+                    {messages.importQuestions.confirmDisabledHint}
+                  </p>
+                ) : null}
+
+                {confirmState.kind === "success" ? (
+                  <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+                    <p className="mb-2">
+                      {interpolate(messages.importQuestions.confirmSuccess, {
+                        createdCount: String(confirmState.createdCount),
+                      })}
+                    </p>
+                    <Link href={`/instructor/courses/${courseId}`} className="underline">
+                      {messages.importQuestions.viewQuestionsAction}
+                    </Link>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={
+                      confirmState.kind === "loading" ||
+                      state.courseStatus === "ARCHIVED" ||
+                      previewState.preview.invalidCount > 0
+                    }
+                    className="mt-4 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-emerald-600"
+                  >
+                    {confirmState.kind === "loading"
+                      ? messages.importQuestions.confirming
+                      : messages.importQuestions.confirmAction}
+                  </button>
+                )}
+
+                {confirmState.kind === "error" ? (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{confirmState.message}</p>
+                ) : null}
               </div>
             ) : null}
           </div>
