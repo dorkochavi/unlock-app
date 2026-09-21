@@ -117,7 +117,9 @@ export const he = {
       },
       publishAction: "פרסום הקורס",
       publishing: "מפרסם...",
-      publishHint: "פרסום הופך את הקורס לזמין ללומדים בהתאם למדיניות ההצטרפות.",
+      publishHint:
+        "פרסום הקורס הופך אותו לזמין ללומדים בהתאם למדיניות ההצטרפות — אך אינו מפרסם את השאלות עצמן. יש לפרסם כל שאלה בנפרד כדי שתהיה זמינה ללומדים.",
+      questionPublishSummary: "{published} מתוך {total} שאלות פורסמו",
       archiveAction: "העברה לארכיון",
       archiving: "מעביר לארכיון...",
       archiveConfirm: "להעביר את הקורס לארכיון? לא ניתן לבטל פעולה זו.",
@@ -189,6 +191,7 @@ export const he = {
     previewing: "בודק...",
     previewError: "לא ניתן היה להפיק תצוגה מקדימה. נסו שוב.",
     sourceTooLargeError: "תוכן הקובץ גדול מדי לייבוא.",
+    tooManyRowsError: "הקובץ מכיל יותר מדי שורות לייבוא ({totalRows} שורות). פצלו את הייבוא למספר קבצים קטנים יותר.",
     malformedSourceError: "לא ניתן לקרוא את הקובץ: {message}",
     summary: "{validCount} שורות תקינות מתוך {totalRows} ({invalidCount} שגויות)",
     rowsHeading: "פירוט שורות",

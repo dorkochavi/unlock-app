@@ -882,8 +882,18 @@ export default function InstructorCourseManagePage() {
                   </button>
                 </div>
               )}
-              {state.course.status === "DRAFT" ? (
+              {state.course.status !== "ARCHIVED" && questionsState.kind === "ready" && questionsState.questions.length > 0 ? (
                 <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+                  {messages.instructor.manage.questionPublishSummary
+                    .replace(
+                      "{published}",
+                      String(questionsState.questions.filter((q) => q.state !== "DRAFT_ONLY").length),
+                    )
+                    .replace("{total}", String(questionsState.questions.length))}
+                </p>
+              ) : null}
+              {state.course.status === "DRAFT" ? (
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                   {messages.instructor.manage.publishHint}
                 </p>
               ) : null}

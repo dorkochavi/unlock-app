@@ -71,6 +71,28 @@ function interpolate(template: string, values: Record<string, string>): string {
   );
 }
 
+/**
+ * A 413 response is either `SOURCE_TOO_LARGE` (character-count limit,
+ * checked before the body is even parsed) or `TOO_MANY_ROWS` (row-count
+ * limit, Run 008 S1.D, only knowable after parsing) — distinct causes that
+ * previously collapsed into the same "file too large" copy regardless of
+ * which one actually happened.
+ */
+async function tooLargeOrTooManyRowsMessage(response: Response): Promise<string> {
+  const messages = getMessages();
+  try {
+    const body = (await response.json()) as { error?: { code?: string; totalRows?: number } };
+    if (body.error?.code === "TOO_MANY_ROWS" && typeof body.error.totalRows === "number") {
+      return interpolate(messages.importQuestions.tooManyRowsError, {
+        totalRows: String(body.error.totalRows),
+      });
+    }
+  } catch {
+    // fall through to the size-limit message below
+  }
+  return messages.importQuestions.sourceTooLargeError;
+}
+
 async function fetchCourseStatus(
   courseId: string,
 ): Promise<
@@ -180,7 +202,7 @@ export default function InstructorImportPage() {
 
       if (!response.ok) {
         if (response.status === 413) {
-          setPreviewState({ kind: "error", message: messages.importQuestions.sourceTooLargeError });
+          setPreviewState({ kind: "error", message: await tooLargeOrTooManyRowsMessage(response) });
           return;
         }
         try {
@@ -229,7 +251,7 @@ export default function InstructorImportPage() {
           return;
         }
         if (response.status === 413) {
-          setConfirmState({ kind: "error", message: messages.importQuestions.sourceTooLargeError });
+          setConfirmState({ kind: "error", message: await tooLargeOrTooManyRowsMessage(response) });
           return;
         }
         try {
