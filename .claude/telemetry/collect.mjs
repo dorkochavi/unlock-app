@@ -243,23 +243,74 @@ function numberOrNull(value) {
   return Number.isFinite(value) ? value : null;
 }
 
-function commandClass(toolName, toolInput) {
-  if (toolName !== "Bash" && toolName !== "PowerShell") {
-    return null;
+/**
+ * Splits one Bash/PowerShell command string on top-level `&&`/`||`/`;`
+ * compound-command separators, so a chained invocation like
+ * `npx tsc ... && npx eslint ...` is classified as TWO commands instead of
+ * only the first one matched (Run 007 S1 telemetry health-check finding).
+ * Quote-aware only to the extent of not splitting inside a `"..."`/`'...'`
+ * span — a lightweight scan, not a full shell parser, which is enough for
+ * the simple tool-invocation patterns `classifySegment` recognizes below.
+ * Deliberately does NOT split on `|` (a pipe's right-hand side consumes the
+ * left's output — e.g. `... | tail -40` — and is not a second meaningful
+ * command worth its own classification).
+ */
+function splitCompoundCommand(command) {
+  const segments = [];
+  let current = "";
+  let quote = null;
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i];
+
+    if (quote) {
+      current += char;
+      if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      current += char;
+      continue;
+    }
+
+    if (
+      (char === "&" && command[i + 1] === "&") ||
+      (char === "|" && command[i + 1] === "|")
+    ) {
+      segments.push(current);
+      current = "";
+      i++;
+      continue;
+    }
+
+    if (char === ";") {
+      segments.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
   }
 
-  const command =
-    typeof toolInput?.command === "string"
-      ? toolInput.command.trim()
-      : "";
+  segments.push(current);
 
-  if (!command) {
-    return "shell:unknown";
-  }
+  return segments
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
 
-  const normalized = command
+function classifySegment(segment) {
+  const normalized = segment
     .replace(/\s+/g, " ")
     .trim();
+
+  if (!normalized) {
+    return null;
+  }
 
   let match = normalized.match(
     /^npm\s+run\s+([a-zA-Z0-9:_-]+)/,
@@ -318,6 +369,51 @@ function commandClass(toolName, toolInput) {
   }
 
   return "shell:other";
+}
+
+/**
+ * Every meaningful command class found in one Bash/PowerShell invocation —
+ * more than one for a compound `a && b` command. Empty array for a
+ * non-shell tool (mirrors `commandClass`'s previous `null` for that case).
+ */
+function commandClasses(toolName, toolInput) {
+  if (toolName !== "Bash" && toolName !== "PowerShell") {
+    return [];
+  }
+
+  const command =
+    typeof toolInput?.command === "string"
+      ? toolInput.command.trim()
+      : "";
+
+  if (!command) {
+    return ["shell:unknown"];
+  }
+
+  const segments = splitCompoundCommand(command);
+
+  if (segments.length === 0) {
+    return ["shell:unknown"];
+  }
+
+  return segments
+    .map(classifySegment)
+    .filter(Boolean);
+}
+
+/**
+ * Backward-compatible single-class accessor — the FIRST matched class only,
+ * same value this function always returned. Kept so any existing consumer
+ * of the scalar `command_class` raw-event field is unaffected; new code
+ * should read the new `command_classes` array field instead.
+ */
+function commandClass(toolName, toolInput) {
+  const classes = commandClasses(
+    toolName,
+    toolInput,
+  );
+
+  return classes.length > 0 ? classes[0] : null;
 }
 
 function activityForTool(toolName) {
@@ -466,6 +562,10 @@ function buildEvent(input, projectRoot, runId) {
           ? safeResponseChars(input.tool_response)
           : null,
       command_class: commandClass(
+        toolName,
+        input.tool_input,
+      ),
+      command_classes: commandClasses(
         toolName,
         input.tool_input,
       ),

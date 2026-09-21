@@ -178,6 +178,38 @@ function countBy(items, selector) {
   return counts;
 }
 
+/**
+ * Like `countBy`, but `selector` returns an array of keys per item instead
+ * of one — needed so one compound-command shell event can contribute more
+ * than one `command_class`/category count. `shell_activity.total` still
+ * counts EVENTS (one per Bash/PowerShell tool call); the by-class/by-category
+ * breakdowns below can now sum to more than that total for a Run containing
+ * compound commands — expected, not a bug (each real sub-command is counted
+ * once).
+ */
+function countByMulti(items, selector) {
+  const counts = new Map();
+
+  for (const item of items) {
+    for (const key of selector(item)) {
+      if (
+        key === null ||
+        key === undefined ||
+        key === ""
+      ) {
+        continue;
+      }
+
+      counts.set(
+        key,
+        (counts.get(key) ?? 0) + 1,
+      );
+    }
+  }
+
+  return counts;
+}
+
 function mapToSortedObject(map) {
   return Object.fromEntries(
     [...map.entries()].sort(
@@ -261,7 +293,13 @@ function classifyCommand(commandClass) {
   if (
     commandClass === "npm-run:lint" ||
     commandClass === "npm-run:typecheck" ||
-    commandClass === "npm-run:build"
+    commandClass === "npm-run:build" ||
+    // Direct `npx` invocations of the same checks `npm run lint`/
+    // `npm run typecheck` wrap — a very common way to run them (e.g. after
+    // a targeted change) that was previously falling through to OTHER
+    // (Run 007 S1 telemetry health-check finding).
+    commandClass === "npx:tsc" ||
+    commandClass === "npx:eslint"
   ) {
     return "VERIFICATION";
   }
@@ -273,6 +311,21 @@ function classifyCommand(commandClass) {
   }
 
   return "OTHER";
+}
+
+/**
+ * Every class an event contributed, for aggregation. Prefers the new
+ * `command_classes` array (one entry per meaningful command found in a
+ * compound `a && b` invocation); falls back to the older scalar
+ * `command_class` field for raw events written before that field existed,
+ * so historical raw JSONL never needs to be rewritten.
+ */
+function eventCommandClasses(event) {
+  if (Array.isArray(event.command_classes)) {
+    return event.command_classes.filter(Boolean);
+  }
+
+  return event.command_class ? [event.command_class] : [];
 }
 
 function isHistoricalRunPath(filePath) {
@@ -394,15 +447,17 @@ function aggregate(runId, events, snapshots) {
     (event) => event.tool_name,
   );
 
-  const commandCounts = countBy(
+  const commandCounts = countByMulti(
     shellEvents,
-    (event) => event.command_class,
+    eventCommandClasses,
   );
 
-  const commandCategoryCounts = countBy(
+  const commandCategoryCounts = countByMulti(
     shellEvents,
     (event) =>
-      classifyCommand(event.command_class),
+      eventCommandClasses(event).map(
+        classifyCommand,
+      ),
   );
 
   const subagentTypeCounts = countBy(
@@ -834,6 +889,8 @@ function aggregate(runId, events, snapshots) {
       "Instruction-loading events depend on what Claude Code exposes; some project-instruction mechanisms may not emit equivalent events.",
       "Run duration may span multiple or overlapping sessions; summed session duration is not guaranteed to equal human elapsed Run time.",
       "Context misses and unnecessary rechecks require closeout judgment and are intentionally not inferred from raw events.",
+      "shell_activity.by_command_class/by_category count each meaningful command in a compound `a && b` invocation separately, so their totals can exceed shell_activity.total (one entry per Bash/PowerShell tool call, not per sub-command).",
+      "Raw events collected before command_classes existed carry only their first-matched command (the old command_class field); a compound command from before that field existed cannot be reclassified into its later sub-commands without rewriting historical raw data, which this summarizer does not do.",
     ],
   };
 }
