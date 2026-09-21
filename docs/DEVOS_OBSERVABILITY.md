@@ -64,7 +64,7 @@ Do not create a composite Development-OS efficiency score. A single number canno
 - Frequent read ≠ inefficiency.
 - Large file ≠ context problem.
 - High churn *within the Run that created a file* ≠ structural debt.
-- Reviewer subagent reads ≠ main-session context cost (they execute in a separate context window; only the final hand-back report enters yours — see §10).
+- Reviewer subagent file reads do not enter the main-session context; only the final hand-back report does.
 - High test count ≠ strong verification.
 - Low tool count ≠ good execution.
 - Low token/cost usage ≠ a successful Run.
@@ -120,15 +120,11 @@ A `CHANGE` item is only real once it states all of:
 
 `docs/DEV_STATUS.md`'s Active Observations section is **rolling state, not an accumulating diary** — an item leaves it the moment it resolves (`DROP`, `ABSORB`, or `REVERT`), it is not archived there for history. History belongs to `docs/RUNS/**` and Git.
 
-## 10. Current Evidence-Backed Non-Actions
+## 10. Ownership Boundary — This File vs. Current State
 
-As of Run 007's telemetry, source-context, and context-cost audits, UNLOCK does **not** currently:
-- compress source files solely because they are large or frequently read;
-- reduce reviewer dispatch to save main-session context (reviewer reads happen in a separate context and cost main-session tokens only through their compact hand-back report);
-- adopt `/clear` between every Slice;
-- optimize prompt length aggressively;
-- introduce mandatory reviewer swarms beyond risk-based selection;
-- optimize generic re-read count as a target;
-- add a composite productivity/efficiency score.
+This file defines **how** observations are interpreted and promoted (§§3, 6-8) — it is timeless methodology, not a record of any Run's conclusions.
 
-These are methodology guardrails reflecting the evidence available now, **not permanent prohibitions** — cross-Run evidence (§6) may justify revisiting any of them later.
+- Current `WATCH` items, experiments in flight, and evidence-backed non-actions belong in `docs/DEV_STATUS.md`'s rolling Active Observations section, never here.
+- Detailed supporting evidence for any of those items belongs in the relevant `docs/RUNS/<run>.md`, never here.
+- Current conclusions must not accumulate in this methodology file — if a specific finding needs stating, it goes in `docs/DEV_STATUS.md` or a Run Report, not as a new subsection here.
+- Future evidence may freely change current conclusions (§6) without requiring any change to this file — only a change to the interpretation *method itself* (the loop, the paired-signal discipline, the lifecycle, the ownership table above) is a change to this file.
