@@ -3,7 +3,7 @@
 PLAN_VERSION: RUN-007-STRUCTURED-IMPORT-V1
 RUN_ID: 2026-09-21-007
 BASELINE_REMOTE_HEAD: `26678d8` (`feature/project-foundation`, pushed)
-STATUS: PLANNED — implementation not started
+STATUS: COMPLETE — S1-S6 all committed locally; see `docs/RUNS/2026-09-21-007.md`
 
 ## 1. Goal
 
@@ -151,7 +151,7 @@ Run close:
 
 ## 8. S1 — Canonical Import Contract + JSON/CSV Adapters
 
-STATUS: NOT STARTED
+STATUS: COMPLETE (`bdaae1d`)
 
 Deliverables:
 - `src/domain/import/types.ts`: `CanonicalQuestionRow` (sourceRowNumber,
@@ -175,7 +175,7 @@ Acceptance:
 
 ## 9. S2 — Validation + Topic Resolution + Preview Use Case
 
-STATUS: NOT STARTED
+STATUS: COMPLETE (`445a276`)
 
 Deliverables:
 - row-level validator in `src/domain/import/types.ts` reusing
@@ -201,7 +201,7 @@ Acceptance:
 
 ## 10. S3 — Preview API + Instructor Preview UI
 
-STATUS: NOT STARTED
+STATUS: COMPLETE (`9109b12`)
 
 Deliverables:
 - `src/app/api/courses/[courseId]/import/preview/` route wrapping S2's
@@ -223,7 +223,7 @@ Acceptance:
 
 ## 11. S4 — Atomic Confirm + Import Unit of Work + Confirm API
 
-STATUS: NOT STARTED
+STATUS: COMPLETE (`413c4e4`)
 
 Deliverables:
 - new `ImportRepositories` (`memberships`, `courses`, `questions`,
@@ -271,7 +271,7 @@ Acceptance:
 
 ## 12. S5 — Confirm UX + Existing Authoring Integration
 
-STATUS: NOT STARTED
+STATUS: COMPLETE (`0e91566`)
 
 Deliverables:
 - confirm action + success state in the instructor import UI (disabled/
@@ -292,7 +292,7 @@ that action.
 
 ## 13. S6 — Integrated Structured Import Walkthrough
 
-STATUS: NOT STARTED
+STATUS: COMPLETE (`0dd4c74`)
 
 Deliverables: one PGlite/application-level integration test mirroring Run
 006 S6's pattern, proving in one place:
