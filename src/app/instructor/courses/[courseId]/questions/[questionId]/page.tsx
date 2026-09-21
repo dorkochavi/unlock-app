@@ -196,6 +196,10 @@ export default function InstructorQuestionEditorPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishedAt, setPublishedAt] = useState<number | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -332,6 +336,60 @@ export default function InstructorQuestionEditorPage() {
       setSaveError(messages.questionEditor.saveError);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePublish() {
+    if (publishing) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const response = await fetch(`/api/courses/${courseId}/questions/${questionId}/publish`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          try {
+            const body = (await response.json()) as { error?: { code?: string } };
+            if (body.error?.code === "COURSE_ARCHIVED") {
+              setPublishError(messages.questionEditor.publishCourseArchivedError);
+              return;
+            }
+            if (body.error?.code === "NOTHING_TO_PUBLISH") {
+              setPublishError(messages.questionEditor.publishNothingToPublishError);
+              return;
+            }
+          } catch {
+            // fall through to the generic error below
+          }
+          setPublishError(messages.questionEditor.publishError);
+          return;
+        }
+        if (response.status === 400) {
+          try {
+            const body = (await response.json()) as { error?: { code?: string; reason?: string } };
+            if (body.error?.code === "NOT_READY" && body.error.reason) {
+              setPublishError(
+                interpolate(messages.questionEditor.publishNotReadyError, { reason: body.error.reason }),
+              );
+              return;
+            }
+          } catch {
+            // fall through to the generic error below
+          }
+        }
+        setPublishError(messages.questionEditor.publishError);
+        return;
+      }
+
+      const body = (await response.json()) as { question: QuestionAuthoringDto };
+      setState((previous) => (previous.kind === "ready" ? { ...previous, question: body.question } : previous));
+      setPublishedAt(Date.now());
+    } catch {
+      setPublishError(messages.questionEditor.publishError);
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -524,13 +582,42 @@ export default function InstructorQuestionEditorPage() {
                   </p>
                 ) : null}
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="self-start rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-                >
-                  {saving ? messages.questionEditor.saving : messages.questionEditor.saveAction}
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="self-start rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+                  >
+                    {saving ? messages.questionEditor.saving : messages.questionEditor.saveAction}
+                  </button>
+
+                  {/* Publish/Re-publish: only when there is real pending content to publish
+                      (DRAFT_ONLY or PUBLISHED_WITH_DRAFT_CHANGES) — a plain PUBLISHED Question
+                      has nothing pending (Run 006 S3's own forward note, resolved server-side
+                      by S5's NOTHING_TO_PUBLISH outcome; this hides the action for that case
+                      rather than relying only on the server to reject it). */}
+                  {state.question.state !== "PUBLISHED" ? (
+                    <button
+                      type="button"
+                      onClick={handlePublish}
+                      disabled={publishing}
+                      className="self-start rounded-md border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 disabled:opacity-50 dark:border-emerald-500 dark:text-emerald-400"
+                    >
+                      {publishing
+                        ? messages.questionEditor.publishing
+                        : state.question.state === "DRAFT_ONLY"
+                          ? messages.questionEditor.publishAction
+                          : messages.questionEditor.republishAction}
+                    </button>
+                  ) : null}
+                </div>
+
+                {publishError ? <p className="text-sm text-red-600 dark:text-red-400">{publishError}</p> : null}
+                {!publishError && publishedAt !== null ? (
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                    {messages.questionEditor.publishSuccess}
+                  </p>
+                ) : null}
               </form>
             </fieldset>
           </div>

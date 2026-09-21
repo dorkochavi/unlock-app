@@ -237,4 +237,121 @@ describe("PostgresQuestionRepository", () => {
     const repo = new PostgresQuestionRepository(db);
     expect((await repo.getVersionPrompts([])).size).toBe(0);
   });
+
+  it("getNextVersionNumber returns 1 for a never-published Question", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const repo = new PostgresQuestionRepository(db);
+    const created = await repo.createDraft({ courseId });
+
+    expect(await repo.getNextVersionNumber(created.id)).toBe(1);
+  });
+
+  it("getNextVersionNumber returns max(version_number) + 1 for an already-published Question", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const questionId = await insertQuestion(db, courseId);
+    await insertQuestionVersion(db, questionId, 1);
+    await insertQuestionVersion(db, questionId, 2);
+    const repo = new PostgresQuestionRepository(db);
+
+    expect(await repo.getNextVersionNumber(questionId)).toBe(3);
+  });
+
+  it("insertVersion inserts one new immutable question_versions row and never touches an existing one", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const topicRepo = new PostgresTopicRepository(db);
+    const topic = await topicRepo.createTopic({ courseId, name: "Algebra" });
+    const questionId = await insertQuestion(db, courseId);
+    const repo = new PostgresQuestionRepository(db);
+
+    const { id: versionId } = await repo.insertVersion(
+      questionId,
+      {
+        topicId: topic.id,
+        prompt: "What is 2+2?",
+        questionType: "SINGLE_CHOICE",
+        answerOptions: [
+          { id: "a", content: "3" },
+          { id: "b", content: "4" },
+        ],
+        correctOptionIds: ["b"],
+        explanation: null,
+      },
+      1,
+    );
+
+    const content = await repo.getVersionContent(versionId);
+    expect(content).toEqual({
+      questionType: "SINGLE_CHOICE",
+      prompt: "What is 2+2?",
+      answerOptions: [
+        { id: "a", content: "3" },
+        { id: "b", content: "4" },
+      ],
+      correctOptionIds: ["b"],
+      explanation: null,
+    });
+
+    const row = await db.query<{ version_number: number }>(
+      "select version_number from question_versions where id = $1",
+      [versionId],
+    );
+    expect(row.rows[0].version_number).toBe(1);
+  });
+
+  it("setCurrentVersionAndClearDraft repoints current_version_id and clears every draft_* column, leaving topic_id untouched", async () => {
+    const ownerId = await insertUser(db);
+    const courseId = await insertCourse(db, ownerId);
+    const topicRepo = new PostgresTopicRepository(db);
+    const topic = await topicRepo.createTopic({ courseId, name: "Algebra" });
+    const repo = new PostgresQuestionRepository(db);
+    const created = await repo.createDraft({ courseId });
+    await repo.updateDraft(created.id, {
+      topicId: topic.id,
+      questionType: "SINGLE_CHOICE",
+      prompt: "What is 2+2?",
+      answerOptions: [
+        { id: "a", content: "3" },
+        { id: "b", content: "4" },
+      ],
+      correctOptionIds: ["b"],
+      explanation: null,
+    });
+    const { id: versionId } = await repo.insertVersion(
+      created.id,
+      {
+        topicId: topic.id,
+        prompt: "What is 2+2?",
+        questionType: "SINGLE_CHOICE",
+        answerOptions: [
+          { id: "a", content: "3" },
+          { id: "b", content: "4" },
+        ],
+        correctOptionIds: ["b"],
+        explanation: null,
+      },
+      1,
+    );
+
+    const updated = await repo.setCurrentVersionAndClearDraft(created.id, versionId);
+
+    expect(updated).toMatchObject({
+      currentVersionId: versionId,
+      topicId: topic.id,
+      draft: {
+        questionType: null,
+        prompt: null,
+        answerOptions: null,
+        correctOptionIds: null,
+        explanation: null,
+      },
+    });
+  });
+
+  it("setCurrentVersionAndClearDraft returns null for an unknown questionId", async () => {
+    const repo = new PostgresQuestionRepository(db);
+    expect(await repo.setCurrentVersionAndClearDraft(randomUUID(), randomUUID())).toBeNull();
+  });
 });

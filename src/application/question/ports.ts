@@ -8,11 +8,12 @@
  * (same-Course Topic association guard) unchanged from their existing
  * modules — this module owns no copy of either.
  */
-import type { CourseMembership, CourseMembershipRepository } from "../course/ports";
+import type { CourseMembership, CourseMembershipRepository, CourseRepository } from "../course/ports";
 import type { Topic, TopicRepository } from "../topic/ports";
 
 import type {
   AnswerOption,
+  PublishableQuestionVersionContent,
   QuestionAuthoringRecord,
   QuestionDraftContent,
   QuestionType,
@@ -22,6 +23,8 @@ export type {
   AnswerOption,
   CourseMembership,
   CourseMembershipRepository,
+  CourseRepository,
+  PublishableQuestionVersionContent,
   QuestionAuthoringRecord,
   QuestionDraftContent,
   QuestionType,
@@ -101,10 +104,91 @@ export interface QuestionRepository {
    * throw" convention for a batched read.
    */
   getVersionPrompts(versionIds: readonly string[]): Promise<Map<string, string>>;
+
+  /**
+   * Run 006 S5 — the version number for the NEXT `question_versions` row for
+   * this Question: 1 for a never-published Question, otherwise `max(existing
+   * version_number) + 1`. Never reused/decremented — matches `question_
+   * versions`' own `UNIQUE (question_id, version_number)` and "no code path
+   * updates an existing row" invariant (`getVersionContent`'s doc comment).
+   *
+   * **Accepted V1 concurrency assumption** (Run 006 S5 DB-review finding):
+   * this read and the subsequent `insertVersion` are NOT serialized against
+   * a concurrent publish of the SAME Question — no `FOR UPDATE`/advisory
+   * lock is taken. Two overlapping publish transactions can compute the
+   * same next `version_number`; the DB's `UNIQUE (question_id,
+   * version_number)` constraint then fails the losing transaction's insert,
+   * which `PostgresQuestionUnitOfWork` rolls back cleanly (no orphaned row,
+   * no corrupted `current_version_id`) — this is fail-safe, not a
+   * data-integrity gap. The losing request currently surfaces only as an
+   * unmapped `INTERNAL_ERROR` (no typed "someone already published, please
+   * retry" outcome exists). Accepted for V1's expected usage — one
+   * instructor editing their own draft, not concurrent co-editors — revisit
+   * if/when concurrent co-authoring becomes a real product scenario.
+   */
+  getNextVersionNumber(questionId: string): Promise<number>;
+
+  /**
+   * Inserts ONE new immutable `question_versions` row — never updates an
+   * existing one (Run 006 S5 "no update-in-place path exists for published
+   * QuestionVersion content"). Does not itself touch `questions.
+   * current_version_id`/`draft_*` — that is `setCurrentVersionAndClearDraft`'s
+   * job, so the two writes can be composed inside one atomic
+   * `QuestionUnitOfWork` transaction by the `publishQuestion` use case.
+   */
+  insertVersion(
+    questionId: string,
+    content: PublishableQuestionVersionContent,
+    versionNumber: number,
+  ): Promise<{ id: string }>;
+
+  /**
+   * Repoints `questions.current_version_id` to `versionId` and clears every
+   * `draft_*` column back to `null` in one statement (Run 006 S5: "a
+   * successful publish CLEARS every field back to null" — `QuestionDraftContent`'s
+   * own doc comment). Does not touch `topic_id` (current, not versioned,
+   * metadata — unaffected by publish). Returns `null` if the Question does
+   * not exist.
+   */
+  setCurrentVersionAndClearDraft(
+    questionId: string,
+    versionId: string,
+  ): Promise<QuestionAuthoringRecord | null>;
 }
 
 export interface QuestionRepositories {
   memberships: CourseMembershipRepository;
   topics: TopicRepository;
   questions: QuestionRepository;
+}
+
+/**
+ * Run 006 S5 — the narrow repository set the atomic publish transaction
+ * actually needs. Deliberately NOT `QuestionRepositories` + `courses`: the
+ * publish transaction never touches Topic (the domain layer's own decision,
+ * `assertQuestionPublishReady`'s doc comment: "does NOT re-validate that a
+ * non-null topicId actually exists/belongs to this Question's own Course" —
+ * the DB composite FK already guarantees that at write time, not at publish
+ * time), so requiring a `TopicRepository` here would be an unused
+ * dependency. `courses` is reused, unchanged, from `../course/ports` — see
+ * `publishQuestion`'s own doc comment for why a Course-archived check
+ * belongs here (Run 006 S4 security-reviewer carried-forward finding).
+ */
+export interface PublishQuestionRepositories {
+  memberships: CourseMembershipRepository;
+  courses: CourseRepository;
+  questions: QuestionRepository;
+}
+
+/**
+ * Transaction boundary for `publishQuestion` (Run 006 S5) — the ONE
+ * genuinely atomic multi-statement Question-authoring write (insert a new
+ * `question_versions` row, then repoint `current_version_id` and clear
+ * `draft_*`). Mirrors `CourseUnitOfWork`'s shape and rationale exactly
+ * (`src/application/course/ports.ts`), narrowed to `PublishQuestionRepositories`.
+ * `createDraft`/`updateQuestionDraft` remain single-statement writes and
+ * intentionally do NOT go through a UnitOfWork — only publish does.
+ */
+export interface QuestionUnitOfWork {
+  runInTransaction<T>(fn: (repos: PublishQuestionRepositories) => Promise<T>): Promise<T>;
 }

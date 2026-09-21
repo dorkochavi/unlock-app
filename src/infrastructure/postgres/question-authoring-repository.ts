@@ -9,6 +9,7 @@
  */
 import type {
   AnswerOption,
+  PublishableQuestionVersionContent,
   QuestionAuthoringRecord,
   QuestionDraftContent,
 } from "../../domain/question/types";
@@ -207,5 +208,58 @@ export class PostgresQuestionRepository implements QuestionRepository {
       prompts.set(readString(row, VERSIONS_TABLE, "id"), readString(row, VERSIONS_TABLE, "prompt"));
     }
     return prompts;
+  }
+
+  async getNextVersionNumber(questionId: string): Promise<number> {
+    const result = await this.db.query<{ next: number }>(
+      `select coalesce(max(version_number), 0) + 1 as next
+         from question_versions
+        where question_id = $1`,
+      [questionId],
+    );
+    return Number(result.rows[0].next);
+  }
+
+  async insertVersion(
+    questionId: string,
+    content: PublishableQuestionVersionContent,
+    versionNumber: number,
+  ): Promise<{ id: string }> {
+    const result = await this.db.query<{ id: string }>(
+      `insert into ${VERSIONS_TABLE}
+          (question_id, version_number, prompt, question_type, answer_options, correct_answer, explanation)
+        values ($1, $2, $3, $4, $5, $6, $7)
+        returning id`,
+      [
+        questionId,
+        versionNumber,
+        content.prompt,
+        content.questionType,
+        JSON.stringify(content.answerOptions),
+        JSON.stringify(content.correctOptionIds),
+        content.explanation,
+      ],
+    );
+    return { id: readString(result.rows[0], VERSIONS_TABLE, "id") };
+  }
+
+  async setCurrentVersionAndClearDraft(
+    questionId: string,
+    versionId: string,
+  ): Promise<QuestionAuthoringRecord | null> {
+    const result = await this.db.query(
+      `update ${TABLE} set
+          current_version_id = $2,
+          draft_question_type = null,
+          draft_prompt = null,
+          draft_answer_options = null,
+          draft_correct_answer = null,
+          draft_explanation = null,
+          updated_at = now()
+        where id = $1
+        returning ${COLUMNS}`,
+      [questionId, versionId],
+    );
+    return result.rows.length === 1 ? mapQuestionAuthoringRow(result.rows[0]) : null;
   }
 }

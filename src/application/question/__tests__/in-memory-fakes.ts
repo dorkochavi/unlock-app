@@ -8,14 +8,19 @@
  */
 import {
   EMPTY_QUESTION_DRAFT,
+  type PublishableQuestionVersionContent,
   type QuestionAuthoringRecord,
   type QuestionDraftContent,
 } from "../../../domain/question/types";
+import type { CourseStatus } from "../../../domain/course/types";
 import type {
   CourseMembership,
   CourseMembershipRepository,
+  CourseRepository,
+  PublishQuestionRepositories,
   QuestionRepositories,
   QuestionRepository,
+  QuestionUnitOfWork,
   Topic,
   TopicRepository,
 } from "../ports";
@@ -34,6 +39,14 @@ export class InMemoryQuestionDatabase {
   private topics = new Map<string, Topic>();
   private questions = new Map<string, QuestionAuthoringRecord>();
   private versionContents = new Map<string, QuestionDraftContent>();
+  /** Run 006 S5 — Course status, for `publishQuestion`'s ARCHIVED-Course guard. Defaults to PUBLISHED (not a fixture concern for S2-S4's own tests). */
+  private courseStatuses = new Map<string, CourseStatus>();
+  /** Run 006 S5 — every persisted `question_versions` row, keyed by version id; a Question's history is every entry with a matching `questionId`, never mutated once inserted (mirrors the real table's immutability). */
+  private versions = new Map<
+    string,
+    { questionId: string; versionNumber: number; content: PublishableQuestionVersionContent }
+  >();
+  private nextVersionId = 1;
 
   /** Test setup helper — not part of any port. */
   seedMembership(membership: CourseMembership): void {
@@ -53,6 +66,21 @@ export class InMemoryQuestionDatabase {
   /** Test setup helper — not part of any port. Seeds a published QuestionVersion's full content, keyed by versionId. */
   seedVersionContent(versionId: string, content: QuestionDraftContent): void {
     this.versionContents.set(versionId, content);
+  }
+
+  /** Test setup helper — not part of any port. Defaults to PUBLISHED, matching the real migration's backfill for pre-existing rows. */
+  seedCourseStatus(courseId: string, status: CourseStatus = "PUBLISHED"): void {
+    this.courseStatuses.set(courseId, status);
+  }
+
+  /** Test assertion helper — not part of any port. Every version row ever inserted for a Question, in insertion order — proves an old version was never rewritten. */
+  listVersionsForQuestion(
+    questionId: string,
+  ): Array<{ id: string; versionNumber: number; content: PublishableQuestionVersionContent }> {
+    return [...this.versions.entries()]
+      .filter(([, v]) => v.questionId === questionId)
+      .map(([id, v]) => ({ id, versionNumber: v.versionNumber, content: v.content }))
+      .sort((a, b) => a.versionNumber - b.versionNumber);
   }
 
   repos(): QuestionRepositories {
@@ -191,8 +219,86 @@ export class InMemoryQuestionDatabase {
         }
         return prompts;
       },
+      getNextVersionNumber: async (questionId) => {
+        const existing = this.listVersionsForQuestion(questionId);
+        return existing.length === 0 ? 1 : existing[existing.length - 1].versionNumber + 1;
+      },
+      insertVersion: async (questionId, content, versionNumber) => {
+        const id = `version-${this.nextVersionId++}`;
+        this.versions.set(id, { questionId, versionNumber, content });
+        this.versionContents.set(id, {
+          questionType: content.questionType,
+          prompt: content.prompt,
+          answerOptions: content.answerOptions,
+          correctOptionIds: content.correctOptionIds,
+          explanation: content.explanation,
+        });
+        return { id };
+      },
+      setCurrentVersionAndClearDraft: async (questionId, versionId) => {
+        const existing = this.questions.get(questionId);
+        if (!existing) return null;
+        const updated: QuestionAuthoringRecord = {
+          ...existing,
+          currentVersionId: versionId,
+          draft: { ...EMPTY_QUESTION_DRAFT },
+          updatedAt: new Date(),
+        };
+        this.questions.set(questionId, updated);
+        return updated;
+      },
     };
 
     return { memberships, topics, questions };
+  }
+
+  /**
+   * Run 006 S5 — the narrower repository set `publishQuestion` actually
+   * needs (`PublishQuestionRepositories`): `memberships` + `questions`
+   * unchanged from `repos()` above, plus a minimal in-memory `courses` read
+   * (status only — the only field `publishQuestion` reads).
+   */
+  private publishRepos(): PublishQuestionRepositories {
+    const { memberships, questions } = this.repos();
+    const courses: CourseRepository = {
+      getCourseSummary: async () => {
+        throw new Error("InMemoryQuestionDatabase.publishRepos: getCourseSummary is not used by publishQuestion");
+      },
+      getCourseSummaries: async () => [],
+      getJoinPolicy: async () => null,
+      getJoinEligibility: async () => null,
+      setJoinPolicy: async () => null,
+      createCourse: async () => {
+        throw new Error("InMemoryQuestionDatabase.publishRepos: createCourse is not used by publishQuestion");
+      },
+      getCourseForAuthoring: async (courseId) => {
+        const status = this.courseStatuses.get(courseId) ?? "PUBLISHED";
+        return {
+          id: courseId,
+          title: "Test Course",
+          status,
+          joinPolicy: "AUTHORIZED_ONLY",
+          examDate: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      },
+      updateCourseMetadata: async () => null,
+      setCourseStatus: async () => null,
+    };
+    return { memberships, courses, questions };
+  }
+
+  /**
+   * Structural fake for `QuestionUnitOfWork` — proves application-layer
+   * orchestration (what `publishQuestion` does inside the transaction), not
+   * real rollback-on-failure behavior. `PostgresQuestionUnitOfWork`'s own
+   * PGlite integration tests prove the actual atomicity/rollback contract —
+   * mirrors `InMemoryCourseDatabase.uow()`'s own scope note exactly.
+   */
+  uow(): QuestionUnitOfWork {
+    return {
+      runInTransaction: (fn) => fn(this.publishRepos()),
+    };
   }
 }
