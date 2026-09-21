@@ -466,6 +466,18 @@ function aggregate(runId, events, snapshots) {
       event.subagent_type ?? "unknown",
   );
 
+  // `handback_chars` (Run 007 context-cost audit's one identified telemetry
+  // gap) only exists on `SubagentStop` events collected after this field was
+  // added — older raw events simply lack the key, and `finiteNumbers`
+  // silently drops non-finite/undefined values, so a Run mixing old and new
+  // events degrades gracefully to "measured on however many stops actually
+  // have it" rather than skewing an average with implicit zeros.
+  const handbackCharValues = finiteNumbers(
+    subagentStops.map(
+      (event) => event.handback_chars,
+    ),
+  );
+
   const sessionIds = new Set(
     [
       ...events.map(
@@ -873,6 +885,29 @@ function aggregate(runId, events, snapshots) {
 
       file_reads:
         subagentReads.length,
+
+      // Context-cost diagnostic only (Run 007 audit finding): the LENGTH of
+      // each subagent's final hand-back message that lands in the main
+      // session's own context — never the message text itself. Populated
+      // only for `SubagentStop` events collected after this field existed;
+      // `measured_count` may be less than `completed` for a Run spanning
+      // older raw events.
+      handback_chars_total:
+        handbackCharValues.length > 0
+          ? sum(handbackCharValues)
+          : null,
+
+      handback_chars_avg:
+        handbackCharValues.length > 0
+          ? round(
+              sum(handbackCharValues) /
+                handbackCharValues.length,
+              1,
+            )
+          : null,
+
+      handback_measured_count:
+        handbackCharValues.length,
     },
 
     qualitative: {
@@ -891,6 +926,7 @@ function aggregate(runId, events, snapshots) {
       "Context misses and unnecessary rechecks require closeout judgment and are intentionally not inferred from raw events.",
       "shell_activity.by_command_class/by_category count each meaningful command in a compound `a && b` invocation separately, so their totals can exceed shell_activity.total (one entry per Bash/PowerShell tool call, not per sub-command).",
       "Raw events collected before command_classes existed carry only their first-matched command (the old command_class field); a compound command from before that field existed cannot be reclassified into its later sub-commands without rewriting historical raw data, which this summarizer does not do.",
+      "handback_chars is a LENGTH only (never the subagent's report text) and is populated only for SubagentStop events collected after this field existed — a Run spanning older raw events will show handback_measured_count below subagents.completed rather than treating unmeasured stops as zero-length.",
     ],
   };
 }
@@ -1075,6 +1111,17 @@ function renderMarkdown(summary) {
     `- Started: ${summary.subagents.started}`,
     `- Completed: ${summary.subagents.completed}`,
     `- File reads inside subagents: ${summary.subagents.file_reads}`,
+    `- Hand-back size measured for: ${summary.subagents.handback_measured_count} of ${summary.subagents.completed} completions`,
+    `- Hand-back characters (total, main-context cost proxy): ${
+      Number.isFinite(summary.subagents.handback_chars_total)
+        ? summary.subagents.handback_chars_total
+        : "NOT AVAILABLE"
+    }`,
+    `- Hand-back characters (average per measured subagent): ${
+      Number.isFinite(summary.subagents.handback_chars_avg)
+        ? summary.subagents.handback_chars_avg
+        : "NOT AVAILABLE"
+    }`,
     ``,
     `## Verification Activity`,
     ``,

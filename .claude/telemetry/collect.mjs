@@ -594,11 +594,23 @@ function buildEvent(input, projectRoot, runId) {
   }
 
   if (eventName === "SubagentStop") {
+    // `last_assistant_message` is the subagent's final hand-back text that
+    // lands in the main session's context. Record only its LENGTH (Run 007
+    // context-cost audit's one identified telemetry gap) — never the text
+    // itself, matching this collector's existing content-never-stored
+    // discipline (every other event already stores only paths/sizes/counts,
+    // never file or tool-response bodies). `null` (not 0) when the field is
+    // absent — an older Claude Code version or a event shape without this
+    // field must read as "unknown," never as "an empty hand-back."
     return {
       ...base,
       activity: "SUBAGENT_STOP",
       subagent_id: input.agent_id ?? null,
       subagent_type: input.agent_type ?? null,
+      handback_chars:
+        typeof input.last_assistant_message === "string"
+          ? safeResponseChars(input.last_assistant_message)
+          : null,
     };
   }
 

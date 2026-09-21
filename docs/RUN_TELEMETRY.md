@@ -398,7 +398,8 @@ Track where available:
 * subagents completed;
 * agent type;
 * parent relationship;
-* duration where available.
+* duration where available;
+* the LENGTH of the subagent's final hand-back message (`handback_chars`, a `response_chars`-style proxy per §23/§24) — never the message text itself. This exists specifically because a subagent's own file reads happen in its separate context and do not cost the main session anything, but its final hand-back report does land in the main session — this is the one part of subagent activity worth measuring as a main-context cost proxy.
 
 Subagents are useful when broad exploration would otherwise pollute the main context.
 
