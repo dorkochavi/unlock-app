@@ -22,10 +22,10 @@
 import { isUuid } from "../../../../../lib/uuid";
 import { toCourseAuthoringDto } from "../../authoring-dto";
 
+import { isValidDateOnly } from "@/lib/date-only";
+
 import type { UpdateCourseMetadataResult } from "@/application/course/update-course-metadata";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface HandleUpdateCourseMetadataDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -64,7 +64,7 @@ function readExamDate(body: Record<string, unknown>): string | null | typeof ABS
   if (!("examDate" in body)) return ABSENT;
   const value = body.examDate;
   if (value === null) return null;
-  if (typeof value === "string" && DATE_ONLY_PATTERN.test(value)) return value;
+  if (typeof value === "string" && isValidDateOnly(value)) return value;
   return undefined;
 }
 

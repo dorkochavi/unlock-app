@@ -23,6 +23,7 @@ import {
 } from "../../domain/import/types";
 import { parseCsvImportSource } from "./adapters/csv-adapter";
 import { parseJsonImportSource } from "./adapters/json-adapter";
+import { MAX_IMPORT_ROWS } from "./limits";
 import type { ImportRowParseResult } from "./adapter-types";
 import type { PreviewImportRepositories } from "./ports";
 
@@ -49,7 +50,8 @@ export type PreviewImportResult =
     }
   | { outcome: "NOT_AUTHORIZED" }
   | { outcome: "COURSE_ARCHIVED" }
-  | { outcome: "MALFORMED_SOURCE"; error: string };
+  | { outcome: "MALFORMED_SOURCE"; error: string }
+  | { outcome: "TOO_MANY_ROWS"; totalRows: number };
 
 export async function previewImport(
   command: PreviewImportCommand,
@@ -85,6 +87,10 @@ export async function previewImport(
 
   if (parsed.outcome === "MALFORMED_SOURCE") {
     return { outcome: "MALFORMED_SOURCE", error: parsed.error };
+  }
+
+  if (parsed.rows.length > MAX_IMPORT_ROWS) {
+    return { outcome: "TOO_MANY_ROWS", totalRows: parsed.rows.length };
   }
 
   const activeTopics = await repos.topics.listActiveForCourse(command.courseId);

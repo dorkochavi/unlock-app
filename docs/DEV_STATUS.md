@@ -103,8 +103,13 @@ of Run 006's Question/QuestionVersion model:
   concurrent change could invalidate, then atomically creates every
   Question via the existing unchanged `createDraft`/`updateDraft`);
 - `POST /api/courses/:courseId/import/preview` and `.../import/confirm`,
-  authenticated, Course-scoped, DTO-mapped, with an HTTP-boundary source-size
-  limit (`MAX_IMPORT_SOURCE_LENGTH`, resolving FUB-005);
+  authenticated (auth resolved before the request body is parsed as of Run
+  008 S1.E — an unauthenticated request never pays for JSON-parsing a body
+  it can never use, matching every other authenticated JSON route),
+  Course-scoped, DTO-mapped, with an HTTP-boundary source-size limit
+  (`MAX_IMPORT_SOURCE_LENGTH`, resolving FUB-005) and an application-layer
+  row-count limit (`MAX_IMPORT_ROWS = 2,000`, Run 008 S1.D, the other half
+  of FUB-005);
 - a minimal instructor UI (`/instructor/courses/:courseId/import`): format
   choice, paste/upload, Preview action with a valid/invalid row table, and a
   Confirm action (disabled while any row is invalid) that links back into
@@ -124,6 +129,25 @@ Accepted V1 scope boundaries (unchanged from the Plan):
 
 No schema/migration change was required — import reuses the `questions`,
 `question_versions`, and `topics` tables exactly as Run 006 left them.
+
+Accepted V1 concurrency limitation (Run 008 S1.F, re-inspected against the
+real transaction, not merely asserted): `confirmImport`'s Phase 2 re-check
+(`src/application/import/confirm-import.ts`) reads actor membership,
+Course status, and each resolved Topic's Course/active status inside one
+`BEGIN`ed transaction (default READ COMMITTED, `PostgresImportUnitOfWork`
+takes no explicit isolation level and no repository issues `SELECT ... FOR
+UPDATE`), then loops `createDraft`/`updateDraft` per row without
+re-checking again. A concurrent membership revoke / Course archive / Topic
+archive that commits after this re-check's `SELECT`s but before this
+transaction commits is not caught — plain reads take no lock. Unlike Run
+006's analogous publish race, there is no unique-constraint backstop here
+(each imported Question gets a fresh id, so nothing collides) — the
+practical exposure is a small number of `DRAFT_ONLY` Questions created
+into a Course/Topic that became archived moments earlier, not corruption
+or a learner-facing leak (draft-only content is never learner-eligible
+regardless). Acceptable for the single-editor Ruppin V1 pilot; not
+pessimistically locked. Tracked for future consideration in
+`docs/FOLLOW_UP_BACKLOG.md`.
 
 ## Database / Supabase
 

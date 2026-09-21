@@ -28,6 +28,9 @@
  * - `NOT_AUTHORIZED` -> 403, `{error: {code: "NOT_AUTHORIZED"}}`.
  * - `COURSE_ARCHIVED` -> 409, `{error: {code: "COURSE_ARCHIVED"}}`.
  * - `MALFORMED_SOURCE` -> 400, `{error: {code: "MALFORMED_SOURCE", message}}`.
+ * - `TOO_MANY_ROWS` -> 413, `{error: {code: "TOO_MANY_ROWS", totalRows}}`
+ *   — row-count companion to `SOURCE_TOO_LARGE` (`MAX_IMPORT_ROWS`, Run 008
+ *   S1.D), inherited from `previewImport`'s Phase 1 reparse.
  * - `INVALID_ROWS` -> 400, `{error: {code: "INVALID_ROWS", totalRows, invalidCount, errors}}`
  *   — the whole batch was rejected before any transaction opened; `errors`
  *   comes only from this codebase's own controlled row validators, never a
@@ -140,6 +143,9 @@ export async function handleConfirmImport(
 
     case "MALFORMED_SOURCE":
       return { status: 400, body: { error: { code: "MALFORMED_SOURCE", message: result.error } } };
+
+    case "TOO_MANY_ROWS":
+      return { status: 413, body: { error: { code: "TOO_MANY_ROWS", totalRows: result.totalRows } } };
 
     case "INVALID_ROWS":
       return {

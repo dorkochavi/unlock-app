@@ -153,6 +153,21 @@ describe("handlePreviewImport", () => {
     expect(response.body).toEqual({ error: { code: "MALFORMED_SOURCE", message: "not valid JSON" } });
   });
 
+  it("TOO_MANY_ROWS: 413 with the reported row count", async () => {
+    const preview = vi.fn(
+      async (): Promise<PreviewImportResult> => ({ outcome: "TOO_MANY_ROWS", totalRows: 2001 }),
+    );
+    const response = await handlePreviewImport({
+      authenticate: authenticated(),
+      courseId: COURSE_ID,
+      body: { format: "JSON", sourceText: "[]" },
+      preview,
+    });
+
+    expect(response.status).toBe(413);
+    expect(response.body).toEqual({ error: { code: "TOO_MANY_ROWS", totalRows: 2001 } });
+  });
+
   it("PREVIEWED: 200 with a DTO-mapped preview, passing actor/courseId/format/sourceText through", async () => {
     const preview = vi.fn(
       async (): Promise<PreviewImportResult> => ({

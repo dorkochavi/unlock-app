@@ -49,6 +49,18 @@ describe("handleCreateCourse", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it("shape-valid but calendar-impossible examDate (2026-99-99): 400 INVALID_REQUEST, never reaches create", async () => {
+    const create = vi.fn();
+    const response = await handleCreateCourse({
+      authenticate: authenticated(),
+      body: { title: "Intro", examDate: "2026-99-99" },
+      create,
+    });
+
+    expect(response.status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("never accepts a client-supplied actorUserId — only the authenticated userId reaches create", async () => {
     const create = vi.fn(
       async (): Promise<CreateCourseResult> => ({

@@ -97,3 +97,46 @@ describe("POST /api/courses/:courseId/import/preview — real route wiring: auth
     expect(command.courseId).toBe(COURSE_ID);
   });
 });
+
+describe("POST /api/courses/:courseId/import/preview — real route wiring: auth before body parsing (Run 008 S1.E)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.createSupabaseServerClient.mockResolvedValue({});
+  });
+
+  it("never calls request.json() for an unauthenticated request", async () => {
+    mocks.requireAuthenticatedUser.mockResolvedValue({ outcome: "UNAUTHENTICATED" });
+    const request = makeRequest({ format: "JSON", sourceText: "[]" });
+    const jsonSpy = vi.spyOn(request, "json");
+
+    await POST(request, makeParams(COURSE_ID));
+
+    expect(jsonSpy).not.toHaveBeenCalled();
+  });
+
+  it("authenticates before calling request.json() for an authenticated request", async () => {
+    const callOrder: string[] = [];
+    mocks.requireAuthenticatedUser.mockImplementation(async () => {
+      callOrder.push("authenticate");
+      return { outcome: "AUTHENTICATED", userId: "supabase-user-1" };
+    });
+    mocks.previewImport.mockResolvedValue({
+      outcome: "PREVIEWED",
+      totalRows: 0,
+      validCount: 0,
+      invalidCount: 0,
+      rows: [],
+    });
+
+    const request = makeRequest({ format: "JSON", sourceText: "[]" });
+    const originalJson = request.json.bind(request);
+    vi.spyOn(request, "json").mockImplementation(async () => {
+      callOrder.push("parse");
+      return originalJson();
+    });
+
+    await POST(request, makeParams(COURSE_ID));
+
+    expect(callOrder).toEqual(["authenticate", "parse"]);
+  });
+});

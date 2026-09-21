@@ -28,6 +28,8 @@ import { PostgresTopicRepository } from "@/infrastructure/postgres/topic-reposit
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
+import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ courseId: string }> },
@@ -63,6 +65,21 @@ export async function POST(
     const { courseId } = await params;
     const supabase = await createSupabaseServerClient();
 
+    // Auth before body parsing (Run 008 S1.E).
+    let authResult: RequireAuthenticatedUserResult;
+    try {
+      authResult = await requireAuthenticatedUser(supabase);
+    } catch (error) {
+      console.error(
+        "POST /api/courses/:courseId/topics: unexpected error during authentication",
+        error,
+      );
+      return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
+    }
+    if (authResult.outcome === "UNAUTHENTICATED") {
+      return NextResponse.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
+    }
+
     let body: unknown;
     try {
       body = await request.json();
@@ -71,7 +88,7 @@ export async function POST(
     }
 
     const { status, body: responseBody } = await handleCreateTopic({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: async () => authResult,
       courseId,
       body,
       create: (command) => {

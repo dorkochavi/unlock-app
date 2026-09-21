@@ -105,6 +105,21 @@ describe("handleConfirmImport", () => {
     expect(response.body).toEqual({ error: { code: "MALFORMED_SOURCE", message: "not valid JSON" } });
   });
 
+  it("TOO_MANY_ROWS: 413 with the reported row count", async () => {
+    const confirm = vi.fn(
+      async (): Promise<ConfirmImportResult> => ({ outcome: "TOO_MANY_ROWS", totalRows: 2001 }),
+    );
+    const response = await handleConfirmImport({
+      authenticate: authenticated(),
+      courseId: COURSE_ID,
+      body: { format: "JSON", sourceText: "[]" },
+      confirm,
+    });
+
+    expect(response.status).toBe(413);
+    expect(response.body).toEqual({ error: { code: "TOO_MANY_ROWS", totalRows: 2001 } });
+  });
+
   it("INVALID_ROWS: 400 with row-level errors, zero writes implied by the outcome itself", async () => {
     const confirm = vi.fn(
       async (): Promise<ConfirmImportResult> => ({

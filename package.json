@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:schema": "vitest run --config supabase/vitest.config.mts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bundle:review": "node scripts/create-review-bundle.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

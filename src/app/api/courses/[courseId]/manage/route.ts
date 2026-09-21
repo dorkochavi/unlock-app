@@ -29,6 +29,8 @@ import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
+import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ courseId: string }> },
@@ -64,6 +66,21 @@ export async function PATCH(
     const { courseId } = await params;
     const supabase = await createSupabaseServerClient();
 
+    // Auth before body parsing (Run 008 S1.E).
+    let authResult: RequireAuthenticatedUserResult;
+    try {
+      authResult = await requireAuthenticatedUser(supabase);
+    } catch (error) {
+      console.error(
+        "PATCH /api/courses/:courseId/manage: unexpected error during authentication",
+        error,
+      );
+      return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
+    }
+    if (authResult.outcome === "UNAUTHENTICATED") {
+      return NextResponse.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
+    }
+
     let body: unknown;
     try {
       body = await request.json();
@@ -72,7 +89,7 @@ export async function PATCH(
     }
 
     const { status, body: responseBody } = await handleUpdateCourseMetadata({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: async () => authResult,
       courseId,
       body,
       update: (command) => {

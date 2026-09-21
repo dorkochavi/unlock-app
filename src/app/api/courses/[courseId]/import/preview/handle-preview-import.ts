@@ -32,6 +32,10 @@
  * - `MALFORMED_SOURCE` -> 400, `{error: {code: "MALFORMED_SOURCE", message}}`
  *   — `message` comes only from the S1 adapters' own controlled parse
  *   errors, never a raw exception.
+ * - `TOO_MANY_ROWS` -> 413, `{error: {code: "TOO_MANY_ROWS", totalRows}}`
+ *   — row-count companion to the `SOURCE_TOO_LARGE` character-count limit
+ *   above (`MAX_IMPORT_ROWS`, Run 008 S1.D); only knowable after parsing,
+ *   so checked inside `previewImport`, not here.
  * - `PREVIEWED` -> 200, `{preview: PreviewImportDto}`.
  * - unexpected thrown error -> 500, `{error: {code: "INTERNAL_ERROR"}}`.
  */
@@ -137,6 +141,9 @@ export async function handlePreviewImport(
 
     case "MALFORMED_SOURCE":
       return { status: 400, body: { error: { code: "MALFORMED_SOURCE", message: result.error } } };
+
+    case "TOO_MANY_ROWS":
+      return { status: 413, body: { error: { code: "TOO_MANY_ROWS", totalRows: result.totalRows } } };
 
     case "PREVIEWED":
       return { status: 200, body: { preview: toPreviewImportDto(result) } };

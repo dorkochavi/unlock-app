@@ -100,6 +100,19 @@ describe("handleUpdateCourseMetadata", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
+  it("shape-valid but calendar-impossible examDate (2026-99-99): 400 INVALID_REQUEST, never reaches update", async () => {
+    const update = vi.fn();
+    const response = await handleUpdateCourseMetadata({
+      authenticate: authenticated(),
+      courseId: COURSE_ID,
+      body: { examDate: "2026-99-99" },
+      update,
+    });
+
+    expect(response.status).toBe(400);
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it("NOT_AUTHORIZED: 403", async () => {
     const update = vi.fn(
       async (): Promise<UpdateCourseMetadataResult> => ({ outcome: "NOT_AUTHORIZED" }),

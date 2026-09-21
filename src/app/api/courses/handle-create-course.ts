@@ -23,10 +23,10 @@
  */
 import { toCourseAuthoringDto } from "./authoring-dto";
 
+import { isValidDateOnly } from "@/lib/date-only";
+
 import type { CreateCourseResult } from "@/application/course/create-course";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface HandleCreateCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -54,7 +54,7 @@ function internalErrorResponse(): RouteJsonResponse {
 function readExamDate(body: Record<string, unknown>): string | null | undefined {
   const value = body.examDate;
   if (value === undefined || value === null) return null;
-  if (typeof value === "string" && DATE_ONLY_PATTERN.test(value)) return value;
+  if (typeof value === "string" && isValidDateOnly(value)) return value;
   return undefined;
 }
 

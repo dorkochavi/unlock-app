@@ -13,6 +13,15 @@
  * therefore `getPool()`/`DATABASE_URL`, is not structurally reachable for
  * an unauthenticated request.
  *
+ * ## Auth before body parsing (Run 008 S1.E)
+ *
+ * This route additionally authenticates BEFORE calling `request.json()` —
+ * an unauthenticated request never pays for parsing a (potentially large,
+ * up to `MAX_IMPORT_SOURCE_LENGTH`) body it can never use. Note this still
+ * does not add transport-level request-size protection: the body is still
+ * received off the wire before this check runs, only the userland JSON
+ * parse work is skipped.
+ *
  * `confirmImport`'s re-check + per-row write phase runs inside one
  * transaction via `PostgresImportUnitOfWork`/`PgConnectionProvider` — see
  * `confirm-import.ts`'s own doc comment for the full two-phase design.
@@ -33,6 +42,8 @@ import { PostgresTopicRepository } from "@/infrastructure/postgres/topic-reposit
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
+import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ courseId: string }> },
@@ -40,6 +51,20 @@ export async function POST(
   try {
     const { courseId } = await params;
     const supabase = await createSupabaseServerClient();
+
+    let authResult: RequireAuthenticatedUserResult;
+    try {
+      authResult = await requireAuthenticatedUser(supabase);
+    } catch (error) {
+      console.error(
+        "POST /api/courses/:courseId/import/confirm: unexpected error during authentication",
+        error,
+      );
+      return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
+    }
+    if (authResult.outcome === "UNAUTHENTICATED") {
+      return NextResponse.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
+    }
 
     let body: unknown = null;
     try {
@@ -49,7 +74,7 @@ export async function POST(
     }
 
     const { status, body: responseBody } = await handleConfirmImport({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: async () => authResult,
       courseId,
       body,
       confirm: (command) => {

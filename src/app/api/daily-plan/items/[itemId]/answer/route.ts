@@ -37,6 +37,8 @@ import { PostgresUnitOfWork } from "@/infrastructure/postgres/postgres-unit-of-w
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
+import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+
 import { handleSubmitDailyPlanItemAnswer } from "./handle-submit-daily-plan-item-answer";
 
 export async function POST(
@@ -49,6 +51,21 @@ export async function POST(
     const { itemId } = await params;
     const supabase = await createSupabaseServerClient();
 
+    // Auth before body parsing (Run 008 S1.E).
+    let authResult: RequireAuthenticatedUserResult;
+    try {
+      authResult = await requireAuthenticatedUser(supabase);
+    } catch (error) {
+      console.error(
+        "POST /api/daily-plan/items/:itemId/answer: unexpected error during authentication",
+        error,
+      );
+      return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
+    }
+    if (authResult.outcome === "UNAUTHENTICATED") {
+      return NextResponse.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
+    }
+
     let body: unknown;
     try {
       body = await request.json();
@@ -59,7 +76,7 @@ export async function POST(
     }
 
     const { status, body: responseBody } = await handleSubmitDailyPlanItemAnswer({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: async () => authResult,
       itemId,
       body,
       now,

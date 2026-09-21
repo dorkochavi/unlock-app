@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { MAX_IMPORT_ROWS } from "../limits";
 import { previewImport } from "../preview-import";
 import { InMemoryImportDatabase } from "./in-memory-fakes";
 import type { CourseMembership } from "../ports";
@@ -261,6 +262,43 @@ describe("previewImport — validation and Topic resolution", () => {
     expect(result.invalidCount).toBe(1);
     expect(result.rows[0].outcome).toBe("VALID");
     expect(result.rows[1].outcome).toBe("INVALID");
+  });
+});
+
+describe("previewImport — row-count limit (Run 008 S1.D)", () => {
+  it("reports TOO_MANY_ROWS for a batch over MAX_IMPORT_ROWS without ever resolving Topics", async () => {
+    const db = new InMemoryImportDatabase();
+    seedActor(db, { role: "OWNER" });
+    // Deliberately no Topic seeded — proves the limit short-circuits before
+    // Topic resolution would otherwise report a per-row "not found" error.
+    const oneRow = JSON.parse(WELL_FORMED_JSON)[0];
+    const tooManyRows = JSON.stringify(Array.from({ length: MAX_IMPORT_ROWS + 1 }, () => oneRow));
+
+    const result = await previewImport(
+      { actorUserId: ACTOR_ID, courseId: COURSE_ID, format: "JSON", sourceText: tooManyRows },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("TOO_MANY_ROWS");
+    if (result.outcome !== "TOO_MANY_ROWS") throw new Error("unreachable");
+    expect(result.totalRows).toBe(MAX_IMPORT_ROWS + 1);
+  });
+
+  it("allows a batch of exactly MAX_IMPORT_ROWS rows to proceed to normal validation", async () => {
+    const db = new InMemoryImportDatabase();
+    seedActor(db, { role: "OWNER" });
+    db.seedActiveTopic(COURSE_ID, "Introduction");
+    const oneRow = JSON.parse(WELL_FORMED_JSON)[0];
+    const exactlyAtLimit = JSON.stringify(Array.from({ length: MAX_IMPORT_ROWS }, () => oneRow));
+
+    const result = await previewImport(
+      { actorUserId: ACTOR_ID, courseId: COURSE_ID, format: "JSON", sourceText: exactlyAtLimit },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("PREVIEWED");
+    if (result.outcome !== "PREVIEWED") throw new Error("unreachable");
+    expect(result.totalRows).toBe(MAX_IMPORT_ROWS);
   });
 });
 

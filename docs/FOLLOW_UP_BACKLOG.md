@@ -303,7 +303,10 @@ After Development OS V1.2 is implemented and verified, and before or during a fu
 
 # FUB-005 — Structured Import Source Size/Row Limits
 
-**Status:** `DEFERRED`
+**Status:** `RESOLVED` — Run 008 S1.D added `MAX_IMPORT_ROWS` (2,000,
+`src/application/import/limits.ts`), enforced in `previewImport` right
+after parsing, inherited by `confirmImport`'s Phase 1 reparse. Kept for
+traceability; the original observation below is historical.
 **Priority:** `LOW`
 **Area:** Run 007 / Structured Import
 
@@ -334,6 +337,301 @@ Do not add a size/row cap to the adapters in S1/S2 — no HTTP boundary
 exists yet to make that limit meaningful, and guessing a number now would
 be exactly the kind of premature constraint `.claude/rules/api.md` asks to
 avoid inventing ahead of the real boundary.
+
+---
+
+# FUB-006 — Source Context/Comment Debt Audit
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Repository Maintainability / `src/**`
+
+## Observation
+
+A Run 008 repository audit found substantial comment-only lines across
+`src/**`, including Run/Plan/reviewer history embedded directly in source
+doc comments (e.g. "Run 007 S4's DB review finding", "fixed after general
+reviewer's CORRECTIONS REQUIRED").
+
+## Follow-Up Investigation
+
+A future audit should classify comments per file into KEEP (non-obvious
+invariants, security rationale, current "why", protocol/algorithm
+reasoning) vs. REMOVE/MOVE (Run chronology, implementation history,
+reviewer history, duplicate ADR prose, stale Plan references) and migrate
+the latter to Git history / Run Reports, which already own that
+information.
+
+## Do Not Do Yet
+
+Do not perform this cleanup opportunistically inside an unrelated Slice —
+it touches many files for no behavioral benefit and deserves its own
+bounded pass.
+
+---
+
+# FUB-007 — CI/CD / Release Automation
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Post-Pilot / Production Readiness
+
+## Observation
+
+The repository has verification commands (`npm run typecheck/lint/test/
+test:schema/build`) but no repository-owned CI pipeline enforcing them on
+PRs/pushes.
+
+## Follow-Up Investigation
+
+Post-pilot production work should evaluate PR verification, typecheck,
+relevant tests, build, and release/deployment gates (Run 012 territory).
+
+## Do Not Do Yet
+
+Not required for the Ruppin pilot; do not add CI infrastructure inside a
+product Run.
+
+---
+
+# FUB-008 — Runtime Observability / Application Monitoring
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Post-Pilot / Production Readiness
+
+## Observation
+
+Development OS telemetry (`docs/RUN_TELEMETRY.md`) measures agent
+behavior, not application runtime health — there is no error
+reporting/structured logging/latency visibility for production traffic.
+
+## Follow-Up Investigation
+
+Future production work should evaluate runtime error reporting, structured
+logging, and latency/error visibility for import/auth/Today failure paths
+(e.g. Sentry or equivalent) — Run 012 territory.
+
+## Do Not Do Yet
+
+Do not choose or integrate a provider now; Run 008 S6 may add a narrow,
+pilot-scoped log around one critical path if repository evidence proves it
+genuinely warranted, no broader stack.
+
+---
+
+# FUB-009 — Backup / Restore / Disaster Recovery
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Post-Pilot / Production Readiness
+
+## Observation
+
+Git protects code, not learner data. No backup ownership, frequency,
+RPO/RTO, or restore-verification procedure has been established for the
+hosted Supabase/Postgres project.
+
+## Follow-Up Investigation
+
+Establish backup ownership, frequency, RPO, RTO, and a periodic
+restore-verification procedure before scaling past the pilot. Do not
+assume/claim Supabase-managed backup guarantees without verifying the
+actual project plan/settings.
+
+## Do Not Do Yet
+
+Requires a human to check the hosted Supabase project's actual plan/
+settings — not verifiable from the repository alone.
+
+---
+
+# FUB-010 — Postgres / Vercel Connection Strategy
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Post-Pilot / Production Readiness
+
+## Observation
+
+Current `pg.Pool` usage (`src/infrastructure/postgres/pg-pool.ts`) has not
+been explicitly validated against a real serverless (Vercel) deployment's
+concurrency/pool-size/timeout behavior against Supabase's pooler vs.
+direct connection modes.
+
+## Follow-Up Investigation
+
+Before real production scale, explicitly validate connection mode, pool
+size, idle/connection/statement timeouts, and pooler-vs-direct choice
+against real deployment evidence.
+
+## Do Not Do Yet
+
+Do not tune pool behavior blindly without deployment evidence; not a
+pilot blocker at current expected pilot load.
+
+---
+
+# FUB-011 — Abuse / Platform Hardening
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Post-Pilot / Production Readiness
+
+## Observation
+
+No rate limiting, canonical field-length policy beyond what individual
+routes already validate, CSP/security headers, or request-body limits
+beyond Structured Import's (`MAX_IMPORT_SOURCE_LENGTH`/`MAX_IMPORT_ROWS`)
+exist yet.
+
+## Follow-Up Investigation
+
+Post-pilot hardening may add rate limiting, a canonical field-length
+policy, CSP/security headers, and broader request-body limits where
+justified by real traffic/abuse evidence — Run 012 territory.
+
+## Do Not Do Yet
+
+Do not implement broadly now; only act inside a Run if repository evidence
+proves an actual Run 008 pilot blocker (none found as of Run 008 S1/S6).
+
+---
+
+# FUB-012 — Legacy TodaySession Retirement Investigation
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Repository Maintainability
+
+## Observation
+
+Legacy `today_sessions`/`today_session_items` tables and associated code
+may no longer be required now that persisted DailyPlan/DailyPlanItems
+(ADR-016) own Today.
+
+## Follow-Up Investigation
+
+Investigate whether these can eventually be removed once no required
+compatibility path remains.
+
+## Do Not Do Yet
+
+Do not delete now — no proof yet that nothing depends on them.
+
+---
+
+# FUB-013 — Unwired Application Code Review
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Repository Maintainability
+
+## Observation
+
+A repository audit identified several application files that appeared
+structurally unconnected from normal runtime roots, including candidates
+around membership revoke/archive and some helper/use-case files.
+
+## Follow-Up Investigation
+
+A future focused review should classify each candidate KEEP / CONNECT /
+REMOVE with actual evidence (call-graph/route wiring), not assumption.
+
+## Do Not Do Yet
+
+Do not call anything dead code or remove it without that proof.
+
+---
+
+# FUB-014 — Structured Import Concurrency Hardening + Bulk Persistence
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Run 007-008 / Structured Import
+
+## Observation
+
+Two related, currently-accepted V1 limitations, both documented in
+`docs/DEV_STATUS.md`'s Structured Import section:
+
+1. (Run 008 S1.F) `confirmImport`'s Phase 2 re-check is not lock-
+   serialized against its own write loop (plain `READ COMMITTED` reads, no
+   `FOR UPDATE`) — a concurrent membership-revoke/Course-archive/
+   Topic-archive that commits between the re-check and this transaction's
+   commit is not caught. No corruption risk (no unique-constraint
+   collision), but a small window where `DRAFT_ONLY` Questions can be
+   created into a just-archived Course/Topic.
+2. (carried over from Run 007) `confirmImport` performs ~2 writes per
+   imported Question (`createDraft` + `updateDraft`, the existing Run 006
+   persistence methods, reused unchanged) — architecturally correct for
+   V1, not bulk-optimized.
+
+## Follow-Up Investigation
+
+Reconsider stronger locking (e.g. `SELECT ... FOR UPDATE` on the Course/
+Topic rows during Phase 2) if collaborative/concurrent multi-instructor
+editing becomes real; reconsider bulk persistence only if real
+performance evidence justifies it.
+
+## Do Not Do Yet
+
+Acceptable for the single-editor Ruppin V1 pilot; do not add pessimistic
+locking or bulk-write optimization without real evidence of need.
+
+---
+
+# FUB-015 — UNLOCK Starter Kit / Project Bootstrap Assets
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Cross-Project / Tooling
+
+## Observation
+
+Several Development-OS/architecture patterns built for UNLOCK are
+reusable across future projects: a tool-neutral `AGENTS.md` baseline, thin
+tool-specific adapters, the evidence-freshness model
+(`.claude/rules/testing.md`), risk-based reviewer orchestration
+(`review-commit`), the HOT/WARM/COLD/RESTRICTED context model, the
+modular-monolith TypeScript layout, the auth-before-DB test pattern
+(`route-auth-db-ordering.test.ts`), the PGlite integration harness,
+explicit-time testing, and the Run 008 S1.A safe review-bundle tooling.
+
+## Follow-Up Investigation
+
+After the pilot, extract these into a reusable starter kit — tool-neutral
+patterns only, never UNLOCK-specific product policy.
+
+## Do Not Do Yet
+
+Post-pilot; not required for Run 008.
+
+---
+
+# FUB-016 — Future Project Inception Template
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Cross-Project / Tooling
+
+## Observation
+
+UNLOCK's own build surfaced a recurring set of early-project questions
+(auth/RBAC, secrets/environment contract, backup/restore, observability,
+CI/CD, request/field limits, concurrency semantics, privacy/deletion,
+timezone/date semantics, migration policy, hosted-vs-local state, E2E
+fixture strategy, failure modes, deterministic-logic-vs-AI boundaries)
+that would have been useful to answer explicitly at project inception.
+
+## Follow-Up Investigation
+
+Create a reusable kickoff/spec checklist covering these areas for future
+projects.
+
+## Do Not Do Yet
+
+Capture only; not an active task.
 
 ---
 

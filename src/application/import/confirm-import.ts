@@ -60,6 +60,7 @@ export type ConfirmImportResult =
   | { outcome: "NOT_AUTHORIZED" }
   | { outcome: "COURSE_ARCHIVED" }
   | { outcome: "MALFORMED_SOURCE"; error: string }
+  | { outcome: "TOO_MANY_ROWS"; totalRows: number }
   | { outcome: "INVALID_ROWS"; totalRows: number; invalidCount: number; errors: ConfirmImportRowError[] }
   /** A concurrent Course/Topic change invalidated Phase 1's verdict between preview-reparse and the write transaction — never chosen arbitrarily, the caller must preview/confirm again against current state. */
   | { outcome: "STATE_CHANGED" };

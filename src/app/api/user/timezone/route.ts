@@ -32,11 +32,25 @@ import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
+import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+
 import { handleSetUserTimezone } from "./handle-set-user-timezone";
 
 export async function POST(request: Request): Promise<Response> {
   try {
     const supabase = await createSupabaseServerClient();
+
+    // Auth before body parsing (Run 008 S1.E).
+    let authResult: RequireAuthenticatedUserResult;
+    try {
+      authResult = await requireAuthenticatedUser(supabase);
+    } catch (error) {
+      console.error("POST /api/user/timezone: unexpected error during authentication", error);
+      return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
+    }
+    if (authResult.outcome === "UNAUTHENTICATED") {
+      return NextResponse.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
+    }
 
     let timezone: unknown;
     try {
@@ -52,7 +66,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const { status, body } = await handleSetUserTimezone({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: async () => authResult,
       timezone,
       persistTimezone: (command) => {
         // Reached ONLY for an already-authenticated, well-formed request

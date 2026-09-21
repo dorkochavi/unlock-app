@@ -10,6 +10,13 @@
  * `getPool()`/repository construction is LAZY, inside each closure below —
  * unreachable for an unauthenticated request, since both handlers return
  * immediately on `UNAUTHENTICATED`.
+ *
+ * ## Auth before body parsing (Run 008 S1.E)
+ *
+ * `PATCH` authenticates BEFORE calling `request.json()` — an unauthenticated
+ * request never pays for parsing a body it can never use. `handleUpdateQuestionDraft`
+ * still authenticates first internally (its own testable-core contract,
+ * unchanged); the already-resolved result is passed through here.
  */
 export const runtime = "nodejs";
 
@@ -26,6 +33,8 @@ import { PostgresQuestionRepository } from "@/infrastructure/postgres/question-a
 import { PostgresTopicRepository } from "@/infrastructure/postgres/topic-repository";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
+
+import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
 
 export async function GET(
   _request: Request,
@@ -64,6 +73,20 @@ export async function PATCH(
     const { courseId, questionId } = await params;
     const supabase = await createSupabaseServerClient();
 
+    let authResult: RequireAuthenticatedUserResult;
+    try {
+      authResult = await requireAuthenticatedUser(supabase);
+    } catch (error) {
+      console.error(
+        "PATCH /api/courses/:courseId/questions/:questionId: unexpected error during authentication",
+        error,
+      );
+      return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
+    }
+    if (authResult.outcome === "UNAUTHENTICATED") {
+      return NextResponse.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
+    }
+
     let body: unknown;
     try {
       body = await request.json();
@@ -72,7 +95,7 @@ export async function PATCH(
     }
 
     const { status, body: responseBody } = await handleUpdateQuestionDraft({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: async () => authResult,
       courseId,
       questionId,
       body,

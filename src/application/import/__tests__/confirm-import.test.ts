@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { confirmImport } from "../confirm-import";
+import { MAX_IMPORT_ROWS } from "../limits";
 import { InMemoryImportDatabase, InMemoryImportUnitOfWork } from "./in-memory-fakes";
 import type { CourseMembership } from "../ports";
 
@@ -82,6 +83,26 @@ describe("confirmImport — malformed source", () => {
       deps(db),
     );
     expect(result.outcome).toBe("MALFORMED_SOURCE");
+    expect(db.listQuestionsForCourse(COURSE_ID)).toHaveLength(0);
+  });
+});
+
+describe("confirmImport — row-count limit (Run 008 S1.D)", () => {
+  it("reports TOO_MANY_ROWS and creates no Question, never opening a transaction", async () => {
+    const db = new InMemoryImportDatabase();
+    seedActor(db, { role: "OWNER" });
+    db.seedActiveTopic(COURSE_ID, "Introduction");
+    const oneRow = JSON.parse(WELL_FORMED_JSON)[0];
+    const tooManyRows = JSON.stringify(Array.from({ length: MAX_IMPORT_ROWS + 1 }, () => oneRow));
+
+    const result = await confirmImport(
+      { actorUserId: ACTOR_ID, courseId: COURSE_ID, format: "JSON", sourceText: tooManyRows },
+      deps(db),
+    );
+
+    expect(result.outcome).toBe("TOO_MANY_ROWS");
+    if (result.outcome !== "TOO_MANY_ROWS") throw new Error("unreachable");
+    expect(result.totalRows).toBe(MAX_IMPORT_ROWS + 1);
     expect(db.listQuestionsForCourse(COURSE_ID)).toHaveLength(0);
   });
 });

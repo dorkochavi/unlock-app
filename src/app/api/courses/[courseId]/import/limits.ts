@@ -11,3 +11,10 @@
  * still bounding the synchronous parse this route performs per request.
  */
 export const MAX_IMPORT_SOURCE_LENGTH = 2_000_000;
+
+/**
+ * Row-count protection is a companion to this HTTP-boundary size limit but
+ * cannot be enforced here: row count is only knowable after parsing, which
+ * happens inside the application layer. See `MAX_IMPORT_ROWS`,
+ * `src/application/import/limits.ts` (Run 008 S1.D).
+ */
