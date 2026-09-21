@@ -4,184 +4,23 @@ alwaysApply: true
 ---
 # UNLOCK — Cursor Workflow
 
-This rule is a thin Cursor-specific adapter.
-
-Canonical repository-wide instructions live in:
-
-`AGENTS.md`
-
-Do not recreate a separate Development OS inside Cursor rules.
-
----
-
-## 1. Start From Repository Reality
+Cursor uses the repository-wide baseline in `AGENTS.md`.
+This file is only a thin editor-specific adapter.
 
 Before substantial work:
-
-* read `AGENTS.md`;
-* inspect the relevant code;
-* inspect current Git state when repository state matters;
-* load only the additional documents required by the task.
-
-Do not reconstruct current truth from historical Run Reports.
-
----
-
-## 2. Use the Correct Owner
-
-Use canonical sources rather than duplicating their policy here.
-
-Examples:
-
-* current execution → `docs/CHATGPT_PLAN.md`
-* current durable state → `docs/DEV_STATUS.md`
-* product boundary → `docs/UNLOCK_V1_SCOPE.md`
-* product sequencing → `docs/UNLOCK_ROADMAP.md`
-* durable decisions → `docs/DECISIONS/**`
-* unresolved decisions → `docs/OPEN_QUESTIONS.md`
-* terminology → `docs/DOMAIN_GLOSSARY.md`
-* architecture → `docs/ARCHITECTURE.md`
-* testing philosophy → `docs/TESTING.md`
-* deferred technical work → `docs/FOLLOW_UP_BACKLOG.md`
-
-Use `docs/CONTEXT_MAP.md` only when you need help locating the right source/code/tests.
-
----
-
-## 3. Scope Discipline
-
-Implement the smallest approved change that solves the task.
-
-Do not:
-
-* add deferred or architecture-ready functionality without explicit scope;
-* redesign adjacent systems for convenience;
-* introduce speculative infrastructure;
-* resolve open product/security/data decisions silently;
-* perform unrelated refactors.
-
-If a real unresolved decision blocks correct implementation, surface it instead of guessing.
-
----
-
-## 4. Architecture Guardrail
-
-Preserve the current layered modular monolith:
-
-```text
-app
-→ application
-→ domain
-
-infrastructure
-→ persistence/provider implementation
-```
-
-Keep domain/learning policy out of presentation code.
-
-Keep persistence details out of domain logic.
-
-Use the relevant scoped Cursor rule when the task materially touches that area.
-
----
-
-## 5. Product Guardrails
-
-Preserve accepted current behavior, including where relevant:
-
-* Attempts are immutable historical evidence;
-* QuestionVersions are immutable;
-* AI is not the deterministic Learning Engine;
-* `DailyPlan` / `DailyPlanItem` are the primary current Today model;
-* a Course works without requiring an Institution;
-* Hebrew / RTL / `he-IL` are defaults.
-
-Do not use this rule as the detailed source for those behaviors.
-
-Load the relevant canonical source when implementation depends on them.
-
----
-
-## 6. Feature Contracts
-
-Feature Contracts under `docs/FEATURES/` are optional.
-
-Use one only when a complex feature genuinely benefits from a durable feature-specific behavior contract.
-
-Do not create or update a Feature Contract automatically for every meaningful code change.
-
----
-
-## 7. Verification
-
-Select verification based on the actual changed risk.
-
-Do not use a fixed universal checklist such as:
-
-```text
-lint
-typecheck
-unit tests
-build
-```
-
-for every change.
-
-Use the narrowest evidence that proves the behavior, and broaden only when the risk requires it.
-
-Conceptual testing guidance lives in:
-
-`docs/TESTING.md`
-
-If Claude Code owns the active execution, its operational verification policy lives in:
-
-`.claude/rules/testing.md`
-
-Report only checks actually performed.
-
----
-
-## 8. Documentation
-
-Update documentation only when durable truth changed.
-
-Use the owner of the changed fact.
-
-Examples:
-
-* durable decision → ADR
-* unresolved decision → `OPEN_QUESTIONS`
-* current state → `DEV_STATUS`
-* current execution → `CHATGPT_PLAN`
-* deferred technical work → `FOLLOW_UP_BACKLOG`
-
-Do not cascade documentation edits ceremonially.
-
----
-
-## 9. Git Safety
-
-Do not perform destructive Git operations or remote mutation without explicit instruction.
-
-Do not:
-
-* reset/clean away unknown work;
-* force-push;
-* rewrite shared history;
-* push automatically;
-* deploy automatically;
-* apply hosted Supabase migrations automatically.
-
-Inspect the intended diff before handing work back.
-
----
-
-## 10. Core Principle
-
-> Use Cursor as an implementation tool over canonical repository truth.
-
-> Keep context narrow.
-
-> Preserve scope and accepted behavior.
-
-> Do not let Cursor rules become a second policy system.
+- inspect relevant repository code/state;
+- use `docs/CHATGPT_PLAN.md` only when executing the active Run;
+- use `docs/DEV_STATUS.md` for current durable state;
+- load other docs only when the task needs them.
+
+Authority pointers:
+- decisions → `docs/DECISIONS/**`
+- unresolved decisions → `docs/OPEN_QUESTIONS.md`
+- navigation → `docs/CONTEXT_MAP.md`
+- deferred work → `docs/FOLLOW_UP_BACKLOG.md`
+
+Do not use historical Run Reports as current truth.
+Do not invent missing product/data/auth/learning decisions.
+Do not push, deploy, mutate hosted DB state, expose secrets, or perform destructive Git cleanup.
+
+For task-specific policy, let Cursor load the relevant scoped `.cursor/rules/**` file rather than duplicating it here.

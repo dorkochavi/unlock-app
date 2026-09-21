@@ -1,120 +1,53 @@
-# UNLOCK project instructions
+# UNLOCK — Agent Baseline
 
-`AGENTS.md` is the tool-agnostic operating baseline for coding agents working in the UNLOCK repository.
+`AGENTS.md` is the small tool-agnostic contract for coding agents.
+Tool-specific files may add workflow behavior but must not redefine shared product/architecture/safety truth.
 
-Tool-specific instructions may add behavior for their own environment, but they must not redefine repository-wide product, architecture, safety, or decision truth.
-
-## Start with repository reality
+## Start
 
 Before substantial work:
+- inspect relevant repository state;
+- identify the current task/Run;
+- load only the minimum authoritative context required;
+- use `docs/CONTEXT_MAP.md` only when navigation is needed.
 
-1. Inspect the current repository state:
+## Source Categories
 
-   * `git status`
-   * `git status -sb`
-   * `git log --oneline -5`
-2. Identify the current task or Run.
-3. Read only the minimum context needed for that task.
-4. Use `docs/CONTEXT_MAP.md` as a GPS when additional authoritative context needs to be located.
+- **Repository reality:** committed code, tests, migrations, config.
+- **Accepted intent:** ADRs + canonical product/architecture docs.
+- **Unresolved decisions:** `docs/OPEN_QUESTIONS.md`.
+- **Current execution:** `docs/CHATGPT_PLAN.md`.
+- **Current snapshot:** `docs/DEV_STATUS.md`.
+- **Historical context:** Git + `docs/RUNS/**`.
+- **Deferred work:** `docs/FOLLOW_UP_BACKLOG.md`.
+- **Temporary context:** `scratch/**` (non-canonical).
 
-Do not load large documentation sets by default.
+Accepted decisions may intentionally lead current implementation; do not assume existing code overrides a newer accepted decision.
+Do not invent unresolved product/data/auth/learning behavior.
 
-## Source categories
+## Scope
 
-Different kinds of truth have different owners.
-
-### Repository reality
-
-Use committed implementation evidence to understand what exists now:
-
-* source code
-* tests
-* committed migrations
-* configuration
-
-Repository reality describes the current implementation. It does not automatically override a newer accepted decision that has not yet been implemented.
-
-### Accepted intent
-
-Use accepted decisions and canonical documentation for intended behavior:
-
-* `docs/DECISIONS/**`
-* relevant canonical product and architecture documents
-
-Accepted ADRs override older conflicting design descriptions.
-
-### Unresolved decisions
-
-`docs/OPEN_QUESTIONS.md` owns unresolved product, architecture, learning, data, and calibration decisions.
-
-Load it only when the current task touches an unresolved area or an accepted answer cannot be found.
-
-Do not invent an answer.
-
-### Current execution
-
-`docs/CHATGPT_PLAN.md` owns the current Run's scope, Slice order, Run-specific acceptance, gates, and non-goals.
-
-It does not redefine canonical product or architecture truth.
-
-### Current snapshot
-
-`docs/DEV_STATUS.md` describes the durable current state of the project.
-
-It is a snapshot, not a task queue, changelog, or product-decision record.
-
-### Historical context
-
-Git and `docs/RUNS/**` preserve execution history.
-
-Historical documents are not default implementation context and must not override current accepted decisions.
-
-### Temporary context
-
-`scratch/**` is temporary and non-canonical.
-
-Use it only for short-lived continuity or when the current task explicitly requires it.
-
-## Scope discipline
-
-Implement one focused change at a time.
-
-Do not silently mix unrelated product, Learning Engine, database, authentication, API, or UI work.
-
-Do not introduce deferred features merely because the architecture could support them.
-
-If repository reality conflicts with the current Plan or accepted intent, surface the conflict instead of silently resolving it by assumption.
-
-Useful future work that is real but outside the current scope belongs in `docs/FOLLOW_UP_BACKLOG.md`, not in the active task.
+Work in focused bounded changes.
+Do not silently mix unrelated subsystems or implement deferred features opportunistically.
+When repository reality materially conflicts with current accepted intent/Plan, surface the conflict instead of guessing.
 
 ## Safety
 
-Coding agents must not:
+Agents do not autonomously:
+- push/deploy/publish;
+- mutate/link hosted Supabase or apply hosted migrations;
+- perform destructive Git/filesystem operations;
+- delete unknown files;
+- expose/request/commit secrets.
 
-* push Git changes unless repository policy is explicitly changed by the human owner;
-* deploy or publish automatically;
-* link to or mutate hosted Supabase projects automatically;
-* apply hosted database migrations automatically;
-* use destructive Git or filesystem operations without explicit human approval;
-* delete unknown files;
-* expose, reproduce, request, or commit secrets.
+Prefer the smallest safe reversible change.
 
-Hosted database migration remains a human/manual action in the current UNLOCK workflow.
+## Tool Entry Points
 
-Prefer the smallest reversible change that satisfies the current task.
+- Claude Code → `CLAUDE.md` + `.claude/**`
+- Cursor → `.cursor/rules/**`
 
-## Tool-specific instructions
-
-For Claude Code-specific workflow, skills, reviewers, and scoped rules, use:
-
-* `CLAUDE.md`
-* `.claude/**`
-
-For Cursor-specific projections, use:
-
-* `.cursor/rules/**`
-
-Tool-specific files may define how that tool works, but canonical repository truth remains in the shared repository sources described above.
+Canonical repository truth remains in the shared sources above.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
