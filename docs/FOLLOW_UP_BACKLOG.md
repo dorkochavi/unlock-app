@@ -301,6 +301,42 @@ After Development OS V1.2 is implemented and verified, and before or during a fu
 
 ---
 
+# FUB-005 — Structured Import Source Size/Row Limits
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Run 007 / Structured Import
+
+## Observation
+
+Run 007 S1's JSON/CSV import adapters (`src/application/import/adapters/`)
+are pure parsing functions with no upper bound on payload size or row
+count — a multi-megabyte JSON array or a CSV with hundreds of thousands of
+rows is parsed synchronously in one call. Flagged during S1's
+`/review-commit` general review.
+
+## Important Constraint
+
+Not a defect in S1 itself: S1 has no API/auth boundary yet (it is only
+called by the S3 preview/confirm routes, not yet built), so there is
+nowhere for a request-size limit to attach today.
+
+## Follow-Up Investigation
+
+When S3 (Preview API + Instructor Preview UI) is implemented, decide a
+concrete request-body/row-count limit for the preview/confirm routes and
+enforce it at that HTTP boundary — not inside the format-independent
+adapters themselves.
+
+## Do Not Do Yet
+
+Do not add a size/row cap to the adapters in S1/S2 — no HTTP boundary
+exists yet to make that limit meaningful, and guessing a number now would
+be exactly the kind of premature constraint `.claude/rules/api.md` asks to
+avoid inventing ahead of the real boundary.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.
