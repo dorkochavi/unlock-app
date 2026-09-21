@@ -6,7 +6,7 @@ Updated: 2026-09-21
 ## Repository
 
 - Branch: `feature/project-foundation`
-- Last confirmed remote baseline before the Final Compression Patch: `ef7497c`
+- Last confirmed remote baseline before the V1.2 closure reconciliation: `ef7497c`
 - Dor manually pushed that baseline to `origin/feature/project-foundation`.
 - Product/runtime code is unchanged by the Development OS V1.2 cleanup snapshot.
 - Hosted/remote mutation remains human-controlled.
@@ -142,25 +142,24 @@ Remote Git push and hosted database mutation remain manual/user-controlled actio
 ## Known Limitations / Gaps
 
 Product roadmap remains:
-- Run 007 — Structured Import
+- Run 007 — Structured Import (PLANNED, implementation not started)
 - Run 008 — Authoring Integration + Pilot Readiness
 - Run 009 — Learner Progress + Instructor Insights
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
 
-Run 007 planning begins only after this Final Compression Patch is applied/committed and the final Git state is confirmed.
+Run 007 — Structured Import V1 is planned in `docs/CHATGPT_PLAN.md`
+(6 Slices, S1-S6). No Slice implementation has started; no dependency has
+been added; no `src/**` file has changed.
 
 Known deferred maintainability work lives in `docs/FOLLOW_UP_BACKLOG.md`.
 
 ## Current Manual Actions
 
-For Development OS work:
-- apply/review this Final Compression Patch in the live repository;
-- create a focused local commit;
-- Dor performs push manually after review.
-
-After that, prepare Run 007 rather than reopening the V1.2 audit.
+For Run 007:
+- begin S1 (Canonical Import Contract + JSON/CSV Adapters) per
+  `docs/CHATGPT_PLAN.md` when ready to start implementation.
 
 For hosted Supabase:
 - pending migration application remains a separate manual action when product work requires it.
