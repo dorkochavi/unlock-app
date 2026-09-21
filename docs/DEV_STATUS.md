@@ -189,6 +189,19 @@ V1.2 direction is established:
 
 The Development OS V1.2 Final Compression Patch is complete in this repository snapshot. It reduces remaining context duplication without changing those policies or product/runtime behavior.
 
+## Development OS — Active Observations
+
+Rolling state only — not a diary. An item leaves this list the moment it resolves (`DROP`/`ABSORB`/`REVERT`); see `docs/DEVOS_OBSERVABILITY.md` §8 for the promotion lifecycle. Evidence lives in `docs/RUNS/2026-09-21-007.md` and its own follow-up audits, not copied here.
+
+Currently active `WATCH` items (none has cleared the cross-Run bar in `docs/DEVOS_OBSERVABILITY.md` §6 required before becoming a `CHANGE`):
+
+- **Adversarial acceptance criteria proven only at review, not before it.** Run 007 S4 (concurrent-membership-revocation re-check) and S6 (genuine mid-transaction rollback) each reached review with the correct behavior implemented but no test yet proving the specific named negative scenario the Plan called out. Re-check after Run 008 before considering any workflow change.
+- **`src/domain/import/types.ts` bundles three concerns** (canonical row shape, row-content validation, Topic-name resolution) in one file. Not costly today — reconsider only if a fourth concern or new external fan-out appears.
+- **`src/domain/learning/answer.ts`**: Run 007 needed a full read of this dense, multi-function file to extract confidence about one reused function's contract. Reconsider only if this narrow-extraction-from-a-dense-file pattern recurs in a later Run.
+- **Test-fakes-as-template reads** (`in-memory-fakes.ts` style files read in full purely to copy an established fake-construction convention). Only becomes an action item if a third feature again requires a full read of an older fakes module for this reason.
+- **Telemetry has no native per-Slice attribution** — a per-Slice breakdown currently requires manual reconstruction from commit timestamps. Remains `WATCH` unless it materially limits a future analysis.
+- **Main-session `Edit`/`Write` tool-result echoes measured larger than file-read cost this Run** (Run 007's context-cost audit: ~147k vs. ~93k main-context tokens), concentrated on files receiving several sequential edits in one session. Genuinely new this Run — watch for recurrence in Run 008 before considering any edit-batching guidance; no change proposed yet.
+
 ## Development OS Safety
 
 Current hard Claude denies include:

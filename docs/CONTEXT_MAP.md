@@ -24,6 +24,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Deferred useful work | `docs/FOLLOW_UP_BACKLOG.md` | COLD |
 | Historical execution | Git + `docs/RUNS/**` | RESTRICTED |
 | Temporary resume state | `scratch/development_checkpoint.md` | LOCAL/COLD |
+| How to interpret telemetry/context-cost signals | `docs/DEVOS_OBSERVABILITY.md` | COLD |
 
 ## Task → Smallest Context
 
