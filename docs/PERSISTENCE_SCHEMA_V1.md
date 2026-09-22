@@ -18,9 +18,8 @@ Status: **IMPLEMENTED IN REPOSITORY** — thirteen forward-only migrations exist
 
 Hosted Supabase migration state at this Development OS V1.2 baseline:
 
-* migrations #1–#9 have been applied to the hosted Supabase project;
-* migrations #10–#12 are committed and locally/PGlite verified but remain pending explicit human remote application;
-* migration #13 is committed and locally/PGlite verified but deliberately NOT applied hosted yet — pending the backup-readiness gate (`docs/FOLLOW_UP_BACKLOG.md` FUB-009), per `docs/DEV_STATUS.md`.
+* migrations #1–#12 are confirmed applied to the hosted Supabase project;
+* migration #13 is committed and locally/PGlite verified but deliberately NOT applied hosted yet — pending the backup-readiness gate (`docs/FOLLOW_UP_BACKLOG.md` FUB-009), per `docs/DEV_STATUS.md`. The hosted physical schema still retains `today_sessions`/`today_session_items` and `attempts.today_session_id`/`attempts.today_session_item_id` until migration #13 is applied there — only the application/runtime model has been retired (see `docs/DECISIONS/011-today-is-course-scoped-v1.md`), not yet the hosted schema.
 
 Hosted migration state is operational status, not physical-schema authority. It may advance independently of this document and should be tracked in `docs/DEV_STATUS.md`.
 
@@ -519,12 +518,18 @@ replay contract and its open questions).
 
 ## `today_sessions` — RETIRED
 
-**This table no longer exists** — dropped by migration #13
-(`20260929000000_retire_today_session.sql`), after a runtime reachability
-audit found no live `src/app` route creating/retrieving a TodaySession and
-hosted Supabase verification found zero rows in it. `DailyPlan` (below) is
-the sole active Today persistence model. The section below is preserved as
-historical design-rationale record only — do not read it as current schema.
+**This table no longer exists in the repository's target schema** — dropped
+by migration #13 (`20260929000000_retire_today_session.sql`), after a
+runtime reachability audit found no live `src/app` route creating/retrieving
+a TodaySession and hosted Supabase verification found zero rows in it.
+`DailyPlan` (below) is the sole active Today application/runtime model.
+Migration #13 is committed and locally/PGlite-verified but, as of this
+writing, deliberately **not yet applied to the hosted Supabase project**
+(pending the backup-readiness gate, `docs/FOLLOW_UP_BACKLOG.md` FUB-009) —
+the hosted physical schema still has this table until then; see
+`docs/DEV_STATUS.md` for current hosted-migration status. The section below
+is preserved as historical design-rationale record only — do not read it as
+describing a live application-layer model.
 
 Persisted decision output (`docs/DATABASE.md` §2's fourth category — not
 source-of-truth, not derived-and-rebuildable, a frozen record of what was
@@ -570,9 +575,10 @@ decided).
 
 ## `today_session_items` — RETIRED
 
-**This table no longer exists** — dropped by migration #13, same as
-`today_sessions` above. Preserved as historical design-rationale record
-only.
+**This table no longer exists in the repository's target schema** — dropped
+by migration #13, same as `today_sessions` above, and likewise not yet
+applied to the hosted Supabase project (see that section's note). Preserved
+as historical design-rationale record only.
 
 The frozen plan, one row per planned Question within a session — ADR-010's
 "Today Session freeze model."
