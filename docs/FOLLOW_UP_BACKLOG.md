@@ -643,25 +643,35 @@ Capture only; not an active task.
 
 ## Observation
 
-`scripts/create-review-bundle.mjs` (Run 008 S1.A) builds its snapshot
-from `git ls-files` (tracked, non-deleted paths) — deliberately safer
-than a raw directory copy, but a consequence is that legitimate,
-not-yet-committed work (new untracked files, uncommitted edits to
-tracked files) is silently absent from a bundle generated against a
-dirty working tree. Morning Review of Run 008 (2026-09-22).
+`scripts/create-review-bundle.mjs` (Run 008 S1.A) selects paths via
+`git ls-files` (tracked, non-deleted paths) but then copies each one from
+the CURRENT WORKING TREE (`copyFileSync(src, dest)`), not from the
+committed blob at `sourceHead`. Against a dirty working tree this means:
+new untracked files are silently omitted (never in the tracked-path
+list); but a modified TRACKED file is INCLUDED, with its current
+working-tree content — not the version at the commit the manifest's
+`sourceHead` names. The manifest's `sourceHead` alone therefore does not
+prove every included tracked file actually matches that commit. Morning
+Review of Run 008 (2026-09-22) corrected an earlier, less precise version
+of this observation that had claimed modified tracked files were also
+omitted — they are not.
 
 ## Follow-Up Investigation
 
 Consider having the script detect a dirty working tree (`git status
---porcelain`) and warn, or refuse to run, unless the caller explicitly
-opts in to bundling only the last committed state.
+--porcelain`) and warn or refuse when untracked or modified files exist,
+or explicitly record dirty-working-tree state (e.g. the list of modified
+tracked paths) in the manifest so a reader isn't misled by `sourceHead`
+alone.
 
 ## Do Not Do Yet
 
-Not a security issue (the current behavior fails toward excluding more,
-never toward leaking something unsafe) — low priority, act only if a
-real review bundle is generated from a dirty tree and the gap actually
-causes confusion.
+Not a security issue — every included path still passes the same
+unsafe-pattern filter regardless of working-tree state, so nothing
+sensitive leaks; the risk is a misleadingly labeled bundle (working-tree
+content presented under a `sourceHead` it may not exactly match), not
+exposure. Low priority — act only if a real review bundle is generated
+from a dirty tree and the mismatch actually causes confusion.
 
 ---
 
