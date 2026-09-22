@@ -5,19 +5,26 @@ Updated: 2026-09-22
 
 ## Repository
 
-- Branch: `feature/project-foundation`
-- Local HEAD: `b86d4e3` (Run 008 S5 close) — 5 commits ahead of
-  `origin/feature/project-foundation` (`d509987`): `1bea327`, `38e26fc`,
-  `4fe5adb`, `a894f9c`, `b86d4e3`.
-- Working tree clean. Not pushed — remote push remains a manual/human action.
+- Branch: `feature/project-foundation`.
+- Working tree: expected clean at every durable checkpoint (this document
+  does not itself change that). Not pushed — remote push remains a
+  manual/human action.
+- Git (`git log`/`git status`) is the canonical source for the exact
+  current local HEAD and ahead/behind count — never hardcoded here,
+  since this document is itself committed and would go stale against its
+  own claim immediately.
+- Run 008 (Authoring Integration + Pilot Readiness) implementation work
+  landed through `IMPLEMENTATION_HEAD` `b86d4e3` (see
+  `docs/RUNS/2026-09-22-008.md` for that Run's exact Slice commits);
+  this Run's own close-out/patch commits land after it. Run 008 added
+  product code (safe review-bundle tooling, real calendar-date
+  validation, Structured Import row-count limit, auth-before-body-parsing
+  across 10 routes, a learner-eligibility fix, instructor workflow copy)
+  and test-only integration evidence. No schema/migration change.
 - Run 007 (Structured Import V1) was pushed to origin between its own Run
-  Report being written and Run 008 starting — Run 008's `BASE_HEAD` is the
-  clean, already-pushed `d509987`, not Run 007's own local HEAD.
-- Run 008 (Authoring Integration + Pilot Readiness) added product code
-  (safe review-bundle tooling, real calendar-date validation, Structured
-  Import row-count limit, auth-before-body-parsing across 10 routes, a
-  learner-eligibility fix, instructor workflow copy) and test-only
-  integration evidence. No schema/migration change.
+  Report being written and Run 008 starting — Run 008's `BASE_HEAD` was
+  the already-pushed `d509987`, not Run 007's own local HEAD at the time
+  its Run Report was written.
 - Hosted/remote mutation remains human-controlled.
 
 ## Product Direction
@@ -339,29 +346,13 @@ Rolling state only — not a diary. An item leaves this list the moment it resol
 
 - **`CHANGE CANDIDATE` (promoted this Run — crossed the cross-Run bar,
   `docs/DEVOS_OBSERVABILITY.md` §6): named negative/isolation scenarios
-  proven only at review, not before it.** Observed in Run 007 (S4/S6, a
-  missing TOCTOU test and a missing genuine-rollback test, both only
-  caught by the general reviewer) AND again in Run 008 (S4: the security
-  reviewer found both of the first two archived-Course regression tests
-  had a ranked-progress candidate that always won, so the unseen/fallback
-  branch was never actually isolated/exercised, despite the code being
-  correct). Two separate Runs, same pattern: correct implementation
-  reaches review with a named negative/branch-isolation case technically
-  covered by an assertion that would not actually have caught the
-  specific failure mode. Proposed smallest change: `.claude/rules/testing.md`
-  gains one line — "when a Slice's acceptance criteria name a specific
-  negative case, race, rollback, or branch/fallback that must be
-  independently exercised, verify that the test setup cannot ALSO satisfy
-  the assertion through a different code path before invoking review."
-  Canonical owner: `.claude/rules/testing.md` (verification selection).
-  Expected effect: fewer review-round-trips for this specific failure
-  mode. Guardrail: watch for reviewer findings becoming vaguer/harder to
-  action if this is over-applied as a checklist rather than judgment.
-  Observation window: not yet experimented with — a human or a future Run
-  should decide whether to actually add the rule line, run one more Run
-  under it, and only then `ABSORB` or `REVERT`. Not edited this Run
-  (Guardrail: canonical-policy edits are a bigger, more consequential step
-  than recording the promotion).
+  proven only at review, not before it.** Observed cross-Run (Run 007
+  S4/S6, then again Run 008 S4) — full evidence and the required
+  evidence/change/owner/effect/guardrail fields are in
+  `docs/RUNS/2026-09-22-008.md`'s telemetry section, not restated here.
+  Proposed smallest change: one line added to `.claude/rules/testing.md`.
+  Not yet experimented with or edited this Run — a human or a future Run
+  decides whether to run the experiment before `ABSORB`/`REVERT`.
 - **`src/domain/import/types.ts` bundles three concerns** (canonical row shape, row-content validation, Topic-name resolution) in one file. Not costly today — reconsider only if a fourth concern or new external fan-out appears.
 - **`src/domain/learning/answer.ts`**: Run 007 needed a full read of this dense, multi-function file to extract confidence about one reused function's contract. Not recurred in Run 008 — no full read of this file was needed. Candidate for `DROP` if it does not recur in one more Run.
 - **Test-fakes-as-template reads** (`in-memory-fakes.ts` style files read in full purely to copy an established fake-construction convention). Recurred in Run 008 (reading `application/course/__tests__/in-memory-fakes.ts` in full to extend it with `listStatuses`/`seedMembership`'s default-fill). Still not costly — the read was necessary to add a real new method correctly, not merely to copy convention. Remains `WATCH`.
@@ -411,8 +402,9 @@ from before this Run, unchanged).
 ## Current Manual Actions
 
 For Run 008:
-- push local HEAD (`b86d4e3`, 5 commits ahead of origin) to
-  `origin/feature/project-foundation` when ready;
+- push local HEAD to `origin/feature/project-foundation` when ready
+  (includes `IMPLEMENTATION_HEAD` `b86d4e3` plus subsequent close-out/
+  patch commits — see `git log`/`git status` for the exact current HEAD);
 - resolve the pilot-readiness manual gates listed under "Pilot Readiness"
   above (browser/hosted E2E, hosted migration application, backup/restore
   verification, Postgres pooler-connection confirmation);

@@ -635,6 +635,36 @@ Capture only; not an active task.
 
 ---
 
+# FUB-017 — Safe Review Bundle: Dirty-Working-Tree Robustness
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Run 008 / Tooling
+
+## Observation
+
+`scripts/create-review-bundle.mjs` (Run 008 S1.A) builds its snapshot
+from `git ls-files` (tracked, non-deleted paths) — deliberately safer
+than a raw directory copy, but a consequence is that legitimate,
+not-yet-committed work (new untracked files, uncommitted edits to
+tracked files) is silently absent from a bundle generated against a
+dirty working tree. Morning Review of Run 008 (2026-09-22).
+
+## Follow-Up Investigation
+
+Consider having the script detect a dirty working tree (`git status
+--porcelain`) and warn, or refuse to run, unless the caller explicitly
+opts in to bundling only the last committed state.
+
+## Do Not Do Yet
+
+Not a security issue (the current behavior fails toward excluding more,
+never toward leaking something unsafe) — low priority, act only if a
+real review bundle is generated from a dirty tree and the gap actually
+causes confusion.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.

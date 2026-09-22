@@ -47,6 +47,7 @@ import { previewImport } from "../../../src/application/import/preview-import";
 import { createQuestionDraft } from "../../../src/application/question/create-question-draft";
 import { publishQuestion } from "../../../src/application/question/publish-question";
 import { updateQuestionDraft } from "../../../src/application/question/update-question-draft";
+import { createTopic } from "../../../src/application/topic/create-topic";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import { PostgresCourseUnitOfWork } from "../../../src/infrastructure/postgres/postgres-course-unit-of-work";
@@ -127,12 +128,23 @@ describe("Run 008 S5 — Integrated Instructor-to-Learner Authoring Proof", () =
       );
       expect(policyResult.outcome).toBe("UPDATED");
 
-      // 3. create active Topics.
+      // 3. create active Topics through the real createTopic application
+      // use case (Run 005 S4) — not a raw repository call.
       const qRepos = questionRepos();
-      const manualTopic = await qRepos.topics.createTopic({ courseId, name: "Manual Topic" });
+      const manualTopicResult = await createTopic(
+        { actorUserId: instructorId, courseId, name: "Manual Topic" },
+        qRepos,
+      );
+      expect(manualTopicResult.outcome).toBe("CREATED");
+      if (manualTopicResult.outcome !== "CREATED") throw new Error("unreachable");
+      const manualTopic = manualTopicResult.topic;
       // "Import Topic" is resolved by name (not id) by the Structured Import
       // pipeline below — the return value here is intentionally unused.
-      await qRepos.topics.createTopic({ courseId, name: "Import Topic" });
+      const importTopicResult = await createTopic(
+        { actorUserId: instructorId, courseId, name: "Import Topic" },
+        qRepos,
+      );
+      expect(importTopicResult.outcome).toBe("CREATED");
 
       // 4. create at least one Question manually (Run 006).
       const draftResult = await createQuestionDraft({ actorUserId: instructorId, courseId }, qRepos);
