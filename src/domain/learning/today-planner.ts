@@ -60,10 +60,10 @@
  *
  * Stable identity / persistence readiness: no DB id is generated here.
  * `position` is a plain 0-based array position (this Question's index
- * within `items`), not a database sequence number — a future persistence
- * layer is free to renumber, add its own id, and copy this shape into
- * TodaySessionItems (docs/MASTER_SPEC.md §27) without this file knowing
- * about that layer at all. No randomness anywhere.
+ * within `items`), not a database sequence number — the persistence layer
+ * (`DailyPlanItem`, ADR-016) is free to renumber and add its own id when it
+ * copies this shape, without this file knowing about that layer at all. No
+ * randomness anywhere.
  *
  * Session date: `plannedForDate` is an explicit, caller-supplied ISO
  * calendar-date string (YYYY-MM-DD) — never derived from Date.now(). This
@@ -76,11 +76,11 @@
  * Replanning boundary: this file is a pure "snapshot in, plan out"
  * function — given the same ranked candidates and policy, it always
  * produces the same plan. It does NOT decide whether to create a new
- * session, resume an existing one, or recalculate the next day; that is
- * an application/persistence-layer concern (docs/MASTER_SPEC.md §27's
- * today_sessions status model) entirely outside this file's scope. This
- * file must never be called automatically mid-session by itself — a
- * caller decides when (re)planning happens.
+ * plan, resume an existing one, or recalculate the next day; that is an
+ * application/persistence-layer concern (ADR-016's DailyPlan status model)
+ * entirely outside this file's scope. This file must never be called
+ * automatically mid-session by itself — a caller decides when
+ * (re)planning happens.
  *
  * Empty/short plans: if fewer ranked items exist than `maxItems`, only the
  * available items are included — no filler questions are invented.

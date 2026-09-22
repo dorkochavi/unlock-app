@@ -352,7 +352,7 @@ describe("getOrCreateDailyPlanForToday — real Postgres generation path", () =>
     expect(result.plan.items[0].courseId).toBe(learnerCourseId);
   });
 
-  it("E. writes only daily_plans/daily_plan_items — no today_sessions/today_session_items row is created as a side effect", async () => {
+  it("E. DailyPlan generation writes only daily_plans/daily_plan_items — no Attempt row is created as a side effect", async () => {
     const userId = await insertUser(db);
     await setUserTimezone(db, userId, "UTC");
     const courseId = await insertCourse(db, userId);
@@ -370,20 +370,10 @@ describe("getOrCreateDailyPlanForToday — real Postgres generation path", () =>
     );
     expect(result.outcome).toBe("READY");
 
-    const todaySessionCount = await db.query<{ count: string }>(
-      "select count(*)::int as count from today_sessions where user_id = $1",
-      [userId],
-    );
-    const todaySessionItemCount = await db.query<{ count: string }>(
-      "select count(*)::int as count from today_session_items where user_id = $1",
-      [userId],
-    );
     const attemptCount = await db.query<{ count: string }>(
       "select count(*)::int as count from attempts where user_id = $1",
       [userId],
     );
-    expect(Number(todaySessionCount.rows[0].count)).toBe(0);
-    expect(Number(todaySessionItemCount.rows[0].count)).toBe(0);
     expect(Number(attemptCount.rows[0].count)).toBe(0);
   });
 

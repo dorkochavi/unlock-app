@@ -210,8 +210,48 @@ the Postgres/Vercel readiness gate).
 
 No new migration was introduced by Run 008.
 
+A pre-Run-009 maintenance Slice (2026-09-23, see "Legacy TodaySession
+Retirement" below) added one further migration,
+`20260929000000_retire_today_session.sql`, committed and locally/PGlite-
+verified but **deliberately not applied hosted yet** — pending the
+backup-readiness gate (`docs/FOLLOW_UP_BACKLOG.md` FUB-009). Hosted
+migrations therefore remain confirmed aligned only through
+`20260928000000_question_authoring_v1.sql`; `20260929000000` is a pending
+manual hosted-migration action once that gate closes.
+
 Do not infer hosted application from local migration existence.
 Claude must not run `supabase link` or `supabase db push`.
+
+## Legacy TodaySession Retirement (pre-Run-009, 2026-09-23)
+
+`DailyPlan`/`DailyPlanItem` (ADR-016) is now the sole active Today runtime
+and persistence model. The superseded Course-scoped `TodaySession` model
+(ADR-011) has been fully retired from the active repository:
+
+- all `TodaySession`/`TodaySessionItem` application/domain/infrastructure
+  code and dedicated tests removed (`src/application/learning/today-session.ts`,
+  `src/infrastructure/postgres/today-session-{repository,mapper}.ts`, and
+  their test suites);
+- `Attempt.todaySessionId`/`Attempt.todaySessionItemId` and every
+  `todaySessionItemId`-only compatibility branch in `submitAnswer` removed;
+  `SubmitAnswerResult`'s `TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED` outcome
+  removed;
+- migration `20260929000000_retire_today_session.sql` drops
+  `today_sessions`, `today_session_items`, and
+  `attempts.today_session_id`/`attempts.today_session_item_id` (committed,
+  locally/PGlite-verified, **not yet applied hosted** — see above);
+- confirmed human evidence before deletion: hosted `today_sessions` = 0
+  rows, `today_session_items` = 0 rows,
+  `attempts.today_session_item_id IS NOT NULL` = 0 rows; a runtime
+  reachability audit confirmed no live `src/app` route ever created or
+  retrieved a TodaySession;
+- shared domain utilities `today-planner.ts`/`next-best-action*.ts` (also
+  used by live DailyPlan generation) were kept, unchanged;
+- ADR-011 marked SUPERSEDED AND RETIRED; `docs/FOLLOW_UP_BACKLOG.md` FUB-012
+  marked `RESOLVED`.
+
+Remaining human action: apply `20260929000000_retire_today_session.sql`
+hosted once the backup-readiness gate (FUB-009) closes.
 
 ## Pilot Readiness (Run 008 S6)
 
@@ -408,11 +448,14 @@ For Run 008:
   absorbed into `.claude/rules/testing.md`.
 
 For hosted Supabase:
-- no new migration was introduced this Run;
-- hosted migrations are now confirmed aligned through
-  `20260928000000_question_authoring_v1.sql` — no pending
-  migration-application action remains (see "Database / Supabase"
-  above).
+- no new migration was introduced by Run 008 itself;
+- hosted migrations are confirmed aligned through
+  `20260928000000_question_authoring_v1.sql`;
+- the pre-Run-009 TodaySession retirement Slice added
+  `20260929000000_retire_today_session.sql`, committed and
+  locally/PGlite-verified but intentionally **not yet applied hosted** —
+  pending action once the backup-readiness gate (FUB-009) closes (see
+  "Database / Supabase" and "Legacy TodaySession Retirement" above).
 
 For Run 009:
 - requires a new Plan; do not begin without one. Run 008's own remaining

@@ -62,8 +62,6 @@ function buildAttempt(
     selectedAnswer: "A",
     confidenceLevel: null,
     responseTimeSeconds: null,
-    todaySessionId: null,
-    todaySessionItemId: null,
     dailyPlanId: null,
     dailyPlanItemId: null,
     learningSessionId: null,

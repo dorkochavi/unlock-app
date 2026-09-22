@@ -500,7 +500,23 @@ proves an actual Run 008 pilot blocker (none found as of Run 008 S1/S6).
 
 # FUB-012 — Legacy TodaySession Retirement Investigation
 
-**Status:** `DEFERRED`
+**Status:** `RESOLVED` — retired pre-Run-009 (dedicated cleanup Slice,
+2026-09-23). Confirmed human evidence before deletion: hosted
+`today_sessions` = 0 rows, `today_session_items` = 0 rows,
+`attempts.today_session_item_id IS NOT NULL` = 0 rows. A runtime
+reachability audit confirmed no live `src/app` route created/retrieved a
+TodaySession. All TodaySession application/domain/infrastructure code and
+tests were removed; `DailyPlan`/`DailyPlanItem` (ADR-016) is now the sole
+active Today model. A forward-only migration
+(`supabase/migrations/20260929000000_retire_today_session.sql`) drops
+`today_sessions`/`today_session_items` and
+`attempts.today_session_id`/`attempts.today_session_item_id`. That migration
+is committed and locally/PGlite-verified but was deliberately **not** applied
+to the hosted Supabase project as part of this Slice — remains pending the
+backup-readiness gate (FUB-009) as a separate human-controlled hosted-migration
+action; see `docs/DEV_STATUS.md` for current status. ADR-011 updated to
+reflect retirement. Kept for traceability; the original observation below is
+historical.
 **Priority:** `LOW`
 **Area:** Repository Maintainability
 

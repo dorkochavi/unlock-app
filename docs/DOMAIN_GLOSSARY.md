@@ -359,18 +359,14 @@ Quiz does not independently replace them with newly selected Questions.
 
 ---
 
-## 20. TodaySession / TodaySessionItem — Legacy / Non-Primary
+## 20. TodaySession / TodaySessionItem — Retired
 
-`TodaySession` and `TodaySessionItem` are historical terms that may still appear in legacy code, tests, migrations, or documents.
+`TodaySession` and `TodaySessionItem` were the Course-scoped Today terms defined by ADR-011. That model, and the runtime code/schema implementing it, were fully retired before Run 009 (see ADR-011's current status note) — the terms no longer name anything in the active repository.
 
-They are **not** the primary current product/domain terms for Today.
-
-New product documentation and implementation should prefer:
+The current and sole product/domain terms for Today are:
 
 * `DailyPlan`;
 * `DailyPlanItem`.
-
-Do not rename legacy persistence or historical evidence merely for terminology cleanup unless that migration/refactor is explicitly in scope.
 
 ---
 
@@ -747,11 +743,9 @@ Preferred terms include:
 * Question
 * QuestionVersion
 
-Legacy/non-primary terms include:
+Retired terms (no longer present in the active repository — see §20) include:
 
 * TodaySession
 * TodaySessionItem
 
 Do not create alternate names for the same concept without a documented reason.
-
-If an older document, migration, test, or code path uses a historical name, do not rename it casually. New product documentation and new implementation should prefer the canonical terminology in this glossary unless compatibility requires the legacy term.

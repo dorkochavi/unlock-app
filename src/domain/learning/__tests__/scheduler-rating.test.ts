@@ -16,8 +16,6 @@ function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
     selectedAnswer: "1",
     confidenceLevel: "medium",
     responseTimeSeconds: 10,
-    todaySessionId: "today-1",
-    todaySessionItemId: "today-item-1",
     dailyPlanId: null,
     dailyPlanItemId: null,
     learningSessionId: null,

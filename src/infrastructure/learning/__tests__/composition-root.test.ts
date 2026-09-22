@@ -1,20 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getOrCreateTodaySession } from "../../../application/learning/today-session";
 import { submitAnswer } from "../../../application/learning/submit-answer";
 import { InMemoryLearningDatabase } from "../../../application/learning/__tests__/in-memory-fakes";
 import { TsFsrsMemoryScheduler } from "../fsrs/ts-fsrs-memory-scheduler";
-import {
-  createProductionSubmitAnswerContext,
-  createProductionTodaySessionContext,
-} from "../composition-root";
+import { createProductionSubmitAnswerContext } from "../composition-root";
 import {
   PRODUCTION_ENGINE_VERSION,
   PRODUCTION_EVIDENCE_STRENGTH_POLICY,
   PRODUCTION_MASTERY_POLICY,
   PRODUCTION_MISCONCEPTION_POLICY,
   PRODUCTION_RETRIEVAL_QUALIFICATION_POLICY,
-  PRODUCTION_TODAY_PLANNER_POLICY,
 } from "../production-policy-defaults";
 
 const NOW = new Date("2026-03-01T00:00:00.000Z");
@@ -100,8 +95,6 @@ describe("createProductionSubmitAnswerContext", () => {
         selectedAnswer: "A",
         confidenceLevel: "medium",
         responseTimeSeconds: 10,
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanId: null,
         dailyPlanItemId: null,
         learningSessionId: null,
@@ -119,43 +112,6 @@ describe("createProductionSubmitAnswerContext", () => {
       expect(result.attempt.engineVersion).toBe(PRODUCTION_ENGINE_VERSION);
       expect(result.progress.attemptCount).toBe(1);
     }
-  });
-});
-
-describe("createProductionTodaySessionContext", () => {
-  it("builds successfully with production defaults", () => {
-    const context = createProductionTodaySessionContext(NOW);
-
-    expect(context.now).toBe(NOW);
-    expect(context.engineVersion).toBe(PRODUCTION_ENGINE_VERSION);
-    expect(context.memoryScheduler).toBeInstanceOf(TsFsrsMemoryScheduler);
-    expect(context.todayPlannerPolicy).toEqual(PRODUCTION_TODAY_PLANNER_POLICY);
-  });
-
-  it("is deterministic: `now` is exactly the injected value, not the faked system time", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2099-01-01T00:00:00.000Z"));
-
-    const context = createProductionTodaySessionContext(NOW);
-
-    vi.useRealTimers();
-
-    expect(context.now).toEqual(NOW);
-  });
-
-  it("actually drives getOrCreateTodaySession end-to-end for a learner with no ranked candidates yet (current architecture permits this: an empty progress list produces a legitimately empty plan, not an error)", async () => {
-    const db = new InMemoryLearningDatabase();
-
-    const session = await getOrCreateTodaySession(
-      { userId: "user-1", courseId: "course-1", plannedForDate: "2026-03-01" },
-      createProductionTodaySessionContext(NOW),
-      db,
-    );
-
-    expect(session.userId).toBe("user-1");
-    expect(session.courseId).toBe("course-1");
-    expect(session.engineVersion).toBe(PRODUCTION_ENGINE_VERSION);
-    expect(session.items).toEqual([]);
   });
 });
 
@@ -196,14 +152,6 @@ describe("production policy defaults are immutable", () => {
     }).toThrow(TypeError);
   });
 
-  it("throws when mutating TodayPlannerPolicy on a returned TodaySessionContext", () => {
-    const context = createProductionTodaySessionContext(NOW);
-
-    expect(() => {
-      (context.todayPlannerPolicy as unknown as Record<string, unknown>).maxItems = 1;
-    }).toThrow(TypeError);
-  });
-
   it("MasteryPolicy: a failed mutation attempt never alters a later, independently-created context", () => {
     const first = createProductionSubmitAnswerContext(NOW);
     try {
@@ -232,19 +180,5 @@ describe("production policy defaults are immutable", () => {
 
     expect(second.misconceptionPolicy).toEqual(PRODUCTION_MISCONCEPTION_POLICY);
     expect(second.misconceptionPolicy.activeScoreThreshold).toBe(4);
-  });
-
-  it("TodayPlannerPolicy: a failed mutation attempt never alters a later, independently-created context", () => {
-    const first = createProductionTodaySessionContext(NOW);
-    try {
-      (first.todayPlannerPolicy as unknown as Record<string, unknown>).maxItems = 1;
-    } catch {
-      // Expected — frozen object rejects the write.
-    }
-
-    const second = createProductionTodaySessionContext(NOW);
-
-    expect(second.todayPlannerPolicy).toEqual(PRODUCTION_TODAY_PLANNER_POLICY);
-    expect(second.todayPlannerPolicy.maxItems).toBe(15);
   });
 });

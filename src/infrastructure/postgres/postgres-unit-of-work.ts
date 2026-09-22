@@ -13,7 +13,6 @@ import { PostgresDailyPlanRepository } from "./daily-plan-repository";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
 import { PostgresUserQuestionProgressRepository } from "./progress-repository";
 import type { TransactionExecutor } from "./sql-executor";
-import { PostgresTodaySessionRepository } from "./today-session-repository";
 
 /**
  * ADR-010's transaction-scoped advisory lock, keyed by `(userId,
@@ -91,7 +90,6 @@ export class PostgresUnitOfWork implements UnitOfWork {
           progress: new PostgresUserQuestionProgressRepository(db),
           answerCorrectness: new PostgresAnswerCorrectnessChecker(db),
           questionVersions: new PostgresQuestionVersionRepository(db),
-          todaySessions: new PostgresTodaySessionRepository(db),
           // Same real class `PostgresDailyPlanRepository` used by
           // `PostgresDailyPlanUnitOfWork` for DailyPlan generation —
           // `DailyPlanAnswerRepository`'s narrower shape

@@ -24,9 +24,7 @@ export class PostgresCourseMembershipRepository
    * here): `INSERT ... ON CONFLICT (user_id, course_id) DO NOTHING
    * RETURNING`, never a check-then-insert. If this call loses the race, the
    * caller-supplied `membership` is silently discarded in favor of the
-   * already-committed row (`wasNew: false`) — mirroring
-   * `PostgresTodaySessionRepository.createIfNotExists`'s documented
-   * contract exactly.
+   * already-committed row (`wasNew: false`).
    */
   async createMembership(
     membership: Parameters<CourseMembershipRepository["createMembership"]>[0],

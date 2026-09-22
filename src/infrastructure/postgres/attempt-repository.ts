@@ -12,7 +12,7 @@ import type { TransactionExecutor } from "./sql-executor";
 const INSERT_SQL = `
   insert into attempts (
     id, submission_id, user_id, course_id, question_id, question_version_id,
-    today_session_id, today_session_item_id, learning_session_id,
+    learning_session_id,
     answered_at, is_correct, selected_answer, confidence_level,
     response_time_seconds, assistance_used, attempt_number_for_presented_item,
     suspicious_timing, answer_was_revealed_before_response, engine_version,
@@ -20,7 +20,7 @@ const INSERT_SQL = `
   )
   values (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-    $18, $19, $20, $21
+    $18, $19
   )
   on conflict (user_id, submission_id) do nothing
   returning *

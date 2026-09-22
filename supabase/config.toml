@@ -9,11 +9,14 @@
 # this file, then `supabase start` to confirm it actually works — see
 # supabase/README.md for the full list of what still needs to run locally.
 #
-# `db.major_version = 15` is NOT arbitrary: the first migration
-# (migrations/20260917203000_initial_schema.sql) uses PostgreSQL 15's
-# column-scoped `ON DELETE SET NULL (column_name)` FK syntax on `attempts`'
-# composite foreign key to `today_session_items` — this requires Postgres
-# 15 or newer to apply cleanly.
+# `db.major_version = 15` is NOT arbitrary: `attempts`' composite foreign
+# key to `daily_plan_items` (migrations/20260924000000_daily_plan_answer_
+# attempts.sql) uses PostgreSQL 15's column-scoped
+# `ON DELETE SET NULL (column_name, ...)` FK syntax — this requires
+# Postgres 15 or newer to apply cleanly. (The original citation for this
+# requirement was the now-retired `attempts` -> `today_session_items` FK,
+# which used the identical syntax — see
+# migrations/20260929000000_retire_today_session.sql.)
 
 project_id = "unlock-app"
 

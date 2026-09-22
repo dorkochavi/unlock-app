@@ -19,7 +19,7 @@
  *   Attempt contributes to the freshly-derived strength rather than
  *   lagging one Attempt behind. `hasOnlySameSessionEvidence` is derived
  *   from `successfulSpacedRetrievals >= 1` — never invented from
- *   timestamps or todaySessionId — see the design note above
+ *   timestamps or learningSessionId — see the design note above
  *   `nextEvidenceSummary`/the evidenceStrengthResult computation for the
  *   proof of why that's a sound (never falsely-positive) derivation;
  * - masteryCategory is now derived here too, via the injected
@@ -122,7 +122,7 @@ export interface ProgressUpdateContext {
   /**
    * Whether the current Attempt is in the same learning session/occasion
    * as the previous qualifying retrieval, or null when unknown. This file
-   * never infers session identity from timestamps or todaySessionId —
+   * never infers session identity from timestamps or learningSessionId —
    * the caller must supply it explicitly (docs/OPEN_QUESTIONS.md #3 is
    * still open).
    */

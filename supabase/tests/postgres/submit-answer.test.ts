@@ -3,8 +3,8 @@
  * application use case (`src/application/learning/submit-answer.ts`)
  * wired to the REAL Postgres infrastructure: `PostgresUnitOfWork`,
  * `PostgresAttemptRepository`, `PostgresUserQuestionProgressRepository`,
- * `PostgresQuestionVersionRepository`, `PostgresTodaySessionRepository`,
- * the real advisory lock, and — since ADR-014 —
+ * `PostgresQuestionVersionRepository`, the real advisory lock, and — since
+ * ADR-014 —
  * `PostgresAnswerCorrectnessChecker` too. There is no fake/test-double
  * port left in this file: every dependency `submitAnswer` has is now a
  * real Postgres adapter (the previous session's `FakeAnswerCorrectnessChecker`
@@ -40,7 +40,6 @@ import {
   pgliteConnectionProvider,
   seedDailyPlanWithItem,
   seedQuestionChain,
-  seedTodaySessionWithItem,
   setCurrentVersion,
   setDailyPlanItemResolved,
 } from "./db-harness";
@@ -125,8 +124,6 @@ function makeCommand(
     selectedAnswer: "A",
     confidenceLevel: "medium",
     responseTimeSeconds: 10,
-    todaySessionId: null,
-    todaySessionItemId: null,
     dailyPlanId: null,
     dailyPlanItemId: null,
     learningSessionId: randomUUID(),
@@ -236,60 +233,6 @@ describe("submitAnswer against real Postgres infrastructure", () => {
     expect(result.kind).toBe("QUESTION_VERSION_CONSISTENCY_VIOLATION");
   });
 
-  it("G. a todaySessionItemId owned by a DIFFERENT user is TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED", async () => {
-    const chain = await seedQuestionChain(db);
-    const { todaySessionId, todaySessionItemId } = await seedTodaySessionWithItem(db, chain);
-    const otherUserId = await insertUser(db);
-
-    const result = await submitAnswer(
-      makeCommand(chain, {
-        userId: otherUserId,
-        todaySessionId,
-        todaySessionItemId,
-      }),
-      makeContext(),
-      uow,
-    );
-
-    expect(result.kind).toBe("TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED");
-  });
-
-  it("mutation-review: a todaySessionItemId that is real and owned by the right user, but paired with a DIFFERENT (also real) todaySessionId, is rejected — not silently accepted with a wrong session pointer", async () => {
-    const chain = await seedQuestionChain(db);
-    const { todaySessionItemId } = await seedTodaySessionWithItem(db, {
-      ...chain,
-      plannedForDate: "2026-01-10",
-    });
-    const { todaySessionId: otherSessionId } = await seedTodaySessionWithItem(db, {
-      ...chain,
-      plannedForDate: "2026-01-11", // a second, genuinely different session
-    });
-
-    // submit-answer.ts validates todaySessionItemId's ownership/question/
-    // version against the item, but does not itself cross-check the
-    // client's separately-supplied todaySessionId against that item's
-    // real parent session — that invariant is the database's composite FK
-    // (MATCH FULL fix, Phase-2-red-team item N). This proves the whole
-    // stack (application + real Postgres) still rejects it end-to-end,
-    // and that no Attempt is left half-committed.
-    await expect(
-      submitAnswer(
-        makeCommand(chain, {
-          todaySessionId: otherSessionId, // real, but NOT this item's session
-          todaySessionItemId,
-        }),
-        makeContext(),
-        uow,
-      ),
-    ).rejects.toThrow(/foreign key constraint/);
-
-    const attemptCount = await db.query<{ count: string }>(
-      "select count(*)::int as count from attempts where user_id = $1 and question_id = $2",
-      [chain.userId, chain.questionId],
-    );
-    expect(Number(attemptCount.rows[0].count)).toBe(0);
-  });
-
   it("H. an out-of-order Attempt (earlier answeredAt than the current latest) is reconciled via synchronous rebuild", async () => {
     const chain = await seedQuestionChain(db);
     await submitAnswer(
@@ -369,25 +312,6 @@ describe("submitAnswer against real Postgres infrastructure", () => {
     expect(withoutIdentity(finalA.progress)).toEqual(withoutIdentity(finalB.progress));
   });
 
-  it("J. a Today-attached Attempt marks its TodaySessionItem completed in the same transaction", async () => {
-    const chain = await seedQuestionChain(db);
-    const { todaySessionId, todaySessionItemId } = await seedTodaySessionWithItem(db, chain);
-
-    const result = await submitAnswer(
-      makeCommand(chain, { todaySessionId, todaySessionItemId, learningSessionId: null }),
-      makeContext(),
-      uow,
-    );
-
-    expect(result.kind).toBe("ACCEPTED");
-    const itemRow = await db.query<{ status: string; completed_at: string | null }>(
-      "select status, completed_at from today_session_items where id = $1",
-      [todaySessionItemId],
-    );
-    expect(itemRow.rows[0].status).toBe("completed");
-    expect(itemRow.rows[0].completed_at).not.toBeNull();
-  });
-
   it("K. a mid-transaction failure (genuinely malformed PERSISTED answer content) rolls back — nothing partial is committed, and it is NOT silently treated as incorrect (ADR-014)", async () => {
     const chain = await seedQuestionChain(db);
     // Directly corrupt the QuestionVersion's answer_options, bypassing
@@ -428,28 +352,6 @@ describe("submitAnswer against real Postgres infrastructure", () => {
     if (conflicting.kind !== "IDEMPOTENCY_KEY_CONFLICT") throw new Error("unreachable");
     expect(conflicting.conflictingFields).toContain("learningSessionId");
   });
-
-  it("M. a Today-attached Attempt's learningSessionId is APPLICATION-derived from the TodaySessionItem — the client's claim is ignored, never trusted", async () => {
-    const chain = await seedQuestionChain(db);
-    const { todaySessionId, todaySessionItemId } = await seedTodaySessionWithItem(db, chain);
-
-    const result = await submitAnswer(
-      makeCommand(chain, {
-        todaySessionId,
-        todaySessionItemId,
-        learningSessionId: "client-claimed-value-should-be-ignored",
-      }),
-      makeContext(),
-      uow,
-    );
-
-    expect(result.kind).toBe("ACCEPTED");
-    if (result.kind !== "ACCEPTED") throw new Error("unreachable");
-    expect(result.attempt.learningSessionId).toBe(todaySessionId);
-    expect(result.attempt.learningSessionId).not.toBe(
-      "client-claimed-value-should-be-ignored",
-    );
-  });
 });
 
 describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (ADR-016, Night-Run Slice 1)", () => {
@@ -459,8 +361,6 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
 
     const result = await submitAnswer(
       makeCommand(chain, {
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanItemId,
         selectedAnswer: "A",
       }),
@@ -490,16 +390,12 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
     const attemptRow = await db.query<{
       daily_plan_id: string | null;
       daily_plan_item_id: string | null;
-      today_session_id: string | null;
-      today_session_item_id: string | null;
     }>(
-      "select daily_plan_id, daily_plan_item_id, today_session_id, today_session_item_id from attempts where id = $1",
+      "select daily_plan_id, daily_plan_item_id from attempts where id = $1",
       [result.attempt.id],
     );
     expect(attemptRow.rows[0].daily_plan_id).toBe(dailyPlanId);
     expect(attemptRow.rows[0].daily_plan_item_id).toBe(dailyPlanItemId);
-    expect(attemptRow.rows[0].today_session_id).toBeNull();
-    expect(attemptRow.rows[0].today_session_item_id).toBeNull();
 
     const progressRow = await db.query<{ attempt_count: number }>(
       "select attempt_count from user_question_progress where user_id = $1 and question_id = $2",
@@ -518,8 +414,6 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
 
     const result = await submitAnswer(
       makeCommand(chain, {
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanItemId,
       }),
       makeContext(),
@@ -542,8 +436,6 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
     const result = await submitAnswer(
       makeCommand(chain, {
         submissionId: randomUUID(),
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanItemId,
       }),
       makeContext(),
@@ -574,8 +466,6 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
     const result = await submitAnswer(
       makeCommand(chain, {
         submissionId: randomUUID(),
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanItemId,
       }),
       makeContext(),
@@ -592,8 +482,6 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
     const chain = await seedQuestionChain(db);
     const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
     const command = makeCommand(chain, {
-      todaySessionId: null,
-      todaySessionItemId: null,
       dailyPlanItemId,
     });
 
@@ -620,8 +508,6 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
 
     const result = await submitAnswer(
       makeCommand(chain, {
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanItemId: null,
         learningSessionId: "manual-practice-token",
       }),
@@ -637,50 +523,12 @@ describe("submitAnswer against real Postgres infrastructure — DailyPlanItem (A
     expect(itemRow.rows[0].status).toBe("pending");
   });
 
-  it("the migration's mutual-exclusivity CHECK prevents an Attempt from claiming both a TodaySessionItem and a DailyPlanItem", async () => {
-    const chain = await seedQuestionChain(db);
-    const { todaySessionItemId, todaySessionId } = await seedTodaySessionWithItem(db, chain);
-    const { dailyPlanItemId, dailyPlanId } = await seedDailyPlanWithItem(db, chain);
-
-    await expect(
-      db.query(
-        `insert into attempts (
-           id, submission_id, user_id, course_id, question_id, question_version_id,
-           today_session_id, today_session_item_id, daily_plan_id, daily_plan_item_id,
-           learning_session_id, answered_at, is_correct, selected_answer,
-           attempt_number_for_presented_item, engine_version
-         )
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-        [
-          randomUUID(),
-          randomUUID(),
-          chain.userId,
-          chain.courseId,
-          chain.questionId,
-          chain.questionVersionId,
-          todaySessionId,
-          todaySessionItemId,
-          dailyPlanId,
-          dailyPlanItemId,
-          null,
-          NOW,
-          true,
-          JSON.stringify("A"),
-          1,
-          "test-engine-v1",
-        ],
-      ),
-    ).rejects.toThrow();
-  });
-
-  it("deleting a DailyPlan an Attempt references only nulls the pointer columns — it never erases the Attempt or corrupts its ownership (mirrors test 10b's TodaySessionItem precedent, db-reviewer finding)", async () => {
+  it("deleting a DailyPlan an Attempt references only nulls the pointer columns — it never erases the Attempt or corrupts its ownership (db-reviewer finding)", async () => {
     const chain = await seedQuestionChain(db);
     const { dailyPlanId, dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
 
     const result = await submitAnswer(
       makeCommand(chain, {
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanItemId,
       }),
       makeContext(),

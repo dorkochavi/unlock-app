@@ -31,8 +31,6 @@ function buildAttempt(overrides: Partial<Attempt> & Pick<Attempt, "userId" | "co
     selectedAnswer: "A",
     confidenceLevel: "high",
     responseTimeSeconds: 4.5,
-    todaySessionId: null,
-    todaySessionItemId: null,
     dailyPlanId: null,
     dailyPlanItemId: null,
     learningSessionId: randomToken("session"),

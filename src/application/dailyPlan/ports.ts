@@ -1,12 +1,11 @@
 /**
  * Persistence port for the DailyPlan application layer — ADR-016 §1/§19.
  *
- * Deliberately mirrors `src/application/learning/ports.ts`'s
- * `TodaySession`/`TodaySessionItem`/`TodaySessionRepository` shape closely:
- * DailyPlan is the accepted TARGET architecture superseding TodaySession's
- * per-Course key (ADR-016 §1), not a conceptually different thing. The one
- * structural difference: `courseId` lives on each `DailyPlanItem`
- * independently, not on a single parent session.
+ * DailyPlan is the sole active Today persistence architecture (the
+ * superseded, Course-scoped ADR-011 TodaySession model was retired
+ * pre-Run-009). `courseId` lives on each `DailyPlanItem` independently, not
+ * on a single parent session — ADR-016 §1: "Course Today is NOT a separate
+ * plan".
  *
  * Candidate generation/multi-Course pooling now exists —
  * `generate-daily-plan-for-resolved-inputs.ts` (internal generation core
@@ -147,13 +146,10 @@ export interface DailyPlanRepository {
 
   /**
    * Race-free by construction (`INSERT ... ON CONFLICT (user_id,
-   * planned_for_date) DO NOTHING RETURNING` + fallback `SELECT`, mirroring
-   * `TodaySessionRepository.createIfNotExists`/ADR-010's established
-   * pattern). Returns the newly-created plan, or the existing one if
-   * another concurrent call won the race for the same key — the
-   * caller-supplied `plan`/`items` are silently discarded in that case,
-   * exactly as `TodaySessionRepository.createIfNotExists` already
-   * documents for its own contract.
+   * planned_for_date) DO NOTHING RETURNING` + fallback `SELECT`, ADR-010's
+   * established pattern). Returns the newly-created plan, or the existing
+   * one if another concurrent call won the race for the same key — the
+   * caller-supplied `plan`/`items` are silently discarded in that case.
    */
   createIfNotExists(
     plan: Omit<DailyPlan, "items" | "id">,
@@ -195,9 +191,7 @@ export interface DailyPlanRepository {
  * `UnitOfWork`/`TransactionalRepositories` types: DailyPlan generation's
  * read set (`UserQuestionProgress`, `QuestionVersion`) does not overlap
  * with `submitAnswer`'s write set (`Attempt`, `UserQuestionProgress`
- * writes, `TodaySessionItem` writes) and needs no advisory lock (mirroring
- * `getOrCreateTodaySession`'s own reasoning for why its equivalent call
- * needs none either) — reusing that type would couple
+ * writes) and needs no advisory lock — reusing that type would couple
  * `application/dailyPlan` to `application/learning`'s own transaction
  * shape for no benefit. The individual repository PORT interfaces
  * (`UserQuestionProgressRepository`, `QuestionVersionRepository`) are

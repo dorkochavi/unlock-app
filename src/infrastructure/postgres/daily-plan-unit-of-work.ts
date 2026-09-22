@@ -12,9 +12,8 @@
  * read-then-write pattern is exactly what the advisory lock exists to
  * serialize), and `DailyPlanRepository.createIfNotExists` is already
  * race-free by construction (`INSERT ... ON CONFLICT (user_id,
- * planned_for_date) DO NOTHING RETURNING`). This is the same reasoning
- * `today-session.ts`'s own module doc comment gives for why
- * `getOrCreateTodaySession` needs no additional locking either.
+ * planned_for_date) DO NOTHING RETURNING`), so no additional locking is
+ * needed here either.
  */
 import type {
   DailyPlanTransactionalRepositories,

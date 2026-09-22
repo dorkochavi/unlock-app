@@ -18,11 +18,6 @@
 
 import type { AttemptReplayRecord } from "../../domain/learning/rebuild";
 import type { AnswerOption, QuestionType } from "../../domain/learning/answer";
-import type {
-  NextBestActionReason,
-  NextBestActionType,
-} from "../../domain/learning/next-best-action";
-import type { NextBestActionPriorityTier } from "../../domain/learning/next-best-action-ranking";
 // Reused directly from the domain layer — never redefined here, so the
 // application layer's persistence contract cannot silently drift from the
 // domain's own Attempt/UserQuestionProgress shapes.
@@ -53,7 +48,7 @@ export interface AttemptRepository {
    * Cheap existing-Attempt lookup by the idempotency key, used by
    * `submitAnswer` to short-circuit a genuine retry BEFORE any
    * server-derived computation (`isCorrect`, `suspiciousTiming`,
-   * QuestionVersion/TodaySessionItem consistency checks) or the insert
+   * QuestionVersion/DailyPlanItem consistency checks) or the insert
    * attempt itself. Does not itself close any race — a concurrent
    * duplicate submission can still race this read (both see `null`), in
    * which case both fall through to the full `insertIfNotExists` path,
@@ -102,10 +97,10 @@ export interface UserQuestionProgressRepository {
 
   /**
    * Lists current progress for every Question a learner has progress for
-   * within one Course. Used by `getOrCreateTodaySession` to assemble
-   * candidates. `courseId` is required (not nullable) because UNLOCK V1
-   * Today is course-scoped (`docs/DECISIONS/011-today-is-course-scoped-v1.md`)
-   * — there is no "no Course scoping" case to represent.
+   * within one Course. Used by DailyPlan generation
+   * (`getOrCreateDailyPlanForToday`) to assemble candidates. `courseId` is
+   * required (not nullable) — there is no "no Course scoping" case to
+   * represent at this port's level.
    */
   listForUser(
     userId: string,
@@ -198,73 +193,6 @@ export interface QuestionVersionRepository {
   ): Promise<{ questionId: string; courseId: string } | null>;
 }
 
-export interface TodaySessionItem {
-  id: string;
-  todaySessionId: string;
-  userId: string;
-  position: number;
-  questionId: string;
-  questionVersionId: string;
-  actionType: NextBestActionType;
-  tier: NextBestActionPriorityTier;
-  otherApplicableTypes: NextBestActionType[];
-  reasons: NextBestActionReason[];
-  status: "pending" | "completed" | "skipped";
-  completedAt: Date | null;
-}
-
-export interface TodaySession {
-  id: string;
-  userId: string;
-  courseId: string;
-  plannedForDate: string;
-  status: string;
-  engineVersion: string;
-  generatedAt: Date;
-  startedAt: Date | null;
-  completedAt: Date | null;
-  items: TodaySessionItem[];
-}
-
-/**
- * UNLOCK V1 Today is course-scoped
- * (`docs/DECISIONS/011-today-is-course-scoped-v1.md`) — matches
- * `today_sessions`'s `UNIQUE (user_id, course_id, planned_for_date)`.
- * Global cross-course Today is deferred beyond V1; this type does not
- * represent it (there was previously a `scope: "course" | "global"`
- * discriminated union here, representing that then-open question — removed
- * now that it's decided).
- */
-export interface TodaySessionKey {
-  userId: string;
-  courseId: string;
-  plannedForDate: string;
-}
-
-export interface TodaySessionRepository {
-  findByKey(key: TodaySessionKey): Promise<TodaySession | null>;
-
-  /**
-   * Race-free by construction (`INSERT ... ON CONFLICT DO NOTHING
-   * RETURNING` + fallback `SELECT`, per ADR-010) — returns the
-   * newly-created session, or the existing one if another concurrent call
-   * won the race for the same key. Never throws on a legitimate
-   * concurrent-create race.
-   */
-  createIfNotExists(
-    session: Omit<TodaySession, "items" | "id">,
-    items: Array<Omit<TodaySessionItem, "id" | "todaySessionId">>,
-  ): Promise<TodaySession>;
-
-  findItemById(itemId: string): Promise<TodaySessionItem | null>;
-
-  markItemCompleted(
-    itemId: string,
-    completedAt: Date,
-    attemptId: string,
-  ): Promise<void>;
-}
-
 /**
  * Minimal DailyPlanItem shape `submitAnswer` needs to authorize and resolve
  * a DailyPlan-attached Attempt (ADR-016) — deliberately NOT the fuller
@@ -340,7 +268,6 @@ export interface TransactionalRepositories {
   progress: UserQuestionProgressRepository;
   answerCorrectness: AnswerCorrectnessChecker;
   questionVersions: QuestionVersionRepository;
-  todaySessions: TodaySessionRepository;
   dailyPlanItems: DailyPlanAnswerRepository;
 }
 

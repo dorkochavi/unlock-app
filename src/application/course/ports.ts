@@ -9,8 +9,7 @@
  * No `UnitOfWork`/transaction wrapper exists for MOST operations here,
  * deliberately: unlike `submitAnswer` (ADR-010), most operations in this
  * module need only one statement to be atomic. `joinCourse` is race-free by
- * a single `INSERT ... ON CONFLICT DO NOTHING` (mirroring
- * `TodaySessionRepository.createIfNotExists`); `setJoinPolicy`/
+ * a single `INSERT ... ON CONFLICT DO NOTHING`; `setJoinPolicy`/
  * `setArchived`/`revoke`/`updateCourseMetadata`/`setCourseStatus` are each a
  * single conditional `UPDATE`. The narrow read-then-write window in
  * `setCourseJoinPolicy`/`revokeCourseMembership` (checking the actor's
@@ -38,8 +37,7 @@ export interface CourseMembershipRepository {
 
   /**
    * Race-free by construction (`INSERT ... ON CONFLICT (user_id, course_id)
-   * DO NOTHING RETURNING`, mirroring `TodaySessionRepository
-   * .createIfNotExists`). `wasNew: false` means a membership for this pair
+   * DO NOTHING RETURNING`). `wasNew: false` means a membership for this pair
    * already existed — the returned `membership` is that pre-existing row
    * (in whatever state it is in — revoked or archived included), NOT the
    * one passed in. This port does not itself decide what a caller should do

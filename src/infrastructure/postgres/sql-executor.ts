@@ -27,7 +27,7 @@ export interface SqlExecutor {
  * is bound to one already-open database transaction on one connection (see
  * `postgres-unit-of-work.ts`'s `PostgresUnitOfWork`). This codebase has no
  * separate non-transactional executor type — ADR-010 requires every write
- * path that touches `Attempt`/`UserQuestionProgress`/`TodaySession*` to run
- * inside a transaction regardless, so there is no legitimate use for one.
+ * path that touches `Attempt`/`UserQuestionProgress` to run inside a
+ * transaction regardless, so there is no legitimate use for one.
  */
 export type TransactionExecutor = SqlExecutor;

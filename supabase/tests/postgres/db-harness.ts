@@ -237,58 +237,11 @@ export async function insertCourseMembership(
 }
 
 /**
- * A real Today session with one real item, via raw SQL (not through
- * `PostgresTodaySessionRepository`, so callers exercising that repository
- * itself don't create a circular test dependency on it). Returns enough
- * ids for `submit-answer.test.ts`'s Today-attached scenarios.
- */
-export async function seedTodaySessionWithItem(
-  db: SqlExecutor,
-  args: {
-    userId: string;
-    courseId: string;
-    questionId: string;
-    questionVersionId: string;
-    plannedForDate?: string;
-  },
-): Promise<{ todaySessionId: string; todaySessionItemId: string }> {
-  const todaySessionId = randomUUID();
-  await db.query(
-    `insert into today_sessions
-       (id, user_id, course_id, planned_for_date, status, engine_version)
-     values ($1, $2, $3, $4, 'prepared', 'test-engine-v1')`,
-    [
-      todaySessionId,
-      args.userId,
-      args.courseId,
-      args.plannedForDate ?? "2026-01-10",
-    ],
-  );
-  const todaySessionItemId = randomUUID();
-  await db.query(
-    `insert into today_session_items
-       (id, today_session_id, user_id, course_id, position, question_id,
-        question_version_id, action_type, tier)
-     values ($1, $2, $3, $4, 0, $5, $6, 'REVIEW_DUE', 'DUE_REVIEW')`,
-    [
-      todaySessionItemId,
-      todaySessionId,
-      args.userId,
-      args.courseId,
-      args.questionId,
-      args.questionVersionId,
-    ],
-  );
-  return { todaySessionId, todaySessionItemId };
-}
-
-/**
  * A real DailyPlan with one real item, via raw SQL (not through
  * `PostgresDailyPlanRepository`, so callers exercising that repository
  * itself — via the `dailyPlanItems` port in `submitAnswer` — don't create a
- * circular test dependency on it). Mirrors `seedTodaySessionWithItem`
- * exactly, for `submit-answer.test.ts`'s DailyPlan-attached scenarios
- * (ADR-016, Night-Run Slice 1).
+ * circular test dependency on it). For `submit-answer.test.ts`'s
+ * DailyPlan-attached scenarios (ADR-016, Night-Run Slice 1).
  */
 export async function seedDailyPlanWithItem(
   db: SqlExecutor,

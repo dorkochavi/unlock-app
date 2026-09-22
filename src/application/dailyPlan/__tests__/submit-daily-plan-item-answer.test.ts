@@ -201,8 +201,6 @@ describe("submitDailyPlanItemAnswer", () => {
     expect(result.attempt.dailyPlanItemId).toBe("item-1");
     expect(result.attempt.userId).toBe("user-1");
     expect(result.attempt.isCorrect).toBe(true);
-    expect(result.attempt.todaySessionId).toBeNull();
-    expect(result.attempt.todaySessionItemId).toBeNull();
     // attemptNumberForPresentedItem is hardcoded to 1 for this flow — a
     // DailyPlanItem resolves at most once, so there is no "second
     // presented attempt" concept for this command shape to express.

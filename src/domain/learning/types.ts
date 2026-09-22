@@ -98,19 +98,12 @@ export interface Attempt {
   confidenceLevel: ConfidenceLevel | null;
   responseTimeSeconds: number | null;
 
-  todaySessionId: string | null;
-  todaySessionItemId: string | null;
-
   /**
    * ADR-016. The DailyPlan/DailyPlanItem this Attempt resolves, or null for
-   * manual practice or a legacy TodaySession-attached Attempt. Mutually
-   * exclusive with todaySessionItemId (enforced by a DB CHECK,
-   * `20260924000000_daily_plan_answer_attempts.sql`) — a given Attempt
-   * belongs to at most one of the two planned-item systems. Same ownership
-   * discipline as todaySessionId/todaySessionItemId: for a DailyPlan-
-   * attached Attempt, the APPLICATION derives both fields from the
-   * persisted DailyPlanItem, never a client-supplied value — see
-   * `submit-answer.ts`'s `resolveLearningSessionId`.
+   * manual practice. For a DailyPlan-attached Attempt, the APPLICATION
+   * derives both fields from the persisted DailyPlanItem, never a
+   * client-supplied value — see `submit-answer.ts`'s
+   * `resolveLearningSessionId`.
    */
   dailyPlanId: string | null;
   dailyPlanItemId: string | null;
@@ -137,15 +130,15 @@ export interface Attempt {
    * whatever order Attempts are actually being processed.
    *
    * Ownership (a later audit, see `submit-answer.ts`'s module doc comment
-   * and ADR-012 §5): for a Today-attached Attempt, the APPLICATION derives
-   * this value from the persisted `TodaySessionItem.todaySessionId` —
+   * and ADR-012 §5): for a DailyPlan-attached Attempt, the APPLICATION
+   * derives this value from the persisted `DailyPlanItem.dailyPlanId` —
    * deliberately not a client-supplied value for that case, since an
    * arbitrary client value here would directly corrupt
    * `deriveIsSameLearningSession`'s retrieval-qualification outcome. Only
-   * for manual practice (no TodaySessionItem) does the client supply and
-   * own this identity directly. Either way, this field on the domain
-   * `Attempt` type always holds whichever value was actually authoritative
-   * at persistence time — this type itself does not encode who chose it.
+   * for manual practice (no DailyPlanItem) does the client supply and own
+   * this identity directly. Either way, this field on the domain `Attempt`
+   * type always holds whichever value was actually authoritative at
+   * persistence time — this type itself does not encode who chose it.
    */
   learningSessionId: string | null;
 

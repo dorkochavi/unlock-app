@@ -8,8 +8,8 @@
  * membership-driven Course discovery — then delegates to that unchanged
  * internal core. This file owns NO candidate-generation/ranking/planning
  * logic of its own; it is a thin orchestration boundary, matching the
- * existing `getOrCreateTodaySession`/`submitAnswer` precedent of keeping
- * every application-layer file free of learning policy.
+ * existing `submitAnswer` precedent of keeping every application-layer
+ * file free of learning policy.
  *
  * Deliberately accepts no `courseId`/`courseIds`/`scope` parameter —
  * course discovery is this function's own job (ADR-016 §1: "Course Today

@@ -118,8 +118,6 @@ function makeCommand(
     selectedAnswer: "A",
     confidenceLevel: "medium",
     responseTimeSeconds: 10,
-    todaySessionId: null,
-    todaySessionItemId: null,
     dailyPlanId: null,
     dailyPlanItemId: null,
     learningSessionId: null,
@@ -317,64 +315,6 @@ describe("submitAnswer", () => {
     }
   });
 
-  it("7. manual practice (no TodaySessionItem) is accepted normally", async () => {
-    const db = new InMemoryLearningDatabase();
-    seedDefaultQuestion(db);
-    db.setCorrectAnswer("qv-1", "A");
-
-    const result = await submitAnswer(
-      makeCommand({ todaySessionId: null, todaySessionItemId: null }),
-      makeContext(),
-      db,
-    );
-
-    expect(result.kind).toBe("ACCEPTED");
-  });
-
-  it("an Attempt claiming a TodaySessionItem belonging to another user is rejected", async () => {
-    const db = new InMemoryLearningDatabase();
-    seedDefaultQuestion(db);
-    db.setCorrectAnswer("qv-1", "A");
-
-    const session = await db.runInTransaction((repos) =>
-      repos.todaySessions.createIfNotExists(
-        {
-          userId: "someone-else",
-          courseId: "course-1",
-          plannedForDate: "2026-01-10",
-          status: "prepared",
-          engineVersion: "v1",
-          generatedAt: NOW,
-          startedAt: null,
-          completedAt: null,
-        },
-        [
-          {
-            userId: "someone-else",
-            position: 0,
-            questionId: "question-1",
-            questionVersionId: "qv-1",
-            actionType: "REVIEW_DUE",
-            tier: "DUE_REVIEW",
-            otherApplicableTypes: [],
-            reasons: ["SCHEDULED_REVIEW_DUE"],
-            status: "pending",
-            completedAt: null,
-          },
-        ],
-      ),
-    );
-    const itemId = session.items[0].id;
-
-    const result = await submitAnswer(
-      makeCommand({ userId: "user-1", todaySessionItemId: itemId }),
-      makeContext(),
-      db,
-    );
-
-    expect(result.kind).toBe("TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED");
-  });
-
   it("a QuestionVersion belonging to a DIFFERENT Question is rejected", async () => {
     const db = new InMemoryLearningDatabase();
     db.setQuestionVersion("qv-1", "question-OTHER", "course-1");
@@ -404,114 +344,6 @@ describe("submitAnswer", () => {
 
     expect(result.kind).toBe("QUESTION_VERSION_CONSISTENCY_VIOLATION");
     expect(db.hasAttempt("user-1", "sub-1")).toBe(false);
-  });
-
-  it("a TodaySessionItem completed with a DIFFERENT questionVersionId than it was frozen with is rejected", async () => {
-    const db = new InMemoryLearningDatabase();
-    seedDefaultQuestion(db);
-    db.setQuestionVersion("qv-2", "question-1", "course-1");
-    db.setCorrectAnswer("qv-1", "A");
-    db.setCorrectAnswer("qv-2", "A");
-
-    const session = await db.runInTransaction((repos) =>
-      repos.todaySessions.createIfNotExists(
-        {
-          userId: "user-1",
-          courseId: "course-1",
-          plannedForDate: "2026-01-10",
-          status: "prepared",
-          engineVersion: "v1",
-          generatedAt: NOW,
-          startedAt: null,
-          completedAt: null,
-        },
-        [
-          {
-            userId: "user-1",
-            position: 0,
-            questionId: "question-1",
-            questionVersionId: "qv-1", // frozen at generation time
-            actionType: "REVIEW_DUE",
-            tier: "DUE_REVIEW",
-            otherApplicableTypes: [],
-            reasons: ["SCHEDULED_REVIEW_DUE"],
-            status: "pending",
-            completedAt: null,
-          },
-        ],
-      ),
-    );
-    const itemId = session.items[0].id;
-
-    // Attempt claims the frozen item but answers a DIFFERENT version.
-    const result = await submitAnswer(
-      makeCommand({
-        questionVersionId: "qv-2",
-        todaySessionId: session.id,
-        todaySessionItemId: itemId,
-      }),
-      makeContext(),
-      db,
-    );
-
-    expect(result.kind).toBe("TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED");
-  });
-
-  it("completing the final item marks the ITEM completed; session-level rollup is deliberately NOT implemented (deferred, see docs/DATABASE.md §17)", async () => {
-    const db = new InMemoryLearningDatabase();
-    seedDefaultQuestion(db);
-    db.setCorrectAnswer("qv-1", "A");
-    const context = makeContext();
-
-    const session = await db.runInTransaction((repos) =>
-      repos.todaySessions.createIfNotExists(
-        {
-          userId: "user-1",
-          courseId: "course-1",
-          plannedForDate: "2026-01-10",
-          status: "prepared",
-          engineVersion: "v1",
-          generatedAt: NOW,
-          startedAt: null,
-          completedAt: null,
-        },
-        [
-          {
-            userId: "user-1",
-            position: 0,
-            questionId: "question-1",
-            questionVersionId: "qv-1",
-            actionType: "REVIEW_DUE",
-            tier: "DUE_REVIEW",
-            otherApplicableTypes: [],
-            reasons: ["SCHEDULED_REVIEW_DUE"],
-            status: "pending",
-            completedAt: null,
-          },
-        ],
-      ),
-    );
-    const itemId = session.items[0].id;
-
-    await submitAnswer(
-      makeCommand({ todaySessionId: session.id, todaySessionItemId: itemId }),
-      context,
-      db,
-    );
-
-    const finalItem = await db.runInTransaction((repos) =>
-      repos.todaySessions.findItemById(itemId),
-    );
-    const finalSession = await db.runInTransaction((repos) =>
-      repos.todaySessions.findByKey({
-        userId: "user-1",
-        courseId: "course-1",
-        plannedForDate: "2026-01-10",
-      }),
-    );
-
-    expect(finalItem?.status).toBe("completed");
-    expect(finalSession?.status).toBe("prepared");
   });
 
   describe("learningSessionId persistence (tasks 1-3, adapted for the new string|null field)", () => {
@@ -574,108 +406,6 @@ describe("submitAnswer", () => {
   });
 
   describe("learningSessionId ownership (pre-commit correctness audit)", () => {
-    async function createTodaySessionWithItem(
-      db: InMemoryLearningDatabase,
-    ): Promise<{ sessionId: string; itemId: string }> {
-      const session = await db.runInTransaction((repos) =>
-        repos.todaySessions.createIfNotExists(
-          {
-            userId: "user-1",
-            courseId: "course-1",
-            plannedForDate: "2026-01-10",
-            status: "prepared",
-            engineVersion: "v1",
-            generatedAt: NOW,
-            startedAt: null,
-            completedAt: null,
-          },
-          [
-            {
-              userId: "user-1",
-              position: 0,
-              questionId: "question-1",
-              questionVersionId: "qv-1",
-              actionType: "REVIEW_DUE",
-              tier: "DUE_REVIEW",
-              otherApplicableTypes: [],
-              reasons: ["SCHEDULED_REVIEW_DUE"],
-              status: "pending",
-              completedAt: null,
-            },
-          ],
-        ),
-      );
-      return { sessionId: session.id, itemId: session.items[0].id };
-    }
-
-    it("A: a client CANNOT change retrieval qualification by claiming a new learningSessionId on a Today-attached Attempt — the application always derives it from the TodaySessionItem's own todaySessionId", async () => {
-      const db = new InMemoryLearningDatabase();
-      seedDefaultQuestion(db);
-      db.setCorrectAnswer("qv-1", "A");
-      const context = makeContext();
-      const { sessionId, itemId } = await createTodaySessionWithItem(db);
-
-      const result = await submitAnswer(
-        makeCommand({
-          todaySessionId: sessionId,
-          todaySessionItemId: itemId,
-          // A malicious/buggy client claims an unrelated learningSessionId —
-          // this must be ignored, not merely rejected.
-          learningSessionId: "attacker-controlled-claim",
-        }),
-        context,
-        db,
-      );
-
-      expect(result.kind).toBe("ACCEPTED");
-      if (result.kind === "ACCEPTED") {
-        // The persisted Attempt's learningSessionId is the TodaySession's
-        // own id, never the client's claim (answers question D: Today
-        // safely reuses todaySessionId as learningSessionId).
-        expect(result.attempt.learningSessionId).toBe(sessionId);
-        expect(result.attempt.learningSessionId).not.toBe(
-          "attacker-controlled-claim",
-        );
-      }
-    });
-
-    it("B: a retry of a Today-attached Attempt with a DIFFERENT client-claimed learningSessionId is still treated as a safe idempotent retry, not a conflict", async () => {
-      const db = new InMemoryLearningDatabase();
-      seedDefaultQuestion(db);
-      db.setCorrectAnswer("qv-1", "A");
-      const context = makeContext();
-      const { sessionId, itemId } = await createTodaySessionWithItem(db);
-
-      const first = await submitAnswer(
-        makeCommand({
-          todaySessionId: sessionId,
-          todaySessionItemId: itemId,
-          learningSessionId: "claim-1",
-        }),
-        context,
-        db,
-      );
-      const retry = await submitAnswer(
-        makeCommand({
-          todaySessionId: sessionId,
-          todaySessionItemId: itemId,
-          // Same submissionId (default "sub-1"), different (irrelevant)
-          // client claim — must NOT be flagged as an idempotency conflict,
-          // since the client never actually owned this field here.
-          learningSessionId: "claim-2",
-        }),
-        context,
-        db,
-      );
-
-      expect(first.kind).toBe("ACCEPTED");
-      expect(retry.kind).toBe("ACCEPTED");
-      if (retry.kind === "ACCEPTED") {
-        expect(retry.wasIdempotentRetry).toBe(true);
-        expect(retry.attempt.learningSessionId).toBe(sessionId);
-      }
-    });
-
     it("manual practice retains client ownership: a retry with a different learningSessionId IS still rejected as a conflict (regression, see the 'learningSessionId persistence' describe block above)", async () => {
       const db = new InMemoryLearningDatabase();
       seedDefaultQuestion(db);
@@ -901,70 +631,6 @@ describe("submitAnswer", () => {
     ).rejects.toThrow("simulated unexpected infrastructure failure");
   });
 
-  it("15. a Today item is completed correctly by an out-of-order submission that successfully reconciles", async () => {
-    const db = new InMemoryLearningDatabase();
-    seedDefaultQuestion(db);
-    db.setCorrectAnswer("qv-1", "A");
-    const context = makeContext();
-
-    await submitAnswer(
-      makeCommand({ submissionId: "sub-later", answeredAt: JAN2 }),
-      context,
-      db,
-    );
-
-    const session = await db.runInTransaction((repos) =>
-      repos.todaySessions.createIfNotExists(
-        {
-          userId: "user-1",
-          courseId: "course-1",
-          plannedForDate: "2026-01-10",
-          status: "prepared",
-          engineVersion: "v1",
-          generatedAt: NOW,
-          startedAt: null,
-          completedAt: null,
-        },
-        [
-          {
-            userId: "user-1",
-            position: 0,
-            questionId: "question-1",
-            questionVersionId: "qv-1",
-            actionType: "REVIEW_DUE",
-            tier: "DUE_REVIEW",
-            otherApplicableTypes: [],
-            reasons: ["SCHEDULED_REVIEW_DUE"],
-            status: "pending",
-            completedAt: null,
-          },
-        ],
-      ),
-    );
-    const itemId = session.items[0].id;
-
-    const result = await submitAnswer(
-      makeCommand({
-        submissionId: "sub-earlier",
-        answeredAt: JAN1,
-        todaySessionId: session.id,
-        todaySessionItemId: itemId,
-      }),
-      context,
-      db,
-    );
-
-    expect(result.kind).toBe("ACCEPTED");
-    if (result.kind === "ACCEPTED") {
-      expect(result.wasReconciledViaRebuild).toBe(true);
-    }
-    const item = await db.runInTransaction((repos) =>
-      repos.todaySessions.findItemById(itemId),
-    );
-    expect(item?.status).toBe("completed");
-    expect(item?.completedAt).toEqual(JAN1);
-  });
-
   it("submitAnswer never chooses/creates a Question of its own — it only ever writes an Attempt for the exact questionId supplied", async () => {
     const db = new InMemoryLearningDatabase();
     seedDefaultQuestion(db);
@@ -1025,8 +691,6 @@ describe("submitAnswer", () => {
 
       const result = await submitAnswer(
         makeCommand({
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "item-1",
           // A malicious/buggy caller claiming an unrelated plan/session
           // identity here must be ignored — both are APPLICATION-derived
@@ -1043,8 +707,6 @@ describe("submitAnswer", () => {
         expect(result.attempt.dailyPlanId).toBe("plan-1");
         expect(result.attempt.dailyPlanItemId).toBe("item-1");
         expect(result.attempt.learningSessionId).toBe("plan-1");
-        expect(result.attempt.todaySessionId).toBeNull();
-        expect(result.attempt.todaySessionItemId).toBeNull();
       }
       expect(db.getDailyPlanItem("item-1")?.status).toBe("completed");
     });
@@ -1066,8 +728,6 @@ describe("submitAnswer", () => {
       const result = await submitAnswer(
         makeCommand({
           userId: "user-1",
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "item-1",
         }),
         makeContext(),
@@ -1086,8 +746,6 @@ describe("submitAnswer", () => {
 
       const result = await submitAnswer(
         makeCommand({
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "does-not-exist",
         }),
         makeContext(),
@@ -1116,8 +774,6 @@ describe("submitAnswer", () => {
       const result = await submitAnswer(
         makeCommand({
           questionVersionId: "qv-2", // claims a DIFFERENT version than the item was frozen with
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "item-1",
         }),
         makeContext(),
@@ -1144,8 +800,6 @@ describe("submitAnswer", () => {
       const result = await submitAnswer(
         makeCommand({
           submissionId: "sub-new",
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "item-1",
         }),
         makeContext(),
@@ -1176,8 +830,6 @@ describe("submitAnswer", () => {
       const result = await submitAnswer(
         makeCommand({
           submissionId: "sub-new",
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "item-1",
         }),
         makeContext(),
@@ -1206,8 +858,6 @@ describe("submitAnswer", () => {
       const context = makeContext();
       const command = makeCommand({
         submissionId: "sub-1",
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanItemId: "item-1",
       });
 
@@ -1254,8 +904,6 @@ describe("submitAnswer", () => {
       await submitAnswer(
         makeCommand({
           submissionId: "sub-shared",
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "item-1",
         }),
         context,
@@ -1265,8 +913,6 @@ describe("submitAnswer", () => {
       const result = await submitAnswer(
         makeCommand({
           submissionId: "sub-shared",
-          todaySessionId: null,
-          todaySessionItemId: null,
           dailyPlanItemId: "item-2",
         }),
         context,
@@ -1294,7 +940,7 @@ describe("submitAnswer", () => {
       });
 
       const result = await submitAnswer(
-        makeCommand({ todaySessionId: null, todaySessionItemId: null, dailyPlanItemId: null }),
+        makeCommand({ dailyPlanItemId: null }),
         makeContext(),
         db,
       );

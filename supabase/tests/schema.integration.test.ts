@@ -123,48 +123,6 @@ async function insertQuestionVersion(
   return id;
 }
 
-async function insertTodaySession(
-  userId: string,
-  courseId: string,
-  plannedForDate = "2026-01-10",
-): Promise<string> {
-  const id = randomUUID();
-  await db.query(
-    `insert into today_sessions
-       (id, user_id, course_id, planned_for_date, status, engine_version)
-     values ($1, $2, $3, $4, 'prepared', 'test-engine-v1')`,
-    [id, userId, courseId, plannedForDate],
-  );
-  return id;
-}
-
-async function insertTodaySessionItem(args: {
-  todaySessionId: string;
-  userId: string;
-  courseId: string;
-  questionId: string;
-  questionVersionId: string;
-  position?: number;
-}): Promise<string> {
-  const id = randomUUID();
-  await db.query(
-    `insert into today_session_items
-       (id, today_session_id, user_id, course_id, position, question_id, question_version_id,
-        action_type, tier)
-     values ($1, $2, $3, $4, $5, $6, $7, 'REVIEW_DUE', 'DUE_REVIEW')`,
-    [
-      id,
-      args.todaySessionId,
-      args.userId,
-      args.courseId,
-      args.position ?? 0,
-      args.questionId,
-      args.questionVersionId,
-    ],
-  );
-  return id;
-}
-
 async function insertDailyPlan(
   userId: string,
   plannedForDate = "2026-01-10",
@@ -213,8 +171,6 @@ interface AttemptOverrides {
   courseId: string;
   questionId: string;
   questionVersionId: string;
-  todaySessionItemId?: string | null;
-  todaySessionId?: string | null;
 }
 
 async function insertAttempt(args: AttemptOverrides): Promise<string> {
@@ -222,9 +178,9 @@ async function insertAttempt(args: AttemptOverrides): Promise<string> {
   await db.query(
     `insert into attempts
        (id, submission_id, user_id, course_id, question_id, question_version_id,
-        today_session_item_id, today_session_id, answered_at, is_correct,
+        answered_at, is_correct,
         attempt_number_for_presented_item, engine_version)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, now(), true, 1, 'test-engine-v1')`,
+     values ($1, $2, $3, $4, $5, $6, now(), true, 1, 'test-engine-v1')`,
     [
       id,
       args.submissionId ?? randomUUID(),
@@ -232,8 +188,6 @@ async function insertAttempt(args: AttemptOverrides): Promise<string> {
       args.courseId,
       args.questionId,
       args.questionVersionId,
-      args.todaySessionItemId ?? null,
-      args.todaySessionId ?? null,
     ],
   );
   return id;
@@ -278,27 +232,17 @@ async function insertCourseMembership(args: {
   return id;
 }
 
-/** One full valid chain: user, course, question, version, Today session+item. */
+/** One full valid chain: user, course, question, version. */
 async function seedValidChain() {
   const userId = await insertUser();
   const courseId = await insertCourse(userId);
   const questionId = await insertQuestion(courseId);
   const questionVersionId = await insertQuestionVersion(questionId);
-  const todaySessionId = await insertTodaySession(userId, courseId);
-  const todaySessionItemId = await insertTodaySessionItem({
-    todaySessionId,
-    userId,
-    courseId,
-    questionId,
-    questionVersionId,
-  });
   return {
     userId,
     courseId,
     questionId,
     questionVersionId,
-    todaySessionId,
-    todaySessionItemId,
   };
 }
 
@@ -318,24 +262,6 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     ).rejects.toThrow(/duplicate key value violates unique constraint/);
   });
 
-  it("2. rejects a TodaySessionItem whose questionVersionId belongs to a DIFFERENT Question", async () => {
-    const chain = await seedValidChain();
-    const thirdQuestionId = await insertQuestion(chain.courseId);
-    const otherQuestionId = await insertQuestion(chain.courseId);
-    const otherQuestionVersionId = await insertQuestionVersion(otherQuestionId);
-
-    await expect(
-      insertTodaySessionItem({
-        todaySessionId: chain.todaySessionId,
-        userId: chain.userId,
-        courseId: chain.courseId,
-        questionId: thirdQuestionId, // a Question not already in this session...
-        questionVersionId: otherQuestionVersionId, // ...paired with a version of a DIFFERENT Question
-        position: 1,
-      }),
-    ).rejects.toThrow(/violates foreign key constraint/);
-  });
-
   it("3. rejects an Attempt whose courseId does not match its Question's actual Course", async () => {
     const chain = await seedValidChain();
     const wrongCourseId = await insertCourse(chain.userId);
@@ -353,80 +279,6 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     await expect(
       insertAttempt({ ...chain, questionVersionId: otherQuestionVersionId }),
     ).rejects.toThrow(/violates foreign key constraint/);
-  });
-
-  it("5. rejects an Attempt claiming a TodaySessionItem owned by ANOTHER user", async () => {
-    const chain = await seedValidChain();
-    const otherUserId = await insertUser();
-
-    await expect(
-      insertAttempt({
-        ...chain,
-        userId: otherUserId, // different user than the item's owner
-        todaySessionItemId: chain.todaySessionItemId,
-      }),
-    ).rejects.toThrow(/violates foreign key constraint/);
-  });
-
-  it("5b. rejects an Attempt whose todaySessionId does NOT match the session its claimed todaySessionItemId actually belongs to (adversarial-review finding: this column/FK was missing entirely from the original schema draft)", async () => {
-    const chain = await seedValidChain();
-    const otherSessionId = await insertTodaySession(
-      chain.userId,
-      chain.courseId,
-      "2026-02-20", // different date -> a genuinely different session
-    );
-
-    await expect(
-      insertAttempt({
-        ...chain,
-        todaySessionItemId: chain.todaySessionItemId, // belongs to chain.todaySessionId...
-        todaySessionId: otherSessionId, // ...but this claims a DIFFERENT session
-      }),
-    ).rejects.toThrow(/violates foreign key constraint/);
-  });
-
-  it("6. rejects a duplicate TodaySession for the same (user, course, date)", async () => {
-    const chain = await seedValidChain();
-
-    await expect(
-      insertTodaySession(chain.userId, chain.courseId, "2026-01-10"),
-    ).rejects.toThrow(/duplicate key value violates unique constraint/);
-  });
-
-  it("7. rejects a duplicate Today item position within the same session", async () => {
-    const chain = await seedValidChain();
-    const secondQuestionId = await insertQuestion(chain.courseId);
-    const secondQuestionVersionId = await insertQuestionVersion(secondQuestionId);
-
-    await expect(
-      insertTodaySessionItem({
-        todaySessionId: chain.todaySessionId,
-        userId: chain.userId,
-        courseId: chain.courseId,
-        questionId: secondQuestionId,
-        questionVersionId: secondQuestionVersionId,
-        position: 0, // same position as seedValidChain's item
-      }),
-    ).rejects.toThrow(/duplicate key value violates unique constraint/);
-  });
-
-  it("8. rejects a duplicate Question within the same Today session", async () => {
-    const chain = await seedValidChain();
-    const secondVersionOfSameQuestion = await insertQuestionVersion(
-      chain.questionId,
-      2,
-    );
-
-    await expect(
-      insertTodaySessionItem({
-        todaySessionId: chain.todaySessionId,
-        userId: chain.userId,
-        courseId: chain.courseId,
-        questionId: chain.questionId, // same Question again
-        questionVersionId: secondVersionOfSameQuestion,
-        position: 1, // different position, so only the Question is duplicated
-      }),
-    ).rejects.toThrow(/duplicate key value violates unique constraint/);
   });
 
   it("9. rejects an invalid evidence-counter sum (attempt_count != sum of the four quality counters)", async () => {
@@ -459,41 +311,6 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     ).rejects.toThrow(/foreign key constraint/);
   });
 
-  it("10b. deleting a TodaySessionItem an Attempt references only nulls the pointer — it never erases the Attempt or corrupts its ownership (the composite ON DELETE SET NULL(column) fix)", async () => {
-    const chain = await seedValidChain();
-    const attemptId = await insertAttempt({
-      ...chain,
-      todaySessionItemId: chain.todaySessionItemId,
-    });
-
-    // Deleting the parent session cascades to the item, which in turn must
-    // SET NULL only today_session_item_id on the Attempt — NOT delete the
-    // Attempt, and NOT touch (let alone null out) its user_id. An
-    // unqualified composite `ON DELETE SET NULL` (rather than the
-    // column-scoped `SET NULL (today_session_item_id)` this migration
-    // actually uses) would have nulled attempts.user_id too and failed
-    // against its NOT NULL constraint — this test is the real-engine proof
-    // that the fix works, not just a code-review claim.
-    await db.query("delete from today_sessions where id = $1", [
-      chain.todaySessionId,
-    ]);
-
-    const result = await db.query<{
-      id: string;
-      user_id: string;
-      today_session_item_id: string | null;
-      today_session_id: string | null;
-    }>(
-      "select id, user_id, today_session_item_id, today_session_id from attempts where id = $1",
-      [attemptId],
-    );
-
-    expect(result.rows).toHaveLength(1);
-    expect(result.rows[0].user_id).toBe(chain.userId);
-    expect(result.rows[0].today_session_item_id).toBeNull();
-    expect(result.rows[0].today_session_id).toBeNull();
-  });
-
   it("11. rejects questions.current_version_id pointing to a QuestionVersion of a DIFFERENT Question (Phase-2-red-team item B)", async () => {
     const chain = await seedValidChain();
     const otherQuestionId = await insertQuestion(chain.courseId);
@@ -517,81 +334,6 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
         chain.questionId,
       ]),
     ).resolves.toBeDefined();
-  });
-
-  it("12. rejects a TodaySessionItem whose Question belongs to a DIFFERENT Course than the item's own claimed course_id (Phase-2-red-team item H)", async () => {
-    const chain = await seedValidChain();
-    const otherCourseId = await insertCourse(chain.userId);
-    const questionInOtherCourse = await insertQuestion(otherCourseId);
-    const versionInOtherCourse = await insertQuestionVersion(questionInOtherCourse);
-
-    await expect(
-      db.query(
-        `insert into today_session_items
-           (id, today_session_id, user_id, course_id, position, question_id,
-            question_version_id, action_type, tier)
-         values ($1, $2, $3, $4, 1, $5, $6, 'REVIEW_DUE', 'DUE_REVIEW')`,
-        [
-          randomUUID(),
-          chain.todaySessionId,
-          chain.userId,
-          chain.courseId, // claims the SESSION's real course_id...
-          questionInOtherCourse, // ...but the Question actually belongs to a DIFFERENT course
-          versionInOtherCourse,
-        ],
-      ),
-    ).rejects.toThrow(/violates foreign key constraint/);
-  });
-
-  it("13. rejects a TodaySessionItem whose claimed course_id does NOT match its parent TodaySession's actual course_id (Phase-2-red-team item H)", async () => {
-    const chain = await seedValidChain();
-    const otherCourseId = await insertCourse(chain.userId);
-    // A Question that genuinely belongs to otherCourseId, so the
-    // (question_id, course_id) FK alone would not catch this — only the
-    // (today_session_id, user_id, course_id) FK to today_sessions can.
-    const questionInOtherCourse = await insertQuestion(otherCourseId);
-    const versionInOtherCourse = await insertQuestionVersion(questionInOtherCourse);
-
-    await expect(
-      db.query(
-        `insert into today_session_items
-           (id, today_session_id, user_id, course_id, position, question_id,
-            question_version_id, action_type, tier)
-         values ($1, $2, $3, $4, 1, $5, $6, 'REVIEW_DUE', 'DUE_REVIEW')`,
-        [
-          randomUUID(),
-          chain.todaySessionId, // this session's REAL course is chain.courseId...
-          chain.userId,
-          otherCourseId, // ...but this item claims a DIFFERENT course
-          questionInOtherCourse,
-          versionInOtherCourse,
-        ],
-      ),
-    ).rejects.toThrow(/violates foreign key constraint/);
-  });
-
-  it("14. rejects an Attempt with today_session_item_id set but today_session_id left null (MATCH FULL partial-null fix, Phase-2-red-team item N)", async () => {
-    const chain = await seedValidChain();
-
-    await expect(
-      insertAttempt({
-        ...chain,
-        todaySessionItemId: chain.todaySessionItemId,
-        todaySessionId: null, // partial null — the exact gap MATCH SIMPLE left open
-      }),
-    ).rejects.toThrow(/violates foreign key constraint/);
-  });
-
-  it("14b. rejects an Attempt with today_session_id set but today_session_item_id left null (the other partial-null direction)", async () => {
-    const chain = await seedValidChain();
-
-    await expect(
-      insertAttempt({
-        ...chain,
-        todaySessionItemId: null,
-        todaySessionId: chain.todaySessionId, // partial null the other way
-      }),
-    ).rejects.toThrow(/violates foreign key constraint/);
   });
 
   it("15. rejects a UserQuestionProgress row with a negative evidence-quality counter even when the sum still balances (Phase-2-red-team item M/V)", async () => {
@@ -631,24 +373,6 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
         questionVersionId: otherQuestionVersionId,
         submissionId: sharedSubmissionId,
       }),
-    ).resolves.toBeTypeOf("string");
-  });
-
-  it("17. permits two different Courses to each have a TodaySession for the same user on the same date", async () => {
-    const chain = await seedValidChain();
-    const otherCourseId = await insertCourse(chain.userId);
-
-    await expect(
-      insertTodaySession(chain.userId, otherCourseId, "2026-01-10"),
-    ).resolves.toBeTypeOf("string");
-  });
-
-  it("18. permits two different users to each have a TodaySession for the same Course on the same date", async () => {
-    const chain = await seedValidChain();
-    const otherUserId = await insertUser();
-
-    await expect(
-      insertTodaySession(otherUserId, chain.courseId, "2026-01-10"),
     ).resolves.toBeTypeOf("string");
   });
 
@@ -742,12 +466,7 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
   it("accepts a representative fully-valid row chain, including UserQuestionProgress", async () => {
     const chain = await seedValidChain();
 
-    await expect(
-      insertAttempt({
-        ...chain,
-        todaySessionItemId: chain.todaySessionItemId,
-      }),
-    ).resolves.toBeTypeOf("string");
+    await expect(insertAttempt(chain)).resolves.toBeTypeOf("string");
 
     await expect(insertValidProgress(chain.userId, chain.questionId)).resolves.toBeUndefined();
 
@@ -1024,7 +743,7 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     ).rejects.toThrow(/violates foreign key constraint/);
   });
 
-  it("38. a daily_plan_items row independently carries its own course_id, unlike today_session_items (ADR-016 §1)", async () => {
+  it("38. a daily_plan_items row independently carries its own course_id (ADR-016 §1)", async () => {
     const chain = await seedValidChain();
     const secondCourseId = await insertCourse(chain.userId);
     const secondQuestionId = await insertQuestion(secondCourseId);
@@ -1102,26 +821,6 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     expect(completedRow?.completed_at).not.toBeNull();
     expect(skippedRow?.resolved_at).not.toBeNull();
     expect(skippedRow?.completed_at).toBeNull();
-  });
-
-  it("40. daily_plans/daily_plan_items are purely additive: today_sessions/today_session_items remain fully intact and usable", async () => {
-    // seedValidChain() already exercises the full existing TodaySession
-    // path (session + item) — this test only needs to confirm that path
-    // still works unmodified after the daily_plans/daily_plan_items
-    // migration, not create a second session for the same
-    // (user_id, course_id, planned_for_date) key.
-    const chain = await seedValidChain();
-
-    const todaySessionResult = await db.query(
-      "select id from today_sessions where id = $1",
-      [chain.todaySessionId],
-    );
-    expect(todaySessionResult.rows).toHaveLength(1);
-    const todaySessionItemResult = await db.query(
-      "select id from today_session_items where id = $1",
-      [chain.todaySessionItemId],
-    );
-    expect(todaySessionItemResult.rows).toHaveLength(1);
   });
 
   // -------------------------------------------------------------------------

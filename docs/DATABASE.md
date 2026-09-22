@@ -69,7 +69,6 @@ Examples:
 
 * DailyPlan;
 * DailyPlanItem;
-* legacy TodaySession / TodaySessionItem where still supported;
 * selected Next Best Action outputs where persistence is justified.
 
 Do not collapse these categories into one table for convenience.
@@ -461,7 +460,7 @@ V1 direction:
 
 Persist only the selected decision that becomes part of the learner's frozen plan rather than storing every possible ranking candidate.
 
-Current Today persistence uses `DailyPlanItem`; legacy `TodaySessionItem` remains supported for the older path.
+Current Today persistence uses `DailyPlanItem`.
 
 No separate table stores all NBA candidates or full ranking results; candidate ranking remains ephemeral computation (`src/domain/learning/next-best-action.ts`, `next-best-action-ranking.ts`).
 
@@ -490,9 +489,7 @@ ADR-016 defines the current primary Today persistence model:
 * same-day reload returns the same persisted plan/state;
 * unresolved items do not automatically carry into the next learner-local day.
 
-Legacy `TodaySession` persistence remains implemented with `UNIQUE (user_id, course_id, planned_for_date)` per ADR-011 and may still be referenced by older code/tests/migrations.
-
-It is additive compatibility/history infrastructure, not the primary current Today model.
+The superseded Course-scoped `TodaySession` model (ADR-011, `UNIQUE (user_id, course_id, planned_for_date)`) was retired before Run 009: its runtime code and schema (`today_sessions`/`today_session_items`) no longer exist in the active repository. `DailyPlan` is the sole current Today persistence model.
 
 ---
 
@@ -523,10 +520,6 @@ The exact persisted DailyPlan/DailyPlanItem schema is authoritative in committed
 
 Product semantics are defined by ADR-016 and ADR-017.
 
-Legacy `TodaySessionItem` rows remain supported only for the older persistence path.
-
-Do not use them as the primary model for new Today behavior.
-
 ---
 
 ## 19. Today Persistence Rule
@@ -547,8 +540,6 @@ Do not regenerate the plan simply because the page reloads.
 For current Today behavior, the persisted learner IANA timezone defines the learner-local calendar day.
 
 Reopening within that same local day returns the persisted DailyPlan.
-
-Legacy TodaySession APIs may still accept an already-resolved logical date; that legacy storage contract does not redefine the current DailyPlan day boundary.
 
 ---
 
@@ -885,7 +876,7 @@ Choose the simplest reliable approach supported by the final stack.
 
 V1 answer submission runs through one database transaction covering immutable Attempt creation/idempotency, learner-progress update, and planned-item resolution when applicable.
 
-The mature `submitAnswer` path still supports the legacy TodaySession linkage, and the current DailyPlan answer flow extends that same transactional learning path with authoritative server-derived `daily_plan_id` / `daily_plan_item_id` linkage.
+The current DailyPlan answer flow extends the same transactional learning path (`submitAnswer`) with authoritative server-derived `daily_plan_id` / `daily_plan_item_id` linkage.
 
 A DailyPlan-backed Attempt resolves the corresponding DailyPlanItem through the current single-use resolution rules.
 
@@ -944,9 +935,6 @@ Aggregate Learner State
 
 DailyPlan / DailyPlanItems
 → current persisted output of the Today learning decision
-
-Legacy TodaySession / TodaySessionItems
-→ older persisted decision path retained only for compatibility/history
 ```
 
 Avoid multiple independent writable copies of the same current learning signal.
@@ -980,8 +968,6 @@ Potential places include:
 * derived progress updates;
 * DailyPlan / DailyPlanItem persistence where reproducibility requires it;
 * audit/decision records.
-
-Legacy TodaySession records may retain their existing historical version fields where applicable.
 
 Do not add version columns everywhere preemptively.
 
@@ -1228,7 +1214,6 @@ UserQuestionProgress
 Exam Date Context where accepted
 DailyPlan
 DailyPlanItem
-legacy TodaySession / TodaySessionItem where retained
 minimal version/provenance fields where justified
 ```
 
@@ -1260,7 +1245,7 @@ Important current decision status:
 2. V1 exam-date hierarchy — OPEN
 3. Question editing/version strategy — DECIDED AND IMPLEMENTED (ADR-009 / ADR-014)
 4. Course structure depth — current flat Topic model IMPLEMENTED for V1; deeper hierarchy remains out of current scope unless explicitly reopened
-5. Today scope — DECIDED AND IMPLEMENTED through DailyPlan/DailyPlanItem (ADR-016); legacy TodaySession tables remain additive
+5. Today scope — DECIDED AND IMPLEMENTED through DailyPlan/DailyPlanItem (ADR-016); the superseded TodaySession tables were retired before Run 009
 6. Today local-day/timezone authority — DECIDED AND IMPLEMENTED for current DailyPlan flow
 7. aggregate Learner State persistence — OPEN
 8. selected Next Best Action persistence — DECIDED: persist selected frozen plan output, not all candidates

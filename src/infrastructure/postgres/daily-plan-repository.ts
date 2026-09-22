@@ -78,9 +78,7 @@ export class PostgresDailyPlanRepository implements DailyPlanRepository {
    * here): `INSERT ... ON CONFLICT (user_id, planned_for_date) DO NOTHING
    * RETURNING`, never a check-then-insert. If this call loses the race,
    * the caller-supplied `plan`/`items` are silently discarded in favor of
-   * the already-committed plan — mirroring
-   * `PostgresTodaySessionRepository.createIfNotExists`'s documented
-   * contract exactly.
+   * the already-committed plan.
    *
    * This race-freedom claim assumes the default `READ COMMITTED` isolation
    * level (what every `UnitOfWork` in this codebase actually runs at —

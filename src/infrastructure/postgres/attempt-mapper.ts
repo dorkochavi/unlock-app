@@ -72,8 +72,6 @@ export function mapAttemptRow(row: Record<string, unknown>): Attempt {
         ? null
         : readEnum(row, TABLE, "confidence_level", CONFIDENCE_LEVELS),
     responseTimeSeconds: readNullableNumber(row, TABLE, "response_time_seconds"),
-    todaySessionId: readNullableString(row, TABLE, "today_session_id"),
-    todaySessionItemId: readNullableString(row, TABLE, "today_session_item_id"),
     dailyPlanId: readNullableString(row, TABLE, "daily_plan_id"),
     dailyPlanItemId: readNullableString(row, TABLE, "daily_plan_item_id"),
     learningSessionId: readNullableString(row, TABLE, "learning_session_id"),
@@ -115,8 +113,6 @@ export function attemptInsertParams(attempt: Attempt): unknown[] {
     attempt.courseId,
     attempt.questionId,
     attempt.questionVersionId,
-    attempt.todaySessionId,
-    attempt.todaySessionItemId,
     attempt.learningSessionId,
     attempt.answeredAt,
     attempt.isCorrect,

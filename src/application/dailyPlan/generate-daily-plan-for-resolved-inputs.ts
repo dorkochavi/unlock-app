@@ -16,9 +16,8 @@
  * plannedForDate)` DailyPlan; it never creates a separate, Course-keyed
  * plan (ADR-016 §1: "Course Today is NOT a separate plan").
  *
- * Orchestrates the SAME already-existing pure domain pipeline
- * `getOrCreateTodaySession` uses
- * (`src/application/learning/today-session.ts`):
+ * Orchestrates the same pure domain pipeline
+ * (`src/domain/learning/today-planner.ts`):
  * generateNextBestActionCandidates -> rankNextBestActionCandidates ->
  * generateTodayPlan — extended here to run ONCE over a pool merged across
  * every `eligibleCourseId`, per
@@ -30,14 +29,12 @@
  * already has for free (a Question belongs to exactly one Course), not via
  * a second lookup.
  *
- * Freeze/idempotency semantics mirror `getOrCreateTodaySession` exactly:
- * this function only ever CREATES a plan when `findByKey` finds none; it
- * never regenerates or reorders an existing one, and
- * `DailyPlanRepository.createIfNotExists` is itself race-free by
+ * Freeze/idempotency semantics: this function only ever CREATES a plan when
+ * `findByKey` finds none; it never regenerates or reorders an existing one,
+ * and `DailyPlanRepository.createIfNotExists` is itself race-free by
  * construction (`INSERT ... ON CONFLICT DO NOTHING RETURNING` + fallback
  * `SELECT`, mirroring ADR-010's established pattern) — no additional
- * locking is needed here, matching `today-session.ts`'s own documented
- * reasoning for why its equivalent call needs none either. Whatever
+ * locking is needed here. Whatever
  * `createIfNotExists` returns is returned as-is, including when it is the
  * winner of a concurrent race rather than this call's own locally
  * generated plan/items.
@@ -219,15 +216,13 @@ export async function generateDailyPlanForResolvedInputs(
       );
 
       // QuestionVersion resolution/freezing is an application-layer
-      // responsibility, not today-planner.ts's (ADR-010) — identical
-      // reasoning and identical defensive skip to getOrCreateTodaySession: a
-      // Question with no current version is skipped rather than crashing the
-      // whole generation. `planItem.position` (below) is reused as-is, so a
+      // responsibility, not today-planner.ts's (ADR-010) — a Question with
+      // no current version is skipped rather than crashing the whole
+      // generation. `planItem.position` (below) is reused as-is, so a
       // skipped Question can leave a gap in persisted positions (e.g.
-      // [0,1,2,4]) rather than being renumbered contiguously — intentional,
-      // matching getOrCreateTodaySession's identical existing behavior; the
-      // schema has no contiguity constraint and nothing reads position as a
-      // dense sequence.
+      // [0,1,2,4]) rather than being renumbered contiguously — intentional;
+      // the schema has no contiguity constraint and nothing reads position
+      // as a dense sequence.
       items = [];
       for (const planItem of plan.items) {
         const version = await repos.questionVersions.getCurrentVersion(
@@ -275,11 +270,10 @@ export async function generateDailyPlanForResolvedInputs(
 
     // No filler is ever fabricated when `items` is empty (zero eligible
     // Courses, zero progress, zero ranked candidates, AND zero eligible
-    // unseen questions) — a zero-item DailyPlan is still persisted,
-    // mirroring getOrCreateTodaySession's own unconditional
-    // createIfNotExists call. Skipping persistence here would break "a
-    // second Today view opened later the same day resumes the
-    // already-generated plan" (ADR-016 §2) for a legitimately-empty day.
+    // unseen questions) — a zero-item DailyPlan is still persisted
+    // unconditionally. Skipping persistence here would break "a second
+    // Today view opened later the same day resumes the already-generated
+    // plan" (ADR-016 §2) for a legitimately-empty day.
     return repos.dailyPlans.createIfNotExists(
       {
         userId: command.userId,

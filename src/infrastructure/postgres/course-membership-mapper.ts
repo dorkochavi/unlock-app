@@ -1,6 +1,6 @@
 /**
  * Explicit row <-> domain mapping for `course_memberships` (Phase 5's
- * mapping audit precedent — see `today-session-mapper.ts`).
+ * mapping audit precedent).
  */
 import { COURSE_ROLES } from "../../domain/course/types";
 import type { CourseMembership } from "../../application/course/ports";

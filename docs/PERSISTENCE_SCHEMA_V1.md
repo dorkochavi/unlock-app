@@ -1,6 +1,6 @@
 # UNLOCK V1 Physical Persistence Schema
 
-Status: **IMPLEMENTED IN REPOSITORY** — twelve forward-only migrations exist:
+Status: **IMPLEMENTED IN REPOSITORY** — thirteen forward-only migrations exist:
 
 1. `20260917203000_initial_schema.sql` — initial PostgreSQL/Supabase schema (ADR-013)
 2. `20260918000000_question_answer_model_v1.sql` — Question answer model (ADR-014)
@@ -14,11 +14,13 @@ Status: **IMPLEMENTED IN REPOSITORY** — twelve forward-only migrations exist:
 10. `20260926000000_course_lifecycle_v1.sql` — Course lifecycle status + optional exam-date metadata
 11. `20260927000000_topics_v1.sql` — flat Topic model for Course authoring
 12. `20260928000000_question_authoring_v1.sql` — Question draft authoring, Topic association, and publishing persistence support
+13. `20260929000000_retire_today_session.sql` — drops the superseded `today_sessions`/`today_session_items` tables and `attempts.today_session_id`/`attempts.today_session_item_id` (ADR-011, fully retired before Run 009 — see that migration's own header comment and ADR-011's current status note)
 
 Hosted Supabase migration state at this Development OS V1.2 baseline:
 
 * migrations #1–#9 have been applied to the hosted Supabase project;
-* migrations #10–#12 are committed and locally/PGlite verified but remain pending explicit human remote application.
+* migrations #10–#12 are committed and locally/PGlite verified but remain pending explicit human remote application;
+* migration #13 is committed and locally/PGlite verified but deliberately NOT applied hosted yet — pending the backup-readiness gate (`docs/FOLLOW_UP_BACKLOG.md` FUB-009), per `docs/DEV_STATUS.md`.
 
 Hosted migration state is operational status, not physical-schema authority. It may advance independently of this document and should be tracked in `docs/DEV_STATUS.md`.
 
@@ -304,11 +306,11 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
 | `course_id` | uuid | no | see composite FK below |
 | `question_id` | uuid | no | see composite FK below |
 | `question_version_id` | uuid | no | see composite FK below |
-| `today_session_id` | uuid | yes | **found missing during migration-writing**: `src/domain/learning/types.ts`'s `Attempt.todaySessionId` and ADR-010's canonical command-identity field list already treat this as its own independently client-supplied, independently compared field, distinct from `today_session_item_id` — this document's original draft omitted the column entirely. See composite FK below for how it's kept consistent with `today_session_item_id` whenever both are present |
-| `today_session_item_id` | uuid | yes | see composite FK below; null = manual practice / no Today context |
+| ~~`today_session_id`~~ | uuid | — | **REMOVED** by migration #13 (`20260929000000_retire_today_session.sql`) — the legacy TodaySession columns/tables are fully retired; see the historical FK notes further below, preserved as design-rationale record, not current schema |
+| ~~`today_session_item_id`~~ | uuid | — | **REMOVED** by migration #13, same as above |
 | `daily_plan_id` | uuid | yes | current DailyPlan linkage; server-derived for DailyPlan answer submission, never authoritative client identity |
-| `daily_plan_item_id` | uuid | yes | current DailyPlanItem linkage; nullable for Manual Practice/legacy TodaySession flow; constrained so a single Attempt cannot claim both legacy TodaySessionItem and DailyPlanItem origins |
-| `learning_session_id` | text | yes | **ADR-012 §5**: stable identity of the continuous learning occasion. For a persisted-plan Attempt (legacy TodaySessionItem or current DailyPlanItem), the application derives the learning-session identity from authoritative persisted context rather than trusting a client claim. Manual Practice may supply its own stable token under the existing contract. |
+| `daily_plan_item_id` | uuid | yes | current DailyPlanItem linkage; nullable for Manual Practice |
+| `learning_session_id` | text | yes | **ADR-012 §5**: stable identity of the continuous learning occasion. For a DailyPlan-attached Attempt, the application derives the learning-session identity from authoritative persisted context rather than trusting a client claim. Manual Practice may supply its own stable token under the existing contract. |
 | `answered_at` | timestamptz | no | client-captured event time |
 | `is_correct` | boolean | no | server-computed from `selected_answer` vs. the referenced `QuestionVersion`'s correct answer — **not** independently client-supplied |
 | `selected_answer` | jsonb | yes | matches the domain type's `string \| number \| null` |
@@ -515,7 +517,14 @@ replay contract and its open questions).
 
 ---
 
-## `today_sessions`
+## `today_sessions` — RETIRED
+
+**This table no longer exists** — dropped by migration #13
+(`20260929000000_retire_today_session.sql`), after a runtime reachability
+audit found no live `src/app` route creating/retrieving a TodaySession and
+hosted Supabase verification found zero rows in it. `DailyPlan` (below) is
+the sole active Today persistence model. The section below is preserved as
+historical design-rationale record only — do not read it as current schema.
 
 Persisted decision output (`docs/DATABASE.md` §2's fourth category — not
 source-of-truth, not derived-and-rebuildable, a frozen record of what was
@@ -559,7 +568,11 @@ decided).
 
 ---
 
-## `today_session_items`
+## `today_session_items` — RETIRED
+
+**This table no longer exists** — dropped by migration #13, same as
+`today_sessions` above. Preserved as historical design-rationale record
+only.
 
 The frozen plan, one row per planned Question within a session — ADR-010's
 "Today Session freeze model."
@@ -634,8 +647,9 @@ The frozen plan, one row per planned Question within a session — ADR-010's
 DailyPlan generation/orchestration path. One row exists per
 `(user_id, planned_for_date)`; Global Today and Course Today are views over
 the same persisted `daily_plan_items`. `today_sessions`/`today_session_items`
-remain fully intact as the legacy path; the migration was additive and did
-not drop or rewrite them.
+were the legacy path this migration ran additively alongside; they have
+since been dropped entirely by migration #13 — see the "RETIRED" sections
+above.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
@@ -743,10 +757,11 @@ plan (ADR-016 §1).
   `20260924000000_daily_plan_answer_attempts.sql`: `attempts` can reference
   `daily_plan_id` / `daily_plan_item_id` for current Today answer submission.
   The server derives those identities from the authenticated learner and
-  persisted item. The migration prevents one Attempt from claiming both
-  legacy TodaySessionItem and DailyPlanItem origins, and preserves immutable
-  Attempt evidence if a DailyPlan is later deleted by clearing only the
-  planning pointers.
+  persisted item, and preserves immutable Attempt evidence if a DailyPlan is
+  later deleted by clearing only the planning pointers. That migration also
+  added a CHECK preventing one Attempt from claiming both legacy
+  TodaySessionItem and DailyPlanItem origins — since retired along with
+  `today_session_item_id` itself by migration #13.
 
 ---
 
@@ -756,16 +771,16 @@ plan (ADR-016 §1).
 |---|---|---|
 | Attempt's `question_version_id` belongs to its `question_id` | composite FK (`attempts`) | Phase 2 audit #3/#20 |
 | Attempt's `course_id` matches its Question's actual Course | composite FK (`attempts`) | Phase 2 audit #19 |
-| TodaySessionItem's `question_version_id` belongs to its `question_id` | composite FK (`today_session_items`) | Phase 2 audit #20 |
-| Attempt cannot reference a TodaySessionItem owned by a different user | composite FK via denormalized `user_id` (`attempts` ↔ `today_session_items`) | **Phase 2 audit #17/#18 — the two BLOCKING gaps this session found and fixed** |
-| Attempt's `today_session_id` cannot disagree with the session its `today_session_item_id` actually belongs to | composite FK (`attempts` ↔ `today_session_items`) | found during migration-writing — `today_session_id` was missing from this document's original `attempts` table entirely |
+| ~~TodaySessionItem's `question_version_id` belongs to its `question_id`~~ | **RETIRED** (migration #13) — was composite FK (`today_session_items`) | Phase 2 audit #20 |
+| ~~Attempt cannot reference a TodaySessionItem owned by a different user~~ | **RETIRED** (migration #13) — was composite FK via denormalized `user_id` (`attempts` ↔ `today_session_items`) | Phase 2 audit #17/#18 |
+| ~~Attempt's `today_session_id` cannot disagree with the session its `today_session_item_id` actually belongs to~~ | **RETIRED** (migration #13) — was composite FK (`attempts` ↔ `today_session_items`) | found during migration-writing |
 | `UserQuestionProgress`'s four evidence-quality counters sum to `attempt_count` | `CHECK` constraint (`user_question_progress`) | already documented as a domain invariant in `types.ts`, now also DB-enforced |
 | No duplicate Attempt for the same logical command | `UNIQUE (user_id, submission_id)` + application-level field comparison on conflict | ADR-010 (prior session) |
-| No duplicate TodaySessionItem position/Question within a session | `UNIQUE` constraints (`today_session_items`) | ADR-010 / this session |
-| TodaySession uniqueness (one session per user/Course/date) | `UNIQUE (user_id, course_id, planned_for_date)` | ADR-011 (course-scoped V1 decision) |
+| ~~No duplicate TodaySessionItem position/Question within a session~~ | **RETIRED** (migration #13) — was `UNIQUE` constraints (`today_session_items`) | ADR-010 |
+| ~~TodaySession uniqueness (one session per user/Course/date)~~ | **RETIRED** (migration #13) — was `UNIQUE (user_id, course_id, planned_for_date)` | ADR-011 (course-scoped V1 decision, superseded) |
 | DailyPlan uniqueness (one plan per user/local date) | `UNIQUE (user_id, planned_for_date)` | ADR-016 |
 | DailyPlanItem state/timestamps remain consistent | `daily_plan_items_status_timestamps_check` | `20260922000000_daily_plan_item_state_consistency.sql` |
-| Attempt cannot claim both legacy TodaySessionItem and current DailyPlanItem origins | Attempt CHECK / FK constraints | `20260924000000_daily_plan_answer_attempts.sql` |
+| ~~Attempt cannot claim both legacy TodaySessionItem and current DailyPlanItem origins~~ | **RETIRED** (migration #13) — was Attempt CHECK / FK constraints | `20260924000000_daily_plan_answer_attempts.sql` |
 | DailyPlan-linked Attempt ownership/parent identity is constrained | composite DailyPlan/DailyPlanItem linkage constraints | `20260924000000_daily_plan_answer_attempts.sql` |
 | QuestionVersion actually belongs to the Question/Course it's claimed for | composite FK (schema) **+** an equivalent application-layer check in `submitAnswer` (`resolveVersionContext`), since in-memory/test callers and any pre-insert validation can't rely on a DB constraint firing | this session's correctness pass |
 
@@ -885,7 +900,6 @@ reasoning, stated explicitly rather than assumed.
 
 ## Explicitly unresolved in this document (not guessed)
 
-- `TodaySession.status`'s exact state machine (`docs/DATABASE.md` §17).
 - `Question.verification_state`'s exact enum (`docs/DATABASE.md` §24 lists
   candidates, not final values).
 - `Material.material_type`'s exact enum (no candidate list exists yet).

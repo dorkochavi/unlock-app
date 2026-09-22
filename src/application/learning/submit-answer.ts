@@ -32,12 +32,11 @@
  * force every retrieval to qualify as spaced. Fixed by splitting ownership
  * by origin, via `resolveLearningSessionId` below:
  *
- * - **Today-attached Attempts** (`todaySessionItemId !== null`): the
+ * - **DailyPlan-attached Attempts** (`dailyPlanItemId !== null`): the
  *   application derives `learningSessionId` from the persisted
- *   `TodaySessionItem.todaySessionId` — the one continuous session concept
- *   that already exists for Today (a `TodaySessionItem` belongs to exactly
- *   one `TodaySession`, and Today is already course+date scoped, ADR-011).
- *   No new Session subsystem is introduced. The client's `command
+ *   `DailyPlanItem.dailyPlanId` — the one continuous session concept that
+ *   already exists for Today (ADR-016: one DailyPlan per learner per local
+ *   day). No new Session subsystem is introduced. The client's `command
  *   .learningSessionId` is IGNORED for these Attempts — not merely
  *   validated — the same treatment already given to other
  *   server-derived fields (`isCorrect`, `engineVersion`). Consequently it
@@ -45,7 +44,7 @@
  *   these Attempts (see `findConflictingFields`): comparing a value the
  *   client does not actually own would only produce false idempotency
  *   conflicts.
- * - **Manual practice** (`todaySessionItemId === null`): no persisted
+ * - **Manual practice** (`dailyPlanItemId === null`): no persisted
  *   session concept exists for manual practice in V1, and inventing one
  *   is out of scope here. The client supplies and owns a stable token for
  *   this case, the same trust boundary V1 already extends to every other
@@ -97,7 +96,7 @@
  *
  * A genuine retry (same `submissionId`, resolved via
  * `AttemptRepository.findByUserAndSubmissionId`) is detected BEFORE the
- * advisory lock, QuestionVersion/TodaySessionItem consistency checks, or
+ * advisory lock, QuestionVersion/DailyPlanItem consistency checks, or
  * `isCorrect`/`suspiciousTiming` computation — none of that work is needed
  * to answer "does this submissionId already have a result?". This does
  * NOT weaken `UNIQUE (user_id, submission_id)`: a genuinely concurrent
@@ -123,7 +122,6 @@ import { OutOfOrderRetrievalError } from "../../domain/learning/retrieval-qualif
 import type { Attempt, UserQuestionProgress } from "../../domain/learning/types";
 import type {
   DailyPlanAnswerTarget,
-  TodaySessionItem,
   TransactionalRepositories,
   UnitOfWork,
 } from "./ports";
@@ -172,11 +170,7 @@ export type SubmitAnswerResult =
       conflictingFields: string[];
     }
   | {
-      kind: "TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED";
-      todaySessionItemId: string;
-    }
-  | {
-      /** ADR-016. Mirrors TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED exactly. */
+      /** ADR-016. */
       kind: "DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED";
       dailyPlanItemId: string;
     }
@@ -211,7 +205,7 @@ export type SubmitAnswerResult =
 /**
  * ADR-010's canonical command-identity field list. `learningSessionId` is
  * deliberately NOT in this generic list — its identity ownership depends
- * on whether the Attempt is Today-attached (see `findConflictingFields`
+ * on whether the Attempt is DailyPlan-attached (see `findConflictingFields`
  * below, and the module doc comment). Fields NOT in this list (`id`,
  * `isCorrect`, `suspiciousTiming`, `engineVersion`) are
  * server-generated/derived and never compared.
@@ -223,8 +217,6 @@ const CANONICAL_COMMAND_IDENTITY_FIELDS: Array<keyof SubmitAnswerCommand> = [
   "selectedAnswer",
   "confidenceLevel",
   "responseTimeSeconds",
-  "todaySessionId",
-  "todaySessionItemId",
   "dailyPlanItemId",
   "assistanceUsed",
   "attemptNumberForPresentedItem",
@@ -234,7 +226,7 @@ const CANONICAL_COMMAND_IDENTITY_FIELDS: Array<keyof SubmitAnswerCommand> = [
 
 /**
  * Exact null-aware equality per field, per ADR-010 ("an existing
- * todaySessionItemId of 'item-123' and a retry carrying null are NOT the
+ * dailyPlanItemId of 'item-123' and a retry carrying null are NOT the
  * same command"). Dates are compared by value, not reference.
  *
  * `selectedAnswer` needs its own case too, since ADR-014: a MULTIPLE_CHOICE
@@ -274,7 +266,6 @@ function findConflictingFields(
     }
   }
   if (
-    command.todaySessionItemId === null &&
     command.dailyPlanItemId === null &&
     command.learningSessionId !== existing.learningSessionId
   ) {
@@ -289,21 +280,16 @@ function findConflictingFields(
  * ownership" section for why this cannot simply trust
  * `command.learningSessionId`.
  *
- * A DailyPlan-attached Attempt (ADR-016) is treated identically: the
- * `dailyPlanId` of the persisted DailyPlanItem the Attempt resolves IS the
- * one continuous session concept for it (a DailyPlan is already one
- * per-user-per-local-day plan, matching `TodaySession`'s own role here) —
- * `command.learningSessionId` is ignored for this case too, for the same
- * reason.
+ * A DailyPlan-attached Attempt (ADR-016) has its `learningSessionId`
+ * derived from the `dailyPlanId` of the persisted DailyPlanItem the
+ * Attempt resolves — a DailyPlan is already one per-user-per-local-day
+ * plan, the one continuous session concept for it — so
+ * `command.learningSessionId` is ignored for that case.
  */
 function resolveLearningSessionId(
   command: SubmitAnswerCommand,
-  todaySessionItem: TodaySessionItem | null,
   dailyPlanItem: DailyPlanAnswerTarget | null,
 ): string | null {
-  if (todaySessionItem !== null) {
-    return todaySessionItem.todaySessionId;
-  }
   if (dailyPlanItem !== null) {
     return dailyPlanItem.dailyPlanId;
   }
@@ -317,15 +303,6 @@ class IdempotencyKeyConflict extends Error {
   ) {
     super("submitAnswer: submissionId reused for a different logical command");
     this.name = "IdempotencyKeyConflict";
-  }
-}
-
-class TodaySessionItemOwnershipViolation extends Error {
-  constructor(public readonly todaySessionItemId: string) {
-    super(
-      "submitAnswer: todaySessionItemId not found, or does not belong to this user/question/version",
-    );
-    this.name = "TodaySessionItemOwnershipViolation";
   }
 }
 
@@ -412,12 +389,6 @@ export async function submitAnswer(
         conflictingFields: error.conflictingFields,
       };
     }
-    if (error instanceof TodaySessionItemOwnershipViolation) {
-      return {
-        kind: "TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED",
-        todaySessionItemId: error.todaySessionItemId,
-      };
-    }
     if (error instanceof DailyPlanItemOwnershipViolation) {
       return {
         kind: "DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED",
@@ -479,7 +450,7 @@ async function submitAnswerInTransaction(
   };
 
   // Fast path: a genuine, already-resolved retry short-circuits BEFORE the
-  // lock, BEFORE QuestionVersion/TodaySessionItem consistency checks, and
+  // lock, BEFORE QuestionVersion/DailyPlanItem consistency checks, and
   // BEFORE computing isCorrect/suspiciousTiming — none of that work is
   // needed to answer "does this submissionId already have a result?".
   // Race-safe (see AttemptRepository.findByUserAndSubmissionId's doc
@@ -517,28 +488,9 @@ async function submitAnswerInTransaction(
     throw new QuestionVersionConsistencyViolation(command.questionVersionId);
   }
 
-  // TodaySessionItem ownership/question/version validation. `todaySessionItem`
-  // is kept (not discarded) — it is also what `resolveLearningSessionId`
-  // uses below to derive the authoritative learningSessionId for a
-  // Today-attached Attempt, ignoring whatever the client claimed.
-  let todaySessionItem: TodaySessionItem | null = null;
-  if (command.todaySessionItemId !== null) {
-    todaySessionItem = await repos.todaySessions.findItemById(
-      command.todaySessionItemId,
-    );
-    if (
-      todaySessionItem === null ||
-      todaySessionItem.userId !== command.userId ||
-      todaySessionItem.questionId !== command.questionId ||
-      todaySessionItem.questionVersionId !== command.questionVersionId
-    ) {
-      throw new TodaySessionItemOwnershipViolation(command.todaySessionItemId);
-    }
-  }
-
-  // DailyPlanItem ownership + pending-status validation (ADR-016). Unlike
-  // the TodaySessionItem block above, this ALSO verifies `status ===
-  // "pending"` here, before any grading/Attempt-creation work — a
+  // DailyPlanItem ownership + pending-status validation (ADR-016). Also
+  // verifies `status === "pending"` here, before any
+  // grading/Attempt-creation work — a
   // DailyPlanItem resolves at most once (`.claude/rules/learning-engine.md`
   // "Item resolution"), so a genuinely new submissionId arriving for an
   // already-resolved item must be rejected cleanly, before it can create a
@@ -586,11 +538,7 @@ async function submitAnswerInTransaction(
     // uniquely determines its own parent plan.
     dailyPlanId:
       dailyPlanItem !== null ? dailyPlanItem.dailyPlanId : command.dailyPlanId,
-    learningSessionId: resolveLearningSessionId(
-      command,
-      todaySessionItem,
-      dailyPlanItem,
-    ),
+    learningSessionId: resolveLearningSessionId(command, dailyPlanItem),
     id: context.generateId(),
     isCorrect,
     suspiciousTiming,
@@ -668,13 +616,6 @@ async function submitAnswerInTransaction(
   await repos.progress.upsert(finalProgress);
 
   // Step 7.
-  if (command.todaySessionItemId !== null) {
-    await repos.todaySessions.markItemCompleted(
-      command.todaySessionItemId,
-      command.answeredAt,
-      attempt.id,
-    );
-  }
   if (command.dailyPlanItemId !== null) {
     const resolution = await repos.dailyPlanItems.markCompleted(
       command.dailyPlanItemId,

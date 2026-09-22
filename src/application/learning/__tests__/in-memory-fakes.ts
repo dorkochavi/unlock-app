@@ -27,10 +27,6 @@ import type {
   DailyPlanAnswerRepository,
   DailyPlanAnswerTarget,
   QuestionVersionRepository,
-  TodaySession,
-  TodaySessionItem,
-  TodaySessionKey,
-  TodaySessionRepository,
   TransactionalRepositories,
   UnitOfWork,
   UserQuestionProgressRepository,
@@ -40,16 +36,11 @@ function progressKey(userId: string, questionId: string): string {
   return `${userId}:${questionId}`;
 }
 
-function todaySessionKeyString(key: TodaySessionKey): string {
-  return `${key.userId}:${key.courseId}:${key.plannedForDate}`;
-}
-
 interface InMemoryState {
   attempts: Map<string, Attempt>; // by (userId, submissionId) composite key
   attemptsById: Map<string, Attempt>;
   createdAtByAttemptId: Map<string, Date>;
   progress: Map<string, UserQuestionProgress>;
-  todaySessions: Map<string, TodaySession>;
   dailyPlanItems: Map<string, DailyPlanAnswerTarget>;
   correctAnswersByVersion: Map<string, string | number | null>;
   currentVersionByQuestion: Map<string, string>;
@@ -60,11 +51,6 @@ interface InMemoryState {
 
 function cloneState(state: InMemoryState): InMemoryState {
   return structuredClone(state);
-}
-
-let nextId = 1;
-function makeSequentialId(prefix: string): string {
-  return `${prefix}-${nextId++}`;
 }
 
 // Deterministic, monotonically increasing default createdAt — matches
@@ -83,7 +69,6 @@ export class InMemoryLearningDatabase implements UnitOfWork {
     attemptsById: new Map(),
     createdAtByAttemptId: new Map(),
     progress: new Map(),
-    todaySessions: new Map(),
     dailyPlanItems: new Map(),
     correctAnswersByVersion: new Map(),
     currentVersionByQuestion: new Map(),
@@ -128,9 +113,8 @@ export class InMemoryLearningDatabase implements UnitOfWork {
 
   /**
    * Test setup helper — not part of any port. Registers a DailyPlanItem
-   * directly (unlike TodaySession, this fake has no `createIfNotExists`
-   * orchestration to seed through — `submitAnswer`'s `dailyPlanItems` port
-   * only ever needs `findItemById`/`markCompleted`).
+   * directly — `submitAnswer`'s `dailyPlanItems` port only ever needs
+   * `findItemById`/`markCompleted`.
    */
   seedDailyPlanItem(item: DailyPlanAnswerTarget): void {
     this.state.dailyPlanItems.set(item.id, { ...item });
@@ -247,59 +231,6 @@ export class InMemoryLearningDatabase implements UnitOfWork {
       },
     };
 
-    const todaySessions: TodaySessionRepository = {
-      findByKey: async (key) => {
-        return this.state.todaySessions.get(todaySessionKeyString(key)) ?? null;
-      },
-      createIfNotExists: async (session, items) => {
-        // (userId, courseId, plannedForDate) is the key this fake uses to
-        // emulate ON CONFLICT DO NOTHING + fallback SELECT — see module
-        // doc comment on why this does not prove real Postgres
-        // unique-index race-freedom, only the orchestration shape
-        // ("create if absent, else return existing").
-        const keyString = todaySessionKeyString({
-          userId: session.userId,
-          courseId: session.courseId,
-          plannedForDate: session.plannedForDate,
-        });
-        const existing = this.state.todaySessions.get(keyString);
-        if (existing) {
-          return existing;
-        }
-        const sessionId = makeSequentialId("today-session");
-        const fullItems: TodaySessionItem[] = items.map((item) => ({
-          ...item,
-          id: makeSequentialId("today-session-item"),
-          todaySessionId: sessionId,
-        }));
-        const fullSession: TodaySession = {
-          ...session,
-          id: sessionId,
-          items: fullItems,
-        };
-        this.state.todaySessions.set(keyString, fullSession);
-        return fullSession;
-      },
-      findItemById: async (itemId) => {
-        for (const session of this.state.todaySessions.values()) {
-          const item = session.items.find((i) => i.id === itemId);
-          if (item) return item;
-        }
-        return null;
-      },
-      markItemCompleted: async (itemId, completedAt, attemptId) => {
-        for (const session of this.state.todaySessions.values()) {
-          const item = session.items.find((i) => i.id === itemId);
-          if (item) {
-            item.status = "completed";
-            item.completedAt = completedAt;
-            void attemptId; // not modeled as a stored reverse-pointer, by design (see docs/PERSISTENCE_SCHEMA_V1.md)
-            return;
-          }
-        }
-      },
-    };
-
     const dailyPlanItems: DailyPlanAnswerRepository = {
       findItemById: async (itemId) => {
         const item = this.state.dailyPlanItems.get(itemId);
@@ -339,7 +270,6 @@ export class InMemoryLearningDatabase implements UnitOfWork {
       progress,
       answerCorrectness,
       questionVersions,
-      todaySessions,
       dailyPlanItems,
     };
   }

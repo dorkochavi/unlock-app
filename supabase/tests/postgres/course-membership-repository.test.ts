@@ -2,8 +2,7 @@
  * Real-Postgres (PGlite) integration tests for
  * `PostgresCourseMembershipRepository` — proves the SQL against the actual
  * migrated schema, including the `UNIQUE (user_id, course_id)`-backed
- * race-free create path (mirrors `today-session-repository.test.ts`'s own
- * coverage of `createIfNotExists`).
+ * race-free create path.
  */
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

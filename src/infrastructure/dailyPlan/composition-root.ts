@@ -35,11 +35,10 @@ import type { SqlExecutor } from "../postgres/sql-executor";
 
 /**
  * Builds the real `DailyPlanGenerationSettings` from the same centralized
- * production defaults `createProductionTodaySessionContext` uses — no new
- * value is invented here. Unlike `createProductionTodaySessionContext`,
- * this factory takes no `now` parameter: `DailyPlanGenerationSettings`
- * deliberately excludes `now` (see that type's own doc comment) — the
- * single authoritative clock value lives on
+ * production defaults used elsewhere in the Learning Engine — no new value
+ * is invented here. This factory takes no `now` parameter:
+ * `DailyPlanGenerationSettings` deliberately excludes `now` (see that
+ * type's own doc comment) — the single authoritative clock value lives on
  * `GetOrCreateDailyPlanForTodayCommand` instead.
  */
 export function createProductionDailyPlanGenerationSettings(): DailyPlanGenerationSettings {

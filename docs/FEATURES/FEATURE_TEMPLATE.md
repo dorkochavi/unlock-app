@@ -153,7 +153,7 @@ Example:
 
 Keep the flow product-focused.
 
-Do not use legacy `TodaySession` semantics as the default model for current Today behavior.
+`DailyPlan`/`DailyPlanItem` is the sole active Today model — the superseded `TodaySession` model was retired before Run 009.
 
 ---
 

@@ -336,8 +336,6 @@ describe("PostgresQuestionUnitOfWork", () => {
       selectedAnswer: "b",
       confidenceLevel: "high",
       responseTimeSeconds: 4.5,
-      todaySessionId: null,
-      todaySessionItemId: null,
       dailyPlanId: null,
       dailyPlanItemId: null,
       learningSessionId: randomToken("session"),

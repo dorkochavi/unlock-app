@@ -30,8 +30,6 @@ function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
     selectedAnswer: "1",
     confidenceLevel: "high",
     responseTimeSeconds: 10,
-    todaySessionId: null,
-    todaySessionItemId: null,
     dailyPlanId: null,
     dailyPlanItemId: null,
     learningSessionId: null,

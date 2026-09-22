@@ -148,9 +148,6 @@ response_time_seconds
 daily_plan_id nullable
 daily_plan_item_id nullable
 
-today_session_id nullable          # legacy TodaySession compatibility path only
-today_session_item_id nullable     # legacy TodaySession compatibility path only
-
 assistance_used
 attempt_number_for_presented_item
 

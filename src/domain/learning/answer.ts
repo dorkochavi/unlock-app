@@ -76,7 +76,7 @@ export interface QuestionAnswerDefinition {
  *   silently deduplicated — see `canonicalizeSelectedAnswer`).
  * - `null` — no answer was structurally identifiable. There is no
  *   currently-modeled "the learner explicitly skipped this Question via a
- *   null Attempt" flow (skip is tracked on `TodaySessionItem.status`, not
+ *   null Attempt" flow (skip is tracked on `DailyPlanItem.status`, not
  *   via a null-selectedAnswer Attempt — `docs/DATABASE.md`), so `null`
  *   reaching `evaluateAnswerCorrectness` is treated as a structurally
  *   invalid submission (`InvalidSelectedAnswerError`), never as "wrong."

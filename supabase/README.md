@@ -24,7 +24,8 @@ RLS remains enabled with zero application allow-policies, so ordinary PostgREST 
     `attempts`, `user_question_progress`, `today_sessions`,
     `today_session_items`, their composite foreign keys, check
     constraints, indexes, and RLS-enabled-with-zero-policies on every
-    table.
+    table. (`today_sessions`/`today_session_items` were later dropped —
+    see `20260929000000_retire_today_session.sql` below.)
   - `20260918000000_question_answer_model_v1.sql` — ADR-014's
     `question_versions.question_type` column (forward-only; does not edit
     the first migration, which is already committed/pushed).
@@ -45,6 +46,14 @@ RLS remains enabled with zero application allow-policies, so ordinary PostgREST 
     legacy TodaySession compatibility and mutually exclusive origin semantics.
   - `20260925000000_daily_plan_new_material_v1.sql` — widens the persisted
     DailyPlan action/reason vocabulary required by ADR-017 New Material fallback.
+  - (this list is not kept current for every later Run's migrations — see
+    `docs/PERSISTENCE_SCHEMA_V1.md`'s numbered list for the authoritative,
+    up-to-date migration chain)
+  - `20260929000000_retire_today_session.sql` — drops the superseded
+    `today_sessions`/`today_session_items` tables and
+    `attempts.today_session_id`/`attempts.today_session_item_id` (ADR-011,
+    retired pre-Run-009). Committed and locally/PGlite-verified; **not**
+    yet applied hosted — see `docs/DEV_STATUS.md`.
 
   Both test harnesses (`tests/schema.integration.test.ts` and
   `tests/postgres/db-harness.ts`) apply every `.sql` file in this directory

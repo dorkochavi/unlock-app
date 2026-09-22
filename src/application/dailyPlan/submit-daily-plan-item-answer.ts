@@ -108,8 +108,6 @@ export async function submitDailyPlanItemAnswer(
       selectedAnswer: command.selectedAnswer,
       confidenceLevel: command.confidenceLevel,
       responseTimeSeconds: command.responseTimeSeconds,
-      todaySessionId: null,
-      todaySessionItemId: null,
       dailyPlanId: item.dailyPlanId,
       dailyPlanItemId: item.id,
       learningSessionId: null,

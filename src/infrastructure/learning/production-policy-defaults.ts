@@ -14,10 +14,9 @@
  * — a single canonical set, not a second competing one.
  *
  * Every exported policy object is `Object.freeze`d: these constants are
- * shared by reference across every `createProductionSubmitAnswerContext`/
- * `createProductionTodaySessionContext` call
- * (`src/infrastructure/learning/composition-root.ts`) in the same process,
- * not copied per call, so an accidental in-place mutation of one returned
+ * shared by reference across every `createProductionSubmitAnswerContext`
+ * call (`src/infrastructure/learning/composition-root.ts`) in the same
+ * process, not copied per call, so an accidental in-place mutation of one returned
  * context's policy field would otherwise silently corrupt every other
  * context built from the same defaults. Freezing makes that mutation throw
  * (`TypeError`, since this codebase's ES modules run in strict mode)

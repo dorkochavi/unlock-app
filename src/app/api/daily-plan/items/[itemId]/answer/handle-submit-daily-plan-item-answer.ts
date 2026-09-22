@@ -60,10 +60,6 @@
  *   DailyPlanItem (its own composite FKs already guarantee this
  *   consistency); logged loudly as a data-consistency fault, never a normal
  *   client error.
- * - `TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED` -> 500, `{error: {code:
- *   "INTERNAL_ERROR"}}` — genuinely unreachable from this route (it never
- *   sends `todaySessionItemId`); handled only for `SubmitAnswerResult`
- *   exhaustiveness, logged loudly if it somehow occurs.
  * - `ACCEPTED` -> 200, `{status: "COMPLETED", isCorrect, wasIdempotentRetry}`
  *   — deliberately excludes `correctOptionIds`/any grading-definition
  *   field/internal scheduler or mastery state. `isCorrect` alone is the
@@ -238,13 +234,6 @@ export async function handleSubmitDailyPlanItemAnswer(
         `POST /api/daily-plan/items/:itemId/answer: QUESTION_VERSION_CONSISTENCY_VIOLATION ` +
           `for questionVersionId (${result.questionVersionId}) — should be unreachable for a ` +
           `real persisted DailyPlanItem; treated as a server-side data-consistency fault.`,
-      );
-      return internalErrorResponse();
-
-    case "TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED":
-      console.error(
-        "POST /api/daily-plan/items/:itemId/answer: unreachable TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED " +
-          "outcome — this route never sends todaySessionItemId",
       );
       return internalErrorResponse();
 

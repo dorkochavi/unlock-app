@@ -199,8 +199,6 @@ describe("skipDailyPlanItem against real Postgres infrastructure", () => {
         selectedAnswer: "A",
         confidenceLevel: null,
         responseTimeSeconds: null,
-        todaySessionId: null,
-        todaySessionItemId: null,
         dailyPlanId: null,
         dailyPlanItemId,
         learningSessionId: null,

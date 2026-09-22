@@ -222,9 +222,7 @@ Historical Attempts are not later regraded against `Question.current_version_id`
 
 The following scenarios represent the current primary Today model.
 
-`DailyPlan` / `DailyPlanItem` are the canonical current product terms.
-
-Legacy `TodaySession` behavior is documented separately later in this file.
+`DailyPlan` / `DailyPlanItem` are the sole active Today runtime and persistence model — the superseded Course-scoped `TodaySession` model was retired before Run 009 (ADR-011's current status note).
 
 ---
 
@@ -591,43 +589,6 @@ The idempotency identity is the submission, not the user-question pair.
 
   * distinct submissions to the same Question are retained separately;
 * contrast with the same-submissionId idempotency tests.
-
----
-
-# Legacy Compatibility Scenarios
-
-The repository still contains tests and code for the older `TodaySession` / `TodaySessionItem` path.
-
-These tests remain valuable where that compatibility path still exists.
-
-They are **not** the primary current Today model.
-
----
-
-## U. Legacy TodaySession learning-session identity
-
-**Story:** An Attempt is attached to a legacy TodaySessionItem.
-
-**Expected behavior:** `learningSessionId` is derived from the trusted persisted TodaySessionItem relationship rather than from an untrusted client claim.
-
-This prevents a client from manufacturing a new apparent learning session and falsely changing spaced-retrieval qualification.
-
-For Manual Practice without a TodaySessionItem, the client may own the stable learning-session token according to the legacy answer contract.
-
-**Proof:**
-
-* `src/application/learning/__tests__/submit-answer.test.ts`
-
-  * legacy Today-attached learningSessionId ownership regression tests;
-  * Manual Practice contrast;
-* `src/domain/learning/__tests__/learning-session.test.ts`;
-* `src/application/learning/__tests__/today-session.test.ts`
-
-  * legacy TodaySession creation/resume behavior.
-
-**Classification:** LEGACY / COMPATIBILITY EVIDENCE.
-
-Do not use this scenario to redefine current DailyPlan semantics.
 
 ---
 

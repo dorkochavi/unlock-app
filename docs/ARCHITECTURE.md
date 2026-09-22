@@ -391,7 +391,7 @@ Examples:
 * DailyPlan
 * DailyPlanItem
 
-Legacy `TodaySession` / `TodaySessionItem` structures may still exist in historical code, tests, or migrations, but they are not the primary current product/domain model for Today.
+`DailyPlan`/`DailyPlanItem` is the sole active Today runtime and persistence model. The superseded Course-scoped `TodaySession` model (ADR-011) was retired before Run 009 after runtime reachability and hosted zero-data verification — see ADR-011's current status note.
 
 Do not collapse these categories into the same records merely for convenience.
 
@@ -460,8 +460,6 @@ Accepted V1 semantics include:
 Plan generation and plan execution remain separate responsibilities.
 
 Detailed product semantics are owned by ADR-016 and ADR-017.
-
-Legacy `TodaySession` persistence may remain where still technically required, but new architecture should not treat it as the primary Today model.
 
 ---
 

@@ -1,6 +1,6 @@
 # ADR-011: Today Is Course-Scoped in V1
 
-Status: **PARTIALLY SUPERSEDED — see
+Status: **SUPERSEDED AND RETIRED — see
 `docs/DECISIONS/016-global-daily-plan-and-today-view-semantics.md` (ADR-016,
 ACCEPTED).**
 
@@ -13,13 +13,23 @@ ADR's model of one independent `TodaySession` per `(user_id, course_id,
 planned_for_date)`. See "Supersession detail," below, for exactly which
 clauses of this ADR are superseded and which still hold.
 
-**Current implementation note:** ADR-016's `DailyPlan`/`DailyPlanItem`
-architecture is now implemented and is the active Today path. The legacy
-`today_sessions`/`today_session_items` schema remains intact for compatibility
-and historical code/tests, but it is no longer the current Today architecture.
-This ADR's Decision and Consequences sections below remain intact as the
-historical record of why the legacy schema looks the way it does; they must not
-be read as current product architecture.
+**Current implementation note (retirement, pre-Run-009):** ADR-016's
+`DailyPlan`/`DailyPlanItem` architecture is the sole active Today runtime and
+persistence model. The legacy `TodaySession`/`TodaySessionItem` runtime code
+and the `today_sessions`/`today_session_items` schema it depended on have
+been fully removed from the active repository — retired after a runtime
+reachability audit found no live `src/app` route creating/retrieving a
+TodaySession, and after hosted Supabase verification found zero rows in
+either table and zero `attempts` rows referencing a `TodaySessionItem`. The
+drop migration
+(`supabase/migrations/20260929000000_retire_today_session.sql`) is committed
+to this repository but was intentionally not yet applied to the hosted
+Supabase project as of that retirement (pending the separate backup-readiness
+gate, `docs/FOLLOW_UP_BACKLOG.md` FUB-009) — see `docs/DEV_STATUS.md` for the
+current hosted-migration status. This ADR's Decision and Consequences
+sections below remain intact as the historical record of why the schema
+(while it existed) looked the way it did; they must not be read as current
+product architecture or current repository state.
 
 ## Supersession detail
 

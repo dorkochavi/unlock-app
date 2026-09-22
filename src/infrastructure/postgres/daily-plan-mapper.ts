@@ -1,7 +1,6 @@
 /**
  * Explicit row <-> domain mapping for `daily_plans` / `daily_plan_items`
- * (Phase 5's mapping-audit precedent — see `today-session-mapper.ts`, which
- * this closely mirrors).
+ * (Phase 5's mapping-audit precedent).
  */
 import {
   NEXT_BEST_ACTION_TYPES,
@@ -32,8 +31,7 @@ const ITEM_TABLE = "daily_plan_items";
 /**
  * `other_applicable_types`/`reasons` are `jsonb` arrays of a closed,
  * already-decided value set — validated element-by-element rather than
- * trusted merely because the column is an array of strings. Mirrors
- * `today-session-mapper.ts`'s own `readEnumArray` exactly.
+ * trusted merely because the column is an array of strings.
  */
 function readEnumArray<T extends string>(
   row: Record<string, unknown>,
@@ -92,9 +90,8 @@ export function mapDailyPlanItemRow(row: Record<string, unknown>): DailyPlanItem
 
 /**
  * `status` on `daily_plans` itself is deliberately free text at the DB
- * level (state machine deferred, mirroring `today_sessions.status`) — read
- * as a plain string, not validated against a closed set that does not
- * exist yet.
+ * level (state machine deferred) — read as a plain string, not validated
+ * against a closed set that does not exist yet.
  */
 export function mapDailyPlanRow(
   row: Record<string, unknown>,
