@@ -55,6 +55,13 @@ describe("getPool", () => {
     expect(typeof pool.connect).toBe("function");
   });
 
+  it("configures max: 1 — a serverless invocation must not inherit pg.Pool's own max: 10 default against Supabase's Transaction Pooler", async () => {
+    vi.stubEnv("DATABASE_URL", FAKE_CONNECTION_STRING);
+    const { getPool } = await import("../pg-pool");
+    const pool = getPool();
+    expect(pool.options.max).toBe(1);
+  });
+
   it("memoizes: repeated calls within the same module instance return the identical Pool", async () => {
     vi.stubEnv("DATABASE_URL", FAKE_CONNECTION_STRING);
     const { getPool } = await import("../pg-pool");

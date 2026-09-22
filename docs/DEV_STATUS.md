@@ -203,15 +203,12 @@ Supabase project:
 - ref: `luinowttujolknxsduug`
 - region: Central EU / Frankfurt
 
-Hosted migrations are confirmed through:
-- `20260925000000_daily_plan_new_material_v1`
+Hosted migrations are confirmed aligned through
+`20260928000000_question_authoring_v1.sql` (all committed migrations up
+to and including this one are applied hosted, per the human who closed
+the Postgres/Vercel readiness gate).
 
-Committed/local-PGlite verified but not confirmed hosted at the last durable product baseline:
-- `20260926000000_course_lifecycle_v1.sql`
-- `20260927000000_topics_v1.sql`
-- `20260928000000_question_authoring_v1.sql`
-
-Unchanged by Run 008 — no new migration was introduced this Run.
+No new migration was introduced by Run 008.
 
 Do not infer hosted application from local migration existence.
 Claude must not run `supabase link` or `supabase db push`.
@@ -242,14 +239,9 @@ Assessed against the Ruppin pilot, not full production hardening (Run 012):
   available) — 0 vulnerabilities across 529 dependencies (45 prod, 446
   dev, 116 optional). Not re-run automatically in future Sessions merely
   because time has passed.
-- **Hosted migration readiness**: `MANUAL PILOT GATE` — the three
-  migrations listed above under "Database / Supabase" remain
-  local/PGlite-verified but not confirmed applied to the hosted project.
-  Human checklist: apply `20260926000000_course_lifecycle_v1.sql`,
-  `20260927000000_topics_v1.sql`, `20260928000000_question_authoring_v1.sql`
-  to the hosted Supabase project (via the Supabase dashboard/CLI under
-  human control — Claude must not run `supabase db push`), then update
-  this section.
+- **Hosted migration readiness**: `RESOLVED` — confirmed aligned through
+  `20260928000000_question_authoring_v1.sql` (see "Database / Supabase"
+  above).
 - **Runtime troubleshooting posture**: `POST-PILOT BACKLOG` (FUB-008) —
   no application APM exists, but every route handler already logs
   unexpected errors server-side via `console.error` with route context
@@ -262,19 +254,20 @@ Assessed against the Ruppin pilot, not full production hardening (Run 012):
   from the repository; a human must check the hosted Supabase project's
   actual backup/restore plan and settings before the pilot. No RPO/RTO
   guarantee is claimed here.
-- **Postgres/Vercel connection strategy**: `MANUAL PILOT GATE` (FUB-010) —
-  `src/infrastructure/postgres/pg-pool.ts` is a functional, lazily
-  constructed singleton `pg.Pool` with no hardcoded SSL/pool-size
-  overrides (deliberately deferred to `DATABASE_URL`'s own query
-  parameters, see that file's doc comment). Before deploying to Vercel, a
-  human should specifically confirm `DATABASE_URL` uses Supabase's
-  connection **pooler** endpoint, not the direct connection — Vercel's
-  per-invocation serverless model can otherwise exhaust the hosted
-  project's direct-connection limit under concurrent traffic. Not
-  verifiable from this repository (would require reading `.env.local`'s
-  secret value, which Claude does not do) and not treated as a blocker
-  for current expected pilot load, since single-course pilot traffic is
-  low-concurrency.
+- **Postgres/Vercel connection strategy**: `RESOLVED`. Confirmed:
+  `DATABASE_URL` now targets Supabase's **Transaction Pooler** endpoint
+  (host ends `.pooler.supabase.com`, port `6543`, `sslmode=require`
+  present in the connection string — not read/printed here, only
+  confirmed by the human closing this gate). Hosted migrations are now
+  aligned through `20260928000000`.
+  `src/infrastructure/postgres/pg-pool.ts`'s application-side `pg.Pool`
+  is explicitly capped at `max: 1` — `pg.Pool` defaults to `max: 10`
+  regardless of `DATABASE_URL`, and Vercel's per-invocation serverless
+  model would otherwise mean up to 10 upstream connections PER
+  invocation, multiplied across concurrent invocations, working against
+  (not with) the Transaction Pooler's own multiplexing. SSL remains
+  un-hardcoded in code, deferred to the connection string's own
+  `sslmode` parameter, unchanged from before this gate closed.
 - **Abuse/platform hardening**: `POST-PILOT BACKLOG` (FUB-011) — no
   evidence found of an actual Run 008 pilot blocker.
 
@@ -383,10 +376,11 @@ Product roadmap remains:
 Run 008 status: **IMPLEMENTATION COMPLETE — PILOT MANUAL GATE PENDING**.
 All autonomous Slice work (S1-S5) is committed and reviewed with NO
 BLOCKING FINDINGS. S6's pilot-readiness assessment found no code-level
-`PILOT BLOCKER` — every remaining item is a human-actionable
-`MANUAL PILOT GATE` (browser/hosted E2E proof, hosted migration
-application, backup/restore verification, Postgres pooler-connection
-confirmation) or genuinely `POST-PILOT BACKLOG` work. The Roadmap's
+`PILOT BLOCKER`. Two manual gates have since been resolved (hosted
+migration application; Postgres/Vercel pooler-connection configuration —
+see "Pilot Readiness" above). Remaining human-actionable
+`MANUAL PILOT GATE`s: browser/hosted E2E proof, backup/restore
+verification — or genuinely `POST-PILOT BACKLOG` work. The Roadmap's
 Milestone C exit condition ("an instructor can create and publish a
 course... entirely without developer/database intervention, and the full
 instructor-to-learner loop is pilot-ready") is supported by
@@ -405,18 +399,20 @@ For Run 008:
 - push local HEAD to `origin/feature/project-foundation` when ready
   (includes `IMPLEMENTATION_HEAD` `b86d4e3` plus subsequent close-out/
   patch commits — see `git log`/`git status` for the exact current HEAD);
-- resolve the pilot-readiness manual gates listed under "Pilot Readiness"
-  above (browser/hosted E2E, hosted migration application, backup/restore
-  verification, Postgres pooler-connection confirmation);
+- resolve the remaining pilot-readiness manual gates listed under "Pilot
+  Readiness" above (browser/hosted E2E, backup/restore verification —
+  hosted migration application and Postgres pooler-connection
+  configuration are now resolved);
 - decide whether to experiment with the `CHANGE CANDIDATE` Development OS
   observation above (named-negative-case test isolation) before it is
   absorbed into `.claude/rules/testing.md`.
 
 For hosted Supabase:
-- no new migration was introduced this Run — the existing pending
-  migration-application action from prior Runs remains unchanged;
-- apply the three pending migrations (see "Database / Supabase" above)
-  when ready to move toward the pilot.
+- no new migration was introduced this Run;
+- hosted migrations are now confirmed aligned through
+  `20260928000000_question_authoring_v1.sql` — no pending
+  migration-application action remains (see "Database / Supabase"
+  above).
 
 For Run 009:
 - requires a new Plan; do not begin without one. Run 008's own remaining
