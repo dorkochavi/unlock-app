@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:schema": "vitest run --config supabase/vitest.config.mts",
+    "test:burst": "vitest run --config supabase/vitest.burst.config.mts",
     "test:e2e": "playwright test",
     "bundle:review": "node scripts/create-review-bundle.mjs"
   },

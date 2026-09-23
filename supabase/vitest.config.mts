@@ -28,6 +28,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["supabase/tests/**/*.test.ts"],
+    // Opt-in classroom-burst suite has its own config/command (npm run test:burst).
+    exclude: ["supabase/tests/burst/**", "**/node_modules/**"],
     fileParallelism: false,
     hookTimeout: 30000,
     testTimeout: 30000,
