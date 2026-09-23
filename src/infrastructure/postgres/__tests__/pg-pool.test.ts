@@ -101,3 +101,24 @@ describe("getPool", () => {
     ).toBeUndefined();
   });
 });
+
+describe("getPool TLS wiring", () => {
+  const PEM = "-----BEGIN CERTIFICATE-----\nMIIBfakefake\n-----END CERTIFICATE-----";
+  const HOSTED = "postgresql://u:p@aws-0-eu-central-1.pooler.supabase.com:6543/postgres";
+  const STALE = "sslrootcert=C%3A%5CUsers%5Cdorko%5Cnope%5Csupabase-ca.crt";
+
+  it("hosted runtime: DATABASE_SSL_CA is used and a stale local sslrootcert path in DATABASE_URL does not crash (Vercel ENOENT regression)", async () => {
+    vi.stubEnv("DATABASE_URL", `${HOSTED}?sslmode=verify-full&${STALE}`);
+    vi.stubEnv("DATABASE_SSL_CA", PEM);
+    const { getPool } = await import("../pg-pool");
+    const pool = getPool();
+    expect(pool.options.ssl).toEqual({ ca: PEM, rejectUnauthorized: true });
+  });
+
+  it("stale local path and no DATABASE_SSL_CA fails with a clear configuration error, not a raw ENOENT", async () => {
+    vi.stubEnv("DATABASE_URL", `${HOSTED}?sslmode=verify-full&${STALE}`);
+    vi.stubEnv("DATABASE_SSL_CA", undefined as unknown as string);
+    const { getPool } = await import("../pg-pool");
+    expect(() => getPool()).toThrow(/Invalid PostgreSQL TLS configuration/);
+  });
+});

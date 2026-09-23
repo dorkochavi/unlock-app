@@ -270,9 +270,14 @@ no pilot-readiness blocker remains from Run 008. Detailed evidence lives in
   the pooler); supplying Supabase's server root CA as an explicit SSL root
   certificate resolved it. The CA is a public certificate, not a secret,
   but is a local/runtime dependency — it is git-ignored (repo-root `/supabase-ca.crt` only), not
-  committed, and no credentials belong in the repository. Only the local
-  verification path was exercised; no Vercel/production TLS configuration
-  claim is made. SSL stays un-hardcoded in code.
+  committed, and no credentials belong in the repository. A hosted Vercel
+  deployment then failed with `ENOENT` because `DATABASE_URL`'s
+  `sslrootcert=<local path>` was read on the server. TLS is now resolved by
+  `src/infrastructure/postgres/pg-ssl-config.ts`: CA contents via
+  `DATABASE_SSL_CA` (hosted), or a file via `DATABASE_SSL_CA_FILE` /
+  `sslrootcert` (local); verification is never disabled. Hosted TLS with
+  `DATABASE_SSL_CA` is covered by unit tests only — not yet proven against the
+  deployed app.
 - **Backup readiness**: CLOSED — a manual hosted logical backup
   (`schema.sql`, `roles.sql`, `data.sql`, each inspected as non-empty) was
   created outside the repository, with a second copy off the machine. The

@@ -37,16 +37,16 @@
  * instead — the standard pattern used for exactly this problem by every
  * Prisma-on-Next.js guide, applied unchanged to `pg.Pool`.
  *
- * ## SSL
+ * ## SSL / TLS
  *
- * Deliberately NOT hardcoded here — no `ssl: { rejectUnauthorized: false }`
- * or similar. `pg` already parses `sslmode`/`ssl`-related query parameters
- * embedded directly in a `DATABASE_URL` connection string (e.g.
- * `...?sslmode=require`), which is the portable way to express this
- * per-environment: local Postgres typically needs no TLS, hosted Supabase
- * Postgres typically requires it. The exact value belongs in the
- * connection string configured per-environment, not as a code default in
- * this file — see `.env.example`.
+ * Never disabled and never hardcoded to skip verification — there is no
+ * `ssl: { rejectUnauthorized: false }` anywhere. TLS settings are resolved
+ * by `resolvePoolConnectionSettings` (`pg-ssl-config.ts`): CA CONTENTS from
+ * `DATABASE_SSL_CA` (hosted/Vercel), a CA file from `DATABASE_SSL_CA_FILE`
+ * or the `sslrootcert` URL parameter (local development). TLS-related URL
+ * parameters are stripped before `pg` sees the string, so a stale local
+ * file path in `DATABASE_URL` can no longer trigger an implicit file read.
+ * See `.env.example`.
  *
  * ## Pool size (`max: 1`)
  *
@@ -73,6 +73,8 @@ if (typeof window !== "undefined") {
 
 import { Pool } from "pg";
 
+import { resolvePoolConnectionSettings } from "./pg-ssl-config";
+
 declare global {
   var __unlockPgPool: Pool | undefined;
 }
@@ -90,8 +92,7 @@ export function getPool(): Pool {
     return pool;
   }
 
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
+  if (!process.env.DATABASE_URL) {
     throw new Error(
       "getPool(): DATABASE_URL is not set. Runtime PostgreSQL access was " +
         "requested but no connection string is configured — set " +
@@ -102,7 +103,12 @@ export function getPool(): Pool {
   // `max: 1` — see this file's own "Pool size" doc comment above for why
   // a serverless deployment must not inherit `pg.Pool`'s own `max: 10`
   // default here.
-  pool = new Pool({ connectionString, max: 1 });
+  const { connectionString, ssl } = resolvePoolConnectionSettings({
+    DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_SSL_CA: process.env.DATABASE_SSL_CA,
+    DATABASE_SSL_CA_FILE: process.env.DATABASE_SSL_CA_FILE,
+  });
+  pool = new Pool({ connectionString, ssl, max: 1 });
 
   if (process.env.NODE_ENV !== "production") {
     globalThis.__unlockPgPool = pool;
