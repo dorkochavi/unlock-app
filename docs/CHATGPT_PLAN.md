@@ -1,317 +1,598 @@
-# UNLOCK — Current Execution Plan
+# UNLOCK — Pre-Pilot Validation Run
 
-PLAN_VERSION: RUN-008-AUTHORING-INTEGRATION-PILOT-READINESS
-RUN_ID: 2026-09-22-008
-BASE_HEAD: `d509987` (`feature/project-foundation`, matches `origin/feature/project-foundation` — Run 007's 8 commits were pushed after `docs/RUNS/2026-09-21-007.md` was written; repository reality overrides that report's "not pushed" note)
-STATUS: COMPLETE — all pilot manual gates closed 2026-09-23 (see `docs/RUNS/2026-09-22-008.md` for the full Run Report; `docs/DEV_STATUS.md` for current state). Run 009 requires a new Plan before implementation.
+PLAN_VERSION: 001
+RUN_ID: 2026-09-23-PRE-PILOT
+BASE_HEAD: c5d370b
+STATUS: IN PROGRESS — S1, S2 COMPLETE; S3 PASS (2026-09-24); S4 PENDING / NOT COMPLETE — a preliminary real-device pre-check exposed a signup-confirmation redirect / join-return blocker (see "S4 Preliminary Pre-Check"); the full rehearsal and both Go/No-Go gates have NOT been executed
 
-## 1. Goal
+## 1. Run Goal
 
-Make Course creation, Topic organization, manual Question authoring,
-Structured Import, Question publishing, Course publishing, and learner
-onboarding feel like one coherent instructor workflow, then prove as much
-of the complete instructor-to-learner Ruppin pilot journey as can safely
-be proven without hosted mutation or invented evidence, per
-`docs/UNLOCK_ROADMAP.md` Run 008.
+Prove that the Ruppin pilot is technically safe enough to run and that UNLOCK can expose one small, trustworthy instructor-facing signal from real learner evidence without expanding into Run 009.
 
-Roadmap exit condition (preserved, not weakened by environment limits):
+Outcomes:
+1. finalize aggregate Item Analysis + privacy semantics;
+2. implement the smallest safe current-QuestionVersion Item Analysis for OWNER/INSTRUCTOR;
+3. verify classroom-burst behavior and a separate real-device rehearsal;
+4. reach independent Technical Go/No-Go and Content Go/No-Go gates.
 
-> A non-developer can set up a real Course with usable published Questions
-> through UNLOCK alone, and the instructor-to-learner loop from Runs
-> 004-008 is demonstrably self-sufficient.
+This is a Pre-Pilot validation Run. It does not replace or renumber product Run 009.
 
-If final browser/hosted proof requires a human/manual gate, every
-autonomous Slice completes first and the exact remaining gate is recorded
-honestly (`IMPLEMENTATION COMPLETE — PILOT MANUAL GATE PENDING`) rather
-than invented.
+## 2. Run-Start Contract
 
-## 2. Scope
+At Run start verify repository state according to `CLAUDE.md`.
 
-In scope:
-1. small audit-derived hardening with a high value/cost ratio (S1);
-2. coherent instructor workflow integration (S2-S3);
-3. explicit learner-eligibility/draft-leakage invariant proof (S4);
-4. integration-level authoring/import/publish proof (S5);
-5. Ruppin pilot-readiness assessment + end-to-end acceptance where safely
-   possible (S6);
-6. durable Run close and telemetry analysis (S7).
+Expected default:
+- branch `feature/project-foundation`;
+- `HEAD == c5d370b`;
+- `docs/CHATGPT_PLAN.md` may be the only expected uncommitted modification;
+- working tree otherwise clean.
 
-Out of scope (belongs to Run 009+ or `docs/FOLLOW_UP_BACKLOG.md` unless
-proven an actual Run 008 blocker): Run 009 learner progress/insights;
-Run 010-012 work; CI/CD platform; broad observability/APM; backup
-automation; broad rate limiting/CSP redesign; bulk import persistence
-optimization; global Unit-of-Work/test-fakes abstractions; broad
-source-comment cleanup; legacy TodaySession deletion; large-file
-refactors by line count alone; AI/PDF ingestion; XLSX import;
-import auto-publish; Topic auto-creation; re-import merge; bulk
-publish-all; Learning Engine redesign; RLS introduction; hosted Supabase
-mutation; Git push.
+If HEAD changed, do not silently rewrite BASE_HEAD. If the state is not one of the valid Run-start states in `CLAUDE.md`, report `PLAN_CONFLICT` and stop.
 
-## 3. Fixed Product/Architecture Decisions
+No push. No autonomous hosted schema mutation.
 
-Kept fixed unless repository evidence during implementation materially
-contradicts them — report `PLAN_CONFLICT` rather than improvise:
+## 3. Pilot Hypotheses
 
-- Run 007's Structured Import contract (`docs/CHATGPT_PLAN.md` §3-4 as
-  captured in `docs/RUNS/2026-09-21-007.md`) is not reopened or
-  redesigned;
-- import creates new Questions only; imports remain `DRAFT_ONLY`;
-  publish/publish-Course remain the existing Run 006 paths, unmodified;
-- draft-only content never becomes learner-eligible (the invariant S4
-  proves, not redesigns);
-- no RLS introduction; no hosted Supabase mutation; no Git push.
+### Learner
+Learners will return because Today makes course study quick, easy, and relevant.
 
-## 4. Security-Sensitive Autonomous Guardrail
+Prefer authoritative existing records over duplicate analytics storage.
 
-S1.E (auth-before-body-parsing) and S4 (learner eligibility/draft
-leakage) are trust-boundary-adjacent. For these two Slices only:
+### Instructor
+UNLOCK can expose useful evidence about what the class understands or does not understand that was not easy for the instructor to see before.
 
-1. inspect relevant ADRs/rules/existing implementation/tests before
-   changing behavior;
-2. implement or verify already-accepted policy only — never invent new
-   authorization/membership/publication/eligibility semantics;
-3. if repository sources disagree or a new decision is required, raise
-   `PLAN_CONFLICT` and stop that decision path;
-4. security review is mandatory for any change touching authentication
-   ordering, trusted identity, authorization, membership, learner
-   eligibility, or draft/published exposure; DB review is additionally
-   mandatory when persistence/transactional-eligibility/integrity
-   behavior materially changes;
-5. do not continue to a later Slice while a BLOCKER or unresolved
-   CORRECTION remains in one of these two Slices.
+Narrow Pre-Pilot question:
 
-## 5. Ownership Contract
+> Can existing immutable Attempt evidence produce a useful, privacy-safe Item Analysis during or immediately after classroom use?
 
-Unchanged from Run 007's Plan (`AGENTS.md`/`CLAUDE.md`,
-`.claude/rules/*`, `implement-slice`/`review-commit`/`checkpoint` own
-their respective responsibilities; this Plan states only Run-specific
-scope/acceptance, not command-level verification or reviewer selection).
+This Run does not attempt to prove broader instructor intelligence.
 
-## 6. Canonical Lifecycle
+## 4. Fixed Run Decisions
 
-Slice: `INSPECT → IMPLEMENT → TARGETED VERIFICATION → RISK REVIEW → FIX
-MATERIAL FINDINGS → FINAL RELEVANT VERIFICATION → EVIDENCE CHECKPOINT →
-COMMIT`, then proceed to the next eligible Slice without stopping for
-routine confirmation (green checkpoint, clean reviewer, or a completed
-Slice are not stop conditions).
+### Correctness
+Use persisted `Attempt.isCorrect`; never reimplement grading.
 
-Run close: `INTEGRATION ACCEPTANCE (only for missing/unproven behavior)
-→ DEV_STATUS → RUN REPORT → FINAL GIT STATE → STOP`.
+Verified semantics:
+- SINGLE_CHOICE: server-evaluated against the frozen QuestionVersion;
+- MULTIPLE_CHOICE: exact set equality;
+- order irrelevant;
+- missing/extra options => incorrect;
+- no partial credit.
 
-Stop only for: true `PLAN_CONFLICT`; unsafe unexpected repository state;
-an unresolved BLOCKER/CORRECTION in a security-sensitive Slice; a
-required human/manual/hosted action blocking all further independent
-work; or actual completion of all autonomous Run work.
+### Item Analysis scope
+Per Course, per Question's current published QuestionVersion, aggregate-only.
 
-## 7. S1 — Audit-Derived Hardening + Deferred Findings Capture
+Historical Attempts remain valid evidence but older QuestionVersions are excluded from the current-version view.
 
-Goal: close proven, high-value issues before relying on these surfaces
-for the pilot. Not a general refactor.
+### Re-publish rule
+Once classroom answering begins, do not re-publish pilot Questions unless intentionally accepting a fresh current-version count.
 
-### S1.A — Safe Repository Review Bundle
+No enforcement feature in this Run; include this in the pilot content checklist.
 
-`git ls-files` currently includes nothing sensitive (verified: no
-`.env*` besides the tracked `.env.example`, no `supabase/.temp/**`,
-`scratch/**`, `test-results/**`, or `*.tsbuildinfo` — all are
-`.gitignore`d and were never committed). Deterministic direction: build
-the review bundle from `git ls-files -z` (tracked, non-deleted paths)
-rather than a recursive directory copy, plus an explicit unsafe-pattern
-filter as a defense-in-depth safety net (warn + exclude, never silently
-drop without reporting).
+### Response counting
+Count one first accepted Attempt per distinct learner per current QuestionVersion.
 
-- `scripts/create-review-bundle.mjs` — pure `classifyPath`/`buildManifest`
-  functions (exported, no side effects) + a `main()` that shells out to
-  `git ls-files -z`, classifies each path, copies SAFE paths into
-  `scratch/review-bundle/<timestamp>/` (already-gitignored, disposable
-  output — consistent with `scratch/**` being local/generated), and
-  writes a manifest (included count, excluded paths + reason, total
-  bytes). Never prints file contents.
-- `npm run bundle:review` → `node scripts/create-review-bundle.mjs`.
-- Test: `src/tooling/__tests__/review-bundle.test.ts` imports the pure
-  functions from the `.mjs` module directly (matches existing
-  `vitest.config.mts` `include: ["src/**/*.test.ts"]` with no config
-  change) and proves the unsafe-pattern classifier on `.env.local`,
-  `supabase/.temp/x`, `scratch/telemetry/x`, `test-results/x`,
-  `tsconfig.tsbuildinfo` (all UNSAFE) vs. `.env.example` and ordinary
-  `src/**` paths (SAFE).
+Repeated practice must not inflate class counts.
 
-### S1.B — `.env.example`
+If this conflicts materially with repository reality, report `PLAN_CONFLICT`.
 
-Reconcile stale "not yet configured against any real project/database"
-comments (verified present) against `docs/DEV_STATUS.md`'s real Supabase
-project (`luinowttujolknxsduug`). Restructure into required
-runtime / public browser-safe Supabase / server-only secret / optional
-sections. No actual secret values; `.env.local` untouched/unread.
+### Pilot privacy/disclosure policy
+- aggregate-only;
+- no learner names/IDs;
+- no learner drill-down;
+- no answer-option distribution;
+- no misconception labels;
+- no individual confidence data;
+- minimum active LEARNER memberships in Course: 5;
+- minimum distinct responders per Question: 5;
+- below threshold: explicit insufficient-data state, not interpreted statistics.
 
-### S1.C — Real DATE Validation
+Centralize these rules in one reusable policy location.
 
-Verified: `DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/` in both
-`src/app/api/courses/handle-create-course.ts` and
-`.../[courseId]/manage/handle-update-course-metadata.ts` accepts
-shape-valid, calendar-impossible strings (`2026-99-99`), which then flow
-unvalidated through `createCourse`/`updateCourseMetadata` straight into
-a parameterized `exam_date` DATE column insert/update
-(`src/infrastructure/postgres/course-repository.ts`) — an impossible
-date becomes a raw Postgres error, not a clean `INVALID_REQUEST`. Add one
-small shared date-only validator (parses calendar validity, not just
-shape; stays a plain `YYYY-MM-DD` string end to end — never introduces
-timestamp/timezone semantics) and use it at both route boundaries in
-place of the regex-only check. Add focused tests for both boundaries
-(impossible-but-shape-valid date rejected; valid date-only values
-unaffected).
+These are pilot product/privacy thresholds, not universal legal/statistical claims.
 
-### S1.D — Structured Import Row-Count Limit
+### Wording
+Allowed:
+- `22 לומדים ענו`
+- `13 ענו נכון`
+- `9 ענו לא נכון`
+- `41% תשובות שגויות`
+- `עדיין אין מספיק תשובות להצגת נתון`
 
-`MAX_IMPORT_SOURCE_LENGTH` (`src/app/api/courses/[courseId]/import/limits.ts`,
-2,000,000 chars) already bounds payload size; no row-count bound exists,
-so a small-but-wide payload (short rows, huge count) is unbounded. Add
-`MAX_IMPORT_ROWS` at the same HTTP boundary (`limits.ts`), enforced in
-`previewImport`/`confirmImport` (application layer, after parsing
-produces `CanonicalQuestionRow[]`, per FUB-005's "enforce at the
-boundary, not inside format-independent adapters" direction) rather than
-inside the S1/S2 Run-007 adapters. Choose the limit from realistic
-single-Course pilot question-bank size; document why in the constant's
-doc comment. Update FUB-005 to `RESOLVED`, referencing this Slice.
+Do not label: weak, struggling, problematic, needs review, Teach Next, misconception.
 
-### S1.E — Authentication Before Expensive Body Parsing
+Raw Item Analysis is not Topic interpretation.
 
-Verified: both `.../import/preview/route.ts` and `.../import/confirm/route.ts`
-call `await request.json()` before `handlePreviewImport`/
-`handleConfirmImport` runs `authenticate()` — the existing doc comments
-correctly claim "auth before *database*" (lazy `getPool()`) but body
-parsing itself is not auth-gated. `grep` across `src/app/api` found 10
-routes calling `request.json()`; inspect each for the same shape before
-deciding a single coherent fix, per the Security-Sensitive Autonomous
-Guardrail (§4) — implement/verify already-accepted "auth before privilege"
-policy (`.claude/rules/auth.md`), do not invent new route architecture.
-Prefer moving `authenticate()` ahead of `request.json()` in the thin
-route (not the testable `handle*` core, which already authenticates
-first internally) where doing so is a coherent, mechanical, low-risk
-reorder — not a rewrite. Be precise in doc comments about what is and
-is not protected (this still does not add transport-level request-size
-protection). Security review mandatory.
+### Zero responses
+Published/current-version Questions may appear as `0 responses / no data yet`, with no difficulty interpretation.
 
-### S1.F — Structured Import Concurrency Note
+### Refresh
+Manual refresh + visible last-updated time only.
 
-Re-inspect `confirmImport`'s Phase-2 re-check
-(`src/application/import/confirm-import.ts`) against real transaction
-behavior. Document the accepted V1 concurrency limitation (or the
-evidence that no gap exists) in `docs/DEV_STATUS.md`'s Structured Import
-section — do not add pessimistic locking; do not overstate guarantees in
-comments either direction.
+No polling, WebSocket, or Supabase realtime.
 
-### S1 Acceptance
+### KPI instrumentation
+Do not add `today_opened` or a generic event log. Use authoritative records where possible. Deferred gaps remain in Follow-Up Backlog.
 
-- safe bundle mechanism excludes sensitive/local artifacts (proven by
-  test, not just current tracked-file emptiness);
-- `.env.example` reflects present architecture, no secrets;
-- impossible date-only input rejected as input, not DB/internal failure,
-  at both Course routes;
-- Structured Import has source-size AND row-count protection;
-- auth-ordering claims match implementation reality across the touched
-  routes;
-- concurrency guarantees described accurately in `DEV_STATUS.md`;
-- mandatory security review completed for S1.E with no unresolved
-  BLOCKER/CORRECTION;
-- targeted verification green;
-- FUB-005 resolved; new deferred findings (§8 below) captured.
+### Indexing
+Do not add an Attempts analytics index unless measured Pre-Pilot evidence proves a blocker.
 
-Commit S1 separately from later Slices.
+## 5. Explicit Non-Goals
 
-## 8. S1 Backlog Update
+Not in this Run:
+- learner Progress / Learning Landscape / Learning Pulse;
+- UNLOCK Mirror;
+- Readiness / Compass / Ring / percentage;
+- Class Pulse beyond raw Item Analysis;
+- Teach Next / Topic-strength interpretation;
+- semantic misconception tagging;
+- learner-level instructor analytics;
+- Cohort/Class modeling / Cross-Class Lens;
+- session-scoped or cross-version analytics UI;
+- polling/realtime infrastructure;
+- analytics event platform, snapshots, warehouse, persisted aggregates;
+- FSRS/NBA/Learning Engine changes;
+- AI/PDF work;
+- production-scale load infrastructure.
 
-During S1, add concise `docs/FOLLOW_UP_BACKLOG.md` entries (next ID
-`FUB-006` onward, one entry per topic, `DEFERRED`) for: source
-context/comment debt audit; CI/CD release automation; runtime
-observability/APM; backup/restore/DR; Postgres/Vercel connection
-strategy; abuse/platform hardening (rate limiting, CSP, broader body
-limits); legacy TodaySession retirement investigation; unwired
-application code KEEP/CONNECT/REMOVE classification; structured import
-bulk-persistence/concurrency optimization; UNLOCK starter-kit extraction;
-future project inception template. Capture only — do not execute. Mark
-FUB-005 `RESOLVED` (S1.D).
+Deferred directions remain owned by `docs/FOLLOW_UP_BACKLOG.md`.
 
-## 9. S2 — Instructor Workflow Reality Audit
+# S1 — Aggregate Privacy Contract
 
-Trace the actual current instructor journey (routes/pages/use
-cases/tests, not docs alone): Course creation → configuration → Topics →
-manual authoring OR Structured Import → draft validation/preview →
-Question publish → Course publish → share/join → learner Course access →
-learner Today eligibility. Identify missing links, dead ends, confusing
-transitions, any point requiring developer/SQL knowledge, RTL/mobile
-issues, authoring/import mismatches. Produce the smallest coherent
-integration plan for S3. Commit only if S2 itself requires repository
-changes; otherwise fold the gap map into S3's Slice description.
+MODE: IMPLEMENT
 
-## 10. S3 — Coherent Instructor Authoring Workflow
+## Goal
+Create the smallest reusable contract that makes instructor aggregate disclosure deterministic and prevents privacy thresholds from being reimplemented in each route/UI.
 
-Make the instructor workflow feel like one product using existing Run
-005-007 capabilities (navigation/status/feedback integration, not new
-architecture): obvious actions from Course view; clear draft/published
-distinction for both Question and Course; visible Topic status; Import
-hands off cleanly into the existing Question review/publish flow;
-instructor can identify remaining unpublished Questions; publishing
-Course does not imply Questions are published; share/join is
-discoverable once ready; RTL/mobile/Hebrew-first correctness preserved;
-no SQL/seed/developer intervention required. `PLAN_CONFLICT` rather than
-invent if a gap requires a new product decision (e.g. bulk publish).
+## Inspect
+Start with:
+- Course membership / `canAuthorCourse`;
+- existing domain/application policy conventions;
+- QuestionVersion/Attempt ports;
+- current instructor question-list path;
+- relevant auth/API rules.
 
-## 11. S4 — Learner Eligibility / Draft Leakage Invariant
+Do not broaden into generic analytics architecture.
 
-Invariant-verification and regression-hardening, not a redesign. Prove:
-draft/archived Course does not auto-participate in learner-facing
-behavior; draft-only Question (`current_version_id == null`) is never
-learner-eligible; publish/re-publish preserves immutable
-QuestionVersion/Attempt history; imported `DRAFT_ONLY` Questions stay
-invisible until explicitly published; Course publish never silently
-publishes Questions. Minimum correct code change only if a real gap is
-found. Explicit PGlite/Postgres integration/regression evidence for each
-named negative case — do not rely on query-shape reasoning alone.
-Security review mandatory; DB review mandatory if persistence/integrity
-behavior changes. Do not continue past an unresolved BLOCKER/CORRECTION.
+## Deliverables
+1. One reusable aggregate-disclosure policy/function in the appropriate existing layer.
+2. Central thresholds:
+   - minimum active learners = 5;
+   - minimum distinct responders = 5.
+3. Explicit outcomes:
+   - eligible;
+   - insufficient Course/group size;
+   - insufficient Question responses.
+4. Focused policy tests.
+5. No persistence/schema change.
 
-## 12. S5 — Integrated Instructor-to-Learner Authoring Proof
+## Acceptance
+- one reusable policy location;
+- route/UI does not own thresholds;
+- deterministic/pure where practical;
+- edge cases covered;
+- no learner identity in the contract;
+- no unrelated analytics abstraction.
 
-Integration-level proof of the full lifecycle through the real
-application boundary: create Course → configure → active Topics →
-manual Question → imported Question → both draft before publish →
-publish Questions (Run 006 path) → publish Course → learner joins →
-only intended published content is learner-eligible → draft/unpublished
-content does not leak → historical versioning intact across re-publish.
-Small number of focused integration scenarios over one unreadable
-mega-test; value is cross-Run integration evidence.
+## Risk profile
+Domain/application policy; privacy semantics; no DB migration; no HTTP endpoint yet.
 
-## 13. S6 — Ruppin Pilot Readiness + End-to-End Acceptance
+# S2 — Minimal Instructor Item Analysis
 
-Pilot-readiness assessment, not a production-infrastructure Run. Verify
-the full workflow is usable without SQL/developer intervention; attempt
-the closest safe local/browser journey the environment supports, using
-precise evidence labels (UNIT / APPLICATION INTEGRATION / PGLITE-POSTGRES
-/ BROWSER LOCAL / HOSTED / MANUAL) — never overclaim one for another.
-Classify each audit-identified infra concern (monitoring, backup/restore,
-dependency audit, Postgres/Vercel connection, rate limiting/security
-headers, hosted migration readiness) as `PILOT BLOCKER` /
-`MANUAL PILOT GATE` / `POST-PILOT BACKLOG` — implement only a genuinely
-proven pilot blocker. Attempt dependency/security audit; record
-`NOT VERIFIED — network/tool unavailable` honestly if it cannot run. No
-hosted migration application. Mark Run 008 `COMPLETE` only if the
-Roadmap exit condition is genuinely supported by evidence; otherwise use
-`IMPLEMENTATION COMPLETE — PILOT MANUAL GATE PENDING` with the exact
-remaining gate recorded.
+MODE: IMPLEMENT
 
-## 14. S7 — Run Close + Development OS Evaluation
+## Goal
+Expose a Course-scoped, current-QuestionVersion Item Analysis to authorized OWNER/INSTRUCTOR users using existing immutable Attempt evidence.
 
-`docs/DEV_STATUS.md` current-truth update; `docs/RUNS/2026-09-22-008.md`
-Run Report (BASE_HEAD/END_HEAD, Slice commits, evidence, reviewer
-findings, manual gates, telemetry summary vs. Run 007, Development OS
-observations); Follow-Up Backlog dedup/update; final git state (no
-push). Do not replay broad QA merely because the Run ends — reuse fresh
-Slice evidence per `.claude/rules/testing.md` §11.
+## Inspect
+Use the existing instructor question-list authorization/read path as the closest template. Verify actual paths before editing.
 
-## 15. Stop Condition
+## Required read model
+Per published/current Question:
+- Question id;
+- current QuestionVersion id;
+- prompt;
+- distinct responder count;
+- correct count;
+- incorrect count;
+- incorrect rate;
+- disclosure state;
+- read timestamp for last-updated UI.
 
-Run 008 stops when S1-S6 are complete (or S6 honestly records a
-remaining manual/hosted gate), S7's Run close is written, and no
-unresolved BLOCKER/CORRECTION remains in any Slice.
+Counting rule:
+> first accepted Attempt per learner per current QuestionVersion.
 
-Do not push.
+## Authorization
+- authenticated;
+- active non-revoked OWNER or INSTRUCTOR membership for Course;
+- LEARNER denied;
+- fail closed.
+
+Reuse existing authorization predicates.
+
+## Data semantics
+- current QuestionVersion only;
+- old-version Attempts excluded;
+- draft-only Question without current version excluded;
+- pending draft + current published version continues to use published current version;
+- zero-response current Questions may appear;
+- archived Course must not expose the active classroom analytics view.
+
+If archived-Course behavior conflicts with canonical semantics, report `PLAN_CONFLICT`.
+
+## UI
+Add the smallest instructor-facing view consistent with current navigation.
+
+Must:
+- work in Hebrew/RTL;
+- be usable on laptop/projector;
+- show manual refresh;
+- show last-updated time;
+- show neutral raw evidence;
+- show insufficient-data state;
+- never show learner identity.
+
+Do not create a branded dashboard.
+
+## Acceptance
+- authorized OWNER/INSTRUCTOR can view Course Item Analysis;
+- LEARNER/unauthorized users cannot;
+- current-version-only behavior covered;
+- first-attempt-per-distinct-learner behavior covered;
+- repeat Attempts cannot inflate counts;
+- privacy policy gates disclosure;
+- zero-response state correct;
+- re-publish/current-version behavior tested;
+- no migration or persisted aggregate;
+- no learner drill-down or Topic interpretation.
+
+## Risk profile
+Auth/security; learner-derived aggregate data; application read model; Postgres aggregate query; instructor UI; RTL/accessibility.
+
+Use canonical risk-based verification/reviewer selection.
+A security review is required because this adds an instructor-facing endpoint over learner-derived data.
+
+# S3 — Synthetic Classroom Burst Sanity
+
+MODE: IMPLEMENT / VERIFY
+
+## Goal
+Verify the real classroom burst shape is technically plausible without building production load-test infrastructure.
+
+## Scope
+Create/use the smallest repeatable harness consistent with repository policy for approximately 20–40 near-simultaneous learners.
+
+Target flow:
+1. authenticated learner context;
+2. Course join where applicable;
+3. first `/today`;
+4. first DailyPlan generation/reuse;
+5. first answer submission.
+
+Measure at minimum:
+- successes/errors;
+- basic latency distribution;
+- timeouts;
+- visible DB/pooler failures.
+
+Do not claim production capacity from this test.
+
+## Hosted boundary
+Do not mutate hosted infrastructure autonomously.
+
+If meaningful verification needs hosted users/credentials or another Dor-owned action, prepare the harness/instructions and stop at the manual gate.
+
+## Acceptance
+- harness matches intended classroom concurrency shape;
+- ~20–40 concurrent learners can be exercised;
+- no correctness invariant weakened for throughput;
+- output distinguishes application errors, auth/provider friction, latency, and harness limits;
+- blockers are documented before pilot.
+
+## Risk profile
+Performance/concurrency; Supabase/Postgres pool behavior; DailyPlan generation; answer submission; test tooling.
+
+No broad performance refactor without measured blocker evidence.
+
+## S3 Result — PASS (closed 2026-09-24)
+
+Hosted evidence, 30 learners, Vercel Preview deployment + real Supabase Auth/Postgres
+(`scripts/burst/burst-hosted.mjs`; pre-provisioned confirmed test accounts, throwaway
+Course "Pre-Pilot Burst Test"; each learner: sign-in → timezone → join → Today ×2
+concurrent → one logical answer sent ×2 concurrently). Correctness was identical in both
+runs: 30/30 succeeded, no auth failures, no 429, no 5xx, no timeout, no DB/pooler failure,
+duplicate-answer pairs within the accepted rule (200+200 or 200+409
+`ITEM_ALREADY_RESOLVED`/`SUBMISSION_ID_REUSED`; FUB-025).
+
+| Metric (ms unless noted) | `DATABASE_POOL_MAX=1` | `DATABASE_POOL_MAX=5` |
+| --- | --- | --- |
+| Auth p50 / p95 / max | 540 / 956 / 995 | — |
+| Timezone p50 / p95 / max | 2103 / 2224 / 2235 | — |
+| Join p50 / p95 / max | 867 / 1618 / 1699 | — |
+| Today p50 / p95 / max | 15477 / 18897 / 19740 | 3065 / 4850 / 4866 |
+| Answer p50 / p95 / max | 11083 / 14661 / 15974 | 2109 / 3182 / 3288 |
+| Wall clock | 37.3 s | 10.1 s |
+| vs. guidance (Today/Answer p95 ≤ ~5 s, max ≤ ~15 s) | **not met** | **met** |
+
+Diagnosis (read-only investigation): SQL execution is fast (`pg_stat_statements`: 0.04–0.9 ms
+per statement); no cross-learner lock contention; the primary bottleneck was connection
+queueing behind the per-instance `pg.Pool(max:1)` under concurrent requests. Today (~15
+sequential statements) and Answer (~13) are chatty, but no refactor was needed to pass —
+deferred as FUB-026. The harness doubles Today and Answer requests, so these figures
+overstate a real class's load.
+
+**Decision: hosted `DATABASE_POOL_MAX=5`** (default in code stays 1; valid range 1–10;
+`DATABASE_SSL_CA` required on hosted). Local synthetic evidence (real Postgres, 30–40
+learners, both pool shapes, one plan/one Attempt/one completed item per learner) is in
+Git (`supabase/tests/burst/`, `npm run test:burst`).
+
+Supporting commits: `627dc92` harness, `eb1f504` create-course script, `755eb72` hosted TLS
+fix (CA contents via `DATABASE_SSL_CA`), `7c5d135` duplicate-answer semantics,
+`96a2a42` FUB-025, `696ea66` `DATABASE_POOL_MAX`.
+
+Limits of this evidence: one client machine/IP, 30 learners (40 not run), Preview
+deployment, accounts pre-confirmed (signup, email confirmation and provider rate limits are
+NOT proven — S4), no real mobile network/devices/RTL (S4). Test data (throwaway Course,
+`burst##` users and their rows) remains in the hosted project until Dor cleans it up.
+
+# S4 — Real-Device Rehearsal + Pilot Go/No-Go
+
+MODE: VERIFY / MANUAL GATE
+
+## Goal
+Validate the actual classroom experience on real phones and close independent Technical and Content gates.
+
+This Slice requires human/manual evidence.
+
+## A. Real-device rehearsal
+Use multiple real phones where practical.
+
+Exercise:
+- QR/link;
+- signup/login;
+- email confirmation if required;
+- Course join;
+- Today load;
+- answer submission;
+- mobile layout;
+- Hebrew/RTL;
+- Wi-Fi/cellular reality;
+- instructor Item Analysis refresh.
+
+Record friction/failures and approximate time-to-first-answer.
+
+## B. Technical Go/No-Go
+GO requires no unresolved critical blocker in:
+- QR/join;
+- auth/signup;
+- first Today;
+- first answer;
+- DailyPlan creation;
+- Item Analysis authorization/privacy;
+- classroom burst sanity;
+- mobile/RTL usability.
+
+A known non-critical issue may be accepted only if explicitly recorded.
+
+## C. Content Go/No-Go
+Independent from Technical GO.
+
+Before pilot:
+- instructor signs off on actual Course;
+- answer keys correct;
+- Hebrew wording clear;
+- distractors reasonable;
+- Questions match instruction;
+- coverage sufficient;
+- intended Questions published;
+- no accidental test/draft/internal content exposed;
+- no re-publish after classroom answering starts.
+
+## D. Pilot success signals
+Do not invent a hard statistical success threshold from one pilot.
+
+Record at minimum:
+
+### Activation
+- learners present;
+- learners successfully joined;
+- learners reaching at least one accepted answer during onboarding;
+- major technical-friction count/reasons.
+
+### Repeat behavior
+After the observation window:
+- learners completing Today on 3 distinct days in a week, derived from authoritative DailyPlanItem evidence.
+
+### Instructor value
+Capture explicit evidence:
+- did Item Analysis reveal something not immediately known?
+- did it change what the instructor wanted to discuss/revisit?
+- does the instructor want to use UNLOCK again?
+
+These are pilot learning signals, not production KPI claims.
+
+## Acceptance
+- real-device rehearsal completed;
+- Technical Go/No-Go explicit;
+- Content Go/No-Go explicit;
+- pilot signal capture method clear;
+- unresolved blockers not hidden;
+- if either gate is NO-GO, stop and address only the blocker before the class.
+
+## Risk profile
+Manual/browser E2E; real auth; mobile/RTL; content quality; human pilot readiness.
+
+## S4 Preliminary Pre-Check (2026-09-24) — NOT the rehearsal; S4 remains PENDING
+
+A preliminary real-device pre-check was attempted. It is recorded as evidence only; it
+does not satisfy any S4 acceptance item and neither Go/No-Go gate has a result.
+
+Observed (iPhone 16 Pro Max, Chrome, Wi-Fi):
+- real signup succeeded; the confirmation email arrived in about 1.5 s;
+- the confirmation URL redirected to `http://localhost:3000`, so the phone hit
+  `ERR_CONNECTION_REFUSED`;
+- the account was nevertheless confirmed, and a manual login afterwards succeeded;
+- the original Course join had NOT happened (the join-return flow was lost); Courses was
+  empty, and Today showed its legitimate no-items state because there was no membership;
+- the question/answer flow was therefore not meaningfully exercised. Today itself is NOT
+  classified as failed from this evidence.
+
+**Blocker (open, not yet diagnosed or fixed):** signup confirmation redirect target and
+join-return flow. S4 cannot proceed until a new learner can sign up on a real phone,
+confirm by email, and land back on the join flow of the deployed URL.
+
+## S4 Rehearsal Protocol (exact checklist)
+
+S4 is a human rehearsal on the deployment intended for the pilot. Record everything in a
+short evidence note (template at the end). The two gates are independent.
+
+### Not re-tested (S3 already proved; re-test only if something changed)
+Concurrency correctness (one plan / one Attempt per learner, duplicate opens and submits),
+30-learner latency at `DATABASE_POOL_MAX=5`, hosted TLS/CA connection, join/Today/answer
+request paths under load, SQL performance. Do NOT run another synthetic burst for S4.
+
+### Preparation (before anyone touches a phone)
+1. **Target and config.** Rehearse on the deployment the pilot will use, with
+   `DATABASE_POOL_MAX=5` and `DATABASE_SSL_CA` set; note its URL and commit. Record that
+   both variables are present (names only).
+2. **Supabase dashboard.** Authentication → Rate Limits: record the sign-up/sign-in per-IP
+   limit. Authentication → Email: record whether custom SMTP is configured — the default
+   built-in sender is very tightly rate-limited (about 2 emails/hour), which can block class
+   signups. If it is not custom, decide before the rehearsal (custom SMTP, or a smaller
+   rehearsal) and record it as a Technical risk.
+3. **Vercel.** Production/pilot URL reachable without Vercel login (Deployment Protection
+   off for it); Runtime Logs open.
+4. **Course.** Create the REAL rehearsal Course through the instructor UI (or use the pilot
+   Course only if Content gate below is already signed off): PUBLISHED, join policy OPEN,
+   Topics set, real published Questions. Not the throwaway burst Course.
+5. **Join link + QR.** Copy the join link from the Course page (`/join/<courseId>`), generate
+   a QR code for it, print or display it on a screen.
+6. **Devices/networks.** At least 2 physical phones (prefer 1 iPhone + 1 Android), each with
+   Wi-Fi and cellular available; a laptop for the instructor (projector if possible). Fresh
+   student accounts: real email addresses for at least 2 learners (5+ if you want to see
+   Item Analysis; it needs ≥5 active learners and ≥5 responders per Question).
+7. **Cleanup awareness.** Decide what happens to the throwaway burst Course and `burst##`
+   users (archive Course; optional SQL cleanup — Dor-owned).
+
+### Student rehearsal script (each phone; run once on Wi-Fi, once on cellular)
+Start a timer at "scan".
+1. Scan the QR (and once, open the link from a message app). Record: lands on join page?
+2. Signed out → you should be sent to sign-up/login and back to the join page afterward.
+3. Create a new account with a real email (Wi-Fi run) / log in with an existing one
+   (cellular run). Record email arrival time if confirmation is required; confirm; return.
+4. Join the Course (OPEN policy → immediate). Record: any confusing wording.
+5. Open Today. Record time from scan to first question visible.
+6. Answer the first question; observe correct/incorrect feedback. Record time to first answer.
+7. Repeat/double interaction: on the next question, double-tap the answer/submit control
+   quickly; then refresh the page mid-answer; then open Today in a second tab. Expected:
+   no error page, no duplicate answer, item shows resolved once, plan identical.
+8. Finish the plan, note the completion state. Kill the app/browser, reopen the same link:
+   session persists, Today resumes the same plan.
+9. Switch Wi-Fi → cellular (or airplane-mode blip) mid-session; reload Today; record
+   recovery and any error text.
+10. Hebrew/RTL check on every screen visited (join, login/signup, Today, feedback, completion):
+    text direction, alignment, mixed Hebrew/number/Latin, no clipped or overlapping text,
+    tap targets usable one-handed, keyboard does not hide the submit control.
+11. Progress: there is NO Progress screen yet (Run 009). Confirm the learner navigation
+    shows no dead or broken Progress link. This is N/A, not a failure.
+
+### Instructor rehearsal script (laptop; ideally while 5+ students answer)
+1. Log in; open the Course; confirm status PUBLISHED, join policy OPEN, Topics visible, all
+   intended Questions PUBLISHED and no DRAFT/test Question is visible to learners.
+2. Show the join QR/link; watch memberships arrive (students joining).
+3. Announce a **group answering window** (for example 3 minutes; every student answers the
+   same Question(s)). Do NOT refresh Item Analysis while answers trickle in.
+4. After the window closes, open Item Analysis (`Course → ניתוח תשובות לפי שאלה`) and refresh
+   once. Record the responder counts, the incorrect-rate bucket, the last-updated time, and
+   the insufficient-data message for Questions with fewer than 5 responders. Item Analysis is
+   NOT a per-answer live scoreboard; if the instructor starts refreshing after each answer,
+   stop and record it.
+5. Privacy checks: no student names, emails or IDs anywhere; no per-option distribution; no
+   "weak"/"struggling" wording; a learner account cannot open the Item Analysis URL (403 /
+   not-authorized page); signed-out request is rejected.
+6. Record instructor value evidence: did it reveal something not immediately obvious; did it
+   change what they would revisit; would they use UNLOCK again?
+7. Instructor manages nothing else mid-rehearsal (no re-publish of Questions once answering
+   begins).
+
+### Wi-Fi vs cellular
+- **Wi-Fi (classroom-like, shared IP):** signup/login and email confirmation with several
+  people at once, join, Today, answer, Item Analysis; watch for auth rate-limit messages or
+  slow email.
+- **Cellular:** login, first Today load and first answer latency, reload/resume, switching
+  networks, error messaging on a weak signal.
+
+### Evidence to record (per device)
+Device/OS/browser, network, URL and commit, scan→first-question seconds, scan→first-answer
+seconds, email delay (if any), each failure or confusing moment with a screenshot,
+RTL/layout defects, the double-tap/refresh outcome, and the Vercel Runtime Log errors during
+the session (count and codes only). Instructor: counts shown, refresh time, privacy checks.
+
+### TECHNICAL GO / NO-GO
+- **PASS (GO):** on at least 2 physical devices, both networks: signup/login (with real email
+  confirmation), QR/link join, Today, answer, resume, and the double/refresh test all work;
+  RTL/mobile usable; no auth/privacy/security defect; Item Analysis authorization and privacy
+  checks pass; no unrecorded 5xx in Runtime Logs; time to first answer is acceptable to the
+  instructor (record it; no invented threshold).
+- **FAIL (NO-GO):** any of: cannot sign up/log in; join or Today broken; answer lost or
+  duplicated; auth/privacy leak; unusable RTL; repeated 5xx/timeouts.
+- **BLOCKED:** cannot complete a step for a reason outside the app that stops the rehearsal
+  (email not delivered because of SMTP limits, Vercel Deployment Protection, device
+  unavailable). Record it; it is not a GO. Resolve, then repeat only the blocked steps.
+- A known non-critical issue may be accepted only if written into the evidence note.
+
+### CONTENT GO / NO-GO (independent; content owner signs)
+Checklist: real pilot material exists; every answer key verified against the material;
+Hebrew wording reviewed; distractors reviewed; every Question mapped to a Topic and to the
+instruction; enough published Questions for the rehearsal/pilot (at least the number a
+learner's Today draws, plus margin); no test, draft, burst or internal content visible to a
+learner; the Course-level view a learner sees was checked from a learner account; no
+Question re-published after answering starts.
+- **PASS:** every box checked and the instructor/content owner records sign-off (name/date).
+- **FAIL:** any wrong key, unclear Hebrew, misaligned Question, or visible test/draft content.
+- **BLOCKED:** material or reviewer unavailable.
+
+### Evidence-note template
+`Target: … commit … | Devices/networks: … | Technical: GO/NO-GO/BLOCKED (reasons) |
+Content: GO/NO-GO/BLOCKED (owner, date) | First-answer times: … | Defects: … | Accepted
+non-critical issues: … | Item Analysis: counts/refresh/privacy result | Runtime Log errors: …`
+
+## 6. Run-Level Acceptance
+
+Complete only when:
+1. S1 privacy semantics implemented and verified.
+2. S2 Item Analysis implemented and security-reviewed under current policy.
+3. S3 burst evidence exists, or explicit Dor-owned hosted/manual gate is completed.
+4. S4 real-device rehearsal completed.
+5. Technical Go/No-Go explicit.
+6. Content Go/No-Go explicit.
+7. no Run 009+ feature pulled into scope.
+8. `docs/DEV_STATUS.md` reflects only durable changed truth.
+9. Run Report records evidence and remaining limitations.
+10. Git state reconciled under canonical Run Completion Protocol.
+11. Claude has not pushed.
+
+## 7. Stop Conditions
+
+Stop for Dor instead of improvising if:
+- HEAD/working tree conflicts with BASE_HEAD semantics;
+- Item Analysis requires migration or new aggregate persistence;
+- first-attempt-per-distinct-learner conflicts materially with Attempt model;
+- authorization cannot reuse existing Course management semantics;
+- privacy requires a product/legal decision beyond this Plan;
+- hosted mutation is required;
+- burst test exposes a redesign-level bottleneck;
+- Content Go/No-Go needs instructor input;
+- implementation would pull Run 009 features forward.
+
+Use `PLAN_CONFLICT` when repository reality contradicts the Plan.
+
+## 8. Handoff
+
+After completion:
+- do not start Run 009 automatically;
+- report Technical and Content gate results to Dor;
+- preserve newly discovered deferred work only if it meets existing Follow-Up Backlog rules;
+- wait for explicit Run 009 planning.
+
+Run 009 remains a separate product Run.

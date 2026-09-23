@@ -1032,6 +1032,54 @@ learners.
 
 ---
 
+# FUB-026 — Today / Answer Round-Trip Reduction
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Performance / Application + Infrastructure
+
+## Observation
+
+Found by the hosted Pre-Pilot S3 burst investigation (2026-09-24). Database
+execution is fast (`pg_stat_statements`: 0.04–0.9 ms per statement) and there
+is no cross-learner locking; latency under concurrency came from connection
+queueing, fixed for the pilot by `DATABASE_POOL_MAX=5` (Today p95 4.85 s,
+Answer p95 3.18 s at 30 learners). Both paths are still chatty, so every
+request pays many sequential Vercel↔Supabase round trips:
+
+- **Today** (new learner): about 15 statements plus an auth HTTP call —
+  timezone, active memberships and Course status as three separate reads before
+  the transaction; a two-step plan lookup; three sequential one-row item
+  inserts; a separate learner-content read after the transaction.
+- **Answer:** about 13 statements — the DailyPlanItem is loaded twice (before
+  and inside the transaction), and version context and correctness definition
+  are separate lookups.
+
+## Follow-Up Investigation
+
+If pilot evidence shows latency matters at larger scale: a single
+resume-first query for an existing plan and its items; merge the pre-reads;
+one multi-row item insert; drop the duplicate item lookup and merge the version
+and correctness reads. Prove each change with per-request statement counts and
+the S3 burst harness (`npm run test:burst`, `scripts/burst/`).
+
+## Important Constraint
+
+Preserve every invariant: one plan per learner per local day, one Attempt and
+one resolved item per logical submission, the per-(learner, question) advisory
+lock, and immutable Attempts.
+
+## Do Not Do Yet
+
+No Today/Answer query restructuring in Pre-Pilot; the S3 gate passed without it.
+
+## Promotion Trigger
+
+Larger cohorts, or pilot latency complaints, or hosted p95 above the S3
+guidance (about 5 s) at the target class size.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.

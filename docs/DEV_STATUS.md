@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-23
+Updated: 2026-09-24
 
 ## Repository
 
@@ -74,6 +74,15 @@ Current repository capabilities include:
   import Questions → publish Questions → publish Course → share join
   link, with an explicit draft/published Question-count summary near the
   Course publish action (Run 008 S3);
+- instructor Item Analysis (Pre-Pilot S1/S2): Course-scoped, aggregate-only,
+  current-QuestionVersion-only view for OWNER/active INSTRUCTOR of a PUBLISHED
+  Course (`GET /api/courses/:courseId/item-analysis`, page under the Course
+  Questions section). Counts the first Attempt per distinct active LEARNER;
+  disclosure gated by `src/domain/insights/aggregate-disclosure.ts` (minimum 5
+  active learners and 5 distinct responders, else no numbers); shows responder
+  count and an incorrect rate rounded to the nearest 10 points, never exact
+  correct/incorrect counts; manual refresh only. It is NOT a per-answer live
+  scoreboard — refresh after a group answering window;
 - Playwright E2E harness (the automated suite was not executed against a
   real environment; the pilot journey was instead proven by a manual
   browser flow against hosted Supabase — see "Pilot Readiness" below).
@@ -264,9 +273,13 @@ no pilot-readiness blocker remains from Run 008. Detailed evidence lives in
   through `20260929000000` (see "Database / Supabase").
 - **Postgres/Vercel connection strategy**: CLOSED — `DATABASE_URL` targets
   Supabase's Transaction Pooler (port `6543`); `pg.Pool` defaults to
-  `max: 1` in `src/infrastructure/postgres/pg-pool.ts` (optionally raised
-  via `DATABASE_POOL_MAX`, integer 1..10 — Pre-Pilot performance A/B; the
-  hosted S3 burst showed requests queueing behind the single connection). Hosted browser
+  `max: 1` in `src/infrastructure/postgres/pg-pool.ts`, overridable via
+  `DATABASE_POOL_MAX` (integer 1..10). **Hosted decision (Pre-Pilot S3,
+  2026-09-24): set `DATABASE_POOL_MAX=5`.** A 30-learner hosted burst at
+  `max=1` queued requests behind the single connection (Today p95 18.9 s,
+  Answer p95 14.7 s); at `max=5` Today p95 was 4.85 s and Answer p95 3.18 s,
+  30/30 succeeded in both. Evidence and limits: `docs/CHATGPT_PLAN.md` "S3
+  Result"; Today/Answer round-trip reduction is deferred (FUB-026). Hosted browser
   verification from a local machine initially failed with
   `SELF_SIGNED_CERT_IN_CHAIN` (Node `pg` TLS chain verification against
   the pooler); supplying Supabase's server root CA as an explicit SSL root
@@ -302,6 +315,31 @@ no pilot-readiness blocker remains from Run 008. Detailed evidence lives in
   Vercel captures function logs by default.
 - **Abuse/platform hardening**: `POST-PILOT BACKLOG` (FUB-011).
 
+## Pre-Pilot Validation Run (RUN_ID `2026-09-23-PRE-PILOT`)
+
+Status: **IN PROGRESS** — S1 (aggregate privacy contract) and S2 (Item
+Analysis) COMPLETE; S3 (synthetic classroom burst) **PASS**; S4 (real-device
+rehearsal + Technical/Content Go/No-Go) **PENDING / NOT COMPLETE** — a
+preliminary iPhone pre-check exposed a signup-confirmation redirect /
+join-return blocker (confirmation link redirected to `http://localhost:3000`,
+the original Course join was lost; Today's no-items state was legitimate and is
+not a failure). Details: `docs/CHATGPT_PLAN.md` ("S4 Preliminary Pre-Check"),
+`docs/RUNS/2026-09-23-PRE-PILOT.md`. Not diagnosed or fixed yet.
+
+Hosted configuration that must remain (hosted Vercel environment):
+- `DATABASE_SSL_CA` = PEM contents of the Supabase root CA (public certificate);
+  a local file path in `DATABASE_URL` is never read when it is set;
+- `DATABASE_POOL_MAX=5` (code default stays 1; valid range 1..10). Hosted S3 at
+  30 learners: `max=1` Today p95 18.9 s / Answer p95 14.7 s (requests queued
+  behind the single connection); `max=5` Today p95 4.85 s / Answer p95 3.18 s;
+  30/30 succeeded in both. Optional `DATABASE_POOL_LOG_STATS=true` for queue
+  observability.
+Deferred: Today/Answer round-trip reduction (FUB-026), answer idempotency vs
+server-generated `answeredAt` (FUB-025), further analytics follow-ups
+(FUB-023/024), post-pilot learning-visibility directions (FUB-018..022).
+A throwaway hosted Course "Pre-Pilot Burst Test" and `burst##` test accounts
+remain in the hosted project until the human cleans them up.
+
 ## Verification Baseline
 
 Run 006 final product verification recorded:
@@ -324,6 +362,13 @@ re-run was performed at Run close:
   BLOCKING FINDINGS across S3-S6 after fixing every CORRECTIONS-REQUIRED
   finding raised along the way;
 - browser/E2E: not performed.
+
+Pre-Pilot (2026-09-23/24): full unit 1227/1227 (126 files) after the last code
+change (pool-size config); Item Analysis PGlite 7/7; typecheck/lint clean;
+local synthetic burst (real Postgres, 30 and 40 learners, both pool shapes)
+green; hosted 30-learner burst PASS at `DATABASE_POOL_MAX=5`. Hosted evidence
+came from a Preview deployment with pre-confirmed accounts; real signup/email,
+mobile/RTL and cellular are NOT yet proven (S4).
 
 Run 008 (Authoring Integration + Pilot Readiness) final evidence:
 - typecheck: clean (full repo, re-verified after every Slice);
@@ -377,6 +422,11 @@ Rolling state only — not a diary. An item leaves this list the moment it resol
 - **`src/domain/learning/answer.ts`**: Run 007 needed a full read of this dense, multi-function file to extract confidence about one reused function's contract. Not recurred in Run 008 — no full read of this file was needed. Candidate for `DROP` if it does not recur in one more Run.
 - **Test-fakes-as-template reads** (`in-memory-fakes.ts` style files read in full purely to copy an established fake-construction convention). Recurred in Run 008 (reading `application/course/__tests__/in-memory-fakes.ts` in full to extend it with `listStatuses`/`seedMembership`'s default-fill). Still not costly — the read was necessary to add a real new method correctly, not merely to copy convention. Remains `WATCH`.
 - **Telemetry has no native per-Slice attribution** — a per-Slice breakdown currently requires manual reconstruction from commit timestamps. Remains `WATCH` unless it materially limits a future analysis.
+- **Development OS audit, Pre-Pilot Run (2026-09-24)** — detail in `docs/RUNS/2026-09-23-PRE-PILOT.md` §8/§9; all `WATCH`, none promoted:
+  (1) Edit/Write tool-result echoes were 48% of tool-response characters (494K of 1.03M) vs Read 14% — recurred after Run 008's quiet result; the large echoes coincide with "file changed on disk" reminders after shell-side patching;
+  (2) shell-based file reads (`cat`/`sed`) are invisible to `FILE_READ` telemetry (main-context Read-tool reads: 4), so read/re-read statistics undercount real source consumption;
+  (3) shell-embedded code patching (`node -e`/heredocs) caused repeated quoting failures and one corrupted regex (6 recorded tool failures vs 0-3 before);
+  (4) local test harnesses that share one connection or one clock can mask production request-boundary behavior (duplicate-answer and pool findings).
 - **Main-session `Edit`/`Write` tool-result echoes measured larger than file-read cost in Run 007** (~147k vs. ~93k main-context tokens). Run 008 ran as a single ~54%-peak-context session with 100% average cache hit ratio and 0 compactions across the whole multi-Slice Run (`docs/RUNS/2026-09-22-008.md` telemetry section) — no evidence this Run that Edit/Write echo cost became a binding constraint. Candidate for `DROP` if a future Run also shows no material impact.
 
 ## Development OS Safety
@@ -394,7 +444,8 @@ Remote Git push and hosted database mutation remain manual/user-controlled actio
 
 Product roadmap:
 - Run 008 — Authoring Integration + Pilot Readiness (**COMPLETE**)
-- Run 009 — Learner Progress + Instructor Insights (next; requires a new Plan)
+- Pre-Pilot Validation Run — IN PROGRESS (S4 real-device rehearsal pending; see above); not a renumbering of Run 009
+- Run 009 — Learner Progress + Instructor Insights (next product Run; requires a new Plan)
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
@@ -421,12 +472,21 @@ from before this Run, unchanged).
   absorbed into `.claude/rules/testing.md`;
 - no Run 008 hosted-migration, backup, connection, or E2E gate remains open.
 
+For the Pre-Pilot Run:
+- resolve the S4 blocker (signup confirmation redirect / join-return), then run the
+  full S4 rehearsal and record both Go/No-Go results (`docs/CHATGPT_PLAN.md`);
+- confirm hosted config above stays set; clean up the throwaway burst Course and
+  `burst##` accounts when convenient (human-owned hosted action).
+
 For Run 009:
 - requires a new Plan; do not begin without one.
 
 ## Blockers
 
-No known blocker remains from Run 008; no pilot-readiness gate is open.
+No Run 008 blocker remains. **Open Pre-Pilot blocker:** S4 signup confirmation
+redirect (`http://localhost:3000`) / lost join-return flow, found by the
+preliminary real-device pre-check; not yet diagnosed or fixed. Signup email
+throughput/rate limits and real-device/RTL behavior are also still unproven.
 
 Current execution source:
 - `docs/CHATGPT_PLAN.md`
