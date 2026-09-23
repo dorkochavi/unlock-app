@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-22
+Updated: 2026-09-23
 
 ## Repository
 
@@ -21,6 +21,8 @@ Updated: 2026-09-22
   validation, Structured Import row-count limit, auth-before-body-parsing
   across 10 routes, a learner-eligibility fix, instructor workflow copy)
   and test-only integration evidence. No schema/migration change.
+  Run 008 is COMPLETE — all pilot manual gates closed 2026-09-23 (see
+  "Pilot Readiness").
 - Run 007 (Structured Import V1) was pushed to origin between its own Run
   Report being written and Run 008 starting — Run 008's `BASE_HEAD` was
   the already-pushed `d509987`, not Run 007's own local HEAD at the time
@@ -72,8 +74,9 @@ Current repository capabilities include:
   import Questions → publish Questions → publish Course → share join
   link, with an explicit draft/published Question-count summary near the
   Course publish action (Run 008 S3);
-- Playwright E2E harness (not executed against a real environment this
-  Run — see "Pilot Readiness" below).
+- Playwright E2E harness (the automated suite was not executed against a
+  real environment; the pilot journey was instead proven by a manual
+  browser flow against hosted Supabase — see "Pilot Readiness" below).
 
 ## DailyPlan / Today
 
@@ -204,20 +207,13 @@ Supabase project:
 - region: Central EU / Frankfurt
 
 Hosted migrations are confirmed aligned through
-`20260928000000_question_authoring_v1.sql` (all committed migrations up
-to and including this one are applied hosted, per the human who closed
-the Postgres/Vercel readiness gate).
+`20260929000000_retire_today_session.sql` — all 13 committed migrations
+are applied hosted; `npx supabase migration list` showed local = remote
+(human-confirmed, 2026-09-23).
 
-No new migration was introduced by Run 008.
-
-A pre-Run-009 maintenance Slice (2026-09-23, see "Legacy TodaySession
-Retirement" below) added one further migration,
-`20260929000000_retire_today_session.sql`, committed and locally/PGlite-
-verified but **deliberately not applied hosted yet** — pending the
-backup-readiness gate (`docs/FOLLOW_UP_BACKLOG.md` FUB-009). Hosted
-migrations therefore remain confirmed aligned only through
-`20260928000000_question_authoring_v1.sql`; `20260929000000` is a pending
-manual hosted-migration action once that gate closes.
+No new migration was introduced by Run 008 itself; the pre-Run-009
+TodaySession retirement migration (`20260929000000`) was the 13th and was
+applied hosted after the backup gate closed.
 
 Do not infer hosted application from local migration existence.
 Claude must not run `supabase link` or `supabase db push`.
@@ -239,7 +235,7 @@ and persistence model. The superseded Course-scoped `TodaySession` model
 - migration `20260929000000_retire_today_session.sql` drops
   `today_sessions`, `today_session_items`, and
   `attempts.today_session_id`/`attempts.today_session_item_id` (committed,
-  locally/PGlite-verified, **not yet applied hosted** — see above);
+  locally/PGlite-verified and since applied hosted — see above);
 - confirmed human evidence before deletion: hosted `today_sessions` = 0
   rows, `today_session_items` = 0 rows,
   `attempts.today_session_item_id IS NOT NULL` = 0 rows; a runtime
@@ -250,70 +246,54 @@ and persistence model. The superseded Course-scoped `TodaySession` model
 - ADR-011 marked SUPERSEDED AND RETIRED; `docs/FOLLOW_UP_BACKLOG.md` FUB-012
   marked `RESOLVED`.
 
-Remaining human action: apply `20260929000000_retire_today_session.sql`
-hosted once the backup-readiness gate (FUB-009) closes.
+No remaining action: `20260929000000_retire_today_session.sql` is applied
+hosted.
 
-## Pilot Readiness (Run 008 S6)
+## Pilot Readiness (Run 008)
 
-Assessed against the Ruppin pilot, not full production hardening (Run 012):
+Assessed against the Ruppin pilot, not full production hardening (Run 012).
+All Run 008 pilot manual gates are **CLOSED** (human-confirmed 2026-09-23);
+no pilot-readiness blocker remains from Run 008. Detailed evidence lives in
+`docs/RUNS/2026-09-22-008.md` ("Pilot Manual Gate Closure"), not here.
 
-- **Product self-sufficiency**: Course creation, Topic management, manual
-  Question authoring, Structured Import, explicit Question/Course publish,
-  and learner join are all reachable through the product UI with no
-  SQL/seed/developer intervention — confirmed by direct route/page
-  inspection (Run 008 S2) and by the real end-to-end
-  APPLICATION INTEGRATION proof (Run 008 S5, real Postgres/PGlite, real
-  application use cases, not mocks).
-- **Browser/hosted proof**: NOT PERFORMED this Run —
-  `MANUAL PILOT GATE`. `.env.local` in this environment points at a
-  remote (hosted) `DATABASE_URL`/Supabase project, not an isolated local
-  sandbox; starting the dev server or running the existing Playwright
-  suite (`npm run test:e2e`) against it would create real rows (users,
-  Courses) in what is almost certainly the shared pilot Supabase project
-  — autonomous hosted-database mutation is out of bounds
-  (`CLAUDE.md` §6). A human should either point a local/disposable
-  Postgres+Supabase project at this repo and run `npm run dev` +
-  `npm run test:e2e` themselves, or confirm the current `.env.local`
-  target is safe to write pilot-shaped test data into before doing so.
-- **Dependency/security audit**: `npm audit` run successfully (network
-  available) — 0 vulnerabilities across 529 dependencies (45 prod, 446
-  dev, 116 optional). Not re-run automatically in future Sessions merely
-  because time has passed.
-- **Hosted migration readiness**: `RESOLVED` — confirmed aligned through
-  `20260928000000_question_authoring_v1.sql` (see "Database / Supabase"
-  above).
+- **Product self-sufficiency**: CLOSED — the full instructor-to-learner loop
+  is reachable through the product UI with no SQL/seed/developer
+  intervention (APPLICATION INTEGRATION proof in S5, plus the hosted
+  browser proof below).
+- **Hosted migrations**: CLOSED — all 13 migrations applied; local = remote
+  through `20260929000000` (see "Database / Supabase").
+- **Postgres/Vercel connection strategy**: CLOSED — `DATABASE_URL` targets
+  Supabase's Transaction Pooler (port `6543`); `pg.Pool` is capped at
+  `max: 1` in `src/infrastructure/postgres/pg-pool.ts`. Hosted browser
+  verification from a local machine initially failed with
+  `SELF_SIGNED_CERT_IN_CHAIN` (Node `pg` TLS chain verification against
+  the pooler); supplying Supabase's server root CA as an explicit SSL root
+  certificate resolved it. The CA is a public certificate, not a secret,
+  but is a local/runtime dependency — it is git-ignored (`*.crt`), not
+  committed, and no credentials belong in the repository. Only the local
+  verification path was exercised; no Vercel/production TLS configuration
+  claim is made. SSL stays un-hardcoded in code.
+- **Backup readiness**: CLOSED — a manual hosted logical backup
+  (`schema.sql`, `roles.sql`, `data.sql`, each inspected as non-empty) was
+  created outside the repository, with a second copy off the machine. The
+  data dump warned about circular foreign keys between `questions` and
+  `question_versions`; the dump itself completed. **No restore drill was
+  performed**; no RPO/RTO guarantee is claimed (FUB-009 still tracks
+  ongoing backup ownership/restore verification as post-pilot work).
+- **Browser/hosted E2E**: CLOSED — manual browser flow against the local
+  Next.js app connected to hosted Supabase. Learner `/today` answered
+  3/3 items to completion; instructor flow Course → Topic → manual
+  Question → Structured Import (Preview/Confirm → DRAFT-only) → Question
+  publish → Course publish → share link → signup/auth → AUTHORIZED_ONLY
+  join gate → OPEN join → learner `/today` showing the new Course's
+  `NEW_LEARNING` item. Evidence label: BROWSER LOCAL app + HOSTED
+  Supabase (manual); the automated Playwright suite was not run.
+- **Dependency/security audit**: `npm audit` — 0 vulnerabilities across
+  529 dependencies (Run 008). Not re-run merely because time passed.
 - **Runtime troubleshooting posture**: `POST-PILOT BACKLOG` (FUB-008) —
-  no application APM exists, but every route handler already logs
-  unexpected errors server-side via `console.error` with route context
-  before returning a safe generic response (verified across all 10 routes
-  touched by Run 008 S1.E); Vercel captures this in function logs by
-  default. Judged sufficient for pilot scale; a dedicated APM/structured
-  logging pass is post-pilot work, not a narrow addition this Run found
-  clearly warranted.
-- **Backup/restore**: `MANUAL PILOT GATE` (FUB-009) — cannot be verified
-  from the repository; a human must check the hosted Supabase project's
-  actual backup/restore plan and settings before the pilot. No RPO/RTO
-  guarantee is claimed here.
-- **Postgres/Vercel connection strategy**: `RESOLVED`. Confirmed:
-  `DATABASE_URL` now targets Supabase's **Transaction Pooler** endpoint
-  (host ends `.pooler.supabase.com`, port `6543`, `sslmode=require`
-  present in the connection string — not read/printed here, only
-  confirmed by the human closing this gate). Hosted migrations are now
-  aligned through `20260928000000`.
-  `src/infrastructure/postgres/pg-pool.ts`'s application-side `pg.Pool`
-  is explicitly capped at `max: 1` — `pg.Pool` defaults to `max: 10`
-  regardless of `DATABASE_URL`, and Vercel's per-invocation serverless
-  model would otherwise mean up to 10 upstream connections PER
-  invocation, multiplied across concurrent invocations, working against
-  (not with) the Transaction Pooler's own multiplexing. SSL remains
-  un-hardcoded in code, deferred to the connection string's own
-  `sslmode` parameter, unchanged from before this gate closed.
-- **Abuse/platform hardening**: `POST-PILOT BACKLOG` (FUB-011) — no
-  evidence found of an actual Run 008 pilot blocker.
-
-None of the above is a `PILOT BLOCKER` in the sense of "demonstrably
-unsafe or nonfunctional" — every item above is either already resolved,
-or a human-verifiable/human-actionable gate, not a code defect.
+  route handlers log unexpected errors server-side with route context;
+  Vercel captures function logs by default.
+- **Abuse/platform hardening**: `POST-PILOT BACKLOG` (FUB-011).
 
 ## Verification Baseline
 
@@ -354,8 +334,8 @@ Run 008 (Authoring Integration + Pilot Readiness) final evidence:
   fixing every non-blocking finding raised along the way (see
   `docs/RUNS/2026-09-22-008.md` for detail);
 - `npm audit`: 0 vulnerabilities, 529 dependencies;
-- browser/E2E: not performed — see "Pilot Readiness" above for why and
-  the exact manual gate.
+- browser/E2E: automated suite not run; manual hosted browser proof
+  completed 2026-09-23 — see "Pilot Readiness" above.
 
 ## Development OS V1.2
 
@@ -405,28 +385,20 @@ Remote Git push and hosted database mutation remain manual/user-controlled actio
 
 ## Known Limitations / Gaps
 
-Product roadmap remains:
-- Run 008 — Authoring Integration + Pilot Readiness (IMPLEMENTATION
-  COMPLETE — PILOT MANUAL GATE PENDING, see below)
-- Run 009 — Learner Progress + Instructor Insights
+Product roadmap:
+- Run 008 — Authoring Integration + Pilot Readiness (**COMPLETE**)
+- Run 009 — Learner Progress + Instructor Insights (next; requires a new Plan)
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
 
-Run 008 status: **IMPLEMENTATION COMPLETE — PILOT MANUAL GATE PENDING**.
-All autonomous Slice work (S1-S5) is committed and reviewed with NO
-BLOCKING FINDINGS. S6's pilot-readiness assessment found no code-level
-`PILOT BLOCKER`. Two manual gates have since been resolved (hosted
-migration application; Postgres/Vercel pooler-connection configuration —
-see "Pilot Readiness" above). Remaining human-actionable
-`MANUAL PILOT GATE`s: browser/hosted E2E proof, backup/restore
-verification — or genuinely `POST-PILOT BACKLOG` work. The Roadmap's
-Milestone C exit condition ("an instructor can create and publish a
-course... entirely without developer/database intervention, and the full
-instructor-to-learner loop is pilot-ready") is supported by
-APPLICATION INTEGRATION evidence (real Postgres/PGlite, real application
-use cases) but NOT by BROWSER LOCAL or HOSTED evidence — that distinction
-is the one thing keeping this from being marked fully `COMPLETE`.
+Run 008 status: **COMPLETE**. All autonomous Slice work (S1-S5) was
+committed and reviewed with NO BLOCKING FINDINGS, S6 found no code-level
+`PILOT BLOCKER`, and every pilot manual gate has since been closed
+(hosted migrations, pooler connection, backup readiness, browser/hosted
+E2E — see "Pilot Readiness"). The Roadmap's Milestone C exit condition is
+supported by APPLICATION INTEGRATION evidence and by manual BROWSER LOCAL +
+HOSTED evidence.
 
 Known deferred maintainability work lives in `docs/FOLLOW_UP_BACKLOG.md`
 (FUB-005 RESOLVED this Run; FUB-006 through FUB-016 added this Run,
@@ -435,39 +407,19 @@ from before this Run, unchanged).
 
 ## Current Manual Actions
 
-For Run 008:
-- push local HEAD to `origin/feature/project-foundation` when ready
-  (includes `IMPLEMENTATION_HEAD` `b86d4e3` plus subsequent close-out/
-  patch commits — see `git log`/`git status` for the exact current HEAD);
-- resolve the remaining pilot-readiness manual gates listed under "Pilot
-  Readiness" above (browser/hosted E2E, backup/restore verification —
-  hosted migration application and Postgres pooler-connection
-  configuration are now resolved);
+- push local HEAD to `origin/feature/project-foundation` when ready (see
+  `git status` for the ahead count);
 - decide whether to experiment with the `CHANGE CANDIDATE` Development OS
   observation above (named-negative-case test isolation) before it is
-  absorbed into `.claude/rules/testing.md`.
-
-For hosted Supabase:
-- no new migration was introduced by Run 008 itself;
-- hosted migrations are confirmed aligned through
-  `20260928000000_question_authoring_v1.sql`;
-- the pre-Run-009 TodaySession retirement Slice added
-  `20260929000000_retire_today_session.sql`, committed and
-  locally/PGlite-verified but intentionally **not yet applied hosted** —
-  pending action once the backup-readiness gate (FUB-009) closes (see
-  "Database / Supabase" and "Legacy TodaySession Retirement" above).
+  absorbed into `.claude/rules/testing.md`;
+- no Run 008 hosted-migration, backup, connection, or E2E gate remains open.
 
 For Run 009:
-- requires a new Plan; do not begin without one. Run 008's own remaining
-  manual gates do not block starting Run 009's planning, but the Ruppin
-  pilot itself cannot start until they are resolved.
+- requires a new Plan; do not begin without one.
 
 ## Blockers
 
-No known product blocker is introduced by Run 008. No code-level
-`PILOT BLOCKER` was found during S6's pilot-readiness assessment — every
-remaining pilot-readiness item is a human-actionable manual gate (see
-"Pilot Readiness" above).
+No known blocker remains from Run 008; no pilot-readiness gate is open.
 
 Current execution source:
 - `docs/CHATGPT_PLAN.md`

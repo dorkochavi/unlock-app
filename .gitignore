@@ -28,6 +28,8 @@
 # misc
 .DS_Store
 *.pem
+# TLS root CA files kept locally (e.g. Supabase CA) - never commit
+*.crt
 
 # debug
 npm-debug.log*

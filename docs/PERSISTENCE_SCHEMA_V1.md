@@ -523,11 +523,9 @@ by migration #13 (`20260929000000_retire_today_session.sql`), after a
 runtime reachability audit found no live `src/app` route creating/retrieving
 a TodaySession and hosted Supabase verification found zero rows in it.
 `DailyPlan` (below) is the sole active Today application/runtime model.
-Migration #13 is committed and locally/PGlite-verified but, as of this
-writing, deliberately **not yet applied to the hosted Supabase project**
-(pending the backup-readiness gate, `docs/FOLLOW_UP_BACKLOG.md` FUB-009) —
-the hosted physical schema still has this table until then; see
-`docs/DEV_STATUS.md` for current hosted-migration status. The section below
+Migration #13 is committed, locally/PGlite-verified, and applied to the
+hosted Supabase project (2026-09-23); see `docs/DEV_STATUS.md` for current
+hosted-migration status. The section below
 is preserved as historical design-rationale record only — do not read it as
 describing a live application-layer model.
 

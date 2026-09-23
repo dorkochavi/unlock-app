@@ -361,7 +361,7 @@ Quiz does not independently replace them with newly selected Questions.
 
 ## 20. TodaySession / TodaySessionItem — Retired
 
-`TodaySession` and `TodaySessionItem` were the Course-scoped Today terms defined by ADR-011. That model, and the runtime code/schema implementing it, were fully retired before Run 009 (see ADR-011's current status note) — the terms no longer name anything in the repository's active code or committed migration chain. The schema-removal migration is not yet applied to the hosted Supabase project (see `docs/DEV_STATUS.md`); until it is, the hosted physical schema still retains the legacy tables, though nothing in the application reads or writes them.
+`TodaySession` and `TodaySessionItem` were the Course-scoped Today terms defined by ADR-011. That model, and the runtime code/schema implementing it, were fully retired before Run 009 (see ADR-011's current status note) — the terms no longer name anything in the repository's active code or committed migration chain. The schema-removal migration has since been applied to the hosted Supabase project (see `docs/DEV_STATUS.md`).
 
 The current and sole product/domain terms for Today are:
 

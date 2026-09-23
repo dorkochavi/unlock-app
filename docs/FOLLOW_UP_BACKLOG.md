@@ -428,9 +428,10 @@ genuinely warranted, no broader stack.
 
 ## Observation
 
-Git protects code, not learner data. No backup ownership, frequency,
-RPO/RTO, or restore-verification procedure has been established for the
-hosted Supabase/Postgres project.
+Git protects code, not learner data. A manual hosted logical backup was
+taken before the pilot (Run 008 gate closed 2026-09-23; no restore drill
+performed). Ongoing backup ownership, frequency, RPO/RTO, and a
+restore-verification procedure have still not been established.
 
 ## Follow-Up Investigation
 
@@ -511,10 +512,9 @@ active Today model. A forward-only migration
 (`supabase/migrations/20260929000000_retire_today_session.sql`) drops
 `today_sessions`/`today_session_items` and
 `attempts.today_session_id`/`attempts.today_session_item_id`. That migration
-is committed and locally/PGlite-verified but was deliberately **not** applied
-to the hosted Supabase project as part of this Slice — remains pending the
-backup-readiness gate (FUB-009) as a separate human-controlled hosted-migration
-action; see `docs/DEV_STATUS.md` for current status. ADR-011 updated to
+is committed and locally/PGlite-verified; it was deliberately not applied
+hosted as part of this Slice, and was later applied hosted by a human
+(2026-09-23) after the backup gate closed; see `docs/DEV_STATUS.md`. ADR-011 updated to
 reflect retirement. Kept for traceability; the original observation below is
 historical.
 **Priority:** `LOW`

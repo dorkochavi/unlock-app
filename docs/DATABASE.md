@@ -489,7 +489,7 @@ ADR-016 defines the current primary Today persistence model:
 * same-day reload returns the same persisted plan/state;
 * unresolved items do not automatically carry into the next learner-local day.
 
-The superseded Course-scoped `TodaySession` model (ADR-011, `UNIQUE (user_id, course_id, planned_for_date)`) was retired before Run 009: its runtime code, and its schema (`today_sessions`/`today_session_items`) in the repository's committed migration chain, no longer exist. `DailyPlan` is the sole current Today application/runtime model. That schema removal is a committed, locally/PGlite-verified migration not yet applied to the hosted Supabase project — the hosted physical schema still retains the legacy tables until then (see `docs/DEV_STATUS.md`).
+The superseded Course-scoped `TodaySession` model (ADR-011, `UNIQUE (user_id, course_id, planned_for_date)`) was retired before Run 009: its runtime code, and its schema (`today_sessions`/`today_session_items`) in the repository's committed migration chain, no longer exist. `DailyPlan` is the sole current Today application/runtime model. That schema removal is a committed, locally/PGlite-verified migration that has been applied to the hosted Supabase project (2026-09-23; see `docs/DEV_STATUS.md`).
 
 ---
 

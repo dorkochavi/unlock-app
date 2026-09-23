@@ -3,7 +3,7 @@
 PLAN_VERSION: RUN-008-AUTHORING-INTEGRATION-PILOT-READINESS
 RUN_ID: 2026-09-22-008
 BASE_HEAD: `d509987` (`feature/project-foundation`, matches `origin/feature/project-foundation` — Run 007's 8 commits were pushed after `docs/RUNS/2026-09-21-007.md` was written; repository reality overrides that report's "not pushed" note)
-STATUS: IMPLEMENTATION COMPLETE — PILOT MANUAL GATE PENDING (see `docs/RUNS/2026-09-22-008.md` for the full Run Report; `docs/DEV_STATUS.md` for current pilot-readiness gates)
+STATUS: COMPLETE — all pilot manual gates closed 2026-09-23 (see `docs/RUNS/2026-09-22-008.md` for the full Run Report; `docs/DEV_STATUS.md` for current state). Run 009 requires a new Plan before implementation.
 
 ## 1. Goal
 
