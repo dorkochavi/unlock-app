@@ -171,7 +171,7 @@ export const he = {
   itemAnalysis: {
     backToCourse: "חזרה לניהול הקורס",
     heading: "ניתוח תשובות לפי שאלה",
-    subheading: "נתונים גולמיים בלבד, לפי הגרסה הנוכחית של כל שאלה. ספירה של תשובה ראשונה לכל לומד.",
+    subheading: "נתונים לפי הגרסה הנוכחית של כל שאלה, לפי התשובה הראשונה של כל לומד. מומלץ לרענן לאחר סיום חלון מענה קבוצתי, ולא אחרי כל תשובה של לומד.",
     loading: "טוען נתונים...",
     signedOutTitle: "יש להתחבר כדי לצפות בניתוח התשובות",
     signedOutAction: "מעבר להתחברות",
@@ -189,9 +189,7 @@ export const he = {
     courseSizeInsufficient: "בקורס עדיין אין מספיק לומדים להצגת נתונים",
     responsesInsufficient: "עדיין אין מספיק תשובות להצגת נתון",
     respondersCount: "{count} לומדים ענו",
-    correctCount: "{count} ענו נכון",
-    incorrectCount: "{count} ענו לא נכון",
-    incorrectRate: "{percent}% תשובות שגויות",
+    incorrectRate: "כ-{percent}% תשובות שגויות",
   },
   importQuestions: {
     backToCourse: "חזרה לניהול הקורס",

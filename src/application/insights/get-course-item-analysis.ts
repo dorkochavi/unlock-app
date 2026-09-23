@@ -20,7 +20,7 @@
  * derived number is returned, so a suppressed value cannot be recovered from
  * the payload. Zero-response items are simply not-ELIGIBLE ("no data yet").
  *
- * The result contains raw counts and a rate only — no interpretation, no
+ * The result contains a responder count and a coarse incorrect-rate bucket only — no interpretation, no
  * learner identity. `actorUserId` is trusted as-is at this boundary (see
  * `src/application/course/join-course.ts`).
  */
@@ -38,12 +38,20 @@ export interface GetCourseItemAnalysisCommand {
   now: Date;
 }
 
+/**
+ * Deliberately NOT exact correct/incorrect counts: exact numbers would let
+ * an authorized instructor infer one learner's answer by differencing two
+ * sequential manual refreshes. The rate is a coarse bucket (nearest 10
+ * percentage points) and the exact correct count never leaves this
+ * function. Item Analysis is intended to be refreshed after a group
+ * answering window, not after each individual learner response.
+ */
+export const INCORRECT_RATE_BUCKET_PERCENT = 10;
+
 export interface ItemAnalysisStats {
   distinctResponderCount: number;
-  correctCount: number;
-  incorrectCount: number;
-  /** Whole-number percent of responders who answered incorrectly (rounded). */
-  incorrectRatePercent: number;
+  /** Incorrect rate rounded to the nearest 10 percentage points (0, 10, ... 100). */
+  approximateIncorrectRatePercent: number;
 }
 
 export interface ItemAnalysisItem {
@@ -94,7 +102,8 @@ export async function getCourseItemAnalysis(
         stats: null,
       };
     }
-    const incorrectCount = row.distinctResponderCount - row.correctCount;
+    const exactRatePercent =
+      ((row.distinctResponderCount - row.correctCount) / row.distinctResponderCount) * 100;
     return {
       questionId: row.questionId,
       questionVersionId: row.questionVersionId,
@@ -102,9 +111,8 @@ export async function getCourseItemAnalysis(
       disclosure,
       stats: {
         distinctResponderCount: row.distinctResponderCount,
-        correctCount: row.correctCount,
-        incorrectCount,
-        incorrectRatePercent: Math.round((incorrectCount / row.distinctResponderCount) * 100),
+        approximateIncorrectRatePercent:
+          Math.round(exactRatePercent / INCORRECT_RATE_BUCKET_PERCENT) * INCORRECT_RATE_BUCKET_PERCENT,
       },
     };
   });

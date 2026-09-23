@@ -91,7 +91,7 @@ describe("getCourseItemAnalysis — active Course", () => {
 });
 
 describe("getCourseItemAnalysis — read model", () => {
-  it("eligible item: raw counts and rounded incorrect rate; echoes read time", async () => {
+  it("eligible item: responder count and a coarse incorrect-rate bucket only; echoes read time", async () => {
     const result = await getCourseItemAnalysis(COMMAND, repos({}).value);
     expect(result).toEqual({
       outcome: "READY",
@@ -102,10 +102,54 @@ describe("getCourseItemAnalysis — read model", () => {
           questionVersionId: "qv-1",
           prompt: "What is 2 + 3?",
           disclosure: "ELIGIBLE",
-          stats: { distinctResponderCount: 22, correctCount: 13, incorrectCount: 9, incorrectRatePercent: 41 },
+          // 9/22 = 40.9% -> nearest 10 = 40
+          stats: { distinctResponderCount: 22, approximateIncorrectRatePercent: 40 },
         },
       ],
     });
+  });
+
+  it("never exposes exact correct/incorrect counts or an exact percent", async () => {
+    const result = await getCourseItemAnalysis(COMMAND, repos({}).value);
+    if (result.outcome !== "READY") throw new Error("expected READY");
+    expect(Object.keys(result.items[0].stats ?? {}).sort()).toEqual([
+      "approximateIncorrectRatePercent",
+      "distinctResponderCount",
+    ]);
+    expect(JSON.stringify(result)).not.toMatch(/correctCount|incorrectCount|incorrectRatePercent"/);
+  });
+
+  it.each([
+    // [responders, correct, expected bucketed incorrect %]
+    [20, 20, 0],
+    [20, 19, 10], // 5% rounds half up
+    [20, 13, 40], // 35% rounds half up
+    [20, 12, 40], // 40%
+    [20, 11, 50], // 45% rounds half up
+    [20, 10, 50],
+    [20, 0, 100],
+    [7, 4, 40], // 42.86%
+    [5, 1, 80],
+  ])("%s responders, %s correct -> approximate incorrect rate %s%%", async (responders, correct, expected) => {
+    const result = await getCourseItemAnalysis(
+      COMMAND,
+      repos({ rows: [row({ distinctResponderCount: responders, correctCount: correct })] }).value,
+    );
+    if (result.outcome !== "READY") throw new Error("expected READY");
+    expect(result.items[0].stats?.approximateIncorrectRatePercent).toBe(expected);
+  });
+
+  it("a single learner's answer flipping within a bucket is not visible across refreshes", async () => {
+    const before = await getCourseItemAnalysis(
+      COMMAND,
+      repos({ rows: [row({ distinctResponderCount: 20, correctCount: 13 })] }).value,
+    );
+    const after = await getCourseItemAnalysis(
+      COMMAND,
+      repos({ rows: [row({ distinctResponderCount: 20, correctCount: 12 })] }).value,
+    );
+    if (before.outcome !== "READY" || after.outcome !== "READY") throw new Error("expected READY");
+    expect(after.items[0].stats).toEqual(before.items[0].stats);
   });
 
   it("Course too small: every item suppressed with stats null (no numbers leak)", async () => {
@@ -128,7 +172,7 @@ describe("getCourseItemAnalysis — read model", () => {
     if (low.outcome !== "READY" || at.outcome !== "READY") throw new Error("expected READY");
     expect(low.items[0]).toMatchObject({ disclosure: "INSUFFICIENT_RESPONSES", stats: null });
     expect(at.items[0]).toMatchObject({ disclosure: "ELIGIBLE" });
-    expect(at.items[0].stats).toMatchObject({ incorrectCount: 4, incorrectRatePercent: 80 });
+    expect(at.items[0].stats).toEqual({ distinctResponderCount: 5, approximateIncorrectRatePercent: 80 });
   });
 
   it("zero-response current Question appears as not-yet-eligible with no numbers", async () => {

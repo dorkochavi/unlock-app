@@ -1,9 +1,12 @@
 "use client";
 
 /**
- * Instructor Item Analysis page (Pre-Pilot S2) — minimal, neutral, raw
- * per-Question evidence for the CURRENT QuestionVersion. Manual refresh and
- * a visible last-updated time only (no polling/realtime).
+ * Instructor Item Analysis page (Pre-Pilot S2) — minimal, neutral
+ * per-Question evidence for the CURRENT QuestionVersion: a responder count
+ * and a coarse (nearest-10%) incorrect rate, never exact correct/incorrect
+ * counts. Manual refresh and a visible last-updated time only (no
+ * polling/realtime); intended to be refreshed after a group answering
+ * window, not after each individual response.
  *
  * Shows only what the API returns: for a non-ELIGIBLE item the API returns
  * no numbers at all, and this page renders only the insufficient-data
@@ -25,9 +28,7 @@ interface ItemDto {
   disclosure: Disclosure;
   stats: {
     distinctResponderCount: number;
-    correctCount: number;
-    incorrectCount: number;
-    incorrectRatePercent: number;
+    approximateIncorrectRatePercent: number;
   } | null;
 }
 
@@ -226,16 +227,8 @@ export default function InstructorItemAnalysisPage() {
                           })}
                         </li>
                         <li>
-                          {interpolate(messages.correctCount, { count: String(item.stats.correctCount) })}
-                        </li>
-                        <li>
-                          {interpolate(messages.incorrectCount, {
-                            count: String(item.stats.incorrectCount),
-                          })}
-                        </li>
-                        <li>
                           {interpolate(messages.incorrectRate, {
-                            percent: String(item.stats.incorrectRatePercent),
+                            percent: String(item.stats.approximateIncorrectRatePercent),
                           })}
                         </li>
                       </ul>
