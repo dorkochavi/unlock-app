@@ -68,6 +68,13 @@ provider friction, rate limits) from the **burst** (`timezone`, `join`,
 `DB_OR_POOLER`, `TIMEOUT`, `TRANSPORT`, `UNEXPECTED_4XX`), and gives
 min/p50/p95/max latency per step.
 
+The answer step sends ONE logical submission (same `submissionId`) twice
+concurrently. It passes on `200 + 200`, or `200 + 409` where the 409 code is
+`ITEM_ALREADY_RESOLVED` or `SUBMISSION_ID_REUSED`; anything else fails (`409 + 409`,
+another 4xx, any 5xx, a timeout, or an unexpected body). The report's
+`duplicateAnswerOutcomes` tallies which case occurred, and failures record the
+application error code. See `docs/FOLLOW_UP_BACKLOG.md` FUB-025.
+
 Running the app **locally** against hosted Supabase measures your machine ↔
 Supabase latency (and the local TLS/CA setup), not Vercel. Running against the
 deployed Vercel URL is the closer proxy for classroom conditions.

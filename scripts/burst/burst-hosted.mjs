@@ -31,7 +31,12 @@ import { createServerClient } from "@supabase/ssr";
 import { performance } from "node:perf_hooks";
 import { randomUUID } from "node:crypto";
 
-import { buildCookieHeader, buildReport, expandEmailPattern } from "./burst-stats.mjs";
+import {
+  buildCookieHeader,
+  buildReport,
+  evaluateDuplicateAnswerOutcome,
+  expandEmailPattern,
+} from "./burst-stats.mjs";
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -123,14 +128,21 @@ async function timed(steps, name, fn) {
   }
 }
 
+/** Application error code of a non-2xx response ({error:{code}}), if well-formed. Never the body. */
+function appCode(res) {
+  const code = res.json?.error?.code;
+  return typeof code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : undefined;
+}
+
 function expectStatus(step, res, allowed) {
   if (!allowed.includes(res.status)) {
-    throw new StepError(step, `unexpected HTTP ${res.status}`, { status: res.status });
+    throw new StepError(step, `unexpected HTTP ${res.status}`, { status: res.status, code: appCode(res) });
   }
 }
 
 async function burstFlow(cookie, start) {
   const steps = {};
+  let answerOutcome;
   await start;
   try {
     await timed(steps, "timezone", async () => {
@@ -157,14 +169,26 @@ async function burstFlow(cookie, start) {
     }
     await timed(steps, "answer", async () => {
       const body = { submissionId: `burst-${randomUUID()}`, selectedAnswer: item.answerOptions[0].id };
+      // ONE logical submission (same submissionId) sent twice concurrently.
+      // Either the duplicate reached the existing-Attempt idempotent path
+      // (200 + 200) or it lost the race / saw the resolved item (200 + 409
+      // ITEM_ALREADY_RESOLVED | SUBMISSION_ID_REUSED). Anything else fails.
       const [a, b] = await Promise.all([
         http("POST", `/api/daily-plan/items/${item.id}/answer`, cookie, body),
         http("POST", `/api/daily-plan/items/${item.id}/answer`, cookie, body),
       ]);
-      expectStatus("answer", a, [200]);
-      expectStatus("answer", b, [200]);
+      const observe = (res) => ({
+        status: res.status,
+        code: appCode(res) ?? null,
+        shapeOk: res.status !== 200 || (res.json?.status === "COMPLETED" && typeof res.json?.isCorrect === "boolean"),
+      });
+      const verdict = evaluateDuplicateAnswerOutcome([observe(a), observe(b)]);
+      if (!verdict.ok) {
+        throw new StepError("answer", verdict.reason, { status: verdict.status, code: verdict.code });
+      }
+      answerOutcome = verdict.outcome;
     });
-    return { ok: true, steps };
+    return { ok: true, steps, answerOutcome };
   } catch (error) {
     return {
       ok: false,
@@ -173,6 +197,7 @@ async function burstFlow(cookie, start) {
         step: error.step ?? "unknown",
         status: error.status,
         timedOut: error.timedOut,
+        code: error.code,
         message: error.message,
       },
     };
@@ -223,7 +248,11 @@ async function main() {
     extra: {
       baseUrlHost: new URL(BASE_URL).host,
       wallClockMs: Math.round(wallMs),
-      note: "Success = all steps returned expected HTTP status; Today x2 same plan; answer x2 same submissionId both 200.",
+      duplicateAnswerOutcomes: results.reduce((tally, r) => {
+        if (r.answerOutcome) tally[r.answerOutcome] = (tally[r.answerOutcome] ?? 0) + 1;
+        return tally;
+      }, {}),
+      note: "Success = all steps returned the expected HTTP status; Today x2 returned the same plan; the duplicate answer pair was 200+200 or 200+409 (ITEM_ALREADY_RESOLVED|SUBMISSION_ID_REUSED).",
     },
   });
 

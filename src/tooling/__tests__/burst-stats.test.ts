@@ -93,3 +93,58 @@ describe("expandEmailPattern / buildCookieHeader", () => {
     expect(buildCookieHeader([{ name: "a", value: "1" }, { name: "b.0", value: "x=y" }])).toBe("a=1; b.0=x=y");
   });
 });
+
+describe("evaluateDuplicateAnswerOutcome (one logical submission sent twice)", () => {
+  const ok200 = { status: 200, code: null, shapeOk: true };
+  const c409 = (code: string | null) => ({ status: 409, code, shapeOk: true });
+
+  it("accepts 200 + 200 (duplicate reached the idempotent fast path)", async () => {
+    const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+    expect(evaluateDuplicateAnswerOutcome([ok200, ok200])).toEqual({ ok: true, outcome: "200+200" });
+  });
+
+  it.each(["ITEM_ALREADY_RESOLVED", "SUBMISSION_ID_REUSED"])("accepts 200 + 409 %s in either order", async (code) => {
+    const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+    const expected = { ok: true, outcome: `200+409:${code}` };
+    expect(evaluateDuplicateAnswerOutcome([ok200, c409(code)])).toEqual(expected);
+    expect(evaluateDuplicateAnswerOutcome([c409(code), ok200])).toEqual(expected);
+  });
+
+  it("fails on 409 + 409 (nothing succeeded)", async () => {
+    const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+    const result = evaluateDuplicateAnswerOutcome([c409("ITEM_ALREADY_RESOLVED"), c409("SUBMISSION_ID_REUSED")]);
+    expect(result.ok).toBe(false);
+  });
+
+  it.each([null, "SOMETHING_ELSE", "item_already_resolved", "ITEM_ALREADY_RESOLVED; drop table"])(
+    "fails on a 409 with an unexpected or malformed code %j",
+    async (code) => {
+      const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+      expect(evaluateDuplicateAnswerOutcome([ok200, c409(code)]).ok).toBe(false);
+    },
+  );
+
+  it.each([400, 401, 403, 404, 422, 429, 500, 502, 503, 504])("fails on HTTP %s", async (status) => {
+    const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+    const result = evaluateDuplicateAnswerOutcome([ok200, { status, code: "ANYTHING", shapeOk: true }]);
+    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ status });
+  });
+
+  it("fails on an unexpected 200 body shape", async () => {
+    const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+    expect(evaluateDuplicateAnswerOutcome([ok200, { status: 200, code: null, shapeOk: false }]).ok).toBe(false);
+  });
+
+  it("fails unless given exactly two observations", async () => {
+    const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+    expect(evaluateDuplicateAnswerOutcome([ok200]).ok).toBe(false);
+    expect(evaluateDuplicateAnswerOutcome([ok200, ok200, ok200]).ok).toBe(false);
+  });
+
+  it("never echoes a malformed code back", async () => {
+    const { evaluateDuplicateAnswerOutcome } = await import("../../../scripts/burst/burst-stats.mjs");
+    const result = evaluateDuplicateAnswerOutcome([ok200, { status: 418, code: "lower case leak", shapeOk: true }]);
+    expect(JSON.stringify(result)).not.toMatch(/leak/);
+  });
+});

@@ -75,7 +75,12 @@ export function buildReport({ scenario, learners, results, extra = {} }) {
     const cls = classifyFailure(r.failure);
     failuresByClass[cls] = (failuresByClass[cls] ?? 0) + 1;
     if (failureSamples.length < 5) {
-      failureSamples.push({ class: cls, step: r.failure.step, status: r.failure.status ?? null });
+      failureSamples.push({
+        class: cls,
+        step: r.failure.step,
+        status: r.failure.status ?? null,
+        code: r.failure.code ?? null,
+      });
     }
   }
 
@@ -103,4 +108,54 @@ export function expandEmailPattern(pattern, n) {
 /** Cookie header value from `[{name, value}]` (as produced by a Supabase SSR cookie jar). */
 export function buildCookieHeader(cookies) {
   return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+}
+
+export const ALLOWED_DUPLICATE_409_CODES = ["ITEM_ALREADY_RESOLVED", "SUBMISSION_ID_REUSED"];
+
+/**
+ * Verdict for TWO concurrent submissions of the SAME logical answer (same
+ * submissionId). Each observation: `{ status: number, code?: string|null, shapeOk?: boolean }`
+ * where `code` is the application error code of a non-200 response and
+ * `shapeOk` says whether a 200 body had the expected shape.
+ *
+ * Accepts:
+ *   - 200 + 200 (the duplicate reached the existing-Attempt idempotent path);
+ *   - 200 + 409 whose code is ITEM_ALREADY_RESOLVED or SUBMISSION_ID_REUSED.
+ * Fails on: 409 + 409, any other 4xx or any 409 code, any 5xx, any other
+ * status, an unexpected 200 body shape, or anything but two observations.
+ *
+ * Returns `{ ok: true, outcome }` or `{ ok: false, reason, status?, code? }`.
+ * Never includes response bodies; only the status and a well-formed code.
+ */
+export function evaluateDuplicateAnswerOutcome(observations) {
+  if (!Array.isArray(observations) || observations.length !== 2) {
+    return { ok: false, reason: "expected exactly two observations" };
+  }
+  const safeCode = (code) => (typeof code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(code) ? code : null);
+  const labels = [];
+  for (const o of observations) {
+    if (o.status === 200) {
+      if (o.shapeOk === false) {
+        return { ok: false, reason: "unexpected 200 response shape", status: 200 };
+      }
+      labels.push("200");
+    } else if (o.status === 409) {
+      const code = safeCode(o.code);
+      if (code === null || !ALLOWED_DUPLICATE_409_CODES.includes(code)) {
+        return { ok: false, reason: "409 with an unexpected or missing application code", status: 409, code: code ?? undefined };
+      }
+      labels.push(`409:${code}`);
+    } else {
+      return {
+        ok: false,
+        reason: `unexpected HTTP ${o.status}`,
+        status: o.status,
+        code: safeCode(o.code) ?? undefined,
+      };
+    }
+  }
+  if (!labels.includes("200")) {
+    return { ok: false, reason: "no request succeeded (409 + 409)", status: 409 };
+  }
+  return { ok: true, outcome: [...labels].sort().join("+") };
 }
