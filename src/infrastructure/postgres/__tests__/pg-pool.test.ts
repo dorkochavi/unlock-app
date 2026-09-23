@@ -23,6 +23,8 @@ function clearGlobalPool(): void {
 
 beforeEach(() => {
   vi.stubEnv("DATABASE_URL", undefined as unknown as string);
+  vi.stubEnv("DATABASE_POOL_MAX", undefined as unknown as string);
+  vi.stubEnv("DATABASE_POOL_LOG_STATS", undefined as unknown as string);
   clearGlobalPool();
   vi.resetModules();
 });
@@ -82,6 +84,7 @@ describe("getPool", () => {
     // globalThis, not by re-reading the env a second time.
     vi.resetModules();
     vi.stubEnv("DATABASE_URL", undefined as unknown as string);
+  vi.stubEnv("DATABASE_POOL_MAX", undefined as unknown as string);
 
     const second = await import("../pg-pool");
     const secondPool = second.getPool();
@@ -120,5 +123,62 @@ describe("getPool TLS wiring", () => {
     vi.stubEnv("DATABASE_SSL_CA", undefined as unknown as string);
     const { getPool } = await import("../pg-pool");
     expect(() => getPool()).toThrow(/Invalid PostgreSQL TLS configuration/);
+  });
+});
+
+describe("getPool DATABASE_POOL_MAX", () => {
+  it("unset -> max 1 (unchanged default)", async () => {
+    vi.stubEnv("DATABASE_URL", FAKE_CONNECTION_STRING);
+    vi.stubEnv("DATABASE_POOL_MAX", undefined as unknown as string);
+    const { getPool } = await import("../pg-pool");
+    expect(getPool().options.max).toBe(1);
+  });
+
+  it("5 -> max 5, and nothing else about the pool changes (TLS/connection string)", async () => {
+    vi.stubEnv("DATABASE_URL", FAKE_CONNECTION_STRING);
+    vi.stubEnv("DATABASE_POOL_MAX", "5");
+    const { getPool } = await import("../pg-pool");
+    const pool = getPool();
+    expect(pool.options.max).toBe(5);
+    expect(pool.options.ssl).toBe(false); // localhost fixture, unchanged TLS resolution
+  });
+
+  it.each(["0", "-1", "2.5", "abc", "11"])("invalid %j fails with a clear config error and creates no pool", async (raw) => {
+    vi.stubEnv("DATABASE_URL", FAKE_CONNECTION_STRING);
+    vi.stubEnv("DATABASE_POOL_MAX", raw);
+    const { getPool } = await import("../pg-pool");
+    expect(() => getPool()).toThrow(/Invalid PostgreSQL pool configuration/);
+    expect((globalThis as unknown as { __unlockPgPool?: unknown }).__unlockPgPool).toBeUndefined();
+  });
+
+  it("a blank DATABASE_POOL_MAX fails instead of silently meaning 1", async () => {
+    vi.stubEnv("DATABASE_URL", FAKE_CONNECTION_STRING);
+    vi.stubEnv("DATABASE_POOL_MAX", "  ");
+    const { getPool } = await import("../pg-pool");
+    expect(() => getPool()).toThrow(/Invalid PostgreSQL pool configuration/);
+  });
+
+  it("pool stats logging is attached only when DATABASE_POOL_LOG_STATS is exactly 'true'", async () => {
+    vi.stubEnv("DATABASE_URL", FAKE_CONNECTION_STRING);
+    const off = await import("../pg-pool");
+    expect(off.getPool().listenerCount("acquire")).toBe(0);
+    clearGlobalPool();
+    vi.resetModules();
+    vi.stubEnv("DATABASE_POOL_LOG_STATS", "true");
+    const on = await import("../pg-pool");
+    expect(on.getPool().listenerCount("acquire")).toBe(1);
+  });
+
+  it("the pool-size error never contains the connection string", async () => {
+    vi.stubEnv("DATABASE_URL", "postgres://u:s3cret-pw@localhost:5432/db");
+    vi.stubEnv("DATABASE_POOL_MAX", "0");
+    const { getPool } = await import("../pg-pool");
+    let thrown: unknown;
+    try {
+      getPool();
+    } catch (error) {
+      thrown = error;
+    }
+    expect((thrown as Error).message).not.toMatch(/s3cret-pw|postgres:\/\//);
   });
 });

@@ -263,8 +263,10 @@ no pilot-readiness blocker remains from Run 008. Detailed evidence lives in
 - **Hosted migrations**: CLOSED — all 13 migrations applied; local = remote
   through `20260929000000` (see "Database / Supabase").
 - **Postgres/Vercel connection strategy**: CLOSED — `DATABASE_URL` targets
-  Supabase's Transaction Pooler (port `6543`); `pg.Pool` is capped at
-  `max: 1` in `src/infrastructure/postgres/pg-pool.ts`. Hosted browser
+  Supabase's Transaction Pooler (port `6543`); `pg.Pool` defaults to
+  `max: 1` in `src/infrastructure/postgres/pg-pool.ts` (optionally raised
+  via `DATABASE_POOL_MAX`, integer 1..10 — Pre-Pilot performance A/B; the
+  hosted S3 burst showed requests queueing behind the single connection). Hosted browser
   verification from a local machine initially failed with
   `SELF_SIGNED_CERT_IN_CHAIN` (Node `pg` TLS chain verification against
   the pooler); supplying Supabase's server root CA as an explicit SSL root

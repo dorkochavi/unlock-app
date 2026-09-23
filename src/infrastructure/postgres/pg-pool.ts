@@ -48,7 +48,13 @@
  * file path in `DATABASE_URL` can no longer trigger an implicit file read.
  * See `.env.example`.
  *
- * ## Pool size (`max: 1`)
+ * ## Pool size (`max: 1` by default; `DATABASE_POOL_MAX`)
+ *
+ * The default stays 1. `DATABASE_POOL_MAX` (integer 1..10, see
+ * `pg-pool-config.ts`) exists so a hosted deployment can raise it: a
+ * platform that serves many concurrent requests from ONE warm instance
+ * (Vercel Fluid compute) queues all of them through a one-connection pool.
+ * The rationale below is for the default.
  *
  * `DATABASE_URL` alone does NOT delegate pool sizing — `pg.Pool` defaults
  * to `max: 10` regardless of the connection string, and this app's actual
@@ -73,6 +79,11 @@ if (typeof window !== "undefined") {
 
 import { Pool } from "pg";
 
+import {
+  attachPoolStatsLogging,
+  isPoolStatsLoggingEnabled,
+  resolvePoolMax,
+} from "./pg-pool-config";
 import { resolvePoolConnectionSettings } from "./pg-ssl-config";
 
 declare global {
@@ -100,15 +111,18 @@ export function getPool(): Pool {
     );
   }
 
-  // `max: 1` — see this file's own "Pool size" doc comment above for why
-  // a serverless deployment must not inherit `pg.Pool`'s own `max: 10`
-  // default here.
+  // Default `max: 1` (`DATABASE_POOL_MAX` overrides, validated) — see this
+  // file's own "Pool size" doc comment above for why a serverless
+  // deployment must not inherit `pg.Pool`'s own `max: 10` default here.
   const { connectionString, ssl } = resolvePoolConnectionSettings({
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_SSL_CA: process.env.DATABASE_SSL_CA,
     DATABASE_SSL_CA_FILE: process.env.DATABASE_SSL_CA_FILE,
   });
-  pool = new Pool({ connectionString, ssl, max: 1 });
+  pool = new Pool({ connectionString, ssl, max: resolvePoolMax(process.env.DATABASE_POOL_MAX) });
+  if (isPoolStatsLoggingEnabled(process.env.DATABASE_POOL_LOG_STATS)) {
+    attachPoolStatsLogging(pool);
+  }
 
   if (process.env.NODE_ENV !== "production") {
     globalThis.__unlockPgPool = pool;
