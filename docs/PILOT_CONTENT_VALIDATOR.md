@@ -9,7 +9,7 @@ node scripts/validate-import.mjs <file.json|file.csv> [--topics "A,B" | --topics
 
 - Exit `0` PASS (warnings allowed), `1` FAIL, `2` usage/IO error.
 - Needs no env vars, DB, or network. Keep real instructor files OUTSIDE the repo (or in a gitignored path).
-- Output shows codes, row numbers (same numbering as Preview), counts and Topic names — never prompt/option text.
+- Output shows codes, row numbers (same numbering as Preview), counts and Topic names — never prompt/option/explanation text. It can echo Topic names and author-chosen option keys (e.g. `A`), so treat output as internal.
 
 | Code | Severity | Meaning |
 |---|---|---|

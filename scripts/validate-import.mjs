@@ -32,6 +32,7 @@ for (let i = 0; i < args.length; i++) {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
+    if (topics.length === 0) fail("--topics needs at least one Topic name");
   } else if (arg === "--topics-file") {
     const path = args[++i];
     if (!path) fail(USAGE);
@@ -74,12 +75,18 @@ try {
 } catch {
   fail("jiti (transitive dev dependency) is required to load the TypeScript validator");
 }
-const jiti = createJiti(import.meta.url);
-const { validateImportSource } = await jiti.import(
-  fileURLToPath(new URL("../src/application/import/validate-import-source.ts", import.meta.url)),
-);
-
-const report = validateImportSource({ format, sourceText, knownTopics: topics, minQuestions });
+let report;
+try {
+  const jiti = createJiti(import.meta.url);
+  const { validateImportSource } = await jiti.import(
+    fileURLToPath(new URL("../src/application/import/validate-import-source.ts", import.meta.url)),
+  );
+  report = validateImportSource({ format, sourceText, knownTopics: topics, minQuestions });
+} catch {
+  // Generic on purpose: an internal error must not echo source content and
+  // must not be confused with a validation FAIL (exit 1).
+  fail("internal validator error (no report produced)");
+}
 
 const { counts, issues } = report;
 console.log(`RESULT: ${report.result}`);
