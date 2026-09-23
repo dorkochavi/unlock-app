@@ -762,12 +762,20 @@ export default function InstructorCourseManagePage() {
             <div className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <h2 className="text-lg font-medium">{messages.instructor.manage.questions.heading}</h2>
-                <Link
-                  href={`/instructor/courses/${courseId}/import`}
-                  className="shrink-0 text-sm text-zinc-500 underline dark:text-zinc-400"
-                >
-                  {messages.instructor.manage.questions.importAction}
-                </Link>
+                <div className="flex shrink-0 items-center gap-3">
+                  <Link
+                    href={`/instructor/courses/${courseId}/item-analysis`}
+                    className="text-sm text-zinc-500 underline dark:text-zinc-400"
+                  >
+                    {messages.instructor.manage.questions.itemAnalysisAction}
+                  </Link>
+                  <Link
+                    href={`/instructor/courses/${courseId}/import`}
+                    className="text-sm text-zinc-500 underline dark:text-zinc-400"
+                  >
+                    {messages.instructor.manage.questions.importAction}
+                  </Link>
+                </div>
               </div>
 
               {questionsState.kind === "loading" ? (
