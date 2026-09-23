@@ -974,6 +974,64 @@ post-re-publish counts.
 
 ---
 
+# FUB-025 — Answer Submission Idempotency vs. Server-Generated `answeredAt`
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Learning Engine / Answer Submission / API
+
+## Observation
+
+Found by the hosted Pre-Pilot S3 smoke test (2026-09-24) and reproduced by the
+local burst harness. `answeredAt` is part of the canonical command identity
+compared for idempotent retries (`CANONICAL_COMMAND_IDENTITY_FIELDS` in
+`src/application/learning/submit-answer.ts`), but the HTTP route
+(`POST /api/daily-plan/items/:itemId/answer`) sets it to the server's own
+`new Date()` per request. Consequences for two requests carrying the SAME
+`submissionId`:
+
+- a later, sequential retry finds the existing Attempt and its `answeredAt`
+  differs, so it returns `409 SUBMISSION_ID_REUSED` instead of the idempotent
+  `200`;
+- a truly concurrent duplicate loses the race, sees the already-resolved item
+  (the pending check runs before the insert), and returns
+  `409 ITEM_ALREADY_RESOLVED`.
+
+No data is corrupted: exactly one Attempt and one completed DailyPlanItem
+result either way. The current UI is unaffected — it generates a fresh
+`submissionId` per click and treats 409 as "already resolved"
+(`src/app/(learner)/today/page.tsx`).
+
+## Important Constraint
+
+The unresolved question is semantic, not a bug fix: should a server-generated
+`answeredAt` participate in idempotency identity at all, and should a
+concurrent same-key duplicate return the original result? Any change touches
+the Attempt/idempotency contract (ADR-010) and needs DB and general review.
+Attempts are immutable evidence; do not rewrite history.
+
+## Follow-Up Investigation
+
+Decide (ADR-010 amendment if accepted) whether to exclude a server-derived
+`answeredAt` from the identity comparison, and/or re-check the submission id
+after acquiring the per-learner lock so a concurrent duplicate returns the
+existing result. Keep the strongest invariant: one Attempt and one resolved
+item per logical submission.
+
+## Do Not Do Yet
+
+No change to answer-submission semantics during the Pre-Pilot Run. The
+S3 harness accepts `200+200` or `200+409` (`ITEM_ALREADY_RESOLVED` /
+`SUBMISSION_ID_REUSED`) for a same-submissionId duplicate pair.
+
+## Promotion Trigger
+
+A real client needs same-`submissionId` retry (flaky-network resubmit, mobile
+offline queue), or pilot evidence shows duplicate-submit 409s confusing
+learners.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.
