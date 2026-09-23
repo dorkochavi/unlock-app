@@ -691,6 +691,196 @@ from a dirty tree and the mismatch actually causes confusion.
 
 ---
 
+# FUB-018 — Learner Learning Visibility (Landscape / Pulse / Advanced Progress)
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Product / Learner Progress
+
+## Observation
+
+Deliberately retained because the direction appears valuable; deferred for
+sequencing and evidence, not rejected. Core principle: UNLOCK should
+visualize learning as **evolving state, not grades**.
+
+- **Learning Landscape** — Topic-first presentation (cards, bubbles, nodes,
+  areas, or another mobile/RTL/accessibility-safe visual language) grounded
+  in actual learning evidence, free of Learning Engine jargon, without false
+  precision, showing where attention is needed.
+- **Learning Pulse / Movement** — communicating meaningful change over time:
+  strengthening, becoming stale / needing refresh, newly stabilized,
+  persistent difficulty.
+- **Advanced Progress** — Topic state, strengths, areas needing attention,
+  interpretation and a useful action, later combined with Pulse / Readiness /
+  Mirror signals (FUB-019). Progress should lead to useful action, normally
+  back to Today.
+
+## Important Constraint
+
+A trustworthy trend needs explicit historical semantics (replay, snapshots,
+or another justified history model); current state alone cannot honestly
+show movement. A simple Topic-state UI may arrive earlier; a richer custom
+visualization waits for pilot evidence.
+
+## Do Not Do Yet
+
+No custom visualization, trend claim, or history model before pilot evidence
+shows learners want and understand it.
+
+## Promotion Trigger
+
+Pilot evidence that a simple Topic-state Progress view is used and leaves
+learners wanting more.
+
+---
+
+# FUB-019 — Metacognition + Readiness (UNLOCK Mirror, Readiness)
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Product / Learning Intelligence
+
+## Observation
+
+Retained as potentially distinctive; deferred for sequencing and evidence.
+
+- **UNLOCK Mirror** — compare learner self-assessment with behavioral
+  evidence to expose over-/underconfidence and support metacognitive
+  awareness.
+- **Readiness** — a possible combination of knowledge/mastery, coverage,
+  retention/memory freshness, stability/misconception evidence, and later
+  exam context if justified. Previously discussed visuals: Readiness
+  Compass, Unlock Ring, an eventual readiness percentage.
+
+## Important Constraint
+
+- Mirror creates NEW evidence (UX, persistence, timing semantics,
+  interpretation); it is not merely a read model.
+- Never present false precision. A readiness number or strong readiness
+  claim waits until its model is explicitly defined, deterministic,
+  testable/versioned as needed, and validated enough to justify the claim.
+  A visual Compass is still a readiness model — visual design must not
+  disguise undefined semantics.
+
+## Do Not Do Yet
+
+No readiness number, Compass, or Mirror flow before the model/semantics
+exist.
+
+## Promotion Trigger
+
+Progress (FUB-018) is established and pilot evidence supports a defined
+readiness or self-assessment need.
+
+---
+
+# FUB-020 — Instructor Learning Intelligence (Class Pulse / Teach Next / Classroom Visualization)
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Product / Instructor Insights
+
+## Observation
+
+Retained because it may answer real instructor needs; deferred until the
+pilot shows what instructors actually value.
+
+- **Class Pulse** — meaningful Course/Class learning state that shows what
+  deserves instructional attention, not vanity metrics. Minimal Item
+  Analysis is NOT the full Class Pulse.
+- **Teach Next** — "what should I revisit in the next lesson?" from weak
+  Topics, repeated difficulty, trustworthy misconception evidence and
+  instructional priority.
+- **Richer classroom visualization** — polling/realtime updates,
+  projection-friendly classroom mode, "knowledge weather"-style views if
+  instructors value them.
+
+## Important Constraint
+
+Recommendations must not be stronger than the evidence supports. Raw facts
+(e.g. counts) must not silently become interpretations ("the class is
+weak"). Aggregate exposure needs an explicit disclosure/privacy policy.
+
+## Do Not Do Yet
+
+No realtime or visualization theater before instructional value is proven.
+
+## Promotion Trigger
+
+Pilot instructors use minimal Item Analysis and ask for more.
+
+---
+
+# FUB-021 — Cohorts / Multiple Classes (and Cross-Class Lens)
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Domain / Course Structure
+
+## Observation
+
+Retained as a likely future domain shape: Instructor → Course →
+Cohort/Class → Learner. One instructor may teach several Courses, or the
+same Course to several distinct classes. Pilot simplification: each class
+is represented as a separate Course.
+
+**Cross-Class Lens** — comparing the same content across Cohorts to
+distinguish content/question difficulty from class-specific difficulty, and
+to support instructor reflection without ranking individual learners.
+
+## Important Constraint
+
+Requires explicit domain semantics, schema, memberships, authorization,
+analytics aggregation and privacy design; Cross-Class Lens additionally
+needs real Cohort modeling and enough privacy-safe evidence.
+
+## Do Not Do Yet
+
+No Cohort schema or cross-class comparison during the pilot.
+
+## Promotion Trigger
+
+A real instructor needs multiple classes for one Course and the
+Course-per-class workaround causes actual friction.
+
+---
+
+# FUB-022 — Deeper Interpretation + Individual Views (Semantic Misconceptions / Learner Drill-Down)
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Product / Learning Intelligence / Privacy
+
+## Observation
+
+Retained as valuable but higher-risk.
+
+- **Semantic misconception tagging** — modeling WHAT a wrong answer
+  represents, e.g. instructor-authored distractor → misconception label,
+  with a structured taxonomy later if justified. The current
+  misconception score/state does NOT tell the system the semantic reason
+  for a learner's mistake.
+- **Instructor learner drill-down** — an individual learner view for
+  legitimate pedagogical use.
+
+## Important Constraint
+
+Drill-down raises privacy, consent/disclosure, authorization, real
+pedagogical value, and surveillance-style-behavior concerns. First-pilot
+instructor analytics stay aggregate-only.
+
+## Do Not Do Yet
+
+No drill-down and no distractor→misconception modeling before an accepted
+privacy/authorization decision and demonstrated instructor need.
+
+## Promotion Trigger
+
+Pilot feedback shows aggregate views are insufficient, and an accepted
+disclosure/authorization design exists.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.
