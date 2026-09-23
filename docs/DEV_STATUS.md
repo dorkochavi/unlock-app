@@ -269,7 +269,7 @@ no pilot-readiness blocker remains from Run 008. Detailed evidence lives in
   `SELF_SIGNED_CERT_IN_CHAIN` (Node `pg` TLS chain verification against
   the pooler); supplying Supabase's server root CA as an explicit SSL root
   certificate resolved it. The CA is a public certificate, not a secret,
-  but is a local/runtime dependency — it is git-ignored (`*.crt`), not
+  but is a local/runtime dependency — it is git-ignored (repo-root `/supabase-ca.crt` only), not
   committed, and no credentials belong in the repository. Only the local
   verification path was exercised; no Vercel/production TLS configuration
   claim is made. SSL stays un-hardcoded in code.
