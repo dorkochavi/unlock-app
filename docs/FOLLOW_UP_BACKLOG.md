@@ -881,6 +881,99 @@ disclosure/authorization design exists.
 
 ---
 
+# FUB-023 — Pilot Evidence / Analytics Data Gaps
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Analytics / Data Model / Pilot Evidence
+
+## Observation
+
+Found by the Pre-Pilot reality audit (2026-09-23). Answers, joins, and
+DailyPlan item completion are already derivable from authoritative domain
+records (`attempts`, `course_memberships.joined_at`,
+`daily_plan_items.status`/`completed_at`); the gaps below are what those
+records do not cover.
+
+- **Missing behavioral observations:** `today_opened` (and a future
+  `progress_opened`, once a Progress surface exists) are not recorded. The
+  nearest proxy, `daily_plans.generated_at`, marks only the first Today
+  request per local day. `docs/PRODUCT.md` §15 names `today_opened`/
+  `today_started`/`session_completed`/`session_abandoned` as events the
+  product should support.
+- **Unmaintained plan-level columns:** `daily_plans.started_at`,
+  `completed_at`, and plan-level `status` are written only at insert (null /
+  initial value) and never updated afterwards, so they must not currently be
+  treated as authoritative KPI state; plan completion is derived from
+  `daily_plan_items` instead.
+- **Possible Attempts index:** the only `attempts` index is
+  `attempts_replay_idx (user_id, question_id, answered_at, created_at, id)`,
+  which does not serve Course/Question aggregate reads.
+
+## Important Constraint
+
+Prefer authoritative domain records over a duplicate analytics event log;
+record only observations with a defined product, learning, or operational
+reason (`docs/PRODUCT.md` §15). An index is a migration and needs real
+query/performance evidence, not speculation.
+
+## Follow-Up Investigation
+
+Decide whether the pilot KPI needs `today_opened` at all, whether the
+unmaintained plan columns should be maintained or retired, and whether
+aggregate queries ever justify an Attempts index.
+
+## Do Not Do Yet
+
+No event log, plan-column maintenance, or new index during the pilot
+without evidence that the current derivation is insufficient.
+
+## Promotion Trigger
+
+Pilot KPI analysis cannot be answered from existing records, or an
+aggregate query shows measured performance problems.
+
+---
+
+# FUB-024 — Item Analysis Extensions (Session-Scoped and Cross-Version)
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Instructor Insights / Analytics
+
+## Observation
+
+Minimal Live Item Analysis is expected to be cumulative and
+current-QuestionVersion-only. Two extensions are retained as plausible
+follow-ups:
+
+- **Session-scoped classroom analytics** — "what happened in this specific
+  class session", rather than only cumulative aggregates.
+- **QuestionVersion analytics** — all-version views, comparison between
+  versions, and clearer instructor handling or notice after a re-publish
+  (a re-publish creates a new immutable version, so a current-version-only
+  count effectively restarts; a DailyPlan item keeps its generation-time
+  version for that day).
+
+## Important Constraint
+
+Historical Attempts remain immutably tied to their exact QuestionVersion;
+"session" has no persisted meaning today and would need explicit semantics.
+Aggregate exposure needs an explicit disclosure/privacy policy (see
+FUB-020, FUB-022).
+
+## Do Not Do Yet
+
+No session model or cross-version comparison before the minimal Item
+Analysis shows instructors want them.
+
+## Promotion Trigger
+
+Pilot instructors ask "what happened in this class?" or are confused by
+post-re-publish counts.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.
