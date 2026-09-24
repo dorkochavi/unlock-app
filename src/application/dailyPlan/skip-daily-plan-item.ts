@@ -14,6 +14,10 @@
  * most once" safe under concurrent requests.
  */
 import type { DailyPlanAnswerRepository } from "../learning/ports";
+import {
+  hasActiveLearnerMembership,
+  type LiveLearnerMembershipLookup,
+} from "./live-learner-membership";
 
 export type SkipDailyPlanItemResult =
   | { kind: "ITEM_NOT_FOUND_OR_NOT_OWNED" }
@@ -38,6 +42,7 @@ export interface SkipDailyPlanItemCommand {
 
 export interface SkipDailyPlanItemDependencies {
   dailyPlanItems: DailyPlanAnswerRepository;
+  memberships: LiveLearnerMembershipLookup;
 }
 
 export async function skipDailyPlanItem(
@@ -49,6 +54,12 @@ export async function skipDailyPlanItem(
     // Never distinguishes "does not exist" from "exists but belongs to
     // someone else" — same non-leaking posture as submitAnswer's own
     // *_NOT_FOUND_OR_NOT_OWNED outcomes.
+    return { kind: "ITEM_NOT_FOUND_OR_NOT_OWNED" };
+  }
+
+  // F-04a: live membership check — a revoked/archived learner can no longer
+  // act on an existing plan. Reported as the same non-leaking outcome.
+  if (!(await hasActiveLearnerMembership(deps.memberships, command.userId, item.courseId))) {
     return { kind: "ITEM_NOT_FOUND_OR_NOT_OWNED" };
   }
 

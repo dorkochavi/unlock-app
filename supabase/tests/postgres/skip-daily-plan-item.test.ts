@@ -13,10 +13,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { skipDailyPlanItem } from "../../../src/application/dailyPlan/skip-daily-plan-item";
 import { submitAnswer, type SubmitAnswerContext } from "../../../src/application/learning/submit-answer";
+import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresDailyPlanRepository } from "../../../src/infrastructure/postgres/daily-plan-repository";
 import { PostgresUnitOfWork } from "../../../src/infrastructure/postgres/postgres-unit-of-work";
 import {
   createTestDb,
+  insertCourseMembership,
   insertUser,
   pgliteConnectionProvider,
   seedDailyPlanWithItem,
@@ -27,11 +29,20 @@ const NOW = new Date("2026-02-01T00:00:00.000Z");
 
 let db: PGlite;
 let dailyPlanItems: PostgresDailyPlanRepository;
+let memberships: PostgresCourseMembershipRepository;
 
 beforeEach(async () => {
   db = await createTestDb();
   dailyPlanItems = new PostgresDailyPlanRepository(db);
+  memberships = new PostgresCourseMembershipRepository(db);
 });
+
+/** Question chain whose owner also holds an active LEARNER membership (F-04a). */
+async function seedLearnerChain() {
+  const chain = await seedQuestionChain(db);
+  await insertCourseMembership(db, { userId: chain.userId, courseId: chain.courseId });
+  return chain;
+}
 
 afterEach(async () => {
   await db.close();
@@ -82,12 +93,12 @@ function makeContext(): SubmitAnswerContext {
 
 describe("skipDailyPlanItem against real Postgres infrastructure", () => {
   it("owner can skip a real pending item: SKIPPED, item row updated correctly", async () => {
-    const chain = await seedQuestionChain(db);
+    const chain = await seedLearnerChain();
     const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
 
     const result = await skipDailyPlanItem(
       { userId: chain.userId, dailyPlanItemId, skippedAt: NOW },
-      { dailyPlanItems },
+      { dailyPlanItems, memberships },
     );
 
     expect(result.kind).toBe("SKIPPED");
@@ -106,13 +117,13 @@ describe("skipDailyPlanItem against real Postgres infrastructure", () => {
   });
 
   it("a DIFFERENT user cannot skip: ITEM_NOT_FOUND_OR_NOT_OWNED, item remains pending", async () => {
-    const chain = await seedQuestionChain(db);
+    const chain = await seedLearnerChain();
     const otherUserId = await insertUser(db);
     const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
 
     const result = await skipDailyPlanItem(
       { userId: otherUserId, dailyPlanItemId, skippedAt: NOW },
-      { dailyPlanItems },
+      { dailyPlanItems, memberships },
     );
 
     expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
@@ -124,12 +135,12 @@ describe("skipDailyPlanItem against real Postgres infrastructure", () => {
   });
 
   it("skipping creates no Attempt and no UserQuestionProgress row — no correctness evidence, no scheduler/mastery/misconception mutation", async () => {
-    const chain = await seedQuestionChain(db);
+    const chain = await seedLearnerChain();
     const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
 
     const result = await skipDailyPlanItem(
       { userId: chain.userId, dailyPlanItemId, skippedAt: NOW },
-      { dailyPlanItems },
+      { dailyPlanItems, memberships },
     );
     expect(result.kind).toBe("SKIPPED");
 
@@ -146,12 +157,12 @@ describe("skipDailyPlanItem against real Postgres infrastructure", () => {
   });
 
   it("duplicate skip has no extra effect: second call is ALREADY_RESOLVED with status skipped, resolved_at unchanged", async () => {
-    const chain = await seedQuestionChain(db);
+    const chain = await seedLearnerChain();
     const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
 
     const first = await skipDailyPlanItem(
       { userId: chain.userId, dailyPlanItemId, skippedAt: NOW },
-      { dailyPlanItems },
+      { dailyPlanItems, memberships },
     );
     expect(first.kind).toBe("SKIPPED");
 
@@ -163,7 +174,7 @@ describe("skipDailyPlanItem against real Postgres infrastructure", () => {
     const later = new Date(NOW.getTime() + 60000);
     const second = await skipDailyPlanItem(
       { userId: chain.userId, dailyPlanItemId, skippedAt: later },
-      { dailyPlanItems },
+      { dailyPlanItems, memberships },
     );
 
     expect(second.kind).toBe("ALREADY_RESOLVED");
@@ -178,12 +189,12 @@ describe("skipDailyPlanItem against real Postgres infrastructure", () => {
   });
 
   it("a skipped item cannot then be answered — submitAnswer rejects it as DAILY_PLAN_ITEM_ALREADY_RESOLVED (status skipped)", async () => {
-    const chain = await seedQuestionChain(db);
+    const chain = await seedLearnerChain();
     const { dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
 
     const skipResult = await skipDailyPlanItem(
       { userId: chain.userId, dailyPlanItemId, skippedAt: NOW },
-      { dailyPlanItems },
+      { dailyPlanItems, memberships },
     );
     expect(skipResult.kind).toBe("SKIPPED");
 
@@ -221,12 +232,12 @@ describe("skipDailyPlanItem against real Postgres infrastructure", () => {
   });
 
   it("no replacement item is created, and the frozen plan's item set is unchanged after a skip", async () => {
-    const chain = await seedQuestionChain(db);
+    const chain = await seedLearnerChain();
     const { dailyPlanId, dailyPlanItemId } = await seedDailyPlanWithItem(db, chain);
 
     await skipDailyPlanItem(
       { userId: chain.userId, dailyPlanItemId, skippedAt: NOW },
-      { dailyPlanItems },
+      { dailyPlanItems, memberships },
     );
 
     const itemRows = await db.query<{ id: string }>(

@@ -30,6 +30,7 @@ import { NextResponse } from "next/server";
 
 import { submitDailyPlanItemAnswer } from "@/application/dailyPlan/submit-daily-plan-item-answer";
 import { createProductionSubmitAnswerContext } from "@/infrastructure/learning/composition-root";
+import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresDailyPlanRepository } from "@/infrastructure/postgres/daily-plan-repository";
 import { PgConnectionProvider } from "@/infrastructure/postgres/pg-connection-provider";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -98,6 +99,7 @@ export async function POST(
             // `PostgresUserRepository`/`PostgresLearnerQuestionContentRepository`
             // — `pool` satisfies `SqlExecutor` structurally.
             items: new PostgresDailyPlanRepository(pool),
+            memberships: new PostgresCourseMembershipRepository(pool),
             context: createProductionSubmitAnswerContext(now),
             uow: new PostgresUnitOfWork(connectionProvider),
           },

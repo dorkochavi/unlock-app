@@ -26,6 +26,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 
 import { skipDailyPlanItem } from "@/application/dailyPlan/skip-daily-plan-item";
+import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresDailyPlanRepository } from "@/infrastructure/postgres/daily-plan-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
@@ -53,6 +54,7 @@ export async function POST(
         const pool = getPool();
         return skipDailyPlanItem(command, {
           dailyPlanItems: new PostgresDailyPlanRepository(pool),
+          memberships: new PostgresCourseMembershipRepository(pool),
         });
       },
     });

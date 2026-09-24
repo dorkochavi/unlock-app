@@ -41,6 +41,10 @@
 import { submitAnswer } from "../learning/submit-answer";
 import type { SubmitAnswerContext, SubmitAnswerResult } from "../learning/submit-answer";
 import type { DailyPlanAnswerTarget, UnitOfWork } from "../learning/ports";
+import {
+  hasActiveLearnerMembership,
+  type LiveLearnerMembershipLookup,
+} from "./live-learner-membership";
 import type {
   AssistanceType,
   ConfidenceLevel,
@@ -79,6 +83,7 @@ export type SubmitDailyPlanItemAnswerResult =
 
 export interface SubmitDailyPlanItemAnswerDependencies {
   items: DailyPlanItemAnswerLookup;
+  memberships: LiveLearnerMembershipLookup;
   context: SubmitAnswerContext;
   uow: UnitOfWork;
 }
@@ -94,6 +99,13 @@ export async function submitDailyPlanItemAnswer(
   // submitAnswer's own TODAY_SESSION_ITEM_NOT_FOUND_OR_NOT_OWNED /
   // DAILY_PLAN_ITEM_NOT_FOUND_OR_NOT_OWNED outcomes.
   if (item === null || item.userId !== command.userId) {
+    return { kind: "ITEM_NOT_FOUND_OR_NOT_OWNED" };
+  }
+
+  // F-04a: live membership check, BEFORE any transaction/Attempt work — a
+  // revoked/archived learner can no longer act on an existing plan. Reported
+  // as the same non-leaking outcome as not-found/not-owned.
+  if (!(await hasActiveLearnerMembership(deps.memberships, command.userId, item.courseId))) {
     return { kind: "ITEM_NOT_FOUND_OR_NOT_OWNED" };
   }
 

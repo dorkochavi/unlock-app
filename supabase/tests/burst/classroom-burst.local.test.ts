@@ -258,6 +258,7 @@ async function learnerFlow(args: {
         },
         {
           items: new PostgresDailyPlanRepository(p),
+          memberships: new PostgresCourseMembershipRepository(p),
           context: createProductionSubmitAnswerContext(requestNow),
           uow: new PostgresUnitOfWork(new PgConnectionProvider(p)),
         },

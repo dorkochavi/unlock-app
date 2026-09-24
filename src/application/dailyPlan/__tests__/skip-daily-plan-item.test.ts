@@ -15,6 +15,19 @@ import { skipDailyPlanItem } from "../skip-daily-plan-item";
 
 const NOW = new Date("2026-02-01T00:00:00.000Z");
 
+/** Active LEARNER membership for any (user, course) — F-04a guard passes. */
+const activeLearner = {
+  findMembership: async (userId: string, courseId: string) => ({
+    id: "m-1",
+    userId,
+    courseId,
+    role: "LEARNER" as const,
+    joinedAt: NOW,
+    revokedAt: null,
+    archivedAt: null,
+  }),
+};
+
 function makeItem(overrides: Partial<DailyPlanAnswerTarget> = {}): DailyPlanAnswerTarget {
   return {
     id: "item-1",
@@ -47,7 +60,7 @@ describe("skipDailyPlanItem", () => {
 
     const result = await skipDailyPlanItem(
       { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
-      { dailyPlanItems: repo },
+      { dailyPlanItems: repo, memberships: activeLearner },
     );
 
     expect(result.kind).toBe("SKIPPED");
@@ -60,7 +73,7 @@ describe("skipDailyPlanItem", () => {
 
     const result = await skipDailyPlanItem(
       { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
-      { dailyPlanItems: repo },
+      { dailyPlanItems: repo, memberships: activeLearner },
     );
 
     expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
@@ -76,7 +89,7 @@ describe("skipDailyPlanItem", () => {
 
     const result = await skipDailyPlanItem(
       { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
-      { dailyPlanItems: repo },
+      { dailyPlanItems: repo, memberships: activeLearner },
     );
 
     expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
@@ -94,7 +107,7 @@ describe("skipDailyPlanItem", () => {
 
     const result = await skipDailyPlanItem(
       { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
-      { dailyPlanItems: repo },
+      { dailyPlanItems: repo, memberships: activeLearner },
     );
 
     expect(result.kind).toBe("ALREADY_RESOLVED");
@@ -114,7 +127,7 @@ describe("skipDailyPlanItem", () => {
 
     const result = await skipDailyPlanItem(
       { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
-      { dailyPlanItems: repo },
+      { dailyPlanItems: repo, memberships: activeLearner },
     );
 
     expect(result.kind).toBe("ALREADY_RESOLVED");
@@ -131,9 +144,56 @@ describe("skipDailyPlanItem", () => {
 
     const result = await skipDailyPlanItem(
       { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
-      { dailyPlanItems: repo },
+      { dailyPlanItems: repo, memberships: activeLearner },
     );
 
     expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
+  });
+});
+
+describe("skipDailyPlanItem live membership guard (F-04a)", () => {
+  const revoked = {
+    findMembership: async (userId: string, courseId: string) => ({
+      ...(await activeLearner.findMembership(userId, courseId)),
+      revokedAt: NOW,
+    }),
+  };
+
+  it("revoked membership: denied as ITEM_NOT_FOUND_OR_NOT_OWNED, markSkipped never called", async () => {
+    const markSkipped = vi.fn();
+    const repo = makeRepo({ findItemById: vi.fn(async () => makeItem()), markSkipped });
+
+    const result = await skipDailyPlanItem(
+      { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
+      { dailyPlanItems: repo, memberships: revoked },
+    );
+
+    expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
+    expect(markSkipped).not.toHaveBeenCalled();
+  });
+
+  it("missing membership: denied, markSkipped never called", async () => {
+    const markSkipped = vi.fn();
+    const repo = makeRepo({ findItemById: vi.fn(async () => makeItem()), markSkipped });
+
+    const result = await skipDailyPlanItem(
+      { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
+      { dailyPlanItems: repo, memberships: { findMembership: async () => null } },
+    );
+
+    expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
+    expect(markSkipped).not.toHaveBeenCalled();
+  });
+
+  it("membership is checked for the ITEM's course, not a caller-supplied one", async () => {
+    const findMembership = vi.fn(activeLearner.findMembership);
+    const repo = makeRepo({ findItemById: vi.fn(async () => makeItem({ courseId: "course-real" })) });
+
+    await skipDailyPlanItem(
+      { userId: "user-1", dailyPlanItemId: "item-1", skippedAt: NOW },
+      { dailyPlanItems: repo, memberships: { findMembership } },
+    );
+
+    expect(findMembership).toHaveBeenCalledWith("user-1", "course-real");
   });
 });

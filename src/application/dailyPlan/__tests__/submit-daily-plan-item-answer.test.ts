@@ -27,6 +27,19 @@ import {
 
 const NOW = new Date("2026-02-01T00:00:00.000Z");
 
+/** Active LEARNER membership for any (user, course) — F-04a guard passes. */
+const activeLearner = {
+  findMembership: async (userId: string, courseId: string) => ({
+    id: "m-1",
+    userId,
+    courseId,
+    role: "LEARNER" as const,
+    joinedAt: NOW,
+    revokedAt: null,
+    archivedAt: null,
+  }),
+};
+
 function makeContext(): SubmitAnswerContext {
   let counter = 0;
   return {
@@ -110,7 +123,7 @@ describe("submitDailyPlanItemAnswer", () => {
         answerWasRevealedBeforeResponse: false,
         answeredAt: NOW,
       },
-      { items, context: makeContext(), uow: POISON_UOW },
+      { items, memberships: activeLearner, context: makeContext(), uow: POISON_UOW },
     );
 
     expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
@@ -140,7 +153,7 @@ describe("submitDailyPlanItemAnswer", () => {
         answerWasRevealedBeforeResponse: false,
         answeredAt: NOW,
       },
-      { items, context: makeContext(), uow: POISON_UOW },
+      { items, memberships: activeLearner, context: makeContext(), uow: POISON_UOW },
     );
 
     expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
@@ -189,7 +202,7 @@ describe("submitDailyPlanItemAnswer", () => {
         answerWasRevealedBeforeResponse: false,
         answeredAt: NOW,
       },
-      { items, context: makeContext(), uow: db },
+      { items, memberships: activeLearner, context: makeContext(), uow: db },
     );
 
     expect(result.kind).toBe("ACCEPTED");
@@ -247,9 +260,63 @@ describe("submitDailyPlanItemAnswer", () => {
         answerWasRevealedBeforeResponse: false,
         answeredAt: NOW,
       },
-      { items, context: makeContext(), uow: db },
+      { items, memberships: activeLearner, context: makeContext(), uow: db },
     );
 
     expect(result.kind).toBe("DAILY_PLAN_ITEM_ALREADY_RESOLVED");
+  });
+});
+
+describe("submitDailyPlanItemAnswer live membership guard (F-04a)", () => {
+  const ownedItem: DailyPlanItemAnswerLookup = {
+    findItemById: async (itemId) => ({
+      id: itemId,
+      dailyPlanId: "plan-1",
+      userId: "user-1",
+      courseId: "course-1",
+      questionId: "question-1",
+      questionVersionId: "qv-1",
+    }),
+  };
+  const command = {
+    userId: "user-1",
+    dailyPlanItemId: "item-1",
+    submissionId: "sub-1",
+    selectedAnswer: "A" as const,
+    confidenceLevel: null,
+    responseTimeSeconds: null,
+    assistanceUsed: "NONE" as const,
+    answerWasRevealedBeforeResponse: false,
+    answeredAt: NOW,
+  };
+
+  it("revoked membership: ITEM_NOT_FOUND_OR_NOT_OWNED, submitAnswer/transaction never invoked", async () => {
+    const result = await submitDailyPlanItemAnswer(command, {
+      items: ownedItem,
+      memberships: {
+        findMembership: async (userId, courseId) => ({
+          ...(await activeLearner.findMembership(userId, courseId)),
+          revokedAt: NOW,
+        }),
+      },
+      context: makeContext(),
+      uow: POISON_UOW,
+    });
+    expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
+  });
+
+  it("non-LEARNER role: denied before any transaction", async () => {
+    const result = await submitDailyPlanItemAnswer(command, {
+      items: ownedItem,
+      memberships: {
+        findMembership: async (userId, courseId) => ({
+          ...(await activeLearner.findMembership(userId, courseId)),
+          role: "INSTRUCTOR" as const,
+        }),
+      },
+      context: makeContext(),
+      uow: POISON_UOW,
+    });
+    expect(result.kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
   });
 });
