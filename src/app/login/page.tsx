@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { getMessages } from "@/messages";
+import { buildSignUpEmailRedirectTo } from "@/lib/auth-redirect";
 import { resolveSafeNextPath } from "@/lib/safe-redirect";
 
 type Mode = "sign-in" | "sign-up";
@@ -60,7 +61,15 @@ export default function LoginPage() {
         return;
       }
 
-      const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+      // FUB-027: return the confirmation link to /login carrying the
+      // validated `next` (join intent). `null` (unusable origin) omits the
+      // option, falling back to Supabase's Site URL instead of failing.
+      const emailRedirectTo = buildSignUpEmailRedirectTo(window.location.origin, nextPath);
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        ...(emailRedirectTo === null ? {} : { options: { emailRedirectTo } }),
+      });
       if (signUpError) {
         setError(messages.auth.genericError);
         return;
