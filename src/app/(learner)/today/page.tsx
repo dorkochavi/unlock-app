@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { getMessages } from "@/messages";
 import { selectDisplayedItem, type AnswerFeedback } from "./select-displayed-item";
+import { fetchTodayPlan, persistDetectedTimezone } from "./fetch-today-plan";
 import type { DailyPlanDto, DailyPlanItemDto } from "@/app/api/daily-plan/today/daily-plan-dto";
 
 type ViewState =
@@ -15,33 +16,6 @@ type ViewState =
   | { kind: "timezoneError" }
   | { kind: "error" }
   | { kind: "ready"; plan: DailyPlanDto };
-
-async function fetchTodayPlan(): Promise<
-  { outcome: "READY"; plan: DailyPlanDto } | { outcome: "UNAUTHENTICATED" } | { outcome: "TIMEZONE_NOT_SET" } | { outcome: "ERROR" }
-> {
-  const response = await fetch("/api/daily-plan/today", { method: "GET" });
-  if (response.status === 401) {
-    return { outcome: "UNAUTHENTICATED" };
-  }
-  if (response.status === 422) {
-    return { outcome: "TIMEZONE_NOT_SET" };
-  }
-  if (!response.ok) {
-    return { outcome: "ERROR" };
-  }
-  const body = (await response.json()) as { plan: DailyPlanDto };
-  return { outcome: "READY", plan: body.plan };
-}
-
-async function persistDetectedTimezone(): Promise<boolean> {
-  const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const response = await fetch("/api/user/timezone", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ timezone: detected }),
-  });
-  return response.ok;
-}
 
 type SubmitAnswerOutcome =
   | { outcome: "ACCEPTED"; isCorrect: boolean }
