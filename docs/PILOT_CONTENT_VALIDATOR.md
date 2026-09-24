@@ -23,7 +23,7 @@ node scripts/validate-import.mjs <file.json|file.csv> [--topics "A,B" | --topics
 | TOPIC_WITHOUT_QUESTIONS | WARNING | only with `--topics`: listed Topic has no valid question |
 
 Not checked (human): language quality, distractors, answer-key truth, Topic alignment. Import files carry no question IDs, so there is no duplicate-ID check; duplicate option keys are caught by the canonical rules. Publish/draft state is not represented in the input.
-Runs the TypeScript via `jiti` (transitive dev dependency, not declared).
+Runs the TypeScript via `jiti` (declared devDependency; run `npm install` first).
 
 ## Parity with in-app Preview
 `validate-import-source-parity.test.ts` runs the same synthetic files through `previewImport` and the validator: the rows Preview marks INVALID equal the rows the validator attributes an ERROR to, valid/invalid counts match, and every canonical content message is reported verbatim. Intentional offline-only differences: `NO_ROWS` is an ERROR (Preview returns an empty preview), `DUPLICATE_PROMPT`, `TOPIC_WITHOUT_QUESTIONS`, `BELOW_MIN_QUESTIONS`, `TOPIC_BLANK` reported as its own code, and without `--topics` no Topic resolution happens (Preview always resolves against the Course's active Topics).

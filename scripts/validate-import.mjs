@@ -73,7 +73,7 @@ let createJiti;
 try {
   ({ createJiti } = await import("jiti"));
 } catch {
-  fail("jiti (transitive dev dependency) is required to load the TypeScript validator");
+  fail("jiti (devDependency; run npm install) is required to load the TypeScript validator");
 }
 let report;
 try {
