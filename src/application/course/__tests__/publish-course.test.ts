@@ -89,4 +89,27 @@ describe("publishCourse", () => {
 
     expect(result.outcome).toBe("NOT_AUTHORIZED");
   });
+
+  // This test protects against: the management check ignoring `revokedAt`, letting a
+  // revoked OWNER/INSTRUCTOR change Course lifecycle state.
+  it.each([
+    ["revoked OWNER", "OWNER"],
+    ["revoked INSTRUCTOR", "INSTRUCTOR"],
+  ] as const)("denies a %s", async (_label, role) => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "AUTHORIZED_ONLY", "Test Course", "DRAFT");
+    db.seedMembership({
+      id: "m1",
+      userId: "user-1",
+      courseId: "course-1",
+      role,
+      joinedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: new Date("2026-02-01T00:00:00Z"),
+      archivedAt: null,
+    });
+
+    const result = await publishCourse({ actorUserId: "user-1", courseId: "course-1" }, db.repos());
+
+    expect(result.outcome).toBe("NOT_AUTHORIZED");
+  });
 });

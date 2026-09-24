@@ -195,3 +195,22 @@ describe("getCourseItemAnalysis — read model", () => {
     expect(JSON.stringify(result)).not.toMatch(/userId|user_id|actor-1/);
   });
 });
+
+describe("getCourseItemAnalysis — bucketing exactness", () => {
+  // This test protects against: floating-point drift in `(n - c) / n * 100` rounding a true
+  // half-way rate (e.g. 15%, 25% at n=20 or n=40) to the wrong 10-point bucket, at any n.
+  it("matches exact integer half-up rounding for every n in 5..60 and every correct count", async () => {
+    for (let n = 5; n <= 60; n++) {
+      for (let c = 0; c <= n; c++) {
+        const numerator = 20 * (n - c) + n;
+        const expected = 10 * ((numerator - (numerator % (2 * n))) / (2 * n));
+        const result = await getCourseItemAnalysis(
+          COMMAND,
+          repos({ rows: [row({ distinctResponderCount: n, correctCount: c })] }).value,
+        );
+        if (result.outcome !== "READY") throw new Error("expected READY");
+        expect(result.items[0].stats?.approximateIncorrectRatePercent, `n=${n} c=${c}`).toBe(expected);
+      }
+    }
+  });
+});
