@@ -3,7 +3,7 @@
 PLAN_VERSION: 001
 RUN_ID: 2026-09-23-PRE-PILOT
 BASE_HEAD: c5d370b
-STATUS: IN PROGRESS — S1, S2 COMPLETE; S3 PASS (2026-09-24); S4 PENDING / NOT COMPLETE — a preliminary real-device pre-check exposed a signup-confirmation redirect / join-return blocker (see "S4 Preliminary Pre-Check"); the full rehearsal and both Go/No-Go gates have NOT been executed
+STATUS: IN PROGRESS — S1, S2 COMPLETE; S3 PASS (2026-09-24); S4 PENDING / NOT COMPLETE — a preliminary real-device pre-check exposed a signup-confirmation redirect / join-return blocker (see "S4 Preliminary Pre-Check"); the app-side fix is RESOLVED LOCALLY (FUB-027) but hosted/manual verification is pending; the full rehearsal and both Go/No-Go gates have NOT been executed
 
 ## 1. Run Goal
 
@@ -437,9 +437,20 @@ Observed (iPhone 16 Pro Max, Chrome, Wi-Fi):
 - the question/answer flow was therefore not meaningfully exercised. Today itself is NOT
   classified as failed from this evidence.
 
-**Blocker (open, not yet diagnosed or fixed):** signup confirmation redirect target and
-join-return flow. S4 cannot proceed until a new learner can sign up on a real phone,
-confirm by email, and land back on the join flow of the deployed URL.
+**Blocker (app-side RESOLVED LOCALLY, hosted/manual verification PENDING):** signup
+confirmation redirect target and join-return flow. The app now passes
+`emailRedirectTo=<origin>/login?next=…` (FUB-027, `docs/FOLLOW_UP_BACKLOG.md`), so join
+intent survives email confirmation. This is NOT verified on hosted infrastructure or a real
+phone: the hosted Supabase Site URL / redirect allow-list is a human-owned dashboard check.
+S4 cannot proceed until a new learner can sign up on a real phone, confirm by email, and
+land back on the join flow of the deployed URL.
+
+**Local hardening since the pre-check (current status: `docs/DEV_STATUS.md` and
+`docs/RUNS/2026-09-24-OVERNIGHT-PREPILOT.md`; not S4 evidence).** F-12, F-13, F-14 and
+F-04a are resolved locally; F-12, F-13 and F-14 still need manual UI verification. F-01 is
+mitigated, not resolved. F-02 (Item Analysis small-n differencing) and F-04b (Course
+archive after plan generation) are decision-pending and unchanged. Manual QA is not
+complete; S4 remains NOT COMPLETE until the real rehearsal and both Go/No-Go gates run.
 
 ## S4 Rehearsal Protocol (exact checklist)
 

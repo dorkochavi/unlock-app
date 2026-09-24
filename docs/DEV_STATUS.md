@@ -324,7 +324,9 @@ preliminary iPhone pre-check exposed a signup-confirmation redirect /
 join-return blocker (confirmation link redirected to `http://localhost:3000`,
 the original Course join was lost; Today's no-items state was legitimate and is
 not a failure). Details: `docs/CHATGPT_PLAN.md` ("S4 Preliminary Pre-Check"),
-`docs/RUNS/2026-09-23-PRE-PILOT.md`. Not diagnosed or fixed yet.
+`docs/RUNS/2026-09-23-PRE-PILOT.md`. The pre-check observation above is historical;
+current status: FUB-027 RESOLVED LOCALLY, PENDING MANUAL/HOSTED VERIFICATION (see
+"Blockers" and the local-hardening status below).
 
 Hosted configuration that must remain (hosted Vercel environment):
 - `DATABASE_SSL_CA` = PEM contents of the Supabase root CA (public certificate);
@@ -473,8 +475,8 @@ from before this Run, unchanged).
 - no Run 008 hosted-migration, backup, connection, or E2E gate remains open.
 
 For the Pre-Pilot Run:
-- resolve the S4 blocker (signup confirmation redirect / join-return), then run the
-  full S4 rehearsal and record both Go/No-Go results (`docs/CHATGPT_PLAN.md`);
+- complete manual/hosted verification of the FUB-027 fix (signup confirmation redirect /
+  join-return), then run the full S4 rehearsal and record both Go/No-Go results (`docs/CHATGPT_PLAN.md`);
 - confirm hosted config above stays set; clean up the throwaway burst Course and
   `burst##` accounts when convenient (human-owned hosted action).
 
