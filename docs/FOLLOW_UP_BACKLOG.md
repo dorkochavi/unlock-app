@@ -1080,6 +1080,54 @@ guidance (about 5 s) at the target class size.
 
 ---
 
+# FUB-027 — Signup Confirmation Redirect / Join-Intent Preservation
+
+**Status:** `RESOLVED LOCALLY` — hosted config and the real confirmation flow are UNVERIFIED (human-owned)
+**Priority:** `HIGH` for the pilot (blocks a clean S4 re-test)
+**Area:** Auth UX / `src/app/login/page.tsx`, `src/lib/auth-redirect.ts`
+
+## Observation
+
+`signUp({ email, password })` passed no `emailRedirectTo`; no tracked auth callback, middleware
+or reader of `NEXT_PUBLIC_APP_URL` exists, so the confirmation link target was the hosted
+Supabase Site URL (observed: `http://localhost:3000`). Join intent lives only in
+`/login?next=/join/<id>`; sign-in and instant-session sign-up preserved it, but the
+confirmation-email path dropped it, so a confirmed learner landed on `/login` with no `next`
+and reached an empty Today.
+
+## Current State
+
+`buildSignUpEmailRedirectTo` builds `<origin>/login[?next=<safe path>]` from a normalized http(s)
+origin plus `resolveSafeNextPath` output only; `login/page.tsx` passes it as `signUp`
+`options.emailRedirectTo` (omitted if the origin is unusable, falling back to the Site URL).
+`safe-redirect.ts` is unchanged. After confirmation the learner lands on
+`/login?next=/join/<id>` and signs in (the account is already confirmed). Whether the link also
+auto-establishes a session is NOT relied upon — verify in the real retest, including that
+`/login` behaves cleanly for an already-signed-in user. Minor: `safe-redirect.ts` does not allow
+`/instructor/courses/new`, so that `next` falls back to `/today`.
+
+## Human Dashboard Checks (not performed by the agent)
+
+1. Supabase → Authentication → URL Configuration → **Site URL** = the deployed origin
+   (the production origin is not tracked in the repo; the human must supply and verify it).
+2. **Redirect URLs** allow-list: add BOTH `<production origin>/login` (the default-destination
+   case emits a bare `/login`) and a pattern that matches `/login?next=...`, e.g.
+   `<production origin>/login**`. A bare `/login` entry probably does NOT match the
+   query-bearing form. Supabase validates `redirect_to` before appending any PKCE `code`, so the
+   pattern only needs to match `/login?next=%2Fjoin%2F<id>`. Exact glob semantics are unverified
+   offline — confirm in the dashboard/real test. Avoid a broad `/**` or preview-domain wildcard.
+   If not allow-listed, Supabase silently falls back to the Site URL (join intent lost again).
+3. Keep `http://localhost:3000/login` allow-listed only if local testing needs it.
+4. Check the Confirm-signup email template still uses `{{ .ConfirmationURL }}` (not a hardcoded host).
+5. Retest with a fresh phone/email: `/join/<id>` → sign up → confirm email → lands on
+   `/login?next=…` → sign in → join → Today.
+
+## Do Not Do Yet
+
+No further auth change until the hosted retest shows whether this is sufficient.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.

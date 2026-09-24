@@ -485,8 +485,20 @@ For Run 009:
 
 No Run 008 blocker remains. **Open Pre-Pilot blocker:** S4 signup confirmation
 redirect (`http://localhost:3000`) / lost join-return flow, found by the
-preliminary real-device pre-check; not yet diagnosed or fixed. Signup email
-throughput/rate limits and real-device/RTL behavior are also still unproven.
+preliminary real-device pre-check. Locally diagnosed and fixed in code
+(FUB-027: sign-up passes `emailRedirectTo=<origin>/login?next=…`); the hosted
+Site URL / Redirect URL allow-list and the real phone confirmation flow are
+human-owned and still unverified. Signup email throughput/rate limits and
+real-device/RTL behavior are also still unproven.
+
+Pre-Pilot local-hardening finding status (details: `docs/RUNS/2026-09-24-OVERNIGHT-PREPILOT.md`). Nothing below is verified in a browser or on hosted infrastructure:
+- F-12 (Today feedback), F-13 (join link for non-self-join Courses), F-14 (Today initial-load network failure): RESOLVED LOCALLY, PENDING MANUAL UI VERIFICATION.
+- FUB-027 (signup-confirmation join intent): RESOLVED LOCALLY, PENDING MANUAL/HOSTED VERIFICATION.
+- F-01 (empty DailyPlan frozen for the local day): MITIGATED; underlying design issue deferred, NOT resolved — learners must still join before opening Today.
+- F-04a (revoked learner could answer/skip existing plan items): RESOLVED LOCALLY.
+- F-04b (Course PUBLISHED -> ARCHIVED after the plan exists): DECISION PENDING.
+- F-02 (Item Analysis small-n differencing): DECISION PENDING.
+- Offline content validator (`docs/PILOT_CONTENT_VALIDATOR.md`) available for the content Go/No-Go.
 
 Current execution source:
 - `docs/CHATGPT_PLAN.md`
