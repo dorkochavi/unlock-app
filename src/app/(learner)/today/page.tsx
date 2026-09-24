@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { getMessages } from "@/messages";
+import { selectDisplayedItem, type AnswerFeedback } from "./select-displayed-item";
 import type { DailyPlanDto, DailyPlanItemDto } from "@/app/api/daily-plan/today/daily-plan-dto";
 
 type ViewState =
@@ -249,7 +250,7 @@ function generateSubmissionId(): string {
   return crypto.randomUUID();
 }
 
-type Feedback = { itemId: string; isCorrect: boolean };
+type Feedback = AnswerFeedback;
 
 /**
  * Stateful Today answering session (Night-Run Slice 2). Reuses the exact
@@ -291,8 +292,7 @@ function TodayPlanView({
 
   const total = items.length;
   const resolvedCount = items.filter((item) => item.status !== "pending").length;
-  const current = items.find((item) => item.status === "pending") ?? null;
-  const activeFeedback = feedback !== null && feedback.itemId === current?.id ? feedback : null;
+  const { item: current, feedback: activeFeedback } = selectDisplayedItem(items, feedback);
 
   async function handleAnswer(itemId: string, selectedAnswer: string | string[] | null) {
     setSubmitError(null);
