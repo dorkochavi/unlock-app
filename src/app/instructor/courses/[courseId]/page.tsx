@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 import { getMessages } from "@/messages";
-import type { CourseJoinPolicy, CourseStatus } from "@/domain/course/types";
+import { canSelfJoinCourse, type CourseJoinPolicy, type CourseStatus } from "@/domain/course/types";
 
 interface CourseAuthoringDto {
   id: string;
@@ -907,7 +907,18 @@ export default function InstructorCourseManagePage() {
               ) : null}
             </div>
 
-            {state.course.status === "PUBLISHED" ? (
+            {state.course.status === "PUBLISHED" && !canSelfJoinCourse(state.course) ? (
+              // Same rule the join API enforces: a link to an AUTHORIZED_ONLY
+              // Course would reject ordinary learners, so do not offer it.
+              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                <h2 className="mb-2 text-lg font-medium">{messages.instructor.manage.shareHeading}</h2>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {messages.instructor.manage.shareUnavailableBody}
+                </p>
+              </div>
+            ) : null}
+
+            {canSelfJoinCourse(state.course) ? (
               <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
                 <h2 className="mb-2 text-lg font-medium">{messages.instructor.manage.shareHeading}</h2>
                 <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
