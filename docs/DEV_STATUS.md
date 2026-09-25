@@ -317,6 +317,13 @@ no pilot-readiness blocker remains from Run 008. Detailed evidence lives in
 
 ## Pre-Pilot Validation Run (RUN_ID `2026-09-23-PRE-PILOT`)
 
+Status (2026-09-25 update): S4 **Technical Go/No-Go PASS** (real phone + Android on
+Production, with recorded accepted gaps); S4 **Content Go/No-Go WAITING FOR REAL PILOT
+MATERIAL** (external dependency; NOT executed, NOT PASS). The Run stays formally OPEN on
+Content: technically ready, NOT content-approved, NOT pilot-approved. Evidence and the
+deferred content checklist: `docs/CHATGPT_PLAN.md` "S4 Real-Device Evidence #2". The
+paragraph below is the earlier (historical) status.
+
 Status: **IN PROGRESS** — S1 (aggregate privacy contract) and S2 (Item
 Analysis) COMPLETE; S3 (synthetic classroom burst) **PASS**; S4 (real-device
 rehearsal + Technical/Content Go/No-Go) **PENDING / NOT COMPLETE** — a
@@ -341,6 +348,27 @@ server-generated `answeredAt` (FUB-025), further analytics follow-ups
 (FUB-023/024), post-pilot learning-visibility directions (FUB-018..022).
 A throwaway hosted Course "Pre-Pilot Burst Test" and `burst##` test accounts
 remain in the hosted project until the human cleans them up.
+
+## Environment / Release Model (decided 2026-09-25)
+
+UNLOCK is ONE application and ONE codebase. There is no separate "pilot app" and no
+separate "public app": the pilot is the first controlled use of the same Production
+application, which stays live for real users during and after the pilot.
+
+- LOCAL — development, tests, Claude-assisted work, safe experimentation.
+- VERCEL PREVIEW — browser/manual verification of changes before release; temporary.
+- PRODUCTION (`https://unlock-app-pied.vercel.app`) — the one live application.
+
+No permanent Staging now (team size/scale do not justify the cost). Revisit Staging /
+Supabase Preview Branches / a dedicated Staging project when: more developers, higher
+release frequency, more complex schema/Auth changes, destructive-DB-testing risk, or
+production-data safety concerns. Production data is protected: no destructive development
+experiments on the Production DB.
+
+Git direction (no migration now, no merge to `main` in Pre-Pilot): today
+`feature/project-foundation` is the canonical active development branch. Long term `main`
+should represent Production/released state and `feature/*` branches development work; plan
+the transition after Pre-Pilot stabilization.
 
 ## Verification Baseline
 
@@ -370,7 +398,7 @@ change (pool-size config); Item Analysis PGlite 7/7; typecheck/lint clean;
 local synthetic burst (real Postgres, 30 and 40 learners, both pool shapes)
 green; hosted 30-learner burst PASS at `DATABASE_POOL_MAX=5`. Hosted evidence
 came from a Preview deployment with pre-confirmed accounts; real signup/email,
-mobile/RTL and cellular are NOT yet proven (S4).
+mobile/RTL and cellular were later proven manually on Production (2026-09-25, S4).
 
 Run 008 (Authoring Integration + Pilot Readiness) final evidence:
 - typecheck: clean (full repo, re-verified after every Slice);
@@ -446,7 +474,7 @@ Remote Git push and hosted database mutation remain manual/user-controlled actio
 
 Product roadmap:
 - Run 008 — Authoring Integration + Pilot Readiness (**COMPLETE**)
-- Pre-Pilot Validation Run — IN PROGRESS (S4 real-device rehearsal pending; see above); not a renumbering of Run 009
+- Pre-Pilot Validation Run — IN PROGRESS, formally open on Content Go/No-Go only (Technical S4 PASS 2026-09-25; waiting for real pilot material); not a renumbering of Run 009
 - Run 009 — Learner Progress + Instructor Insights (next product Run; requires a new Plan)
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
@@ -475,8 +503,9 @@ from before this Run, unchanged).
 - no Run 008 hosted-migration, backup, connection, or E2E gate remains open.
 
 For the Pre-Pilot Run:
-- FUB-027 is verified (2026-09-25); finish the remaining S4 rehearsal protocol and record
-  both Go/No-Go results, including instructor content sign-off (`docs/CHATGPT_PLAN.md`);
+- FUB-027 is verified and Technical S4 is PASS (2026-09-25). Remaining before the REAL pilot:
+  Content Go/No-Go (waiting for real material) and the SMTP/rate-limit decision
+  (`docs/CHATGPT_PLAN.md`). These do not block Run 009 planning;
 - confirm hosted config above stays set; clean up the throwaway burst Course and
   `burst##` accounts when convenient (human-owned hosted action).
 
@@ -493,10 +522,17 @@ Item Analysis on device), Technical Go/No-Go, and Content Go/No-Go (instructor
 sign-off). Class-size signup email throughput / Supabase Auth rate limits remain
 unproven.
 
+(Superseded 2026-09-25: Technical Go/No-Go is PASS; only Content Go/No-Go — waiting for
+real pilot material — and the email-capacity decision remain open before the real pilot.)
+
 Pre-Pilot local-hardening finding status (details: `docs/RUNS/2026-09-24-OVERNIGHT-PREPILOT.md`). Nothing below is verified in a browser or on hosted infrastructure:
 - **Update 2026-09-25:** a real-phone rehearsal on Production succeeded end to end (join → signup → email confirmation → login → Today → correct/incorrect answers → feedback + Continue → Courses). This partial evidence does NOT complete S4: Technical Go/No-Go is NOT YET COMPLETE (single device; protocol items unexecuted) and Content Go/No-Go is NOT YET EXECUTED (no instructor sign-off recorded). Supabase Auth email rate limiting (429 seen once) is an operational/platform risk to decide before a class-size rehearsal, not an app defect. See `docs/CHATGPT_PLAN.md` "S4 Real-Device Evidence #1".
 - F-12 (Today feedback): MANUAL UI VERIFIED, RESOLVED for current Pre-Pilot scope (answered item stays visible with correctness state + Continue; Continue advances).
-- F-13 (join link for non-self-join Courses), F-14 (Today initial-load network failure): RESOLVED LOCALLY, PENDING MANUAL UI VERIFICATION (states not exercised).
+- F-13 (join link for non-self-join Courses): MANUAL UI VERIFIED, RESOLVED (2026-09-25; OPEN → AUTHORIZED_ONLY hid the link).
+- F-14 (answer request failure/retry): MANUAL UI VERIFIED, RESOLVED (2026-09-25; airplane-mode submit error, then retry succeeded). App-level request failure only, not a full-page offline reload. Note: F-14 was originally logged as the Today initial-load network failure; the manual test exercised the answer-submit failure/retry path, and a failed initial Today load was not separately exercised.
+- Later evidence supersedes the "Update 2026-09-25" bullet above for the Technical gate: Technical PASS, Content WAITING (see `docs/CHATGPT_PLAN.md`).
+- New UX follow-ups (not blockers): FUB-028 Item Analysis discoverability; FUB-029 Publish validates persisted state (Save Draft first).
+- Operational pilot risk: Supabase Auth email rate limiting / SMTP capacity for a class-sized cohort — decide before the real pilot; not an app defect.
 - FUB-027 (signup-confirmation join intent): HOSTED + MANUAL VERIFIED, RESOLVED for current Pre-Pilot scope.
 - F-01 (empty DailyPlan frozen for the local day): MITIGATED; underlying design issue deferred, NOT resolved — learners must still join before opening Today.
 - F-04a (revoked learner could answer/skip existing plan items): RESOLVED LOCALLY.

@@ -3,7 +3,7 @@
 PLAN_VERSION: 001
 RUN_ID: 2026-09-23-PRE-PILOT
 BASE_HEAD: c5d370b
-STATUS: IN PROGRESS — S1, S2 COMPLETE; S3 PASS (2026-09-24); S4 NOT COMPLETE — the 2026-09-24 pre-check exposed a signup-confirmation redirect / join-return blocker, which is now HOSTED + MANUAL VERIFIED as resolved (FUB-027; see "S4 Real-Device Evidence #1", 2026-09-25); the full rehearsal protocol, Technical Go/No-Go and Content Go/No-Go have NOT been completed
+STATUS: IN PROGRESS — S1, S2 COMPLETE; S3 PASS (2026-09-24); S4 Technical Go/No-Go PASS with recorded accepted gaps (2026-09-25, "S4 Real-Device Evidence #2"); S4 Content Go/No-Go WAITING FOR REAL PILOT MATERIAL (external dependency, NOT executed, NOT PASS); the Pre-Pilot Run stays formally OPEN on Content — technically ready, NOT content-approved, NOT pilot-approved
 
 ## 1. Run Goal
 
@@ -452,7 +452,7 @@ mitigated, not resolved. F-02 (Item Analysis small-n differencing) and F-04b (Co
 archive after plan generation) are decision-pending and unchanged. Manual QA is not
 complete; S4 remains NOT COMPLETE until the real rehearsal and both Go/No-Go gates run.
 
-## S4 Real-Device Evidence #1 (2026-09-25) — partial rehearsal; S4 remains NOT COMPLETE
+## S4 Real-Device Evidence #1 (2026-09-25) — partial rehearsal (historical; Technical gate and F-13/F-14 statuses superseded by Evidence #2 below)
 
 One real phone, private/incognito browser, hosted Production deployment
 (`https://unlock-app-pied.vercel.app`), fresh learner account, published self-join Course.
@@ -490,6 +490,68 @@ email rate limiting — an external platform limit, not an app defect (see Techn
   can BLOCK class signups. Per the protocol this is BLOCKED (not GO) if it stops a step; custom
   SMTP status and per-IP limits are not recorded and must be decided before a 5+ learner
   classroom rehearsal.
+
+## S4 Real-Device Evidence #2 (2026-09-25) — Technical Go/No-Go PASS; Content WAITING
+
+Human-observed Production evidence (`https://unlock-app-pied.vercel.app`). Supersedes the
+"Gate status" bullets of Evidence #1 for the Technical gate (Evidence #1 is kept as history).
+
+| Criterion (protocol / Technical GO list) | Result | Evidence / scope |
+| --- | --- | --- |
+| ≥2 physical devices | PASS | first real phone (model not recorded in this evidence) + Android |
+| QR/link join | PASS | join URL shown as QR, scanned on a physical phone; correct URL/flow, no redirect/layout issue |
+| Signup + real email confirmation | PASS | device 1 only (fresh learner, private browser; email ~1 s); not repeated on Android |
+| Login → membership → Today with questions → Courses shows Course | PASS | device 1 |
+| First answer; correct + incorrect; "נכון"/"לא נכון" + Continue → next | PASS | device 1 (F-12) |
+| Wi-Fi and cellular; Wi-Fi→cellular switch; navigation | PASS | Android |
+| Refresh inside Today (same place); app resume after app switch | PASS | Android |
+| Double-tap on answer / on Continue: no duplicate behaviour | PASS | Android |
+| Hebrew/RTL + mobile usability | PASS (limited) | Android: Hebrew correct, buttons usable, no broken layout; structured per-screen RTL checklist not separately recorded |
+| F-13 (no dead self-join link when policy is not OPEN) | PASS | OPEN → AUTHORIZED_ONLY: join/share link disappeared |
+| F-14 (answer request failure + retry) | PASS | airplane mode → submit → "לא ניתן היה לשלוח את התשובה. נסו שוב" → network restored → resubmit succeeded. App-level request failure/retry only; not a full-page offline reload |
+| Instructor Item Analysis (direct URL): loads, questions, insufficient-data states, aggregates where enough responses, Refresh | PASS | owner/instructor |
+| Item Analysis authorization denial | PASS | learner denied ("אין לך הרשאה לצפות בניתוח התשובות של קורס זה"). Signed-out rejection not manually recorded (covered by S2 tests/security review) |
+| Item Analysis privacy | PASS via S2 tests + security review | manual visual check of "no names/emails/per-option/'weak' wording" not separately recorded — accepted non-critical gap |
+| Runtime Logs | PASS | Vercel Production: 0 warning/error/fatal, no 5xx/timeout/exception; one 403 = the intentional denial test; pg pool max=5, no queue issue observed |
+| Time to first answer | RECORDED | existing learner, login → Today → first answer ≈ 7 s or less (observed, not a benchmark or guarantee); scan→first-answer for a brand-new learner not timed |
+| DailyPlan creation; classroom burst sanity | PASS | S3 (Preview, 30 learners, pool max 5); not re-run (per protocol) |
+
+**TECHNICAL GO/NO-GO: PASS.** No unresolved critical blocker in the Plan's list. Accepted
+non-critical gaps (recorded here as the Plan requires): signup/email confirmation exercised
+on one device only; structured RTL checklist not itemised; signed-out Item Analysis rejection
+and the manual privacy visual check not recorded (test-covered); the Wi-Fi/cellular matrix
+exercised on Android only; no multi-learner same-IP signup burst with real email (see
+operational risk).
+
+**Operational pilot risk (not an app defect, not a Technical blocker):** Supabase Auth email
+sending/rate limits (one 429 seen during an earlier signup attempt) and SMTP capacity for a
+class-sized cohort. Custom-SMTP status and per-IP limits are unrecorded; decide before the
+real pilot. Under the protocol it is BLOCKED (not GO) if it stops a step.
+
+**CONTENT GO/NO-GO: WAITING FOR REAL PILOT MATERIAL — NOT EXECUTED (external dependency).**
+Real Ruppin pilot content is not available and not expected soon. Nothing below is checked;
+no sign-off exists; the offline validator has not been run on real material.
+Deferred checklist, to run when material arrives (existing criteria only, no new gates):
+1. Real pilot material exists and is imported (`docs/PILOT_CONTENT_VALIDATOR.md` run on it first).
+2. Every answer key verified against the material.
+3. Hebrew wording reviewed.
+4. Distractors reviewed.
+5. Every Question mapped to a Topic and to the instruction.
+6. Enough published Questions (a learner's Today draw plus margin).
+7. No test/draft/burst/internal content visible from a learner account.
+8. Instructor/content-owner sign-off recorded (name/date).
+9. No re-publish after classroom answering starts.
+
+**Formal Pre-Pilot status:** Run-level acceptance items 5–6 are not both met (Content not
+evaluated), so the Run stays OPEN. The system is technically ready, NOT content-approved and
+NOT pilot-approved. Content is a PRE-PILOT RELEASE GATE (mandatory before the real class); it
+is not a product-development gate: nothing in this Plan or `CLAUDE.md` requires product
+development to stop while Content is externally blocked. Run 009 still requires its own new
+Plan from Dor (§8) and is not started here. This does not approve the pilot.
+
+**Pilot UX follow-ups (not blockers; FUB-028, FUB-029):** Item Analysis is reachable by direct
+URL but not discoverable from the normal instructor Course UI; Publish validates persisted
+state, so a correct answer selected but not saved gives "correct answer must be selected".
 
 ## S4 Rehearsal Protocol (exact checklist)
 

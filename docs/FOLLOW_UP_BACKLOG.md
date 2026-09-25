@@ -1128,6 +1128,30 @@ No further auth change until the hosted retest shows whether this is sufficient.
 
 ---
 
+# FUB-028 — Item Analysis Discoverability
+
+**Status:** `POST-PILOT BACKLOG` (not a blocker; schedule before the real class if the instructor needs it)
+**Area:** Instructor Course UI navigation
+
+Observed 2026-09-25 (manual QA): Item Analysis works and is authorized correctly but is only
+reachable by direct URL; there is no visible entry from the normal instructor Course UI. The
+Plan does not require discoverability. The protocol names the path `Course → ניתוח תשובות לפי
+שאלה`; a link would be a small deliberate UI change.
+
+---
+
+# FUB-029 — Publish Validates Persisted State (Save Draft Before Publish)
+
+**Status:** `UX WATCH` (not a persistence bug, not a blocker)
+**Area:** Question authoring UI
+
+Observed 2026-09-25: a correct answer selected in the form but not saved makes Publish fail
+with "correct answer must be selected"; Save Draft then Publish succeeds. Publish validates the
+persisted draft, not unsaved form state. Options: clearer copy, dirty-state hint, or
+save-on-publish.
+
+---
+
 ## Maintenance Rule
 
 Keep this file small.

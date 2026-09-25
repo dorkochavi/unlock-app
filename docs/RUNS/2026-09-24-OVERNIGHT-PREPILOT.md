@@ -17,7 +17,7 @@ N2: no qualifying gap (every handler/use case has tests; answer/join/DailyPlan p
 | Item | Status |
 |---|---|
 | F-12 | MANUAL UI VERIFIED, RESOLVED (2026-09-25 real-phone rehearsal) |
-| F-13, F-14 | RESOLVED LOCALLY — PENDING MANUAL UI VERIFICATION |
+| F-13, F-14 | MANUAL UI VERIFIED, RESOLVED (2026-09-25 Production QA) |
 | FUB-027 | HOSTED + MANUAL VERIFIED, RESOLVED (2026-09-25 real-phone rehearsal) |
 | F-01 | MITIGATED; design issue deferred, not resolved |
 | F-04a | RESOLVED LOCALLY |
