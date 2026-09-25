@@ -332,6 +332,8 @@ published questions through UNLOCK alone, and the instructor-to-learner loop (Ru
 
 ## Product Run 009 — Learner Progress + Instructor Insights V1
 
+> **Narrowed by the current Plan (`docs/CHATGPT_PLAN.md`).** The outcome lists below are the original direction, not the current executable scope. Run 009 currently promotes only — Learner: simple Topic-state Progress; Instructor: Topic-level descriptive first-answer Insights, Item Analysis privacy reconciliation (F-02), and a discoverable analysis entry point. Still deferred: active vs inactive learner analytics, recurring misconception analysis, recent-activity analytics, unseen-material analytics beyond current scope, trends, readiness, and richer Progress / Landscape / Pulse (FUB-018..022, OQ-029/030).
+
 ### Goal
 
 Give learners a trustworthy view of their own progress, and test whether UNLOCK can give an instructor a useful picture of class understanding.

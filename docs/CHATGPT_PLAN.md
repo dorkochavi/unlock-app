@@ -1,9 +1,9 @@
 # UNLOCK — Run 009: Learner Progress + Instructor Insights V1
 
-PLAN_VERSION: 002
+PLAN_VERSION: 003
 RUN_ID: 2026-09-25-009
 BASE_HEAD: afcd750
-STATUS: FINAL — approved for implementation once this documentation revision is committed; NO implementation started. One slice-entry gate remains (§9): S1 is gated only by the archived-Topic semantic inspection. S3 has no remaining human gate.
+STATUS: IN PROGRESS — S1 committed (learner Topic Progress read model); S2 not started; S3 not started. The S1 entry gate (§9.1) was satisfied. S2's entry shape is decided (§7 S2). S3 has no remaining human gate.
 
 ## 1. Run Goal
 
@@ -26,7 +26,7 @@ Expected: branch `feature/project-foundation`, `HEAD == BASE_HEAD` (`afcd750`) o
 
 ### D1 — Privacy contract (F-02; applies to BOTH Item Analysis and Topic Insights)
 - Never expose: exact responder count, bucketed responder count, learner identity, per-option distributions, learner drill-down.
-- Eligibility uses the existing disclosure policy: ≥5 active LEARNERs and ≥5 distinct responders for the relevant evidence surface (per Question for Item Analysis; per Topic for Topic Insights). The minimum stays 5; no higher threshold. The counts are used internally to decide eligibility and are never returned.
+- Eligibility uses the existing disclosure policy: ≥5 active LEARNERs and ≥5 distinct responders for the relevant evidence surface (per Question for Item Analysis; per Topic for Topic Insights). The minimum stays 5; no higher threshold. The counts are used internally to decide eligibility and are never returned. Instructor aggregate eligibility deliberately retains the existing ACTIVE LEARNER population (non-revoked AND non-archived); this differs intentionally from learner self-read authorization (§3 Standing constraints), where an archived-but-not-revoked LEARNER still satisfies `hasAccess` — instructor analytics describe the active class population, not every learner who retains historical access.
 - When eligible, show only: a coarse descriptive band, static copy ("based on first answers from at least 5 learners"), and the last-updated time. When not eligible: an explicit insufficient-data state with no classification.
 - Bands (3): `MOSTLY_CORRECT`, `MIXED`, `MOSTLY_INCORRECT`. **Frozen boundaries** over the eligible first accepted answers (c correct of n): `MOSTLY_CORRECT` when more than 2/3 are correct, `MIXED` when between 1/3 and 2/3 correct inclusive, `MOSTLY_INCORRECT` when fewer than 1/3 are correct. Implement and test with integer-safe comparisons only: `3c > 2n` / `n ≤ 3c ≤ 2n` / `3c < n`. Percentages and the underlying counts are never exposed in the UI or DTO.
 - Existing Item Analysis (`distinctResponderCount`, `approximateIncorrectRatePercent`, and the "N learners answered / N correct" copy) is brought into this contract in S3. This intentionally changes a shipped surface and supersedes the count-style wording allowed by the earlier Pre-Pilot Plan.
@@ -64,7 +64,7 @@ Published Questions normally require a Topic. Defensively: Learner Progress show
 Not silently collapsed into "Other". Instructor view: a distinct, clearly marked archived-Topic representation when evidence/current content exists. Learner view: an archived Topic is not an active Progress destination. Coverage and Today are not silently rewritten. Prior evidence (a grep of the Postgres Today/unseen query code found no Topic-archive filtering) suggests Questions in an archived Topic may still be served by Today while the learner view hides the Topic — a possible contradiction with the Progress denominator. S1 MUST inspect the actual behavior first; if the contradiction is real and cannot be resolved without inventing semantics: `PLAN_CONFLICT`, stop. `F-04b` is untouched.
 
 ### Archived Courses
-Learner Progress follows the existing Course-status semantics (Course `PUBLISHED`, same as Today generation); membership access is governed separately (§3 Standing constraints); no new archived-Course behavior. Instructor Topic Insights follows the existing Item Analysis Course-state rules (PUBLISHED). F-04b is not resolved as a side effect.
+Learner Progress is **PUBLISHED-only for Run 009 V1**: a PUBLISHED Course may be read (subject to membership access); a DRAFT or ARCHIVED Course is unavailable (`COURSE_NOT_ACTIVE` / 409, already implemented in S1). ADR-015 membership access and Course lifecycle are separate dimensions: an archived-but-not-revoked learner membership still satisfies `hasAccess` (§3 Standing constraints), but Progress additionally requires the Course itself to be PUBLISHED. This is an intentionally conservative, TEMPORARY local rule — it is NOT the final lifecycle decision. Whether learner-owned history stays readable after an instructor archives the Course remains part of `F-04b` / future lifecycle semantics; F-04b is not resolved or closed by Run 009. Instructor Topic Insights follows the existing Item Analysis Course-state rules (PUBLISHED).
 
 ### Standing constraints
 Read-model only; no persisted aggregate; no migration; no Learning Engine/FSRS/NBA/DailyPlan/enum change; Progress is read-only, links back to Today, does not select/rank/resolve Today items and is not a manual study-selection workflow. Access (ADR-015 §7/§8): learner sees only own state for Courses where they hold a LEARNER role with `hasAccess` (not revoked) — revoked ⇒ denied; archived-but-not-revoked ⇒ still authorized for own Progress/history (archiving only removes the Course from the active learning/Today set; discoverability stays governed by existing UI/active-learning semantics, and S2 need not add an archived-Course navigation path; same precedent as F-04a); instructor views require an active non-revoked OWNER/INSTRUCTOR (`canAuthorCourse`); auth before DB (`auth.md`). Hebrew/RTL, mobile-first, existing `src/messages` layer; learner nav gains one tab. One app; Local → Preview → Production; no Staging; no destructive Production-DB experiments.
@@ -97,8 +97,9 @@ Verification per `.claude/rules/testing.md`; reviewers per `review-commit`. S3 i
 
 ### S2 — Learner Progress UI
 - **Outcome:** learner opens Progress and sees Topic states with coverage and a path back to Today.
-- **Scope:** Progress navigation entry (`learner-nav.tsx`), mobile-first Hebrew/RTL page, four states, sparse/empty states (no Course, no Topics, nothing attempted), coverage context, back-path to Today.
-- **Tests:** component/page tests for each state and empty state; nav test; RTL assertions where the repo does them.
+- **Entry shape (decided):** Progress is a GLOBAL learner-nav destination (nav: Today, Courses, Progress; `learner-nav.tsx`). The page shows the learner's ACTIVE/DISCOVERABLE Courses (existing active-Course/discoverability semantics — the same listing the Courses page uses), grouped by Course; each Course section shows that Course's Topic states from the S1 read model. Authorization and discoverability stay separate: an archived-but-not-revoked membership may still be authorized at the S1 API/use-case layer, but archived memberships are not surfaced as active Progress destinations, and S2 adds NO archived-Course navigation path or other backdoor. No new persisted cross-Course model; S2 composes the existing active-Course listing with S1. If that composition would require an unsafe or architecturally inappropriate N+1 pattern: STOP and report before inventing a new aggregate.
+- **Scope:** Progress navigation entry, mobile-first Hebrew/RTL page, four states, coverage context ("attempted X of Y"), back-path to Today, and explicit empty/unavailable states: no active Courses → global empty state; active Course with `topics: []` → Course-level empty state (NOT "not started" — no Topics is distinct from a Topic in `NOT_STARTED`); `COURSE_NOT_ACTIVE`/409 → explicit unavailable state if encountered; nothing attempted → Topics show `NOT_STARTED` as defined.
+- **Tests:** component/page tests for each state and each empty/unavailable state (including `topics: []` vs `NOT_STARTED`); nav test; RTL assertions where the repo does them.
 - **Manual verification:** Vercel Preview on a real phone (RTL, tap targets, no dead links, fresh-learner empty state).
 - **Stop:** pressure toward percentages, streaks, readiness, topic practice, or a dashboard.
 
@@ -128,7 +129,7 @@ Pilot Content Go/No-Go criteria are not part of Run 009 acceptance.
 
 ## 9. Slice-Entry Gates
 
-1. **Before S1:** the archived-Topic semantic inspection (§3 "Archived Topics"). Not resolved by this Plan; `PLAN_CONFLICT` and stop if it cannot be resolved without inventing semantics.
+1. **Before S1:** the archived-Topic semantic inspection (§3 "Archived Topics"). SATISFIED — inspected before S1; no conflict (Today does not filter on Topics; archived Topics are omitted from learner Progress with per-Topic denominators, so no Course-level total is distorted).
 2. **S3:** no remaining human gate. The privacy contract, band boundaries (§3 D1) and the descriptive-copy principle (§3 D4) are frozen; exact Hebrew wording may be refined during implementation without changing semantics.
 3. Any other calibration constant surfaced during implementation is an explicit decision, not a heuristic.
 
@@ -144,4 +145,4 @@ Stop for Dor if: HEAD/working tree conflicts with the Run-start contract; a §9 
 
 ## 12. Handoff
 
-After completion: report to Dor; close the Run with the canonical protocol (`DEV_STATUS`, Run report, telemetry summary, KEEP/WATCH/CHANGE); add deferred work to the backlog per its rules; do not start Run 010 automatically. The real-pilot gate remains owned by `docs/PILOT_READINESS.md`.
+After completion: report to Dor; close the Run with the canonical protocol (`DEV_STATUS`, Run report, telemetry summary, KEEP/WATCH/CHANGE); add deferred work to the backlog per its rules; do not start Run 010 automatically. Run-close decision to make: the Canonical Consistency Audit found that flat Topics, soft archive, and current-derived `questions.topic_id` semantics have no durable ADR-level home (only the migration comment, D6, and OQ-031) — decide whether to create/consolidate an ADR then. The real-pilot gate remains owned by `docs/PILOT_READINESS.md`.
