@@ -19,6 +19,24 @@ export interface CurrentVersionItemStats {
   correctCount: number;
 }
 
+/**
+ * One Topic bucket of pooled first-attempt evidence (Run 009 S3). Counts are
+ * INTERNAL to the application layer (eligibility + band derivation) and are
+ * never returned by any use case or API.
+ */
+export interface TopicFirstAttemptStats {
+  /** Null = the "no Topic" bucket (published Questions with no Topic). */
+  topicId: string | null;
+  topicName: string | null;
+  topicArchived: boolean;
+  /** Distinct active LEARNERs with at least one counted first attempt in this Topic. */
+  distinctResponderCount: number;
+  /** Counted first attempts pooled across the Topic's current published Questions. */
+  firstAttemptCount: number;
+  /** Of those, how many were correct. */
+  correctAttemptCount: number;
+}
+
 export interface ItemAnalysisRepository {
   /**
    * Active LEARNER memberships in the Course — `role = 'LEARNER'` with
@@ -33,6 +51,17 @@ export interface ItemAnalysisRepository {
    * zero-response Questions. Attempts on older versions are excluded.
    */
   listCurrentVersionItemStats(courseId: string): Promise<CurrentVersionItemStats[]>;
+
+  /**
+   * One row per Topic that has current published Questions (archived Topics
+   * included and flagged), plus one `topicId: null` row when published
+   * Questions have no Topic, ordered by Topic creation (no-Topic last), with
+   * zero-evidence Topics present. Topic is CURRENT (`questions.topic_id`).
+   * Evidence: first persisted Attempt per (Question, active LEARNER) on the
+   * Question's CURRENT QuestionVersion — same counting rule as
+   * `listCurrentVersionItemStats`.
+   */
+  listTopicFirstAttemptStats(courseId: string): Promise<TopicFirstAttemptStats[]>;
 }
 
 export interface ItemAnalysisRepositories {

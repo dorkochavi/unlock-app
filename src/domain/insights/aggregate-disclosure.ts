@@ -23,6 +23,17 @@ export type AggregateDisclosureDecision =
   | "INSUFFICIENT_COURSE_SIZE"
   | "INSUFFICIENT_RESPONSES";
 
+/**
+ * What may leave the read model (F-02, Run 009 D1): the internal reason a
+ * surface is suppressed (Course too small vs too few responses) would leak
+ * which threshold is unmet, so it is collapsed to one explicit state.
+ */
+export type PublicDisclosure = "ELIGIBLE" | "INSUFFICIENT_DATA";
+
+export function toPublicDisclosure(decision: AggregateDisclosureDecision): PublicDisclosure {
+  return decision === "ELIGIBLE" ? "ELIGIBLE" : "INSUFFICIENT_DATA";
+}
+
 export interface AggregateDisclosureInput {
   /** Active LEARNER memberships in the Course (non-revoked, non-archived). */
   activeLearnerCount: number;

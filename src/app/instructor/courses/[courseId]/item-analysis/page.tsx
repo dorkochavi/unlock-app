@@ -1,17 +1,15 @@
 "use client";
 
 /**
- * Instructor Item Analysis page (Pre-Pilot S2) — minimal, neutral
- * per-Question evidence for the CURRENT QuestionVersion: a responder count
- * and a coarse (nearest-10%) incorrect rate, never exact correct/incorrect
- * counts. Manual refresh and a visible last-updated time only (no
- * polling/realtime); intended to be refreshed after a group answering
- * window, not after each individual response.
- *
- * Shows only what the API returns: for a non-ELIGIBLE item the API returns
- * no numbers at all, and this page renders only the insufficient-data
- * message. No interpretation wording (no "weak"/"struggling"), no learner
- * identity, no per-option distribution.
+ * Instructor "ניתוח תשובות" page (Run 009 S3) — ONE surface with two
+ * read-only sections: Topic-level Insights and Question-level Item Analysis.
+ * Both follow the F-02 privacy contract: the APIs return only a coarse
+ * descriptive first-answer band (or an explicit insufficient-data state) —
+ * no counts, percentages, learner identity, or per-option data — and this
+ * page renders only that. Manual refresh and a visible last-updated time
+ * only (no polling/realtime); intended to be refreshed after a group
+ * answering window, not after each individual response. No interpretation
+ * wording (no "weak"/"struggling"/"needs reinforcement").
  */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -19,17 +17,23 @@ import { useParams } from "next/navigation";
 
 import { getMessages } from "@/messages";
 
-type Disclosure = "ELIGIBLE" | "INSUFFICIENT_COURSE_SIZE" | "INSUFFICIENT_RESPONSES";
+type Band = "MOSTLY_CORRECT" | "MIXED" | "MOSTLY_INCORRECT";
+type Disclosure = "ELIGIBLE" | "INSUFFICIENT_DATA";
 
 interface ItemDto {
   questionId: string;
   questionVersionId: string;
   prompt: string;
   disclosure: Disclosure;
-  stats: {
-    distinctResponderCount: number;
-    approximateIncorrectRatePercent: number;
-  } | null;
+  band: Band | null;
+}
+
+interface TopicDto {
+  topicId: string | null;
+  name: string | null;
+  archived: boolean;
+  disclosure: Disclosure;
+  band: Band | null;
 }
 
 type ViewState =
@@ -39,16 +43,21 @@ type ViewState =
   | { kind: "notAuthorized" }
   | { kind: "notActive" }
   | { kind: "error" }
-  | { kind: "ready"; generatedAt: string; items: ItemDto[] };
+  | { kind: "ready"; generatedAt: string; items: ItemDto[]; topics: TopicDto[] };
 
 type FetchResult =
-  | { outcome: "READY"; generatedAt: string; items: ItemDto[] }
+  | { outcome: "READY"; generatedAt: string; items: ItemDto[]; topics: TopicDto[] }
   | { outcome: "UNAUTHENTICATED" | "NOT_FOUND" | "NOT_AUTHORIZED" | "NOT_ACTIVE" | "ERROR" };
 
-async function fetchItemAnalysis(courseId: string): Promise<FetchResult> {
+type Endpoint = "item-analysis" | "topic-insights";
+
+async function fetchEndpoint<T>(
+  courseId: string,
+  endpoint: Endpoint,
+): Promise<{ outcome: "OK"; body: T } | { outcome: Exclude<FetchResult["outcome"], "READY"> }> {
   let response: Response;
   try {
-    response = await fetch(`/api/courses/${courseId}/item-analysis`, { cache: "no-store" });
+    response = await fetch(`/api/courses/${courseId}/${endpoint}`, { cache: "no-store" });
   } catch {
     return { outcome: "ERROR" };
   }
@@ -58,17 +67,40 @@ async function fetchItemAnalysis(courseId: string): Promise<FetchResult> {
   if (response.status === 409) return { outcome: "NOT_ACTIVE" };
   if (!response.ok) return { outcome: "ERROR" };
   try {
-    const body = (await response.json()) as { generatedAt: string; items: ItemDto[] };
-    return { outcome: "READY", generatedAt: body.generatedAt, items: body.items };
+    return { outcome: "OK", body: (await response.json()) as T };
   } catch {
     return { outcome: "ERROR" };
   }
+}
+
+async function fetchAnalysis(courseId: string): Promise<FetchResult> {
+  const [items, topics] = await Promise.all([
+    fetchEndpoint<{ generatedAt: string; items: ItemDto[] }>(courseId, "item-analysis"),
+    fetchEndpoint<{ generatedAt: string; topics: TopicDto[] }>(courseId, "topic-insights"),
+  ]);
+  if (items.outcome !== "OK") return { outcome: items.outcome };
+  if (topics.outcome !== "OK") return { outcome: topics.outcome };
+  return {
+    outcome: "READY",
+    generatedAt: items.body.generatedAt,
+    items: items.body.items,
+    topics: topics.body.topics,
+  };
 }
 
 function interpolate(template: string, values: Record<string, string>): string {
   return Object.entries(values).reduce(
     (text, [key, value]) => text.replace(`{${key}}`, value),
     template,
+  );
+}
+
+function BandLine({ disclosure, band }: { disclosure: Disclosure; band: Band | null }) {
+  const messages = getMessages().itemAnalysis;
+  return (
+    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      {disclosure === "ELIGIBLE" && band !== null ? messages.band[band] : messages.insufficientData}
+    </p>
   );
 }
 
@@ -82,7 +114,7 @@ export default function InstructorItemAnalysisPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (): Promise<ViewState> => {
-    const result = await fetchItemAnalysis(courseId);
+    const result = await fetchAnalysis(courseId);
     switch (result.outcome) {
       case "UNAUTHENTICATED":
         return { kind: "signed-out" };
@@ -95,7 +127,12 @@ export default function InstructorItemAnalysisPage() {
       case "ERROR":
         return { kind: "error" };
       case "READY":
-        return { kind: "ready", generatedAt: result.generatedAt, items: result.items };
+        return {
+          kind: "ready",
+          generatedAt: result.generatedAt,
+          items: result.items,
+          topics: result.topics,
+        };
     }
   }, [courseId]);
 
@@ -209,40 +246,54 @@ export default function InstructorItemAnalysisPage() {
             </div>
             <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">{messages.subheading}</p>
 
-            {state.items.length === 0 ? (
-              <p className="text-zinc-600 dark:text-zinc-400">{messages.emptyTitle}</p>
-            ) : (
-              <ul className="flex flex-col gap-3">
-                {state.items.map((item) => (
-                  <li
-                    key={item.questionId}
-                    className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-                  >
-                    <p className="mb-3 text-base font-medium">{item.prompt}</p>
-                    {item.disclosure === "ELIGIBLE" && item.stats !== null ? (
-                      <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-                        <li>
-                          {interpolate(messages.respondersCount, {
-                            count: String(item.stats.distinctResponderCount),
-                          })}
-                        </li>
-                        <li>
-                          {interpolate(messages.incorrectRate, {
-                            percent: String(item.stats.approximateIncorrectRatePercent),
-                          })}
-                        </li>
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                        {item.disclosure === "INSUFFICIENT_COURSE_SIZE"
-                          ? messages.courseSizeInsufficient
-                          : messages.responsesInsufficient}
+            <section className="mb-8" aria-labelledby="topic-insights-heading">
+              <h2 id="topic-insights-heading" className="mb-3 text-lg font-medium">
+                {messages.topicsHeading}
+              </h2>
+              {state.topics.length === 0 ? (
+                <p className="text-zinc-600 dark:text-zinc-400">{messages.noTopicsTitle}</p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {state.topics.map((topic) => (
+                    <li
+                      key={topic.topicId ?? "no-topic"}
+                      className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+                    >
+                      <p className="mb-2 text-base font-medium">
+                        {topic.topicId === null ? messages.noTopicLabel : topic.name}
+                        {topic.archived ? (
+                          <span className="ms-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">
+                            {messages.archivedTopicLabel}
+                          </span>
+                        ) : null}
                       </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+                      <BandLine disclosure={topic.disclosure} band={topic.band} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section aria-labelledby="item-analysis-heading">
+              <h2 id="item-analysis-heading" className="mb-3 text-lg font-medium">
+                {messages.questionsHeading}
+              </h2>
+              {state.items.length === 0 ? (
+                <p className="text-zinc-600 dark:text-zinc-400">{messages.emptyTitle}</p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {state.items.map((item) => (
+                    <li
+                      key={item.questionId}
+                      className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+                    >
+                      <p className="mb-3 text-base font-medium">{item.prompt}</p>
+                      <BandLine disclosure={item.disclosure} band={item.band} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         ) : null}
       </main>

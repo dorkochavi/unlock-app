@@ -19,6 +19,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { getMessages } from "@/messages";
 import { canSelfJoinCourse, type CourseJoinPolicy, type CourseStatus } from "@/domain/course/types";
+import { canOpenAnswerAnalysis } from "@/domain/insights/analysis-entry";
 
 interface CourseAuthoringDto {
   id: string;
@@ -763,12 +764,14 @@ export default function InstructorCourseManagePage() {
               <div className="mb-3 flex items-center justify-between gap-2">
                 <h2 className="text-lg font-medium">{messages.instructor.manage.questions.heading}</h2>
                 <div className="flex shrink-0 items-center gap-3">
-                  <Link
-                    href={`/instructor/courses/${courseId}/item-analysis`}
-                    className="text-sm text-zinc-500 underline dark:text-zinc-400"
-                  >
-                    {messages.instructor.manage.questions.itemAnalysisAction}
-                  </Link>
+                  {canOpenAnswerAnalysis(state.course.status) ? (
+                    <Link
+                      href={`/instructor/courses/${courseId}/item-analysis`}
+                      className="rounded-md border border-zinc-300 px-3 py-1 text-sm font-medium dark:border-zinc-700"
+                    >
+                      {messages.instructor.manage.questions.itemAnalysisAction}
+                    </Link>
+                  ) : null}
                   <Link
                     href={`/instructor/courses/${courseId}/import`}
                     className="text-sm text-zinc-500 underline dark:text-zinc-400"
