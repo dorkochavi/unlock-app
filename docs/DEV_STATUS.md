@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-24
+Updated: 2026-09-26 (Run 009 close)
 
 ## Repository
 
@@ -82,9 +82,23 @@ Current repository capabilities include:
   active learners and 5 distinct responders, else no numbers); shows responder
   count and an incorrect rate rounded to the nearest 10 points, never exact
   correct/incorrect counts; manual refresh only. It is NOT a per-answer live
-  scoreboard — refresh after a group answering window. (Run 009 S3 replaces
-  the responder count and rounded rate with coarse descriptive bands under the
-  decided F-02 privacy contract; not yet implemented.);
+  scoreboard — refresh after a group answering window. **Run 009 S3 (`aa9f858`,
+  Preview-verified) replaced the responder count and rounded rate with coarse
+  descriptive first-answer bands (MOSTLY_CORRECT / MIXED / MOSTLY_INCORRECT) or
+  an explicit insufficient-data state — no counts, percentages, identity or
+  per-option data (F-02 contract) — and added Topic-level Insights
+  (`GET /api/courses/:courseId/topic-insights`) and a visible "ניתוח תשובות"
+  entry on the Course page for PUBLISHED Courses. Production deployment of
+  this change is NOT verified in this document.**;
+- learner Progress (Run 009 S1/S2, Preview-verified): `GET
+  /api/courses/:courseId/topic-progress` returns the caller's own qualitative
+  Topic states (NOT_STARTED / IN_PROGRESS / NEEDS_REINFORCEMENT / SOLID) with
+  attempted-of-total coverage; access = LEARNER role + `hasAccess` (ADR-015;
+  archived-but-not-revoked allowed), Course must be PUBLISHED (temporary local
+  rule; F-04b open). Global learner-nav destination `/progress` composes the
+  active Course listing (`/api/courses/mine`) with this endpoint. No
+  percentages or scores; Today remains the only next-action system. Topic
+  semantics: ADR-018 (current-derived);
 - Playwright E2E harness (the automated suite was not executed against a
   real environment; the pilot journey was instead proven by a manual
   browser flow against hosted Supabase — see "Pilot Readiness" below).
@@ -331,7 +345,7 @@ Hosted configuration that must remain (hosted Vercel environment):
   observability.
 Deferred: Today/Answer round-trip reduction (FUB-026), answer idempotency vs
 server-generated `answeredAt` (FUB-025), further analytics follow-ups
-(FUB-023/024), post-pilot learning-visibility directions (FUB-018..022; FUB-018 partially promoted to Run 009).
+(FUB-023/024), post-pilot learning-visibility directions (FUB-018..022; FUB-018 partially promoted to and delivered by Run 009: simple Topic-state Progress only; the rest stays deferred).
 
 ## Verification Baseline
 
@@ -438,7 +452,7 @@ Remote Git push and hosted database mutation remain manual/user-controlled actio
 Product roadmap:
 - Run 008 — Authoring Integration + Pilot Readiness (**COMPLETE**)
 - Pre-Pilot Validation Run — IN PROGRESS, formally open on Content Go/No-Go only (Technical S4 PASS 2026-09-25; waiting for real pilot material); not a renumbering of Run 009
-- Run 009 — Learner Progress + Instructor Insights (Plan FINAL, `docs/CHATGPT_PLAN.md`; not started)
+- Run 009 — Learner Progress + Instructor Insights (**COMPLETE**; S1/S2/S3 committed and Preview-verified; `docs/RUNS/2026-09-25-009.md`). Not a Pre-Pilot release requirement and not a pilot approval.
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
@@ -469,7 +483,7 @@ For the Pre-Pilot Run:
 - remaining before the REAL pilot (content gate, SMTP/Auth email capacity, QA data cleanup) is owned by `docs/PILOT_READINESS.md` §3; confirm the hosted config above stays set.
 
 For Run 009:
-- Plan FINAL (`docs/CHATGPT_PLAN.md`, RUN_ID `2026-09-25-009`, BASE_HEAD `afcd750`), approved for implementation once the documentation revision is committed; nothing implemented yet. Scope: learner Topic Progress (S1 read model, S2 UI) and instructor Topic Insights + one discoverable "ניתוח תשובות" surface with Item Analysis brought under the F-02 privacy contract (S3). Slice-entry gates: Plan §9. Start implementation in a fresh Claude Code process (telemetry bootstrap: Plan §2). Doc reconciliation: OQ-029 narrowed (simple Topic-state Progress promoted; FUB-018 partially promoted); OQ-031 narrowed to Topic hierarchy/historical attribution (flat Topics are implemented, Runs 005/006).
+- COMPLETE (RUN_ID `2026-09-25-009`; report `docs/RUNS/2026-09-25-009.md`; Plan v003). S1 `3a1d47b`, S3 `aa9f858`, S2 `5cdd2ae`, plus join-through-auth fix `04597b4`; all Preview-verified. **Preview-verified is not Production-deployed:** no document here claims Production has Run 009 behavior. Remaining for Dor: deploy to Production when ready (then update `docs/PILOT_READINESS.md` §3 F-02 note and its instructor script). Known limitation: an Attempt on an older QuestionVersion can keep contributing to the Question-level state used by Topic Progress after a new version becomes current (accepted V1 behavior; ADR-018 does not change it). Topic semantics are now owned by ADR-018.
 
 ## Blockers
 
@@ -482,9 +496,10 @@ Finding status (details: Run reports; Content is not PASS):
 - FUB-027 (signup-confirmation join intent): HOSTED + MANUAL VERIFIED, RESOLVED for current Pre-Pilot scope.
 - F-01 (empty DailyPlan frozen for the local day): MITIGATED; underlying design issue deferred, NOT resolved — learners must still join before opening Today.
 - F-04a (revoked learner could answer/skip existing plan items): RESOLVED LOCALLY.
-- F-04b (Course PUBLISHED -> ARCHIVED after the plan exists): DECISION PENDING; untouched by Run 009.
-- F-02 (Item Analysis small-n differencing): CONTRACT DECIDED (Run 009 D1: no exact or bucketed responder count, coarse descriptive bands, threshold stays 5; applies to Item Analysis and Topic Insights); NOT YET IMPLEMENTED — the shipped Item Analysis still exposes the exact responder count until Run 009 S3.
-- FUB-028 (Item Analysis discoverability): PLANNED FOR RUN009 S3 (closes only after the entry point exists and Preview verification succeeds). FUB-029 (Publish validates persisted draft): UX WATCH, unchanged.
+- F-04b (Course PUBLISHED -> ARCHIVED after the plan exists): DECISION PENDING; untouched by Run 009. Run 009 learner Progress is PUBLISHED-only as a conservative, temporary local rule, not the final lifecycle decision for learner history.
+- F-02 (Item Analysis small-n differencing): IMPLEMENTED in Run 009 S3 (`aa9f858`) under the D1 contract (no exact or bucketed responder count, coarse descriptive bands, threshold stays 5; Item Analysis and Topic Insights) and PREVIEW-VERIFIED. Production deployment: NOT VERIFIED here — until deployed, Production still runs the previous Item Analysis. Accepted residual: at n=5 a single new answer can flip a band/eligibility between manual refreshes.
+- FUB-028 (Item Analysis discoverability): RESOLVED — Run 009 S3, Preview-verified. FUB-029 (Publish validates persisted draft): UX WATCH, unchanged.
+- Join intent across sign-in (Run 009 S2 Preview regression): FIXED in `04597b4` and Preview-verified. The login page read `?next=` during render, which on a client-side navigation from /join/:id sees the previous URL; it is now read at submit time through the existing safe-redirect allowlist (see FUB-027).
 - Operational (not an app defect): Supabase Auth email rate limiting / SMTP capacity for a class-sized cohort — decide before the real pilot.
 - Offline content validator (`docs/PILOT_CONTENT_VALIDATOR.md`) is available for the content gate.
 

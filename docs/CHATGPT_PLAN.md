@@ -3,7 +3,7 @@
 PLAN_VERSION: 003
 RUN_ID: 2026-09-25-009
 BASE_HEAD: afcd750
-STATUS: IN PROGRESS — S1 committed (learner Topic Progress read model); S3 committed and Preview-verified (COMPLETE); S2 not started. The S1 entry gate (§9.1) was satisfied. S2's entry shape is decided (§7 S2).
+STATUS: COMPLETE — S1 (learner Topic Progress read model, `3a1d47b`), S3 (instructor Topic Insights + analysis surface, `aa9f858`) and S2 (learner Progress UI, `5cdd2ae`) are committed and Preview-verified; a join-through-auth regression found in S2 Preview was fixed in `04597b4`. Not Production-deployed as far as this Plan knows. See `docs/RUNS/2026-09-25-009.md`.
 
 ## 1. Run Goal
 
@@ -145,4 +145,4 @@ Stop for Dor if: HEAD/working tree conflicts with the Run-start contract; a §9 
 
 ## 12. Handoff
 
-After completion: report to Dor; close the Run with the canonical protocol (`DEV_STATUS`, Run report, telemetry summary, KEEP/WATCH/CHANGE); add deferred work to the backlog per its rules; do not start Run 010 automatically. Run-close decision to make: the Canonical Consistency Audit found that flat Topics, soft archive, and current-derived `questions.topic_id` semantics have no durable ADR-level home (only the migration comment, D6, and OQ-031) — decide whether to create/consolidate an ADR then. The real-pilot gate remains owned by `docs/PILOT_READINESS.md`.
+After completion: report to Dor; close the Run with the canonical protocol (`DEV_STATUS`, Run report, telemetry summary, KEEP/WATCH/CHANGE); add deferred work to the backlog per its rules; do not start Run 010 automatically. Run-close decision (taken 2026-09-26): the Canonical Consistency Audit found that flat Topics, soft archive, and current-derived `questions.topic_id` semantics had no durable ADR-level home; they are now owned by `docs/DECISIONS/018-topic-model-v1.md`. The real-pilot gate remains owned by `docs/PILOT_READINESS.md`.

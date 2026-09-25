@@ -131,6 +131,10 @@ UNLOCK has one persisted `DailyPlan` per learner per local day. Global Today and
 
 When ordinary NBA candidates are empty, V1 may deterministically fall back to unseen Questions. Unseen means no prior real Attempt; planning unseen material creates no fake learner evidence or progress; ordinary candidates always take precedence; at most 3 unseen Questions are selected.
 
+### ADR-018 — Topic Model V1
+
+Topics are flat, Course-scoped, and soft-archived (never deleted). `questions.topic_id` is current metadata, not snapshotted into Attempts or QuestionVersions, so read models attribute history to a Question's CURRENT Topic. No immutable historical Topic attribution exists in V1; hierarchy and historical attribution stay deferred (OQ-031).
+
 ---
 
 ## Decision Rule

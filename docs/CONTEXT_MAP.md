@@ -74,6 +74,7 @@ High-frequency current ADRs include:
 - ADR-015 — CourseMembership / join authorization
 - ADR-016 — Global DailyPlan / Today semantics
 - ADR-017 — Starter New Material V1
+- ADR-018 — Topic Model V1
 
 ## Scoped Claude Owners
 

@@ -1106,6 +1106,17 @@ auto-establishes a session is NOT relied upon — verify in the real retest, inc
 `/login` behaves cleanly for an already-signed-in user. Minor: `safe-redirect.ts` does not allow
 `/instructor/courses/new`, so that `next` falls back to `/today`.
 
+## Addendum (Run 009, 2026-09-26) — `next` is now read at submit time
+
+The statement above that sign-in preserved the join intent was true only when `/login?next=…` was loaded
+directly (typed URL, confirmation-email link). On the soft navigation from `/join/:id` (the join page's
+`router.push`), the login page read `window.location.search` during render, before the App Router had
+updated the URL, so `next` was lost and sign-in landed on `/today` (found in Run 009 S2 Preview). Fixed in
+`04597b4` ("Fix join intent preservation across authentication"): `next` is read at submit time via
+`resolveNextPathFromSearch` (still gated by the unchanged `resolveSafeNextPath` allowlist), including for the
+sign-up `emailRedirectTo`. After sign-in the learner returns to `/join/:id` and taps Join (explicit consent; no
+auto-join). Preview-verified. Everything else in this entry is unchanged.
+
 ## Human Dashboard Checks (not performed by the agent)
 
 1. Supabase → Authentication → URL Configuration → **Site URL** = the deployed origin

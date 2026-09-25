@@ -611,8 +611,9 @@ Status: DEFERRED
 
 Promoted in part (2026-09-25): a simple, read-only Topic-state Progress view
 (four qualitative states, coverage context, path back to Today) is decided and
-scheduled in Run 009 (`docs/CHATGPT_PLAN.md`, S1/S2). The question below is
-narrowed to what remains deferred beyond that.
+scheduled in Run 009 (`docs/CHATGPT_PLAN.md`, S1/S2) and delivered there
+(COMPLETE and Preview-verified, 2026-09-26; `docs/RUNS/2026-09-25-009.md`). The
+question below is narrowed to what remains deferred beyond that.
 
 Decision needed:
 
@@ -722,8 +723,10 @@ Status: DEFERRED
 Superseded in part (2026-09-25): the original question — whether V1 needs formal
 Topic entities — is resolved. Flat, Course-scoped Topics are implemented
 (`topics`, `questions.topic_id`, Runs 005/006) and Run 009 builds read models on
-them. Topic assignment is current (non-versioned); see Run 009 D6 in
-`docs/CHATGPT_PLAN.md`.
+them. Topic assignment is current (non-versioned); the current V1 Topic
+semantics are owned by `docs/DECISIONS/018-topic-model-v1.md` (ADR-018; Run 009
+D6 in `docs/CHATGPT_PLAN.md` is the origin). What remains deferred here is only
+hierarchy/Unit structure and immutable historical Topic attribution.
 
 Decision still needed (not required by current V1 work):
 
