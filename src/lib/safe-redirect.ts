@@ -17,3 +17,19 @@ export function resolveSafeNextPath(candidate: string | null): string {
   }
   return DEFAULT_NEXT_PATH;
 }
+
+/**
+ * Resolves the post-auth destination from a location search string
+ * (`window.location.search`, e.g. `?next=%2Fjoin%2F<id>`), always through
+ * `resolveSafeNextPath`. Pure so the parsing is testable.
+ *
+ * IMPORTANT for callers: read `window.location.search` at the moment of USE
+ * (e.g. inside a submit handler), never in a render-time initializer. In the
+ * Next.js App Router a client-side navigation (`router.push`) renders the
+ * destination page BEFORE it updates the browser URL (`HistoryUpdater` runs at
+ * commit), so a render-time read sees the PREVIOUS URL and silently drops
+ * `next` — which lost join intent for /join/:id -> /login navigations.
+ */
+export function resolveNextPathFromSearch(search: string): string {
+  return resolveSafeNextPath(new URLSearchParams(search).get("next"));
+}

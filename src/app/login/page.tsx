@@ -6,25 +6,20 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { getMessages } from "@/messages";
 import { buildSignUpEmailRedirectTo } from "@/lib/auth-redirect";
-import { resolveSafeNextPath } from "@/lib/safe-redirect";
+import { resolveNextPathFromSearch } from "@/lib/safe-redirect";
 
 type Mode = "sign-in" | "sign-up";
 
 export default function LoginPage() {
   const messages = getMessages();
   const router = useRouter();
-  // Read `next` directly from the browser's own location rather than
-  // `useSearchParams()` — this page is entirely client-rendered, and this
-  // avoids Next.js's Suspense-boundary requirement for that hook with no
-  // behavioral difference. Validated through an explicit allowlist
-  // (`resolveSafeNextPath`) — never trusted as a raw redirect target.
-  const [nextPath] = useState(() =>
-    resolveSafeNextPath(
-      typeof window === "undefined"
-        ? null
-        : new URLSearchParams(window.location.search).get("next"),
-    ),
-  );
+  // `next` is read from the browser's own location AT SUBMIT TIME (see
+  // `handleSubmit`), not during render: on a client-side navigation from
+  // /join/:id the URL is not updated until after this page renders, so a
+  // render-time read would lose the join destination (regression fixed in
+  // Run 009 S2 Preview). Always validated through the explicit allowlist
+  // (`resolveNextPathFromSearch` -> `resolveSafeNextPath`) — never trusted as
+  // a raw redirect target.
   const [mode, setMode] = useState<Mode>("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,6 +40,7 @@ export default function LoginPage() {
     setPending(true);
 
     try {
+      const nextPath = resolveNextPathFromSearch(window.location.search);
       const supabase = createSupabaseBrowserClient();
 
       if (mode === "sign-in") {
