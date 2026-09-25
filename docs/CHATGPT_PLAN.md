@@ -508,7 +508,7 @@ Human-observed Production evidence (`https://unlock-app-pied.vercel.app`). Super
 | Double-tap on answer / on Continue: no duplicate behaviour | PASS | Android |
 | Hebrew/RTL + mobile usability | PASS (limited) | Android: Hebrew correct, buttons usable, no broken layout; structured per-screen RTL checklist not separately recorded |
 | F-13 (no dead self-join link when policy is not OPEN) | PASS | OPEN → AUTHORIZED_ONLY: join/share link disappeared |
-| F-14 (answer request failure + retry) | PASS | airplane mode → submit → "לא ניתן היה לשלוח את התשובה. נסו שוב" → network restored → resubmit succeeded. App-level request failure/retry only; not a full-page offline reload |
+| F-14 (answer-submit failure + retry only; original initial-load bug is RESOLVED LOCALLY via tests, its manual verification NOT EXECUTED) | PASS (submit path) | airplane mode → submit → "לא ניתן היה לשלוח את התשובה. נסו שוב" → network restored → resubmit succeeded. App-level request failure/retry only; not a full-page offline reload |
 | Instructor Item Analysis (direct URL): loads, questions, insufficient-data states, aggregates where enough responses, Refresh | PASS | owner/instructor |
 | Item Analysis authorization denial | PASS | learner denied ("אין לך הרשאה לצפות בניתוח התשובות של קורס זה"). Signed-out rejection not manually recorded (covered by S2 tests/security review) |
 | Item Analysis privacy | PASS via S2 tests + security review | manual visual check of "no names/emails/per-option/'weak' wording" not separately recorded — accepted non-critical gap |
