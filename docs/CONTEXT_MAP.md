@@ -22,6 +22,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Broad product constitution | `docs/MASTER_SPEC.md` | COLD |
 | Unresolved decisions | `docs/OPEN_QUESTIONS.md` | WARM |
 | Deferred useful work | `docs/FOLLOW_UP_BACKLOG.md` | COLD |
+| Real-pilot gate (Content/Technical status, remaining checklist, rehearsal protocol) | `docs/PILOT_READINESS.md` | COLD |
 | Historical execution | Git + `docs/RUNS/**` | RESTRICTED |
 | Temporary resume state | `scratch/development_checkpoint.md` | LOCAL/COLD |
 | How to interpret telemetry/context-cost signals | `docs/DEVOS_OBSERVABILITY.md` | COLD |

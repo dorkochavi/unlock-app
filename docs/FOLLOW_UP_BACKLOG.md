@@ -693,7 +693,7 @@ from a dirty tree and the mismatch actually causes confusion.
 
 # FUB-018 — Learner Learning Visibility (Landscape / Pulse / Advanced Progress)
 
-**Status:** `DEFERRED`
+**Status:** `PARTIALLY PROMOTED TO RUN 009` — only the simple, read-only Topic-state learner Progress (qualitative states, coverage context, path back to Today; `docs/CHATGPT_PLAN.md` S1/S2). Everything else below stays `DEFERRED`: Landscape, Pulse/movement, historical trends, readiness score, percentages, forecasting, learner-selected study workflow, gamification, advanced Progress. Pilot evidence has NOT validated the advanced directions.
 **Priority:** `MEDIUM`
 **Area:** Product / Learner Progress
 
@@ -1082,7 +1082,7 @@ guidance (about 5 s) at the target class size.
 
 # FUB-027 — Signup Confirmation Redirect / Join-Intent Preservation
 
-**Status:** `HOSTED + MANUAL VERIFIED` — `RESOLVED` for current Pre-Pilot scope (2026-09-25 real-phone rehearsal on Production: join → signup → email confirmation → login → Today, see `docs/CHATGPT_PLAN.md` "S4 Real-Device Evidence #1"). Earlier text below is historical.
+**Status:** `HOSTED + MANUAL VERIFIED` — `RESOLVED` for current Pre-Pilot scope (2026-09-25 real-phone rehearsal on Production: join → signup → email confirmation → login → Today, see `docs/PILOT_READINESS.md` (full evidence tables: `git show afcd750:docs/CHATGPT_PLAN.md`, "S4 Real-Device Evidence #1")). Earlier text below is historical.
 **Priority:** was `HIGH` for the pilot (previously blocked a clean S4 re-test)
 **Area:** Auth UX / `src/app/login/page.tsx`, `src/lib/auth-redirect.ts`
 
@@ -1130,7 +1130,7 @@ No further auth change until the hosted retest shows whether this is sufficient.
 
 # FUB-028 — Item Analysis Discoverability
 
-**Status:** `POST-PILOT BACKLOG` (not a blocker; schedule before the real class if the instructor needs it)
+**Status:** `PLANNED FOR RUN 009 S3` (not a blocker; closes only after the entry point exists and Preview verification succeeds)
 **Area:** Instructor Course UI navigation
 
 Observed 2026-09-25 (manual QA): Item Analysis works and is authorized correctly but is only

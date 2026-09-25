@@ -609,10 +609,15 @@ formal KPI interpretation.
 
 Status: DEFERRED
 
+Promoted in part (2026-09-25): a simple, read-only Topic-state Progress view
+(four qualitative states, coverage context, path back to Today) is decided and
+scheduled in Run 009 (`docs/CHATGPT_PLAN.md`, S1/S2). The question below is
+narrowed to what remains deferred beyond that.
+
 Decision needed:
 
-What is the smallest useful learner-facing progress experience after the core
-Today loop is validated?
+Beyond the simple Topic-state Progress in Run 009, what further learner-facing
+progress elements are useful once real pilot behavior is observed?
 
 Potential elements:
 
@@ -712,30 +717,33 @@ Do not build a broad CMS merely to seed the pilot.
 
 ## OQ-031 — Course Structure Depth
 
-Status: OPEN
+Status: DEFERRED
 
-Decision needed:
+Superseded in part (2026-09-25): the original question — whether V1 needs formal
+Topic entities — is resolved. Flat, Course-scoped Topics are implemented
+(`topics`, `questions.topic_id`, Runs 005/006) and Run 009 builds read models on
+them. Topic assignment is current (non-versioned); see Run 009 D6 in
+`docs/CHATGPT_PLAN.md`.
 
-Does V1 need formal Topic / Unit entities?
+Decision still needed (not required by current V1 work):
 
-Alternative:
-
-Questions initially attach directly to Course/Material and deeper structure is
-added later.
+Does UNLOCK need Topic hierarchy / Unit structure beyond flat Topics, or
+immutable historical Topic attribution?
 
 Tradeoffs include:
 
-- schema simplicity
+- schema complexity
 - coverage measurement
 - New Material ordering
-- analytics
+- analytics and trend history
 - exam relevance
 - instructor organization
 - future readiness reporting
 
 Resolve before:
 
-features requiring reliable topic/unit-level reasoning.
+features requiring hierarchical topic/unit reasoning or historical/trend
+analytics that need immutable Topic attribution.
 
 ---
 
