@@ -57,3 +57,5 @@ next-env.d.ts
 /supabase/.temp/
 
 /.claude/scheduled_tasks.lock
+
+.vercel
