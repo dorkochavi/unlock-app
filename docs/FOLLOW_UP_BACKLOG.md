@@ -1130,7 +1130,7 @@ No further auth change until the hosted retest shows whether this is sufficient.
 
 # FUB-028 — Item Analysis Discoverability
 
-**Status:** `PLANNED FOR RUN 009 S3` (not a blocker; closes only after the entry point exists and Preview verification succeeds)
+**Status:** `RESOLVED` — Run 009 S3 (commit `aa9f858`), Preview-verified. The instructor Course page has a visible "ניתוח תשובות" entry point, rendered only for a PUBLISHED Course (DRAFT/ARCHIVED Courses expose no dead link); Preview verification passed, including learner denial on the instructor analysis surface. The original premise below ("reachable only by direct URL") was partially stale: an unconditional small text link already existed before S3; S3 made the entry intentional, visible and Course-state-safe. Kept for traceability; the observation below is historical.
 **Area:** Instructor Course UI navigation
 
 Observed 2026-09-25 (manual QA): Item Analysis works and is authorized correctly but is only

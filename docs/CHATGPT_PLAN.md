@@ -3,7 +3,7 @@
 PLAN_VERSION: 003
 RUN_ID: 2026-09-25-009
 BASE_HEAD: afcd750
-STATUS: IN PROGRESS — S1 committed (learner Topic Progress read model); S2 not started; S3 not started. The S1 entry gate (§9.1) was satisfied. S2's entry shape is decided (§7 S2). S3 has no remaining human gate.
+STATUS: IN PROGRESS — S1 committed (learner Topic Progress read model); S3 committed and Preview-verified (COMPLETE); S2 not started. The S1 entry gate (§9.1) was satisfied. S2's entry shape is decided (§7 S2).
 
 ## 1. Run Goal
 
