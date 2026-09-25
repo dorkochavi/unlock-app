@@ -11,6 +11,7 @@ export const he = {
     nav: {
       today: "היום שלי",
       courses: "קורסים",
+      progress: "התקדמות",
     },
   },
   auth: {
@@ -168,6 +169,28 @@ export const he = {
         importAction: "ייבוא שאלות מקובץ",
         itemAnalysisAction: "ניתוח תשובות",
       },
+    },
+  },
+  progress: {
+    heading: "ההתקדמות שלי",
+    subheading: "תמונה תיאורית של מצבך בכל נושא. מה ללמוד עכשיו נקבע ב״היום שלי״.",
+    loading: "טוען את ההתקדמות...",
+    signedOutTitle: "יש להתחבר כדי לראות את ההתקדמות",
+    signedOutAction: "מעבר להתחברות",
+    genericErrorTitle: "משהו השתבש בטעינת ההתקדמות",
+    retry: "ניסיון נוסף",
+    emptyTitle: "אין לך עדיין קורסים פעילים",
+    emptyBody: "אחרי שתצטרפו לקורס, ההתקדמות שלכם בנושאים תופיע כאן.",
+    courseNoTopics: "עדיין אין נושאים עם שאלות בקורס הזה",
+    courseUnavailable: "ההתקדמות אינה זמינה כרגע עבור הקורס הזה",
+    courseError: "לא הצלחנו לטעון את ההתקדמות בקורס הזה",
+    coverage: "ניסית {attempted} מתוך {total} שאלות",
+    backToToday: "חזרה להיום שלי",
+    state: {
+      NOT_STARTED: "לא התחלת",
+      IN_PROGRESS: "בתהליך",
+      NEEDS_REINFORCEMENT: "דורש חיזוק",
+      SOLID: "מבוסס",
     },
   },
   itemAnalysis: {

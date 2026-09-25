@@ -2,11 +2,10 @@
 
 /**
  * Bottom tab bar for the mobile-first learner shell (Run 004 Slice 2).
- * Deliberately just Today + Courses — the two active destinations this Run
- * requires. Rendered as a plain array so a future Progress tab (a later
- * Run, ADR-pending) is a one-line addition, not a rewrite — but only that
- * much extensibility, per this Slice's "preserve extensibility but do not
- * overbuild."
+ * Today + Courses (Run 004) + Progress (Run 009 S2). The destinations live
+ * in `nav-items.ts` as plain data, so adding one stays a one-line change —
+ * only that much extensibility, per Run 004's "preserve extensibility but
+ * do not overbuild."
  *
  * Fixed to the bottom of the viewport: on a phone, a top nav competes with
  * the browser chrome and requires more reach; a bottom bar is the
@@ -23,10 +22,7 @@ import { usePathname } from "next/navigation";
 
 import { getMessages } from "@/messages";
 
-const NAV_ITEMS = [
-  { href: "/today", labelKey: "today" as const },
-  { href: "/courses", labelKey: "courses" as const },
-];
+import { LEARNER_NAV_ITEMS } from "./nav-items";
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -39,9 +35,9 @@ export function LearnerNav() {
   return (
     <nav
       className="sticky bottom-0 z-10 flex border-t border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95"
-      aria-label={messages.shell.nav.today + " / " + messages.shell.nav.courses}
+      aria-label={LEARNER_NAV_ITEMS.map((item) => messages.shell.nav[item.labelKey]).join(" / ")}
     >
-      {NAV_ITEMS.map((item) => {
+      {LEARNER_NAV_ITEMS.map((item) => {
         const active = isActive(pathname, item.href);
         return (
           <Link
