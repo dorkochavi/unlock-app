@@ -1,0 +1,47 @@
+# Minimal CI: typecheck + lint + fast unit tests.
+#
+# Deliberately NOT included: the schema/PGlite suite (~9 min; run before releases), the production build
+# (Vercel builds every push), Playwright/E2E, and anything that needs a secret, Supabase/database access,
+# Vercel access, or a deployment. The unit suite is hermetic (no env vars or network required).
+#
+# Triggers: push to any branch + manual dispatch. `pull_request` is intentionally omitted for now so a branch
+# with an open PR is not run twice; add it (and restrict `push`) if PRs become the normal merge path.
+#
+# NOTE: action versions are major-version tags (checkout@v7, setup-node@v7, set per the maintainer's check of the
+# current supported majors); consider pinning by commit SHA.
+name: ci
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install (lockfile-exact)
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
