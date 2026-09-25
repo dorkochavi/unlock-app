@@ -3,7 +3,7 @@
 PLAN_VERSION: 001
 RUN_ID: 2026-09-23-PRE-PILOT
 BASE_HEAD: c5d370b
-STATUS: IN PROGRESS — S1, S2 COMPLETE; S3 PASS (2026-09-24); S4 PENDING / NOT COMPLETE — a preliminary real-device pre-check exposed a signup-confirmation redirect / join-return blocker (see "S4 Preliminary Pre-Check"); the app-side fix is RESOLVED LOCALLY (FUB-027) but hosted/manual verification is pending; the full rehearsal and both Go/No-Go gates have NOT been executed
+STATUS: IN PROGRESS — S1, S2 COMPLETE; S3 PASS (2026-09-24); S4 NOT COMPLETE — the 2026-09-24 pre-check exposed a signup-confirmation redirect / join-return blocker, which is now HOSTED + MANUAL VERIFIED as resolved (FUB-027; see "S4 Real-Device Evidence #1", 2026-09-25); the full rehearsal protocol, Technical Go/No-Go and Content Go/No-Go have NOT been completed
 
 ## 1. Run Goal
 
@@ -451,6 +451,45 @@ F-04a are resolved locally; F-12, F-13 and F-14 still need manual UI verificatio
 mitigated, not resolved. F-02 (Item Analysis small-n differencing) and F-04b (Course
 archive after plan generation) are decision-pending and unchanged. Manual QA is not
 complete; S4 remains NOT COMPLETE until the real rehearsal and both Go/No-Go gates run.
+
+## S4 Real-Device Evidence #1 (2026-09-25) — partial rehearsal; S4 remains NOT COMPLETE
+
+One real phone, private/incognito browser, hosted Production deployment
+(`https://unlock-app-pied.vercel.app`), fresh learner account, published self-join Course.
+Human-confirmed flow: join link → join page → sign-up → confirmation email (~1 s) → tapped
+confirmation link → returned to browser/login → logged in → Today with real questions →
+Course visible in Courses → several questions answered (correct and incorrect) → UI showed
+"נכון" / "לא נכון" with a Continue/המשך action → Continue advanced to the next question.
+
+Recorded as verified (current Pre-Pilot scope):
+- **FUB-027** — HOSTED + MANUAL VERIFIED, RESOLVED. Hosted Site URL / redirect allow-list
+  behaved correctly on the real flow (implied by the successful return; dashboard values were
+  not separately recorded).
+- **F-12** — MANUAL UI VERIFIED, RESOLVED. Contract verified: the answered item stays visible
+  with a correctness state + Continue, and Continue advances. This is not a detailed
+  pedagogical-explanation claim.
+- F-13 and F-14 states were NOT exercised; they stay RESOLVED LOCALLY, PENDING MANUAL UI
+  VERIFICATION.
+
+Earlier diagnostics (unchanged, not blockers): `/join/<id>` → `/login?next=/join/<id>` works;
+authenticated join needs an explicit second Join click; a prior signup hit Supabase Auth 429
+email rate limiting — an external platform limit, not an app defect (see Technical risk below).
+
+**Gate status after this evidence**
+- Technical Go/No-Go: NOT YET COMPLETE. Proven now: link join (QR scan not separately recorded), signup, email
+  confirmation, login, membership, Today, first answer, correct+incorrect path, feedback +
+  Continue, Courses visibility on one phone. Still unexecuted per the protocol: ≥2 physical
+  devices, both Wi-Fi and cellular, double-tap/refresh/resume, network switch, structured RTL
+  check, instructor Item Analysis refresh and privacy/authorization checks on device,
+  Runtime Log review, time-to-first-answer record.
+- Content Go/No-Go: NOT YET COMPLETE / NOT EXECUTED. The Course having questions is not
+  content sign-off. No instructor/content-owner sign-off, answer-key, Hebrew, distractor,
+  alignment, coverage or no-test-content verification is recorded; the offline validator
+  (`docs/PILOT_CONTENT_VALIDATOR.md`) has no recorded run on the real material.
+- Technical risk (operational, not an app defect): Supabase Auth email rate limiting (429)
+  can BLOCK class signups. Per the protocol this is BLOCKED (not GO) if it stops a step; custom
+  SMTP status and per-IP limits are not recorded and must be decided before a 5+ learner
+  classroom rehearsal.
 
 ## S4 Rehearsal Protocol (exact checklist)
 

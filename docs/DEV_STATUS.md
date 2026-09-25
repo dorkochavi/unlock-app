@@ -475,8 +475,8 @@ from before this Run, unchanged).
 - no Run 008 hosted-migration, backup, connection, or E2E gate remains open.
 
 For the Pre-Pilot Run:
-- complete manual/hosted verification of the FUB-027 fix (signup confirmation redirect /
-  join-return), then run the full S4 rehearsal and record both Go/No-Go results (`docs/CHATGPT_PLAN.md`);
+- FUB-027 is verified (2026-09-25); finish the remaining S4 rehearsal protocol and record
+  both Go/No-Go results, including instructor content sign-off (`docs/CHATGPT_PLAN.md`);
 - confirm hosted config above stays set; clean up the throwaway burst Course and
   `burst##` accounts when convenient (human-owned hosted action).
 
@@ -485,17 +485,19 @@ For Run 009:
 
 ## Blockers
 
-No Run 008 blocker remains. **Open Pre-Pilot blocker:** S4 signup confirmation
-redirect (`http://localhost:3000`) / lost join-return flow, found by the
-preliminary real-device pre-check. Locally diagnosed and fixed in code
-(FUB-027: sign-up passes `emailRedirectTo=<origin>/login?next=…`); the hosted
-Site URL / Redirect URL allow-list and the real phone confirmation flow are
-human-owned and still unverified. Signup email throughput/rate limits and
-real-device/RTL behavior are also still unproven.
+No Run 008 blocker remains. The former S4 signup-confirmation redirect / lost
+join-return blocker (FUB-027) is RESOLVED and verified on hosted Production with a
+real phone (2026-09-25). **Still open for Pre-Pilot:** the rest of the S4
+rehearsal (≥2 devices, both networks, resume/double-tap, structured RTL, instructor
+Item Analysis on device), Technical Go/No-Go, and Content Go/No-Go (instructor
+sign-off). Class-size signup email throughput / Supabase Auth rate limits remain
+unproven.
 
 Pre-Pilot local-hardening finding status (details: `docs/RUNS/2026-09-24-OVERNIGHT-PREPILOT.md`). Nothing below is verified in a browser or on hosted infrastructure:
-- F-12 (Today feedback), F-13 (join link for non-self-join Courses), F-14 (Today initial-load network failure): RESOLVED LOCALLY, PENDING MANUAL UI VERIFICATION.
-- FUB-027 (signup-confirmation join intent): RESOLVED LOCALLY, PENDING MANUAL/HOSTED VERIFICATION.
+- **Update 2026-09-25:** a real-phone rehearsal on Production succeeded end to end (join → signup → email confirmation → login → Today → correct/incorrect answers → feedback + Continue → Courses). This partial evidence does NOT complete S4: Technical Go/No-Go is NOT YET COMPLETE (single device; protocol items unexecuted) and Content Go/No-Go is NOT YET EXECUTED (no instructor sign-off recorded). Supabase Auth email rate limiting (429 seen once) is an operational/platform risk to decide before a class-size rehearsal, not an app defect. See `docs/CHATGPT_PLAN.md` "S4 Real-Device Evidence #1".
+- F-12 (Today feedback): MANUAL UI VERIFIED, RESOLVED for current Pre-Pilot scope (answered item stays visible with correctness state + Continue; Continue advances).
+- F-13 (join link for non-self-join Courses), F-14 (Today initial-load network failure): RESOLVED LOCALLY, PENDING MANUAL UI VERIFICATION (states not exercised).
+- FUB-027 (signup-confirmation join intent): HOSTED + MANUAL VERIFIED, RESOLVED for current Pre-Pilot scope.
 - F-01 (empty DailyPlan frozen for the local day): MITIGATED; underlying design issue deferred, NOT resolved — learners must still join before opening Today.
 - F-04a (revoked learner could answer/skip existing plan items): RESOLVED LOCALLY.
 - F-04b (Course PUBLISHED -> ARCHIVED after the plan exists): DECISION PENDING.

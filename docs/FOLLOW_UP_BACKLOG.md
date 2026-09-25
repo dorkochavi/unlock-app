@@ -1082,8 +1082,8 @@ guidance (about 5 s) at the target class size.
 
 # FUB-027 — Signup Confirmation Redirect / Join-Intent Preservation
 
-**Status:** `RESOLVED LOCALLY` — hosted config and the real confirmation flow are UNVERIFIED (human-owned)
-**Priority:** `HIGH` for the pilot (blocks a clean S4 re-test)
+**Status:** `HOSTED + MANUAL VERIFIED` — `RESOLVED` for current Pre-Pilot scope (2026-09-25 real-phone rehearsal on Production: join → signup → email confirmation → login → Today, see `docs/CHATGPT_PLAN.md` "S4 Real-Device Evidence #1"). Earlier text below is historical.
+**Priority:** was `HIGH` for the pilot (previously blocked a clean S4 re-test)
 **Area:** Auth UX / `src/app/login/page.tsx`, `src/lib/auth-redirect.ts`
 
 ## Observation
