@@ -1,22 +1,99 @@
 @import "tailwindcss";
 
+/*
+ * Semantic design tokens (docs/UX_SPEC.md §6). Components use the ROLE
+ * (`bg-primary`, `text-muted`, `border-border`, `bg-state-solid-soft`, ...),
+ * never a raw palette value, so light/dark and future brand changes stay in
+ * this file. One primary brand color; everything else is neutral or a status
+ * role. `danger` is for real errors/destructive actions only — an ordinary
+ * wrong answer is learning feedback, not an error.
+ */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #18181b;
+  --surface: #ffffff;
+  --surface-muted: #f4f4f5;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --muted: #52525b;
+  --subtle: #71717a;
+
+  --primary: #4338ca;
+  --primary-hover: #3730a3;
+  --primary-contrast: #ffffff;
+  --primary-soft: #eef2ff;
+  --primary-soft-foreground: #3730a3;
+
+  --state-solid-soft: #ecfdf5;
+  --state-solid: #047857;
+  --state-reinforce-soft: #fffbeb;
+  --state-reinforce: #b45309;
+  --state-progress-soft: #eef2ff;
+  --state-progress: #4338ca;
+  --state-not-started-soft: #f4f4f5;
+  --state-not-started: #52525b;
+
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b0b0f;
+    --foreground: #ededf0;
+    --surface: #131318;
+    --surface-muted: #1c1c22;
+    --border: #27272f;
+    --border-strong: #3a3a44;
+    --muted: #a1a1aa;
+    --subtle: #8b8b95;
+
+    --primary: #818cf8;
+    --primary-hover: #a5b4fc;
+    --primary-contrast: #0b0b0f;
+    --primary-soft: #1e1b4b;
+    --primary-soft-foreground: #c7d2fe;
+
+    --state-solid-soft: #052e1f;
+    --state-solid: #6ee7b7;
+    --state-reinforce-soft: #3a2506;
+    --state-reinforce: #fcd34d;
+    --state-progress-soft: #1e1b4b;
+    --state-progress: #c7d2fe;
+    --state-not-started-soft: #1c1c22;
+    --state-not-started: #a1a1aa;
+
+    --danger: #fca5a5;
+    --danger-soft: #3b0d0d;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-contrast: var(--primary-contrast);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-state-solid: var(--state-solid);
+  --color-state-solid-soft: var(--state-solid-soft);
+  --color-state-reinforce: var(--state-reinforce);
+  --color-state-reinforce-soft: var(--state-reinforce-soft);
+  --color-state-progress: var(--state-progress);
+  --color-state-progress-soft: var(--state-progress-soft);
+  --color-state-not-started: var(--state-not-started);
+  --color-state-not-started-soft: var(--state-not-started-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --font-sans: "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

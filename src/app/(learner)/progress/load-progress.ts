@@ -75,9 +75,16 @@ function isTopicProgressDto(value: unknown): value is TopicProgressDto {
   );
 }
 
-type CourseOutcome = { kind: "unauthenticated" } | CourseProgress;
+export type CourseOutcome = { kind: "unauthenticated" } | CourseProgress;
 
-async function loadCourseProgress(fetchFn: FetchFn, courseId: string): Promise<CourseOutcome> {
+/**
+ * One Course's Topic states (S1 endpoint). Also used on its own by the
+ * Course page (Run UX-01 UX-1) to show that Course's Topic rows.
+ */
+export async function loadCourseProgress(
+  fetchFn: FetchFn,
+  courseId: string,
+): Promise<CourseOutcome> {
   let response: Response;
   try {
     response = await fetchFn(`/api/courses/${courseId}/topic-progress`, { cache: "no-store" });

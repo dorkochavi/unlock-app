@@ -1,9 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 
+import { Button, ButtonLink } from "@/components/button";
+import { Card } from "@/components/card";
+import { PageHeader } from "@/components/page-header";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
+import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 import { selectDisplayedItem, type AnswerFeedback } from "./select-displayed-item";
 import { fetchTodayPlan, persistDetectedTimezone } from "./fetch-today-plan";
@@ -151,71 +155,155 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-6 sm:p-10">
-      <header className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{messages.today.heading}</h1>
-        {state.kind === "ready" ? (
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="text-sm text-zinc-600 underline dark:text-zinc-400"
-          >
-            {messages.today.signOut}
-          </button>
-        ) : null}
-      </header>
+    <>
+      <PageHeader
+        title={messages.today.heading}
+        trailing={
+          state.kind === "ready" ? (
+            <Button variant="tertiary" className="text-sm" onClick={handleSignOut}>
+              {messages.today.signOut}
+            </Button>
+          ) : null
+        }
+      />
 
-      <main className="flex flex-1 items-start justify-center">
-        {state.kind === "loading" || state.kind === "settingUpTimezone" ? (
-          <p className="text-zinc-600 dark:text-zinc-400">
-            {state.kind === "settingUpTimezone"
+      {state.kind === "loading" || state.kind === "settingUpTimezone" ? (
+        <LoadingState
+          label={
+            state.kind === "settingUpTimezone"
               ? messages.today.settingUpTimezone
-              : messages.today.loading}
-          </p>
-        ) : null}
+              : messages.today.loading
+          }
+        />
+      ) : null}
 
-        {state.kind === "signed-out" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.today.signedOutTitle}</p>
-            <Link
-              href="/login"
-              className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.today.signedOutAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "signed-out" ? (
+        <StateBlock
+          title={messages.today.signedOutTitle}
+          action={<ButtonLink href="/login">{messages.today.signedOutAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "timezoneError" || state.kind === "error" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">
-              {state.kind === "timezoneError"
-                ? messages.today.timezoneErrorTitle
-                : messages.today.genericErrorTitle}
-            </p>
-            <button
-              type="button"
-              onClick={retry}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
-            >
+      {state.kind === "timezoneError" || state.kind === "error" ? (
+        <StateBlock
+          tone="error"
+          title={
+            state.kind === "timezoneError"
+              ? messages.today.timezoneErrorTitle
+              : messages.today.genericErrorTitle
+          }
+          action={
+            <Button variant="secondary" onClick={retry}>
               {messages.today.retry}
-            </button>
-          </div>
-        ) : null}
+            </Button>
+          }
+        />
+      ) : null}
 
-        {state.kind === "ready" ? (
-          <TodayPlanView
-            plan={state.plan}
-            onUnauthenticated={() => setState({ kind: "signed-out" })}
-          />
-        ) : null}
-      </main>
-    </div>
+      {state.kind === "ready" ? (
+        <TodayPlanView
+          plan={state.plan}
+          onUnauthenticated={() => setState({ kind: "signed-out" })}
+        />
+      ) : null}
+    </>
   );
 }
 
-function progressLabel(template: string, resolved: number, total: number): string {
-  return template.replace("{resolved}", String(resolved)).replace("{total}", String(total));
+/**
+ * Today landing (Run UX-01 UX-1, docs/UX_SPEC.md §2 items 13–14): answers
+ * "what should I do now?" with one primary CTA before the question flow.
+ * Uses only the plan's own item counts.
+ */
+function TodayLanding({
+  total,
+  resolved,
+  onStart,
+}: {
+  total: number;
+  resolved: number;
+  onStart: () => void;
+}) {
+  const messages = getMessages().today;
+  const remaining = total - resolved;
+  const title =
+    resolved === 0
+      ? messages.landingStartTitle
+      : remaining === 1
+        ? interpolate(messages.landingContinueTitleOne, { total })
+        : interpolate(messages.landingContinueTitle, { remaining, total });
+
+  return (
+    <Card className="flex flex-col gap-4 p-6">
+      <div>
+        <p className="text-xl font-semibold">{title}</p>
+        <p className="mt-2 text-muted">
+          {total === 1 ? messages.landingBodyOne : interpolate(messages.landingBody, { total })}
+        </p>
+      </div>
+      <Button fullWidth onClick={onStart}>
+        {resolved === 0 ? messages.startAction : messages.continueLearning}
+      </Button>
+    </Card>
+  );
+}
+
+/**
+ * Today Complete (docs/UX_SPEC.md §2 items 15–18): a success state, not an
+ * empty state. The summary uses only the plan's own item statuses — no
+ * correctness counts or other metrics the DTO does not carry.
+ *
+ * TEMPORARY BRIDGE (UX_SPEC §9): "המשך ללמוד" routes to `/courses` until
+ * Course Practice exists (UX-3); it must be replaced then, not extended.
+ */
+function TodayComplete({ items }: { items: DailyPlanItemDto[] }) {
+  const messages = getMessages().today;
+  const answered = items.filter((item) => item.status === "completed").length;
+  const skipped = items.filter((item) => item.status === "skipped").length;
+  const summary = [
+    answered === 1
+      ? messages.completionAnsweredOne
+      : answered > 1
+        ? interpolate(messages.completionAnswered, { count: answered })
+        : null,
+    skipped > 0 ? interpolate(messages.completionSkipped, { count: skipped }) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <Card className="flex flex-col items-center gap-4 p-6 text-center">
+      <span
+        aria-hidden="true"
+        className="flex size-12 items-center justify-center rounded-full bg-state-solid-soft text-state-solid"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="size-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m5 12.5 4.5 4.5L19 7.5" />
+        </svg>
+      </span>
+      <div role="status">
+        <p className="text-xl font-semibold">{messages.completionTitle}</p>
+        <p className="mt-2 text-muted">{messages.completionBody}</p>
+      </div>
+      {summary ? <p className="text-sm text-muted">{summary}</p> : null}
+      <div className="mt-2 flex w-full flex-col gap-2">
+        <ButtonLink href="/courses" fullWidth>
+          {messages.completionContinue}
+        </ButtonLink>
+        <ButtonLink href="/progress" variant="tertiary" fullWidth>
+          {messages.completionViewProgress}
+        </ButtonLink>
+      </div>
+    </Card>
+  );
 }
 
 function generateSubmissionId(): string {
@@ -254,19 +342,37 @@ function TodayPlanView({
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [alreadyResolvedNotice, setAlreadyResolvedNotice] = useState(false);
+  // Landing gate (UX-1): the question flow starts on an explicit CTA. Local
+  // only — a reload shows the landing again, with "continue" wording.
+  const [started, setStarted] = useState(false);
 
   if (items.length === 0) {
     return (
-      <div className="text-center">
-        <p className="mb-2 text-lg">{messages.today.emptyTitle}</p>
-        <p className="text-zinc-600 dark:text-zinc-400">{messages.today.emptyBody}</p>
-      </div>
+      <StateBlock
+        title={messages.today.emptyTitle}
+        body={messages.today.emptyBody}
+        action={
+          <ButtonLink href="/courses" variant="secondary">
+            {messages.today.emptyAction}
+          </ButtonLink>
+        }
+      />
     );
   }
 
   const total = items.length;
   const resolvedCount = items.filter((item) => item.status !== "pending").length;
   const { item: current, feedback: activeFeedback } = selectDisplayedItem(items, feedback);
+
+  if (current === null) {
+    return <TodayComplete items={items} />;
+  }
+
+  if (!started) {
+    return (
+      <TodayLanding total={total} resolved={resolvedCount} onStart={() => setStarted(true)} />
+    );
+  }
 
   async function handleAnswer(itemId: string, selectedAnswer: string | string[] | null) {
     setSubmitError(null);
@@ -337,34 +443,27 @@ function TodayPlanView({
   }
 
   return (
-    <div className="w-full max-w-2xl">
-      <div className="mb-4 flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">
+    <div className="w-full">
+      <div className="mb-4 flex items-center justify-between text-sm text-muted">
         <span>{plan.plannedForDate}</span>
-        <span>{progressLabel(messages.today.progressLabel, resolvedCount, total)}</span>
+        <span>
+          {interpolate(messages.today.progressLabel, { resolved: resolvedCount, total })}
+        </span>
       </div>
 
       {alreadyResolvedNotice ? (
-        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-          {messages.today.alreadyResolvedError}
-        </p>
+        <p className="mb-4 text-sm text-muted">{messages.today.alreadyResolvedError}</p>
       ) : null}
 
-      {current === null ? (
-        <div className="rounded-lg border border-zinc-200 p-6 text-center dark:border-zinc-800">
-          <p className="mb-2 text-lg font-medium">{messages.today.completionTitle}</p>
-          <p className="text-zinc-600 dark:text-zinc-400">{messages.today.completionBody}</p>
-        </div>
-      ) : (
-        <TodayAnswerCard
-          key={current.id}
-          item={current}
-          feedback={activeFeedback}
-          submitError={submitError}
-          onSubmit={(selectedAnswer) => handleAnswer(current.id, selectedAnswer)}
-          onContinue={() => setFeedback(null)}
-          onSkip={() => handleSkip(current.id)}
-        />
-      )}
+      <TodayAnswerCard
+        key={current.id}
+        item={current}
+        feedback={activeFeedback}
+        submitError={submitError}
+        onSubmit={(selectedAnswer) => handleAnswer(current.id, selectedAnswer)}
+        onContinue={() => setFeedback(null)}
+        onSkip={() => handleSkip(current.id)}
+      />
     </div>
   );
 }

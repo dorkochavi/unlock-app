@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { Button, ButtonLink, buttonClasses } from "@/components/button";
+import { PageHeader } from "@/components/page-header";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 import type { CourseRole } from "@/domain/course/types";
 
@@ -68,87 +71,87 @@ export default function MyCoursesPage() {
   }, [retryCount]);
 
   return (
-    <div className="flex flex-1 flex-col p-6 sm:p-10">
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">{messages.myCourses.heading}</h1>
-      </header>
+    <>
+      <PageHeader title={messages.myCourses.heading} />
 
-      <main className="flex flex-1 items-start justify-center">
-        {state.kind === "loading" ? (
-          <p className="text-zinc-600 dark:text-zinc-400">{messages.myCourses.loading}</p>
-        ) : null}
+      {state.kind === "loading" ? <LoadingState label={messages.myCourses.loading} /> : null}
 
-        {state.kind === "signed-out" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.myCourses.signedOutTitle}</p>
-            <Link
-              href="/login"
-              className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.myCourses.signedOutAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "signed-out" ? (
+        <StateBlock
+          title={messages.myCourses.signedOutTitle}
+          action={<ButtonLink href="/login">{messages.myCourses.signedOutAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "error" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.myCourses.genericErrorTitle}</p>
-            <button
-              type="button"
+      {state.kind === "error" ? (
+        <StateBlock
+          tone="error"
+          title={messages.myCourses.genericErrorTitle}
+          action={
+            <Button
+              variant="secondary"
               onClick={() => {
                 setState({ kind: "loading" });
                 setRetryCount((count) => count + 1);
               }}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
             >
               {messages.myCourses.retry}
-            </button>
-          </div>
-        ) : null}
+            </Button>
+          }
+        />
+      ) : null}
 
-        {state.kind === "ready" && state.courses.length === 0 ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.myCourses.emptyTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.myCourses.emptyBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "ready" && state.courses.length === 0 ? (
+        <StateBlock title={messages.myCourses.emptyTitle} body={messages.myCourses.emptyBody} />
+      ) : null}
 
-        {state.kind === "ready" && state.courses.length > 0 ? (
-          <ul className="flex w-full max-w-2xl flex-col gap-3">
-            {state.courses.map((course) => {
-              const roleLabel = messages.myCourses.roleLabel[course.role];
-              return (
-                <li key={course.id}>
-                  <Link
-                    href={`/courses/${course.id}`}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 p-4 transition hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
-                  >
-                    <span className="min-w-0 truncate font-medium" title={course.title}>
-                      {course.title}
-                    </span>
-                    {roleLabel ? (
-                      <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
-                        {roleLabel}
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
-      </main>
+      {/* Each Course is one card and the whole card is the link (no competing
+          primary button per card). A per-Course learning-state summary is
+          deferred (docs/UX_SPEC.md §9): it would need a Course-level rollup
+          of Topic states that no accepted policy defines yet. */}
+      {state.kind === "ready" && state.courses.length > 0 ? (
+        <ul className="flex flex-col gap-3">
+          {state.courses.map((course) => {
+            const roleLabel = messages.myCourses.roleLabel[course.role];
+            return (
+              <li key={course.id}>
+                <Link
+                  href={`/courses/${course.id}`}
+                  className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <span className="min-w-0 break-words font-medium">{course.title}</span>
+                  <span className="flex shrink-0 items-center gap-2 text-sm text-muted">
+                    {roleLabel ? <span>{roleLabel}</span> : null}
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="size-5 rtl:rotate-180"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m9 6 6 6-6 6" />
+                    </svg>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
 
       {state.kind === "ready" ? (
-        <footer className="mt-8 text-center">
+        <footer className="mt-10 text-center">
           <Link
             href="/instructor/courses"
-            className="text-sm text-zinc-500 underline dark:text-zinc-400"
+            className={buttonClasses("tertiary", { className: "text-sm" })}
           >
             {messages.myCourses.instructorLink}
           </Link>
         </footer>
       ) : null}
-    </div>
+    </>
   );
 }

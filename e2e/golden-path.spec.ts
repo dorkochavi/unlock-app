@@ -54,8 +54,17 @@ test.describe("learner golden path", () => {
     // this fixture account/day, that is itself a valid, already-covered
     // product state (Slice 5) — this test does not force an answer to
     // exist.
-    const submitButton = page.getByRole("button", { name: "שליחה" });
-    if (await submitButton.isVisible().catch(() => false)) {
+    // Run UX-01: Today opens on a landing with one start/continue CTA
+    // before the question flow (or directly on completion/empty).
+    const startButton = page.getByRole("button", { name: /^(התחל ללמוד|המשך ללמוד)$/ });
+    const settledToday = startButton
+      .or(page.getByText("סיימת את התוכנית של היום"))
+      .or(page.getByText("אין פריטים בתוכנית של היום"));
+    await expect(settledToday).toBeVisible();
+    const answeredOne = await startButton.isVisible();
+    if (answeredOne) {
+      await startButton.click();
+      const submitButton = page.getByRole("button", { name: "שליחה", exact: true });
       const firstOption = page.getByRole("button", { pressed: false }).first();
       await firstOption.click();
       await submitButton.click();
@@ -64,15 +73,22 @@ test.describe("learner golden path", () => {
         page.getByText("נכון!").or(page.getByText("לא נכון")),
       ).toBeVisible();
 
-      await page.getByRole("button", { name: "המשך" }).click();
+      await page.getByRole("button", { name: "המשך", exact: true }).click();
     }
 
-    // 9. Reload must not corrupt same-day state: whatever Today shows now
-    // (another pending item, or completion, or empty) must be shown again
-    // identically after a reload, never reset to a fresh/duplicate item.
+    // 9. Reload must not corrupt same-day state: the server-reconstructed
+    // Today (landing with remaining count, or completion, or empty) must be
+    // identical across reloads, never reset to a fresh/duplicate plan.
+    await page.reload();
+    await expect(settledToday).toBeVisible();
+    if (answeredOne) {
+      // The answer was persisted: the server-rebuilt Today is never the
+      // fresh "start" landing again — it is either "continue" or complete.
+      await expect(page.getByRole("button", { name: "התחל ללמוד", exact: true })).toHaveCount(0);
+    }
     const bodyBeforeReload = await page.locator("main").innerText();
     await page.reload();
-    await expect(page.getByRole("heading", { name: "היום שלי" })).toBeVisible();
+    await expect(settledToday).toBeVisible();
     const bodyAfterReload = await page.locator("main").innerText();
     expect(bodyAfterReload).toBe(bodyBeforeReload);
   });
