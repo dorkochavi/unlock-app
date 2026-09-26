@@ -27,6 +27,34 @@ A Slice, not a Run: no telemetry ceremony, no Run Report. Base: `d3dfa9d`.
 
 ---
 
+## Slice B — Pilot Readiness Verification (verification only)
+
+Date 2026-09-26; base `1866680` (`origin/main`; CI green per human confirmation, not re-verified read-only). Nothing was changed or fixed; no source/config/dependency edits. Raw evidence: untracked `scratch/sliceB/`.
+
+**Environments actually used:** Production read-only (`GET` on `/`, `/login`, an unknown path, one static asset, one unauthenticated API route); LOCAL production build (`next build` + `next start`) with network-mocked Playwright scripts and a forged, unsigned expired session cookie (no real account or credentials). **Not available / not done:** no isolated test accounts, no `E2E_*` fixture, no Preview URL, so no authenticated measurement of any kind. `.env.local` points at the real hosted project, so authenticated local runs are not safe without isolated test accounts.
+
+| Question | Verdict | Key evidence |
+|---|---|---|
+| Q1 Error UX | NO ISSUE | Q1a (mocked offline / 500 / HTML body / 401): Today, Progress, Courses, instructor Courses show Hebrew retry or sign-in states; answer failure shows an inline Hebrew error. Q1b: no `error.tsx`/`not-found.tsx`/`global-error.tsx`; unknown route = default English 404; a forced structurally wrong 200 body reaches Next's default English "This page couldn't load / Reload / Back" (recoverable). Reaching it needs the server to break its own typed DTO contract. |
+| Q2 Auth/session | NEEDS MORE EVIDENCE | Proven: Q2-A/Q2-C at HTTP + UI level (forged expired cookie with invalid refresh token: API 401, auth cookie cleared, Today/Progress/Courses/instructor pages show the sign-in state; no 500). Static: server `getUser()` refreshes an expired session (`auth-js` `__loadSession`) and Route Handlers can write cookies. NOT proven: Q2-B (real refresh with a valid refresh token after natural expiry). Findings: 401 links go to plain `/login` (no `next`; join preserves it); instructor mutation calls have no 401 branch (generic "failed" message, form state kept); a 401 during answer drops the selection with no "not saved" message. |
+| Q3 Accessibility | NO ISSUE | Today (mocked plan, 375/320 px, RTL): no overflow, logical Tab order, native focus ring, all controls keyboard-operable, options 46 px / submit 48 px. Non-blockers only: focus falls to `body` after Submit/Continue; feedback/error text not in a live region; sign-out (20 px) and Skip (36 px) small; `text-emerald-600` info text 3.77:1; instructor option inputs use placeholder-only names. Instructor flows: source inspection only (not rendered). |
+| Q4 Today performance | NEEDS MORE EVIDENCE | Client waterfall observed: cold Today = 1 GET (first login adds POST timezone + GET), Answer = 1 POST, Continue = 0 requests. No timing measured. Existing FUB-026 evidence (DB statements fast, many sequential round trips, `max=5` p95 4.85 s/3.18 s under 30 concurrent learners) not re-interpreted. |
+| Q5 CI/build | NO ISSUE | `npm run build` passed with all env vars from `.env.example` blanked (78 s, local Windows, cache state not controlled); client factories read env only when called. A CI build would catch webpack/route/prerender failures that Vercel already surfaces on every push; extra value is small. |
+| Q6a Basic headers | NO ISSUE | Production sends only `Strict-Transport-Security` (Vercel). Missing: `X-Content-Type-Options`, `Referrer-Policy`, framing protection, `Permissions-Policy`. Exposure low: auth cookie is `SameSite=Lax` (so a cross-site frame is not authenticated), no outbound links, no camera/mic/geo use, no served user uploads. |
+| Q6b CSP | NO ISSUE | No unsafe HTML sinks (`dangerouslySetInnerHTML`/`innerHTML` absent), no third-party scripts/fonts/iframes; 2 inline Next bootstrap scripts. A strict CSP needs nonces (dynamic rendering, currently static pages) — high compatibility cost for low pilot benefit. |
+
+**Confirmed blockers:** none.
+
+**NEEDS MORE EVIDENCE:**
+- Q2-B — missing: an observed request after natural access-token expiry with a valid refresh token. Owner: human. Smallest step: provide one isolated test learner (credentials via `E2E_*` env vars, never chat) and the hosted JWT lifetime; then sign in, wait past expiry, answer a question (Claude observes status/`Set-Cookie`/UI).
+- Q4 — missing: authenticated single-user timings (cold/warm Today, Answer, Continue, N ≥ 5) on Preview and local, judged against the A/B/C bands ("no interruption / noticeable but acceptable / clearly blocking") fixed before measuring. Owner: human (isolated learner + a Course with published questions on Preview; Preview URL), then Claude measures.
+
+**Proposed fixes (not applied, none required by a verdict):** optional polish — Hebrew `not-found`/`error` boundaries; `next` on 401 sign-in links; 401 branch in instructor mutations; `role="status"`/focus management on Today feedback; four basic response headers via `headers()`. CSP: revisit as Report-Only on Preview only if a trigger appears. Build in CI: optional, low value.
+
+**Boundary note:** Course/Topic Practice (learner-controlled study beyond the finite Today plan) remains a separate future product-design task; nothing here constrains it. Today's completion copy already mentions free practice.
+
+---
+
 ## 1. Run Goal
 
 Expose the learning state UNLOCK already derives in two small, honest, read-only views:
