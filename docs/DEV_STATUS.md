@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-26 (Run UX-01 close)
+Updated: 2026-09-27 (Run UX-02 local close)
 
 ## Repository
 
@@ -90,6 +90,24 @@ Current repository capabilities include:
   Supabase integration); a successful real-phone Preview verification by the
   product owner on 2026-09-26; and, separately, the deployed Production UX
   manually checked and accepted by the product owner on 2026-09-26;
+- Course Practice and Topic Practice — Run UX-02 (local branch
+  `feature/run-ux-02-practice`, **not pushed / not merged / not deployed**;
+  `docs/RUNS/2026-09-27-UX-02.md`): learner-initiated bounded Practice (batches
+  of up to 10, explicit "עוד 10", honest no-more state, tertiary Practice Skip
+  with no evidence) through the one Answer → Attempt → Progress → FSRS
+  pipeline. Semantics: ADR-020 (one learner + one learning day = one
+  server-controlled learning session = today's DailyPlan id; Practice never
+  mutates/resolves Today; eligibility = PUBLISHED Course + active LEARNER
+  membership) and `LEARNING_ENGINE.md` §39A (early correct Practice answer is
+  evidence-only, never a scheduler review — `learning-engine-v2`). Routes:
+  `GET /api/courses/:id/practice`, `POST /api/courses/:id/practice/answer`;
+  server-computed `practiceAvailable` on the Course context; sign-in `next=`
+  allowlist for the Practice screen. UI: `/courses/:id/practice` in Learn Mode;
+  Course primary "תרגול בקורס" and Topic rows → Topic Practice. No migration.
+  Evidence, kept distinct: PGlite/application tests with the real engine and
+  the real API handlers; mocked browser matrix (UX states only). NOT proven:
+  Preview/Production, real Supabase auth/integration, real multi-connection
+  concurrency. The isolated-QA-learner Preview walkthrough is an open human item;
 - Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY
   Questions, with source-size AND row-count HTTP/application-layer limits
   (Run 008 S1.D);
@@ -478,6 +496,7 @@ Product roadmap:
 - Pre-Pilot Validation Run — IN PROGRESS, formally open on Content Go/No-Go only (Technical S4 PASS 2026-09-25; waiting for real pilot material); not a renumbering of Run 009
 - Run 009 — Learner Progress + Instructor Insights (**COMPLETE**; S1/S2/S3 committed and Preview-verified; `docs/RUNS/2026-09-25-009.md`). Not a Pre-Pilot release requirement and not a pilot approval.
 - Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE**, merged to `main` (`d052e5c`), deployed via the Production branch; real-phone Preview verification PASS and, separately, manual Production verification/acceptance, both by the product owner on 2026-09-26; `docs/RUNS/2026-09-26-UX-01.md`). Open, non-blocking follow-up: hosted Supabase Auth Redirect URL allow-list for the new `next=` values — an observed login return did not preserve the intended `/courses` destination. Early Practice + FSRS semantics (`FUB-030`) decided and promoted to Run UX-02 (`docs/CHATGPT_PLAN.md`).
+- Run UX-02 — Course & Topic Practice (standalone learner Run; **COMPLETE locally** through P1–P4, not pushed; `docs/RUNS/2026-09-27-UX-02.md`). Open human items: Preview walkthrough with an isolated QA learner; hosted Auth Redirect URL allow-list for Practice `next=` values. OQ-044 (FSRS learning-step calibration) stays open, non-blocking.
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale

@@ -1027,7 +1027,7 @@ save-on-publish.
 
 # FUB-030 — Course/Topic Practice (UX-3), Blocked by Early Practice + FSRS Semantics
 
-**Status:** `PROMOTED` → Run UX-02 (`docs/CHATGPT_PLAN.md`). Semantics: ADR-020 and `docs/LEARNING_ENGINE.md` §39A
+**Status:** `DONE` locally in Run UX-02 (P1–P4 committed, not pushed; `docs/RUNS/2026-09-27-UX-02.md`). Semantics: ADR-020 and `docs/LEARNING_ENGINE.md` §39A
 (both ACCEPTED 2026-09-26); UX: `docs/UX_SPEC.md` §10. The text below is the original deferral record.
 **Priority:** `MEDIUM`
 **Area:** Product / Learning semantics / Learner UX
@@ -1065,6 +1065,31 @@ Today `users → daily_plans` is `ON DELETE RESTRICT` and only a test deletes pl
 
 Any plan retention/deletion/cleanup feature, or any change to that FK. Then either forbid plan deletion while
 Attempts reference it, or persist an explicit Practice marker on the Attempt.
+
+---
+
+# FUB-032 — Practice Hardening Leftovers (Run UX-02)
+
+**Status:** `LATENT` (no observed defect)
+**Area:** Practice / application
+
+Recorded during Run UX-02 review; none blocks V1 and none is needed for the accepted behavior.
+
+- **Same-day re-answer.** The Practice answer path validates eligibility, scope, current version and pending-Today
+  but does not reject a Question already answered in the current learning session (ADR-020 lists no such rule). A stale
+  client can submit a second same-day Practice answer; it is a normal Attempt and the same-session logic in retrieval
+  qualification applies. Decide whether to reject it (409) if it ever shows up in real usage.
+- **Retry idempotency.** Practice inherits FUB-025: `answeredAt` is server-captured, so a sequential retry with the same
+  `submissionId` can return `SUBMISSION_ID_REUSED` (the Practice UI treats it as a generic retryable error and never
+  reuses a submission id). Fix once with FUB-025 for both Today and Practice.
+- **Batch content gap.** If a batch Question's version content row were missing, the batch would hold fewer than 10 items
+  while `hasMore` still counts it. Unreachable under FK integrity; harden only if a content read path changes.
+- **Progress entry link.** Progress lists a Course from `/api/courses/mine` (active, not archived LEARNER) and shows
+  Practice links without a `practiceAvailable` signal; an unpublished Course degrades to the calm "unavailable" state.
+
+## Promotion Trigger
+
+Real pilot usage showing any of the above, or the FUB-025 idempotency fix.
 
 ---
 

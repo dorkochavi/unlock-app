@@ -3,7 +3,7 @@
 PLAN_VERSION: 001
 RUN_ID: 2026-09-26-UX-02
 BASE_HEAD: d052e5c
-STATUS: APPROVED — P0 and P0.5–P0.7 (design, research, selector simulation) accepted 2026-09-26 and committed on `feature/run-ux-02-practice`; ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 ACCEPTED. Next: P1 (not started).
+STATUS: APPROVED — P0 and P0.5–P0.7 (design, research, selector simulation) accepted 2026-09-26 and committed on `feature/run-ux-02-practice`; ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 ACCEPTED. P1–P4 COMPLETE locally 2026-09-27 (commits on `feature/run-ux-02-practice`, not pushed); see `docs/RUNS/2026-09-27-UX-02.md`. Remaining: human Preview walkthrough with an isolated QA learner.
 
 ## 1. Run Goal
 
