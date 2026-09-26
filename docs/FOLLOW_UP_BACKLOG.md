@@ -1015,6 +1015,30 @@ save-on-publish.
 
 ---
 
+# FUB-030 — Course/Topic Practice (UX-3), Blocked by Early Practice + FSRS Semantics
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Product / Learning semantics / Learner UX
+
+## Observation
+
+`docs/UX_SPEC.md` (Run UX-01 — Learner UX Foundation) reserves Course Practice and Topic Practice as learner-selected study beyond the finite Today plan: bounded sessions (assumption: 10 questions, then an explicit "another 10"), through the same Answer → Attempt → Progress → FSRS pipeline. ADR-016 §6/§19/§21 define Manual Practice as separate from Today (never resolves a DailyPlanItem). No document defines how early/extra repetitions affect FSRS scheduling; ADR-008 is silent.
+
+## Important Constraint
+
+The blocker is a semantics decision (how early practice interacts with FSRS scheduling and Today), not document ceremony. After Run UX-01 (UX-1 + UX-2), first decide whether it is an architectural invariant (→ ADR) or a narrower learning-policy decision (→ an existing canonical learning/design doc). A route exposing manual-practice `submitAnswer` (auth first, `learningSessionId`) would also be required; none exists today.
+
+## Do Not Do Yet
+
+No Practice route, session model, selector, or Practice-shaped CTA in Run UX-01. Temporary bridges that stand in for it are listed in `docs/UX_SPEC.md` §9.
+
+## Promotion Trigger
+
+Run UX-01 complete (UX-1 and UX-2 implemented and browser-verified), and the Early Practice + FSRS semantics decision is made.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

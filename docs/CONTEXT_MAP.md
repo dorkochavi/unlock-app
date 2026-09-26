@@ -58,6 +58,7 @@ Load only when the task requires them:
 - `docs/DOMAIN_GLOSSARY.md`
 - `docs/UNLOCK_V1_SCOPE.md`
 - `docs/UNLOCK_ROADMAP.md`
+- `docs/UX_SPEC.md` (learner UX authority: navigation model, Learn Mode, visual system)
 - `docs/PERSISTENCE_SCHEMA_V1.md`
 - `docs/LEARNING_ENGINE.md`
 - `docs/GOLDEN_SCENARIOS.md`
