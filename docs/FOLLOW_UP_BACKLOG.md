@@ -339,14 +339,16 @@ bounded pass.
 
 ## Observation
 
-The repository has verification commands (`npm run typecheck/lint/test/
-test:schema/build`) but no repository-owned CI pipeline enforcing them on
-PRs/pushes.
+Narrowed 2026-09-26: minimal CI now exists (`.github/workflows/ci.yml`,
+ADR-019: typecheck + lint + unit tests on every push). Still not covered:
+the schema/PGlite suite, the production build and Playwright/E2E are
+deliberately excluded from CI; `main` has no required status checks
+(ADR-019 defers them); what Vercel does on a failed build is unverified.
 
 ## Follow-Up Investigation
 
-Post-pilot production work should evaluate PR verification, typecheck,
-relevant tests, build, and release/deployment gates (Run 012 territory).
+Post-pilot production work should evaluate adding build/schema/E2E checks,
+required status checks, and release/deployment gates (Run 012 territory).
 
 ## Do Not Do Yet
 
@@ -375,7 +377,10 @@ logging, and latency/error visibility for import/auth/Today failure paths
 
 ## Do Not Do Yet
 
-Do not choose or integrate a provider now; Run 008 S6 may add a narrow,
+Pilot-minimum runtime/error visibility is owned by `docs/PILOT_READINESS.md`
+§3 item 13 and does not by itself require a provider; this entry covers
+monitoring beyond that minimum. Do not choose or integrate a provider now;
+Run 008 S6 may add a narrow,
 pilot-scoped log around one critical path if repository evidence proves it
 genuinely warranted, no broader stack.
 
@@ -396,7 +401,9 @@ restore-verification procedure have still not been established.
 
 ## Follow-Up Investigation
 
-Establish backup ownership, frequency, RPO, RTO, and a periodic
+Pilot-minimum backup/recovery sanity (a current backup and a known
+recovery path) is owned by `docs/PILOT_READINESS.md` §3 item 13. Beyond
+that: establish backup ownership, frequency, RPO, RTO, and a periodic
 restore-verification procedure before scaling past the pilot. Do not
 assume/claim Supabase-managed backup guarantees without verifying the
 actual project plan/settings.
@@ -849,7 +856,10 @@ aggregate queries ever justify an Attempts index.
 ## Do Not Do Yet
 
 No event log, plan-column maintenance, or new index during the pilot
-without evidence that the current derivation is insufficient.
+without evidence that the current derivation is insufficient. The
+pilot-minimum product event evidence itself is owned by
+`docs/PILOT_READINESS.md` §3 item 13 (decide there whether derivation
+suffices, e.g. for `today_opened`).
 
 ## Promotion Trigger
 

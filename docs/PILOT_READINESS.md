@@ -46,6 +46,13 @@ Hosted configuration that must remain: `DATABASE_SSL_CA` set; `DATABASE_POOL_MAX
 10. No Topic reassignment after classroom answering starts (Run 009 Topic views are current-derived: a reassigned Question's history appears under its new Topic).
 11. Supabase Auth email/SMTP capacity decision (default sender is very tightly rate-limited; a 429 was seen once; per-IP and custom-SMTP state unrecorded). Under the rehearsal protocol, a step blocked by this is BLOCKED, not GO.
 12. Production QA/test-data cleanup (throwaway "Pre-Pilot Burst Test" Course, `burst##` accounts, QA learners/courses/questions) — human-owned hosted action.
+13. Pilot-minimum evidence/operations/privacy baseline (product decision 2026-09-26). A real cohort needs, before launch:
+    (a) basic product event evidence — funnel/usage answerable, derived from authoritative records where they suffice
+    (FUB-023 lists what they cannot show); (b) runtime/error visibility during class windows; (c) backup/recovery sanity —
+    a current backup and a known recovery path (FUB-009); (d) a privacy/data-ownership baseline — what learners are told
+    about their data and who owns pilot data (OQ-039). This does NOT pull Roadmap Run 012 forward: advanced
+    observability, analytics infrastructure, scale work and broader production hardening stay in Run 012. How each item
+    is met is decided when it is executed.
 
 Note (no longer a dependency): the F-02 privacy contract (Run 009 D1) is IMPLEMENTED in Run 009 S3 (`aa9f858`) and was verified in Production on 2026-09-26 (`v0.1.0`): the analysis page showed no learner identities, exact responder counts, percentages, per-option distributions or drill-down. Operating rule unchanged: refresh only after a group answering window.
 

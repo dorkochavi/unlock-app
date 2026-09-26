@@ -1388,6 +1388,10 @@ Generated output must be structured and schema validated.
 
 Free-form text should not be heuristically parsed into trusted learning content when structured output can be required.
 
+Architectural direction (2026-09-26): PDF/AI ingestion feeds the existing canonical Question authoring/import system
+(Structured Import's canonical rows → DRAFT Questions → review → explicit publish). There is no parallel AI-only
+publication path. Implementation details stay open for Roadmap Run 011.
+
 ---
 
 # 47. AI Content Verification
@@ -1399,7 +1403,7 @@ The long-term content-quality direction includes:
 - source linkage
 - deterministic validation
 - independent verification
-- optional human approval
+- human approval (required for assessment content — see below)
 - traceable verification state
 
 Potential trust states may include concepts such as:
@@ -1415,7 +1419,9 @@ REJECTED
 
 The exact workflow should be introduced only when AI-generated content becomes real implementation scope.
 
-Human approval requirements remain policy-dependent.
+Decided (2026-09-26): AI-generated assessment questions and AI-resolved/inferred correct answers are proposals. Both
+require instructor/human approval before publish in UNLOCK. Approval requirements for other AI output (e.g.
+explanations) remain open (OQ-038).
 
 ---
 

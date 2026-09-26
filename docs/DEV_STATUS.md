@@ -72,12 +72,15 @@ Current repository capabilities include:
 - immutable historical Attempts;
 - UserQuestionProgress / learner-state foundations;
 - FSRS-backed memory scheduling;
-- mastery/evidence/misconception handling;
+- mastery/evidence/misconception handling in the Learning Engine — misconception detection is currently inert
+  end-to-end: it needs a high-confidence incorrect Attempt, and the production learner UI does not capture confidence
+  (the Today client sends only `submissionId` + `selectedAnswer`; confidence model: OQ-014, open);
 - persisted DailyPlan / DailyPlanItems;
 - Today answer + Skip behavior;
 - New Material fallback V1;
 - learner shell / My Courses / Course View — redesigned in Run UX-01
-  (branch `feature/run-ux-01-learner-ux`, local, NOT yet merged/deployed;
+  (merged to `main` and pushed — `origin/main` at `d052e5c` — so it is on the
+  Production branch per ADR-019; NOT Production-verified;
   `docs/RUNS/2026-09-26-UX-01.md`): semantic tokens and shared primitives,
   Today landing + Today Complete success state, Learn Mode for the Today
   question flow (nav hidden, inline neutral feedback, focus management),
@@ -472,7 +475,7 @@ Product roadmap:
 - Run 008 — Authoring Integration + Pilot Readiness (**COMPLETE**)
 - Pre-Pilot Validation Run — IN PROGRESS, formally open on Content Go/No-Go only (Technical S4 PASS 2026-09-25; waiting for real pilot material); not a renumbering of Run 009
 - Run 009 — Learner Progress + Instructor Insights (**COMPLETE**; S1/S2/S3 committed and Preview-verified; `docs/RUNS/2026-09-25-009.md`). Not a Pre-Pilot release requirement and not a pilot approval.
-- Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE** locally, not pushed/merged; `docs/RUNS/2026-09-26-UX-01.md`). Open human checks: Preview verification on a real phone; hosted Supabase Auth Redirect URL allow-list for the new `next=` values. Next decision: Early Practice + FSRS semantics (`FUB-030`).
+- Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE**, merged to `main` and pushed (`d052e5c`), not Production-verified; `docs/RUNS/2026-09-26-UX-01.md`). Open human checks: verification on a real phone; hosted Supabase Auth Redirect URL allow-list for the new `next=` values. Early Practice + FSRS semantics (`FUB-030`) decided and promoted to Run UX-02 (`docs/CHATGPT_PLAN.md`).
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale

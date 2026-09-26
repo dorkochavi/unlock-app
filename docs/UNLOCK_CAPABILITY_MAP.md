@@ -42,19 +42,13 @@ Preserved from owners:
   learner model that decides what the learner should do next (`UNLOCK_ROADMAP.md` §2, `MASTER_SPEC.md` §1–§3).
 - Learner State and Next Best Action are already real, deterministic intelligence (§2 rows 1–2 below).
 - AI is not the Learning Engine (ADR-004; `LEARNING_ENGINE.md` §46).
-- AI-generated questions are proposals; instructor approval is required before publication (Roadmap Run 011). Note:
-  `MASTER_SPEC.md` §47 still says "optional human approval … policy-dependent" and OQ-038 is DEFERRED — reconcile when
-  Run 011 is designed.
+- AI-generated assessment questions and AI-resolved correct answers are proposals; both require instructor/human
+  approval before publish (`MASTER_SPEC.md` §47; OQ-038 remains open for other AI content).
+- PDF/AI ingestion feeds the existing canonical authoring/import → draft → review → publish system; no parallel AI-only
+  publication path (`MASTER_SPEC.md` §46; details open for Roadmap Run 011).
 - No fake precision and no vanity analytics (`MASTER_SPEC.md` §7.11; `LEARNING_ENGINE.md` §44).
 - Do not overbuild knowledge graphs, microservices, generic LMS abstractions or generic AI platforms (ADR-001;
   Roadmap §9; `MASTER_SPEC.md` §56).
-
-Product-owner direction recorded by this map (2026-09-26; not yet in an owning doc — reconcile with Roadmap Run 011's own
-upload → review-queue flow and `MASTER_SPEC.md` §46 when Run 011 is designed):
-- Structured Import remains the stable contract that future AI/PDF ingestion should feed; AI-generated content reuses the
-  normal draft → review → publish path rather than a parallel one.
-- Human review is required for AI-generated **or AI-resolved** assessment content (extends Run 011 to answer resolution;
-  consistent with `PILOT_READINESS.md` §3 item 2).
 
 ## 2. Capability Matrix
 
@@ -206,7 +200,7 @@ upload → review-queue flow and `MASTER_SPEC.md` §46 when Run 011 is designed)
 - **Pilot needs:** none (Roadmap: not required for the Ruppin pilot). External AI output may enter via Structured Import.
 - **Mature-only:** in-product upload, extraction, generation, review queue.
 - **Guardrails:** generation never creates learner evidence; instructor approval before publish (Roadmap Run 011);
-  per product-owner direction (§1), output should feed the Structured Import contract rather than a parallel path.
+  output feeds the canonical authoring/import path, not a parallel one (`MASTER_SPEC.md` §46).
 - **Depends on:** 8, 5 (critic), 4 (provenance), 14 (content IP).
 - **Sources:** Roadmap Run 011; ADR-004; `MASTER_SPEC.md` §44–§51; `CONTENT_IP_THREAT_MODEL.md`; OQ-038.
 - **Trigger:** Roadmap Run 011 start after core loops are pilot-validated.
@@ -239,8 +233,8 @@ upload → review-queue flow and `MASTER_SPEC.md` §46 when Run 011 is designed)
 - **Partial:** `daily_plans.started_at/completed_at/status` are never updated after insert (not authoritative).
 - **Missing:** product event instrumentation (no `today_opened` etc.; `PRODUCT.md` §15), analytics provider decision
   (OQ-026 OPEN), KPI definitions (OQ-019..022), experimentation of any kind.
-- **Pilot needs (map assessment):** the minimum in §5, preferring derivation from authoritative records. Owner status:
-  FUB-023 is DEFERRED ("no event log … during the pilot without evidence"); `PILOT_READINESS.md` §3 does not list it.
+- **Pilot needs:** basic product event evidence (`PILOT_READINESS.md` §3 item 13a), derived from authoritative records
+  where they suffice (FUB-023).
 - **Mature-only:** event store, dashboards, A/B testing.
 - **Depends on:** 15.
 - **Sources:** FUB-023; OQ-019..022, OQ-026; `MASTER_SPEC.md` §41–§42; `LEARNING_ENGINE.md` §43.
@@ -265,9 +259,8 @@ upload → review-queue flow and `MASTER_SPEC.md` §46 when Run 011 is designed)
 - **Partial:** login page is frameable (framing decision open, Slice B Q6a); session-expiry recovery UX gaps.
 - **Missing:** privacy/legal pages (Roadmap Run 012), data deletion semantics (OQ-027 OPEN), pilot data ownership
   (OQ-039 OPEN), rate limiting/abuse hardening (FUB-011), F-04b archived-Course decision.
-- **Pilot needs (map assessment):** a basic privacy notice and a data-ownership answer for a real student cohort (OQ-039);
-  framing decision. Owner status: privacy pages sit in Roadmap Run 012; OQ-027 targets destructive deletion flows;
-  `PILOT_READINESS.md` §3 lists none of these — a human decision is needed to add them to the pilot checklist.
+- **Pilot needs:** privacy/data-ownership baseline (`PILOT_READINESS.md` §3 item 13d; OQ-039). Map assessment, not in
+  §3: the framing decision (Slice B Q6a). Full privacy/legal pages stay in Roadmap Run 012.
 - **Mature-only:** rate limiting, CSP, RLS if ever adopted (OQ-025).
 - **Sources:** `.claude/rules/auth.md`, `api.md`; ADR-015; `CONTENT_IP_THREAT_MODEL.md`; OQ-025/027/039; FUB-011.
 - **Trigger:** before a real cohort (privacy/ownership); any new data surface.
@@ -279,9 +272,8 @@ upload → review-queue flow and `MASTER_SPEC.md` §46 when Run 011 is designed)
 - **Partial:** CI excludes schema suite, build and E2E by design; no required status checks on `main`.
 - **Missing:** runtime error monitoring/alerting (FUB-008), restore drill/RPO/RTO (FUB-009), Vercel failed-build behavior
   unverified, SMTP/Auth email capacity decision (`PILOT_READINESS.md` §3 item 11).
-- **Pilot needs:** SMTP decision (`PILOT_READINESS.md` §3 item 11). Map assessment, not in §3: someone watching errors
-  during class windows and a known recovery path. Owner status: FUB-008/009 are DEFERRED post-pilot (FUB-008: no
-  provider now); Roadmap Run 012's exit condition ("usable by a real pilot cohort") points the other way — unresolved.
+- **Pilot needs:** SMTP decision, runtime/error visibility and backup/recovery sanity (`PILOT_READINESS.md` §3 items 11,
+  13b, 13c). Advanced observability stays in Roadmap Run 012 (FUB-008/009 cover beyond the minimum).
 - **Mature-only:** staging, automated alerting, scale hardening (Roadmap Run 012).
 - **Sources:** ADR-019; `DEV_STATUS.md`; FUB-007/008/009; `PILOT_READINESS.md` §2.
 - **Trigger:** before a real cohort (minimum); more developers/cohorts (Run 012).
@@ -310,9 +302,9 @@ upload → review-queue flow and `MASTER_SPEC.md` §46 when Run 011 is designed)
 | Gap | Row | Evidence | Priority |
 |---|---|---|---|
 | Confidence evidence not captured → misconception detection inert in production (V1-required, `UNLOCK_V1_SCOPE.md` §6) | 1, 2, 7 | Today client body; OQ-014 OPEN | A decision / B build (Run 010) |
-| Product event instrumentation before a real cohort | 12 | FUB-023 (DEFERRED), OQ-026 | A minimum (map assessment; needs decision) |
-| Pilot-minimum operations, monitoring and recovery | 15 | FUB-008/009 (DEFERRED post-pilot) | A (map assessment; needs decision) |
-| Pilot-minimum privacy (notice, data ownership) | 14 | OQ-039; Roadmap Run 012 | A (map assessment; needs decision) |
+| Product event evidence before a real cohort | 12 | `PILOT_READINESS.md` §3 item 13a; FUB-023, OQ-026 | A (minimum) |
+| Pilot-minimum error visibility and recovery | 15 | `PILOT_READINESS.md` §3 items 13b–c; FUB-008/009 beyond | A (minimum) |
+| Pilot-minimum privacy/data ownership | 14 | `PILOT_READINESS.md` §3 item 13d; OQ-039 | A (minimum) |
 | Exam urgency (V1-required, `UNLOCK_V1_SCOPE.md` §6) | 2 | deferred tier in NBA code; OQ-002 | B (Run 010) |
 | Explainability of recommendations (learner-facing) | 2 | OQ-018 DEFERRED | B |
 | Cold-start / diagnostic intelligence beyond New Material | 1, 2 | ADR-017; `LEARNING_ENGINE.md` §31 | C |
@@ -332,9 +324,8 @@ product-wise and technically?
 
 **Current answer: partly.** Educational and completion signals are derivable from authoritative records. "Opened but did
 not start" behavior, runtime errors and latency are not observable without manual effort. This gate adds no Run and does
-not change the UX-02 sequence, and it is **not a release gate**: the binding pre-pilot checklist is `PILOT_READINESS.md`
-§3. It is this map's assessment of the minimum measurement baseline, to be confirmed (or consciously accepted as manual)
-by a human decision, which would then be recorded in `PILOT_READINESS.md`.
+not change the UX-02 sequence. The binding requirement is `PILOT_READINESS.md` §3 item 13 (pilot-minimum baseline,
+decided 2026-09-26); this section only maps today's measurable signals against it.
 
 | Signal | Source today | Status |
 |---|---|---|
@@ -348,7 +339,7 @@ by a human decision, which would then be recorded in `PILOT_READINESS.md`.
 | Basic latency / error evidence | Vercel Runtime Logs (manual) | manual only |
 | Monitoring / recovery readiness | manual log watching; manual backup, no restore drill | manual only |
 
-Proposed decisions for the owner (`PILOT_READINESS.md`) before the cohort: (1) whether derivation + manual log watching is acceptable for the pilot, or a
+Open choices when item 13 is executed: (1) whether derivation + manual log watching is enough for the pilot, or a
 minimal `today_opened` observation is needed (FUB-023 / OQ-026); (2) who watches Runtime Logs during class windows;
 (3) the recovery path if data is damaged (FUB-009). Pilot signals and GO/NO-GO criteria remain owned by
 `PILOT_READINESS.md` §5.

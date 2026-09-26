@@ -121,7 +121,7 @@ The current system already contains a substantial learning-engine and persistenc
 - New Material fallback;
 - learner-safe question read path;
 - hosted Supabase migration chain;
-- Development OS V1.1.
+- Development OS (current version: `CLAUDE.md`).
 
 The next phase is to turn this foundation into a self-sufficient product.
 
@@ -428,8 +428,10 @@ Prefer a narrow, reliable format set for V1, likely beginning with PDF and expan
 
 ### Required principles
 
-- AI-generated questions are proposals;
-- instructor approval is required before publication;
+- AI-generated questions and AI-resolved answers are proposals;
+- instructor approval is required before publication (`docs/MASTER_SPEC.md` §47);
+- ingestion feeds the existing canonical authoring/import → draft → review → publish system, not a parallel AI-only
+  publication path (`docs/MASTER_SPEC.md` §46);
 - published edits preserve QuestionVersion immutability;
 - generation must not fabricate learner evidence;
 - the Learning Engine remains deterministic and separate from content generation.
@@ -461,6 +463,9 @@ Initial Production deployment is already done (`v0.1.0`, ADR-019, minimal CI, ma
 - basic privacy/legal pages;
 - backup/recovery understanding;
 - performance pass on core learner/instructor flows at increased scale.
+
+The first real pilot cohort does not wait for this Run: it needs only the pilot-minimum baseline owned by
+`docs/PILOT_READINESS.md` §3 (decided 2026-09-26). Everything above beyond that minimum stays here.
 
 ### Exit condition
 
@@ -601,7 +606,8 @@ Course material can become reviewed questions through an instructor-controlled A
 
 Reached after Run 012.
 
-The system is deployable and operable for real pilot users, and for additional cohorts beyond the first pilot.
+The system is deployable and operable for real pilot users, and for additional cohorts beyond the first pilot. (The
+first pilot cohort itself needs only the pilot-minimum baseline in `docs/PILOT_READINESS.md` §3 — see Run 012.)
 
 ---
 
@@ -634,12 +640,13 @@ At the beginning of each Product Run:
 
 # 12. Current Next Step
 
-Product Runs 004 and 005 are complete (see `docs/DEV_STATUS.md` and
-`docs/RUNS/2026-09-20-005.md`).
+Product Runs 004–009 are complete (current state: `docs/DEV_STATUS.md`). The
+current Run is whatever `docs/CHATGPT_PLAN.md` names (standalone learner Runs
+such as UX-01/UX-02 sit outside this Product Run numbering).
 
-The next planned Product Run is:
+The next Product Run in this sequence is:
 
-> **Product Run 006 — Question Authoring & Publishing V1**
+> **Product Run 010 — Learning Intelligence Expansion**
 
 Its implementation Plan should be authored separately, as a new dedicated
 `docs/CHATGPT_PLAN.md`, against the current clean committed repository baseline.

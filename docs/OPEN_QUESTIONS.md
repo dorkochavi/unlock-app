@@ -788,6 +788,9 @@ Decision needed:
 
 Which AI-generated content requires human approval before learner use?
 
+Partly decided 2026-09-26 (`docs/MASTER_SPEC.md` §47): AI-generated assessment questions and AI-resolved correct
+answers always require instructor/human approval before publish. Still open: the remaining content kinds below.
+
 Potential distinctions:
 
 - low-stakes practice
