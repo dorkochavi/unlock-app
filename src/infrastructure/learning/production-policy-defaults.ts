@@ -117,5 +117,11 @@ export const PRODUCTION_TODAY_PLANNER_POLICY: TodayPlannerPolicy = Object.freeze
  * single starting version string is required by every Attempt/
  * UserQuestionProgress write regardless of that open question's eventual
  * outcome. Not a claim that this granularity scheme is final.
+ *
+ * v2 (Run UX-02 P1): `docs/LEARNING_ENGINE.md` §39A case 4 — an early
+ * correct Practice Attempt (no DailyPlanItem) is no longer a scheduler
+ * review. Before v2 the only production `submitAnswer` caller is the
+ * DailyPlan answer path, so every v1-era Attempt is Today-attached and
+ * rebuilding it under v2 yields the same progress.
  */
-export const PRODUCTION_ENGINE_VERSION = "learning-engine-v1";
+export const PRODUCTION_ENGINE_VERSION = "learning-engine-v2";

@@ -1040,6 +1040,24 @@ Run UX-01 complete (UX-1 and UX-2 implemented and browser-verified), and the Ear
 
 ---
 
+# FUB-031 — DailyPlan Deletion vs. Practice Classification on Replay
+
+**Status:** `LATENT` (no live defect; no production path deletes plans)
+**Area:** Learning Engine / persistence
+
+Since `learning-engine-v2` (Run UX-02 P1, `LEARNING_ENGINE.md` §39A case 4) scheduler outcomes depend on whether
+`attempts.daily_plan_item_id` is null. That FK is `ON DELETE SET NULL`
+(`20260924000000_daily_plan_answer_attempts.sql`), so deleting a `daily_plans`/`daily_plan_items` row would make its
+historical Today Attempts look like Practice, and a rebuild would silently apply the early-correct gate to them.
+Today `users → daily_plans` is `ON DELETE RESTRICT` and only a test deletes plans.
+
+## Promotion Trigger
+
+Any plan retention/deletion/cleanup feature, or any change to that FK. Then either forbid plan deletion while
+Attempts reference it, or persist an explicit Practice marker on the Attempt.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

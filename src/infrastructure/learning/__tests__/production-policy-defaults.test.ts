@@ -77,6 +77,6 @@ describe("production policy defaults", () => {
   });
 
   it("has a stable, non-empty production engine version", () => {
-    expect(PRODUCTION_ENGINE_VERSION).toBe("learning-engine-v1");
+    expect(PRODUCTION_ENGINE_VERSION).toBe("learning-engine-v2");
   });
 });

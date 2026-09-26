@@ -620,6 +620,23 @@ function nextSchedulerMemory(
     return { memory: result.nextState, isLapse: false };
   }
 
+  // LEARNING_ENGINE.md §39A case 4 (ADR-020): an early correct Practice
+  // Attempt (no DailyPlanItem) is evidence, not a scheduler review — the
+  // previous scheduler state (stability, difficulty, scheduledReviewAt,
+  // lastReviewAt, counters, implementation state) is carried over
+  // unchanged, so extra practice never postpones a scheduled review.
+  // Exactly-due (answeredAt == scheduledReviewAt) is a normal review;
+  // early incorrect is a normal review (AGAIN). Today-attached Attempts
+  // are unaffected. Depends only on persisted Attempt data and prior
+  // derived state, so rebuild/replay applies it identically (ADR-012).
+  if (
+    attempt.dailyPlanItemId === null &&
+    ratingDecision.rating === "GOOD" &&
+    attempt.answeredAt.getTime() < previousMemory.scheduledReviewAt.getTime()
+  ) {
+    return { memory: previousMemory, isLapse: false };
+  }
+
   const result = memoryScheduler.review(previousMemory, {
     reviewedAt: attempt.answeredAt,
     rating: ratingDecision.rating,

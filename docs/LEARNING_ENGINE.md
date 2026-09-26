@@ -1248,6 +1248,8 @@ Evidence for this section (simulation of the selector with the real engine, rese
 ## Versioning
 
 Introducing case 4 is a material rule change: the engine version is incremented when it ships (§47).
+Implemented in Run UX-02 P1 as `learning-engine-v2` (`PRODUCTION_ENGINE_VERSION`). Before v2 the only production
+answer path is DailyPlan, so v1-era Attempts are Today-attached and rebuilding them under v2 yields the same progress.
 
 ---
 

@@ -775,4 +775,66 @@ describe("Learning Engine golden scenarios", () => {
       false,
     );
   });
+
+  it("N. manual practice: early correct is evidence without postponing the review; early incorrect may pull it earlier (§39A)", () => {
+    // Fake that actually moves the due date, so "postpone" / "pull
+    // earlier" are observable: GOOD → +3 days, AGAIN → +10 minutes.
+    class SchedulingFake extends FakeMemoryScheduler {
+      review(state: SchedulerMemoryState, input: ReviewEvidence): MemoryReviewResult {
+        const result = super.review(state, input);
+        const offsetMs = input.rating === "AGAIN" ? 10 * 60 * 1000 : 3 * DAY_MS;
+        result.nextState.scheduledReviewAt = new Date(input.reviewedAt.getTime() + offsetMs);
+        return result;
+      }
+    }
+    const scheduler = new SchedulingFake();
+    const todayItem = { dailyPlanId: "plan-0", dailyPlanItemId: "item-0" };
+
+    // Day 0 (Today): first answer → scheduled for day 1.
+    const day0 = applyAttemptToProgress(
+      null,
+      makeAttempt({ ...todayItem, answeredAt: atDay(0), learningSessionId: "plan-0" }),
+      makeContext(scheduler, false),
+    );
+    // Day 1 (Today, due): review → scheduled for day 4.
+    const day1 = applyAttemptToProgress(
+      day0.progress,
+      makeAttempt({
+        dailyPlanId: "plan-1",
+        dailyPlanItemId: "item-1",
+        answeredAt: atDay(1),
+        learningSessionId: "plan-1",
+      }),
+      makeContext(scheduler, false),
+    );
+    const scheduled = day1.progress.memory!;
+    expect(scheduled.scheduledReviewAt).toStrictEqual(atDay(4));
+
+    // Day 2 (Practice, early, correct): evidence recorded, schedule untouched.
+    const practiceCorrect = applyAttemptToProgress(
+      day1.progress,
+      makeAttempt({ answeredAt: atDay(2), learningSessionId: "plan-2" }),
+      makeContext(scheduler, false),
+    );
+    expect(practiceCorrect.progress.memory).toStrictEqual(scheduled);
+    expect(practiceCorrect.progress.correctCount).toBe(3);
+    expect(practiceCorrect.retrievalQualification.reason).toBe(
+      "QUALIFYING_SPACED_RETRIEVAL",
+    );
+    expect(practiceCorrect.progress.successfulSpacedRetrievals).toBe(
+      day1.progress.successfulSpacedRetrievals + 1,
+    );
+
+    // Day 3 (Practice, early, incorrect): normal review, lapse, pulled earlier.
+    const practiceWrong = applyAttemptToProgress(
+      practiceCorrect.progress,
+      makeAttempt({ isCorrect: false, answeredAt: atDay(3), learningSessionId: "plan-3" }),
+      makeContext(scheduler, false),
+    );
+    expect(practiceWrong.reasons).toContain("LAPSE");
+    expect(practiceWrong.progress.memory!.reviewCount).toBe(scheduled.reviewCount + 1);
+    expect(practiceWrong.progress.memory!.scheduledReviewAt.getTime()).toBeLessThan(
+      scheduled.scheduledReviewAt.getTime(),
+    );
+  });
 });
