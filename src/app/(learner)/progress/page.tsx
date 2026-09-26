@@ -6,11 +6,12 @@
  * from existing read models (see `load-progress.ts`); no percentages, scores,
  * readiness, streaks, ranking, or Topic practice controls.
  *
- * Diagnosis → action (Run UX-01 UX-1, docs/UX_SPEC.md §1.5): the only real
- * learning action today is Today, which already prioritizes what needs
- * reinforcement — so the single primary CTA is "continue learning" → Today,
- * and each Course heading links to its existing Course page. Topic rows stay
- * informational (no per-Topic action exists yet).
+ * Diagnosis → action (Run UX-01 UX-1, docs/UX_SPEC.md §1.5, §9): each Course
+ * heading links to its existing Course page, and a SECONDARY navigation link
+ * goes to Today — deliberately not a primary "continue learning" promise,
+ * since Today may already be complete. No replacement primary learning action
+ * is invented until Topic/Course Practice exists (UX-3). Topic rows stay
+ * informational.
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -152,8 +153,8 @@ export default function LearnerProgressPage() {
             ))}
           </div>
           <div className="mt-8">
-            <ButtonLink href="/today" fullWidth>
-              {messages.continueLearning}
+            <ButtonLink href="/today" variant="secondary" fullWidth>
+              {messages.goToToday}
             </ButtonLink>
           </div>
         </>

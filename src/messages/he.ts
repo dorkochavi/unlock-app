@@ -187,7 +187,7 @@ export const he = {
     courseError: "לא הצלחנו לטעון את ההתקדמות בקורס הזה",
     coverage: "ניסית {attempted} מתוך {total} שאלות",
     backToToday: "חזרה להיום שלי",
-    continueLearning: "המשך ללמוד",
+    goToToday: "לעבור להיום שלי",
     state: {
       NOT_STARTED: "לא התחלת",
       IN_PROGRESS: "בתהליך",
