@@ -33,6 +33,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 |---|---|---|---|
 | Product/V1 scope | `UNLOCK_V1_SCOPE.md`, `MASTER_SPEC.md`, relevant ADR | — | relevant source/tests |
 | Roadmap / sequencing | `UNLOCK_ROADMAP.md` | — | current Plan |
+| Product capability maturity / macro gaps | `UNLOCK_CAPABILITY_MAP.md` (COLD) | — | pointers in the map |
 | Course access / membership | ADR-015, `DATABASE.md` | `auth.md`, `api.md` | Course membership app/API/tests |
 | DailyPlan / Today | ADR-016, ADR-017, `PRODUCT.md` | `learning-engine.md` | dailyPlan application/domain/tests |
 | Learning Engine | `LEARNING_ENGINE.md`, relevant ADRs | `learning-engine.md` | `src/domain/learning/**`, tests |

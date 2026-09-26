@@ -25,6 +25,7 @@ This is not a task backlog and is not a substitute for:
 - `docs/UNLOCK_V1_SCOPE.md` — precise V1 boundary;
 - `docs/CHATGPT_PLAN.md` — current executable Run;
 - `docs/DEV_STATUS.md` — current repository/product truth;
+- `docs/UNLOCK_CAPABILITY_MAP.md` — per-capability maturity, priority and macro gaps (index only);
 - ADRs — accepted architectural/product decisions.
 
 ---
