@@ -1067,7 +1067,8 @@ Quiz must not independently re-plan Today.
 
 Manual Practice is separate: it may update learning state for future planning,
 but it does not resolve a matching DailyPlanItem and does not trigger same-day
-DailyPlan regeneration in V1.
+DailyPlan regeneration in V1. Practice policy: §39A; Practice/Today invariants:
+ADR-020.
 
 ---
 
@@ -1162,6 +1163,91 @@ Today should be the default recommended path, but later the learner may choose:
 Learner choice should not corrupt learner-state measurement.
 
 Manual practice Attempts remain evidence with clear context.
+
+---
+
+# 39A. Manual Practice Policy (Course/Topic Practice V1)
+
+Status: ACCEPTED (2026-09-26, Run UX-02). Architecture/session/Today-interaction invariants are owned by ADR-020; this section
+owns the learning policy only.
+
+Course Practice and Topic Practice are learner-initiated study inside a learner-chosen scope, beyond the finite
+Today plan. They are NOT a second Learning Engine: every Practice answer goes through the same pipeline
+(Question → Answer → Attempt → Progress → FSRS) and the same evidence, mastery, misconception and lapse rules.
+In V1 a Practice Attempt is exactly an Attempt with no DailyPlanItem (`dailyPlanItemId = null`, ADR-020).
+
+## Scheduling (FSRS) for Practice Attempts
+
+Let `memory` be the learner's scheduler state for the Question BEFORE this Attempt, and `answeredAt` the
+server-captured answer time.
+
+1. **Never scheduled before** (`memory` is null): normal behavior — the scheduler initializes state from this
+   Attempt.
+2. **Due** (`answeredAt >= memory.scheduledReviewAt`): normal scheduler review.
+3. **Early and incorrect** (`answeredAt < memory.scheduledReviewAt`, full evidence, incorrect): normal scheduler
+   review (AGAIN). The new evidence may pull the next review earlier; it counts as a lapse exactly as today.
+4. **Early and correct** (`answeredAt < memory.scheduledReviewAt`, full evidence, correct): the Attempt is recorded
+   and all evidence/progress rules apply (evidence counters, mastery, misconception, retrieval qualification), but
+   it is **NOT a scheduler review**. Scheduler state is carried over unchanged: stability, difficulty,
+   `scheduledReviewAt`, `lastReviewAt` (the review baseline), review/lapse counts and implementation state. An
+   early correct answer therefore never postpones an already-scheduled review.
+5. Evidence that is not ratable (assisted, low quality, second attempt, …) never touches the scheduler — unchanged
+   existing behavior.
+
+Today-attached Attempts keep their existing behavior (every ratable Attempt is a scheduler review). The early-correct
+rule is Practice-only by decision; it applies identically on replay/rebuild (ADR-012), because it depends only on
+persisted Attempt data and prior derived state.
+
+Rationale: practising something you just reviewed is useful retrieval evidence, but letting it reset the FSRS
+interval would let extra practice silently push reviews further away. Keeping `lastReviewAt` unchanged means the
+genuine due review is still computed from the genuine elapsed interval.
+
+Scheduling evidence and mastery evidence are deliberately allowed to diverge in case 4: a correct Practice answer
+on a later learning day may still qualify as spaced retrieval for mastery (§ retrieval qualification) while not
+moving the schedule.
+
+## Selection
+
+Scope: one Course (Course Practice) or one active Topic in that Course (Topic Practice, current Topic attribution,
+ADR-018). Questions with no Topic are reachable only through Course Practice.
+
+Excluded from every batch:
+- Questions with a PENDING DailyPlanItem in the learner's current-day plan (ADR-020);
+- Questions the learner already answered in the current learning session (the learning day, ADR-020) — from Today
+  or Practice.
+
+Order (reuses the canonical policy; no second ranking engine):
+1. in-scope Next Best Action candidates, ranked by the existing NBA ranking (§27, tiers and tie-breaks unchanged);
+2. in-scope unseen Questions (ADR-017 definition of unseen: no prior real Attempt; ADR-017 deterministic order).
+   In Practice this tier is a normal tier, not a Today fallback, and ADR-017's 3-item Today limit does not apply;
+3. broader coverage: every other in-scope Question already seen, ordered by earliest `scheduledReviewAt`, then
+   Question id (deterministic).
+
+Batch: up to 10 Questions, plus whether more eligible Questions remain (`hasMore`). "Another 10" re-runs selection
+against the updated state and exclusions, so it never repeats a Question within the learning session. When nothing
+remains, Practice says so; it never repeats to fill a batch. Selection is deterministic for the same persisted
+state, scope, time and exclusion hints.
+
+## Skip in Practice
+
+Skipping a Practice Question is NOT evidence: no Attempt, no progress, mastery, misconception or scheduler change,
+and never treated as an incorrect answer. A skipped Question is excluded for the rest of the current Practice run.
+V1 implements this with a client-held list of skipped Question ids sent as an exclusion hint with "another 10"; the
+server may use such hints only to narrow selection. Practice Skip is unrelated to Today's Skip, which resolves a
+DailyPlanItem (ADR-016).
+
+Terminology: a **Practice run** is the learner's current continuous visit on the Practice screen (one or more
+batches without leaving it). It is a UI/presentation concept only and is NOT the canonical learning session
+(ADR-020: one learner + one learning day), which governs evidence, exclusions of answered Questions and retrieval
+qualification. A refresh or leaving and re-entering Practice starts a new Practice run and may clear the
+client-held skip exclusions in V1; that is accepted behavior.
+
+Evidence for this section (simulation of the selector with the real engine, research pass):
+`docs/FEATURES/COURSE_TOPIC_PRACTICE_DESIGN.md`.
+
+## Versioning
+
+Introducing case 4 is a material rule change: the engine version is incremented when it ships (§47).
 
 ---
 
@@ -1393,6 +1479,8 @@ New material may remain partly blocked rather than fully interleaved.
 
 ## N. Manual practice
 Manual practice updates evidence but does not mutate an existing Today plan.
+An early correct Practice answer is evidence but does not postpone the scheduled review; an early incorrect one
+may pull it earlier (§39A).
 
 ---
 

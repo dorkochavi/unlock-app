@@ -139,6 +139,10 @@ Topics are flat, Course-scoped, and soft-archived (never deleted). `questions.to
 
 `main` is Production truth and advances by fast-forward to Preview-verified commits; work happens on short-lived `feature/*` / `fix/*` branches; minimal CI must pass; schema changes must be applied and compatible before promotion; annotated `v0.N.0` tags mark only Production-verified baselines; agents never push or deploy.
 
+### ADR-020 — Course/Topic Practice Semantics V1
+
+One learner + one learning day = one server-controlled learning session (V1 implementation: today's DailyPlan id; the client never chooses a Practice session id — amends ADR-012 §5 for Practice). Practice never mutates, resolves, injects into or reopens Today, never selects a Question pending in today's plan, and is V1-limited to PUBLISHED Courses with an active (non-revoked, non-archived) LEARNER membership (temporary deviation from ADR-016 §16, which keeps learner-archived Courses practiceable). Practice scheduling/selection policy: `LEARNING_ENGINE.md` §39A.
+
 ---
 
 ## Decision Rule

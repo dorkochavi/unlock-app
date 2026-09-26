@@ -1017,7 +1017,8 @@ save-on-publish.
 
 # FUB-030 — Course/Topic Practice (UX-3), Blocked by Early Practice + FSRS Semantics
 
-**Status:** `DEFERRED`
+**Status:** `PROMOTED` → Run UX-02 (`docs/CHATGPT_PLAN.md`). Semantics: ADR-020 and `docs/LEARNING_ENGINE.md` §39A
+(both ACCEPTED 2026-09-26); UX: `docs/UX_SPEC.md` §10. The text below is the original deferral record.
 **Priority:** `MEDIUM`
 **Area:** Product / Learning semantics / Learner UX
 

@@ -260,6 +260,36 @@ Learning Engine prototype/pilot calibration.
 
 ---
 
+## OQ-044 — FSRS Short-Term Learning Steps Make a Once-Answered Question "Due" Within Minutes
+
+Status: CALIBRATION (open, non-blocking; recorded 2026-09-26, Run UX-02 P0.7)
+
+Observed with the real engine and production policies
+(`docs/FEATURES/COURSE_TOPIC_PRACTICE_DESIGN.md` §3, finding F-B): with the current ts-fsrs adapter
+(defaults, fuzz off), a Question's first clean correct answer schedules its next review minutes later
+(short-term learning steps). It is then `REVIEW_DUE` in Next Best Action from that point on — e.g. a
+Question answered once yesterday ranks as a due review with retrievability ≈ 1.0. This affects Today and
+Practice equally.
+
+Still unresolved:
+
+- whether short-term learning steps should be enabled for UNLOCK's question-based evidence, and with
+  which steps;
+- whether a same-day learning-step review should count as `REVIEW_DUE` for NBA ranking, or only
+  reviews whose retrievability has actually dropped;
+- the interaction with OQ-012 (rating mapping, desired retention).
+
+Constraint:
+
+Not solved in Run UX-02 unless implementation shows a correctness bug rather than a tuning issue.
+Any change is a scheduler-adapter/policy change with an engine-version increment.
+
+Resolve through:
+
+Learning Engine calibration with pilot evidence.
+
+---
+
 ## OQ-013 — Misconception Threshold Calibration
 
 Status: CALIBRATION

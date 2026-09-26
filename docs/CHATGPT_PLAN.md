@@ -1,97 +1,125 @@
-# UNLOCK — Run UX-01 — Learner UX Foundation (UX-1 Shell + Browse, UX-2 Learn Mode)
+# UNLOCK — Run UX-02 — Course & Topic Practice
 
 PLAN_VERSION: 001
-RUN_ID: 2026-09-26-UX-01
-BASE_HEAD: 032153e
-STATUS: COMPLETE — Step 0 (`eec16ae`), UX-1 (`174d30b`, corrections `5861c31`, `4b0b728`) and UX-2 (`29f9087`) committed locally on `feature/run-ux-01-learner-ux` (not pushed). Mocked browser evidence only. See `docs/RUNS/2026-09-26-UX-01.md`.
+RUN_ID: 2026-09-26-UX-02
+BASE_HEAD: d052e5c
+STATUS: APPROVED — P0 and P0.5–P0.7 (design, research, selector simulation) accepted 2026-09-26 and committed on `feature/run-ux-02-practice`; ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 ACCEPTED. Next: P1 (not started).
 
 ## 1. Run Goal
 
-Turn the existing learner app (Today / My Courses / Progress, inline Today answer flow) into a coherent, calm, Hebrew/RTL-first, mobile-first product by implementing the already-decided UX direction in `docs/UX_SPEC.md`. Two Slices only: UX-1 (Learner Shell + Browse) and UX-2 (Learn Mode).
+Give learners bounded, learner-initiated Course Practice and Topic Practice that use the one existing learning pipeline (Question → Answer → Attempt → Progress → FSRS), never touch Today's plan, and use a server-controlled learning session. Run UX-02 is a standalone learner Run, not a roadmap Product Run.
 
-No Learning Engine, API, schema or question-selection change. Presentation and client-side interaction only.
+## 2. Authority
 
-Naming: "Run UX-01" is a standalone learner-UX Run. It is NOT a Product Run in `docs/UNLOCK_ROADMAP.md`; Product Run 010/011/012 keep their roadmap meanings.
+- Session identity, Today isolation, eligibility: ADR-020 (ACCEPTED).
+- Scheduling and selection policy: `docs/LEARNING_ENGINE.md` §39A (ACCEPTED).
+- Presentation: `docs/UX_SPEC.md` §10 (ACCEPTED) and §1–§8 (accepted).
+- Unchanged and binding: ADR-005, ADR-008, ADR-010, ADR-012 (§5 amended for Practice by ADR-020), ADR-015, ADR-016, ADR-017, ADR-018; `.claude/rules/learning-engine.md`, `auth.md`, `api.md`, `postgres.md`.
 
-## 2. Authority and Scope
+## 3. Approved Decisions (2026-09-26)
 
-- `docs/UX_SPEC.md` is the UX authority. Do not redesign freely; do not invent UX during implementation.
-- **Course/Topic Practice (UX-3) is OUT of Run UX-01.** It is DEFERRED, blocked by an explicit Early Practice + FSRS semantics decision (see §7 and `FUB-030`). No Practice route, API, session model or Practice-shaped CTA ships in this Run.
-- A Topic page is out of scope; Topic information stays on Course/Progress.
-- After UX-1 and UX-2 are complete and browser-verified, decide whether Practice becomes a later extension or a new Run.
+1. Practice is learner-initiated from a Course or Topic; no top-level Practice tab; Today Complete keeps "המשך ללמוד" → `/courses` and never auto-starts Practice.
+2. One pipeline, no second Learning Engine; every Practice answer is a real Attempt.
+3. Scheduling: never-scheduled → initialize; due → normal review; early incorrect → normal review (may pull earlier); **early correct → evidence/progress only, NO scheduler review** (FSRS state, due date and last-review baseline unchanged). This rule applies to Practice Attempts only.
+4. Selector reuses the canonical NBA ranking, scoped to Course/Topic; excludes Questions pending in today's plan and Questions already answered in this learning session; then unseen; then broader coverage (§39A).
+5. One learner + one learning day = one server-controlled learning session; V1 implementation = today's DailyPlan id; Practice start get-or-creates today's plan. The client never chooses the Practice session id.
+6. V1 eligibility: PUBLISHED Course + active LEARNER membership only (explicit temporary deviation from ADR-016 §16; `F-04b` not solved here).
+7. Once today's plan exists, Practice never mutates, resolves, injects into or reopens it.
+8. Batches of up to 10, then explicit "עוד 10".
+9. No separate Topic page in V1; Topic Practice starts from Topic rows on Course/Progress.
+10. Practice Skip (adopted after P0.5/P0.6): tertiary "דלג", no Attempt / progress / mastery / misconception / FSRS change, never counted as incorrect, excluded for the rest of the current Practice run. A Practice run is the current continuous visit on the Practice screen — a presentation concept, NOT the learning-day session; a refresh or re-entry may clear skip exclusions in V1 (accepted).
+11. Q1: the canonical NBA ranking is kept unchanged in Practice (not-due strengthen/remediation candidates stay above unseen Questions); no Practice-specific ranking difference.
+12. Q2: "due within minutes after the first answer" is recorded as OQ-044 (CALIBRATION, non-blocking); not solved in this Run unless it proves to be a correctness bug.
+13. `practiceAvailable` is a server-computed Course-context field.
 
-## 3. Run-Start Contract
+## 4. Run-Start Contract
 
-Branch `feature/run-ux-01-learner-ux` from `main`; `HEAD == BASE_HEAD` (`032153e`) or one deliberate docs-only commit above it (Step 0). Clean working tree. No push, no hosted mutation.
+Branch `feature/run-ux-02-practice` from `main` at `d052e5c`; `HEAD == BASE_HEAD` or one deliberate docs-only P0 commit above it. Clean tree. No push, no hosted mutation, no hosted migration.
 
-## 4. Repository Facts (mapping, 2026-09-26)
+## 5. Repository Facts (inspection, 2026-09-26)
 
-- `src/components/` is empty. Buttons, pills, cards, rows, signed-out/loading/error/empty blocks and the `ViewState` fetch pattern are copy-pasted across `src/app/(learner)/today/page.tsx` (501 lines), `courses/page.tsx`, `courses/[courseId]/page.tsx`, `progress/page.tsx`.
-- Tailwind v4; raw `zinc-*` utilities inline; tokens only `--background`/`--foreground` in `src/app/globals.css`.
-- `(learner)/layout.tsx` wraps ALL learner pages in `LearnerNav` (`learner-nav.tsx`, text-only bottom bar, `nav-items.ts`, three tabs). No shared page header. RTL/`he` fixed in `src/lib/locale.ts`; strings in `src/messages/he.ts`.
-- Today: server selects questions (`GET /api/daily-plan/today`); answer/skip via `POST /api/daily-plan/items/[itemId]/{answer,skip}`. Option button and feedback live only inside `TodayAnswerCard`. The complete screen has no next step; 401 sign-in links lack `next=`.
-- No Practice code or routes. No Topic page. "Early Practice" appears in no ADR.
-- Tests: Vitest covers logic files only (no DOM). Playwright is configured (Desktop Chrome + Pixel 7) with no screenshots; only the real hosted Supabase project exists, so UX verification uses `page.route` mocks.
+- `submitAnswer` (`src/application/learning/submit-answer.ts`) already accepts `dailyPlanItemId = null`; it validates only version/question/Course consistency — no membership, Course status, current-version or Topic check for that path. The only callers today are the DailyPlan routes.
+- Scheduler update: `nextSchedulerMemory` (`src/domain/learning/progress-update.ts:603`) reviews on every ratable Attempt; no early gate. Rebuild/replay uses current logic (ADR-012 §2).
+- `learningSessionId` is client-owned for non-Today Attempts (ADR-012 §5); Today uses `dailyPlanId`.
+- NBA pieces are pure and Course-agnostic (`next-best-action.ts`, `next-best-action-ranking.ts`); the scope loop is inline in `generate-daily-plan-for-resolved-inputs.ts`. `listForUser(userId, courseId)` and `findUnseenQuestions(userId, courseId, limit)` are Course-scoped; nothing is Topic-scoped.
+- `DailyPlanRepository.findByKey({userId, plannedForDate})` reads today's plan; get-or-create lives in `get-or-create-daily-plan-for-today.ts` (timezone required).
+- `LearnerQuestionContentRepository` never selects `correct_answer`; it has no authorization filter (caller must scope).
+- No practice route, table or UI exists. No `learning_session_id` index found in migrations.
 
-## 5. Slices
+## 6. Slices
 
-Follow `.claude/skills/implement-slice/SKILL.md`; verification per `.claude/rules/testing.md`; reviewers per `review-commit`.
+Lifecycle per `.claude/skills/implement-slice`; verification per `.claude/rules/testing.md`; reviewers chosen by `/review-commit` (expected choices noted).
 
-### UX-1 — Learner Shell + Browse
-- **Touch:** `(learner)/layout.tsx`, `learner-nav.tsx`, `nav-items.ts`, `globals.css`, courses / course / progress pages, Today landing / empty / complete states (not the question flow).
-- **Primitives** only where proven shared by UX-1/UX-2; candidate set `Button` (primary/secondary/tertiary), `StatusPill`, `Card`/`Row`, `StateBlock` (loading/error/signed-out/empty), `PageHeader`. No fixed count; no framework, Tailwind plugin or component library. Final list confirmed at INSPECT.
-- Semantic tokens in `globals.css` (no frozen hex).
-- Nav polish (functional icons, clear active state), header, one dominant primary CTA per screen.
-- Progress: state rows become actionable only through an EXISTING valid destination — no invented behavior.
-- **Today landing:** answers "what should I do now?" with one primary CTA ("התחל ללמוד" / "המשך ללמוד").
-- **Today Complete:** a real success state, not an empty state; small summary using ONLY data already in the current DTO/state (no invented metrics; smallest honest version if data is thin, richer summary documented as deferred). Primary CTA "המשך ללמוד" → `/courses` (temporary bridge, documented in `UX_SPEC.md` §9). Optional secondary/tertiary CTA "לצפייה בהתקדמות" → `/progress`. No "סיימתי להיום" navigation action.
-- **Course cards:** communicate what the Course is, current learning state, what is worth doing next — existing data only.
-- **No fake Practice:** no "תרגל" / "המשך ללמוד בקורס" control that leads nowhere. The Course page's primary action uses an existing valid destination (e.g. `/today`) or is omitted; the future Topic CTA is omitted.
-- **Stop:** any need for an API/schema/Engine change; pressure to add Practice affordances.
+### P0 — Docs / Design (DONE — the Run UX-02 design commit)
+ADR-020 (ACCEPTED), `LEARNING_ENGINE.md` §39A (ACCEPTED) + golden scenario N, ADR-012 §5 and ADR-016 §16 pointers, ADR README / `CONTEXT_MAP` entries, `UX_SPEC.md` items 10–12, §9 and new §10, `FUB-030` → PROMOTED, OQ-044, this Plan. **P0.5–P0.7** (affordance map, research pass, selector simulation with the real engine): `docs/FEATURES/COURSE_TOPIC_PRACTICE_DESIGN.md`; simulation harness in untracked `scratch/ux02/`. **Gate: MET** — ADR-020, §39A and §10 ACCEPTED 2026-09-26; OQ-044 recorded.
 
-### UX-2 — Learn Mode
-- **Touch:** `today/page.tsx` (split out `TodayAnswerCard`); `QuestionOption` / `QuestionProgress` / `FeedbackBlock` only if Learn Mode genuinely needs them. Learn Mode hides the normal navigation: because `LearnerNav` currently applies to every learner route, this needs a layout change (route group or layout-level condition) — choose the smallest at INSPECT.
-- Focus mode; constrained width; context title; subtle progress indicator; question state `default → selected → submitted → feedback`; correct/incorrect as learning feedback (incorrect is NOT red-error styling); inline feedback; one "המשך" CTA after answering; sticky mobile CTA where practical; exit behavior; loading/error/signed-out; session complete.
-- Feedback content is limited to what the answer response provides (currently `isCorrect`); richer explanation is deferred, not invented.
-- **Slice B findings folded in** (no wider auth-architecture work): `role="status"`/accessible feedback; focus management after Submit/Continue; `next=` on learner 401 sign-in links; explicit "answer not saved" recovery on 401; larger Skip/sign-out targets; `text-emerald-600` contrast fix.
-- Question selection and server behavior unchanged.
-- **Review:** UX-2 touches the answer flow — reviewer selection via `/review-commit`.
-- **Stop:** any change to question selection, answer/skip API contract, or Learning Engine.
+### P1 — Domain: Practice early-correct scheduling rule
+- `nextSchedulerMemory` (or its caller): when the Attempt has no DailyPlanItem, prior scheduler memory exists, the rating is GOOD (full-evidence correct) and `answeredAt < previousMemory.scheduledReviewAt` → return the previous memory unchanged, not a lapse. All other cases unchanged.
+- Confirm (read, then test) how lapse resolution, misconception and mastery treat an early correct Practice Attempt under existing evidence rules; no change to those rules.
+- Engine version increment (`PRODUCTION_ENGINE_VERSION`, §47).
+- Tests: §39A cases 1–5 table; boundary `answeredAt == scheduledReviewAt` (due); Today-attached early correct unchanged; replay parity (incremental == `rebuildUserQuestionProgress`) including out-of-order; golden scenario N.
+- Review: general (learning-engine invariants).
+- **Stop:** if the rule needs a persisted source column or changes Today results.
 
-## 6. Guardrails
+### P2 — Application + persistence: selector and Practice answer
+- Learning-session resolver: get-or-create today's plan → session id = plan id (TIMEZONE_NOT_SET handled like Today).
+- Eligibility: PUBLISHED Course, active LEARNER membership; Topic belongs to the Course and is not archived.
+- Read ports (Postgres + PGlite tests): in-scope published Questions with current version and Topic; Course progress filtered to scope; unseen in scope; Question ids answered in a learning session (`attempts.learning_session_id`); pending plan items' Question ids.
+- `selectPracticeBatch(scope, limit 10, skippedHint)`: exclusions (pending in Today, answered this learning day, client skip hint — narrowing only) → reuse NBA candidate generation + ranking on in-scope progress (extract a scope-parameterized helper from the DailyPlan core ONLY if Today output is provably unchanged; otherwise call the pure functions directly) → unseen (ADR-017 order) → broader coverage (earliest `scheduledReviewAt`, then id). Returns learner-safe content via `LearnerQuestionContentRepository` plus `hasMore`; deterministic for fixed state/time/hints. Tests reproduce the P0.7 scenarios S1–S8.
+- `submitPracticeAnswer`: eligibility; Question in scope with its CURRENT version; not pending in today's plan; server-derived `learningSessionId`; `dailyPlanId`/`dailyPlanItemId` null; delegates to `submitAnswer` in one transaction (ADR-010); idempotent by `submissionId`; returns `isCorrect` only.
+- Index on `attempts (user_id, learning_session_id)` only if the answered-in-session query needs it (additive migration; DB review; hosted application stays a human action).
+- Review: general + DB (security if authorization logic is non-trivial).
+- **Stop:** new session table needed; Today generation behavior changes; eligibility needs an undecided product rule.
 
-`UX_SPEC.md` is authority; no free redesign; no new UI framework/plugin/library; reuse first, extract only proven-shared patterns; no wholesale page rewrites; mobile-first; Hebrew/RTL-first; one dominant primary CTA per screen/state; Browse ≠ Learn; no gamification; no Learning Engine/API/schema change; no fake functionality. Missing optional presentation metrics are not `PLAN_CONFLICT`; `PLAN_CONFLICT` only for a real contradiction with approved scope/spec or repository constraints.
+### P3 — API
+- `GET /api/courses/:courseId/practice?topicId=&skip=` → `{ scope: { kind, title }, items[], hasMore }` (learner-safe content only; `skip` = client-held skipped ids, validated, narrowing only).
+- `GET /api/courses/:courseId/context` gains a server-computed `practiceAvailable` (LEARNER + active non-archived membership + PUBLISHED Course); inspection found the endpoint checks neither Course status nor membership archival today.
+- `POST /api/courses/:courseId/practice/answer` `{ questionId, questionVersionId, submissionId, selectedAnswer, topicId? }` → `{ isCorrect }`; client never sends a session id or time.
+- Auth before DB and before body parsing; stable outcomes → 401 / 403 / 404 / 409 (pending in Today, stale version) / 422 (timezone); no leakage. Route auth/DB-ordering and outcome tests, following existing route test patterns.
+- `safe-redirect` allowlist extended exactly for the Practice route (sign-in `next=`).
+- Review: security (+ general).
 
-## 7. Deferred — UX-3 Course/Topic Practice (not in this Run)
+### P4 — UI
+- Route `/courses/[courseId]/practice` (`?topic=&from=course|progress`), Learn Mode throughout (`useLearnMode`, `QuestionCard` reused with Practice Skip semantics, scope title in the context bar), batch-end card (counts only) with "עוד 10" only when `hasMore`, no-more-questions state, error / expired / unavailable states, Exit → origin (UX_SPEC §10).
+- Entry points: Course page primary "תרגול בקורס" only when `practiceAvailable`; shared `TopicList` rows become one "תרגול ›" link each (Course page, Progress). Update `UX_SPEC.md` §9 rows to "done".
+- Mocked Playwright matrix (375 / desktop / dark / RTL / keyboard / focus / overflow / one primary CTA / exit & back / signed-out `next=` / exhausted / error).
+- Review: general.
 
-Blocked by the Early Practice + FSRS semantics decision. After UX-1/UX-2, first determine whether it is an architectural invariant (→ ADR) or a narrower learning-policy decision (→ an existing canonical learning/design document); the required output is the semantics, not document ceremony. No ADR is created now. Later implementation would also need a route exposing manual-practice `submitAnswer` (auth first, `learningSessionId`). Tracked in `docs/FOLLOW_UP_BACKLOG.md` (`FUB-030`).
+## 7. Guardrails
+
+No second Learning Engine or ranking policy; no Today mutation; no client-chosen session id or answer time; auth before DB; fail closed on unresolved eligibility; no correct answer or scoring exposed; no percentages; no gamification; no new UI framework; Hebrew/RTL-first, mobile-first.
 
 ## 8. Verification
 
-- Typecheck, lint, and existing unit tests for touched logic.
-- Mocked Playwright (`page.route`) with screenshots: 375px mobile and desktop; RTL; keyboard; loading / error / signed-out / empty; Today complete; long Hebrew question / Course / Topic text; selected / correct / incorrect; focus after feedback; no horizontal overflow; exactly one visually dominant primary CTA per state; predictable exit/back behavior.
-- Screenshots are test evidence per existing repo conventions; no committed screenshot artifacts unless repo/testing rules justify them.
-- **The Run report must state that mocked-Playwright evidence does NOT prove real authenticated Supabase integration.**
+- P1: focused domain tests + replay parity; full unit suite (shared learning primitive changed).
+- P2: application tests + PGlite schema/repository tests; migration evidence only if an index is added.
+- P3: route tests; typecheck, lint, build.
+- P4: mocked browser matrix. **Mocked evidence does not prove real Supabase integration**; a Preview walkthrough with an isolated QA learner (human-provided) is the real-integration check.
+- Real multi-connection concurrency (Practice answer vs Today answer on the same Question) relies on the existing per-(learner, Question) advisory lock; PGlite does not prove it.
 
-## 9. Acceptance Criteria (Run-level)
+## 9. Acceptance (Run-level)
 
-- UX-1 and UX-2 behavior matches `docs/UX_SPEC.md`; temporary bridges are documented in `UX_SPEC.md` §9.
-- No Learning Engine, API, schema, selection or migration change (proved by diff).
-- Every §8 verification item exists and is green, with the honesty statement above.
-- No non-working Practice affordance ships.
-- `DEV_STATUS` reflects only durable truth; Run report written; nothing pushed.
+- §39A scheduling cases proven by tests, Today behavior unchanged, replay parity holds.
+- Practice never selects or accepts a Question pending in today's plan; never mutates the plan.
+- Practice Attempts carry the server-derived learning-day session id.
+- Only PUBLISHED Courses with active LEARNER membership; Topic scope honored.
+- Learner can start Course/Topic Practice, answer up to 10, continue with "עוד 10", reach an honest exhausted state; UX_SPEC §10 states verified in the browser (mocked).
+- Engine version incremented; `DEV_STATUS` + Run report; nothing pushed.
 
 ## 10. Stop Conditions
 
-Stop for Dor if: HEAD/working tree conflicts with the Run-start contract; a real `PLAN_CONFLICT` (§6); an API/schema/Engine change appears necessary; scope pulls in Practice, a Topic page, or a new UI framework; a hosted action is required.
+`PLAN_CONFLICT` or stop for Dor if: a persisted source column, session table or non-additive migration is needed; Today generation or answers would change; eligibility needs an undecided rule (archived semantics, `F-04b`); a hosted action is required.
 
-## 11. Handoff
+## 11. Open Human Items
 
-Close with the canonical protocol (`DEV_STATUS` → Run report → final Git state → stop). Do not start UX-3 or any Practice work automatically; report the decision point described in §7. Do not push.
+1. (Done 2026-09-26) ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 accepted.
+2. Preview walkthrough with an isolated QA learner after P4.
+3. (Carried) hosted Supabase Auth Redirect URL allow-list check for `next=` values.
+4. OQ-044 (FSRS learning-step "due within minutes") — open calibration, non-blocking.
 
 ---
 
-## Carried-over context — Slice B Pilot Readiness Verification (verification only; NOT part of Run UX-01)
+## Carried-over context — Slice B Pilot Readiness Verification (verification only; NOT part of Run UX-02)
 
 Date 2026-09-26; base `1866680` (`origin/main`; CI on `1866680` and `d3dfa9d` verified as success via the public GitHub API, read-only and without credentials, during the Q5 check). Nothing was changed or fixed; no source/config/dependency edits. Raw evidence: untracked `scratch/sliceB/`.
 

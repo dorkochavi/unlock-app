@@ -27,9 +27,9 @@ Deferred or temporary items are collected in [§9](#9-temporary-bridges-and-defe
 7. **Learn Mode removes normal navigation chrome:** no bottom/main navigation while answering; minimal header/context; focus on the question, feedback and next action.
 8. **One visually dominant primary CTA per screen/state.**
 9. All learning modes eventually use one learning pipeline: *Question → Answer → Feedback → Attempt → Progress → FSRS.* Course/Topic Practice must not become a second Learning Engine.
-10. Course/Topic Practice is deferred and is **not** part of Run UX-01. Its implementation is blocked by an explicit Early Practice + FSRS semantics decision.
-11. Future Practice sessions are bounded, not endless. Current product assumption: 10 questions, then an explicit option to continue with another 10. Deferred behavior; not implemented in Run UX-01.
-12. A Topic page is **not** part of Run UX-01. Topic information stays on existing Course/Progress surfaces. A future Topic page belongs with deferred Topic Practice work.
+10. Course/Topic Practice was not part of Run UX-01. It is planned for Run UX-02 under ADR-020 (session/Today invariants) and `LEARNING_ENGINE.md` §39A (scheduling/selection policy); see §10.
+11. Practice sessions are bounded, not endless: 10 questions, then an explicit option to continue with another 10 (§10).
+12. There is no separate Topic page in V1 (accepted for Run UX-02). Topic information stays on the Course and Progress surfaces; Topic Practice starts from a Topic row there (§10).
 
 ## 2. Today
 
@@ -106,16 +106,61 @@ Deferred or temporary items are collected in [§9](#9-temporary-bridges-and-defe
 
 ## 9. Temporary Bridges and Deferred Items
 
-Each entry names its intended replacement so UX-3 can remove it deliberately.
+Each entry names its intended replacement so UX-3 can remove it deliberately. Run UX-02 decisions (accepted) are
+in the third column; §10 describes the Practice surface.
 
 | Item | Run UX-01 behavior | Intended later behavior |
 | --- | --- | --- |
-| Today Complete primary CTA "המשך ללמוד" | Routes to `/courses` (existing surface) | Enters Course Practice for the most appropriate Course (UX-3) |
-| Course page primary "continue learning" action | LEARNER: no primary learning action. A SECONDARY navigation link "לעבור להיום שלי" → `/today` (honest navigation, not a promise of available learning — Today may already be complete). No replacement primary action is invented. OWNER/INSTRUCTOR: primary "לניהול הקורס" → instructor Course page. No fake Practice | Primary "continue learning" that starts Course Practice (UX-3) |
+| Today Complete primary CTA "המשך ללמוד" | Routes to `/courses` (existing surface) | DECIDED (not a bridge any more): stays → `/courses`. Today does not auto-start a recommended Practice session; Practice begins only after the learner chooses a Course/Topic scope |
+| Course page primary "continue learning" action | LEARNER: no primary learning action. A SECONDARY navigation link "לעבור להיום שלי" → `/today` (honest navigation, not a promise of available learning — Today may already be complete). No replacement primary action is invented. OWNER/INSTRUCTOR: primary "לניהול הקורס" → instructor Course page. No fake Practice | Run UX-02: LEARNER primary "תרגול בקורס" starts Course Practice; "לעבור להיום שלי" stays secondary |
 | Course card learning state (item 19) | Not shown: needs a Course-level rollup of Topic states that no accepted policy defines; cards show title and role only | Course-level state summary once a rollup rule is decided |
-| Progress "diagnosis → action" (item 5) | No primary learning action. A SECONDARY navigation link "לעבור להיום שלי" → `/today` (honest navigation, not a promise of available learning — Today may already be complete); Course headings link to the Course page; Topic rows informational. No replacement primary action is invented | Primary learning action / per-Topic action (Topic Practice, UX-3) |
-| Topic "practice topic" CTA / Topic page | Not shipped; Topic info stays on Course/Progress | Topic page with one primary practice CTA (UX-3) |
-| Bounded practice sessions (10 + "another 10") | Not implemented | Session model with explicit continue (UX-3) |
+| Progress "diagnosis → action" (item 5) | No primary learning action. A SECONDARY navigation link "לעבור להיום שלי" → `/today` (honest navigation, not a promise of available learning — Today may already be complete); Course headings link to the Course page; Topic rows informational. No replacement primary action is invented | Run UX-02: each active Topic row gets a Topic Practice action; the Today link stays secondary; no page-level primary learning CTA is invented |
+| Topic "practice topic" CTA / Topic page | Not shipped; Topic info stays on Course/Progress | Run UX-02 (accepted): no Topic page; Topic Practice starts from Topic rows on Course/Progress |
+| Bounded practice sessions (10 + "another 10") | Not implemented | Run UX-02: batches of up to 10, explicit "עוד 10", honest "nothing more for now" (§10) |
 | Richer answer feedback / Today Complete summary | Only data already in the current DTO/response | Richer explanation and summary if data becomes available |
 
-Course/Topic Practice remains blocked by the Early Practice + FSRS semantics decision; whether that decision needs an ADR or belongs in an existing canonical learning document is determined after UX-1/UX-2.
+The Early Practice + FSRS semantics decision is recorded in ADR-020 (session identity, Today isolation) and `LEARNING_ENGINE.md` §39A (scheduling, selection), both ACCEPTED for Run UX-02.
+
+## 10. Course / Topic Practice (Run UX-02 — ACCEPTED 2026-09-26)
+
+Learning semantics are not defined here: session identity and Today isolation → ADR-020; scheduling, selection and
+Skip semantics → `LEARNING_ENGINE.md` §39A. This section governs presentation only. The full affordance matrix and
+the evidence behind it: `docs/FEATURES/COURSE_TOPIC_PRACTICE_DESIGN.md` §1.
+
+### Entry points (learner-chosen scope only)
+
+- **Course page:** primary "תרגול בקורס", directly under the header and above the existing secondary
+  "לעבור להיום שלי". Rendered only when the server says the Course is practiceable for this learner
+  (`practiceAvailable`: LEARNER, active non-archived membership, PUBLISHED Course); otherwise absent — never
+  disabled.
+- **Topic rows (Course page and Progress, shared component):** each practiceable Topic row becomes ONE link — name,
+  coverage, state pill and a trailing "תרגול ›" in the primary color; accessible name "תרגול בנושא {name}, {state}";
+  row height ≥ 56 px. Only Topics with published Questions; archived Topics are not listed (ADR-018).
+- **Intentionally absent:** Today landing, Today Learn Mode, Today Complete (keeps "המשך ללמוד" → `/courses`, never
+  auto-starts Practice), My Courses cards, bottom navigation, a page-level primary on Progress, any non-LEARNER or
+  non-practiceable context.
+
+### Practice screen (`/courses/:courseId/practice`, optional Topic; Learn Mode throughout)
+
+- **Learn Mode** exactly as Today (§5): nav hidden, context bar, `QuestionCard`, inline feedback, focus rules. The
+  context bar title is the scope (Course title or Topic name); progress reads "שאלה N מתוך M" for the current batch.
+- **Actions per question:** primary "שליחה" → "המשך"; tertiary "דלג" (no evidence: no Attempt, never counted as
+  wrong; the Question is not offered again in this Practice run); tertiary "יציאה".
+- **Practice run vs learning session:** a *Practice run* is the current continuous visit on the Practice screen (one
+  or more batches). It is a presentation concept only, not the canonical learning-day session (ADR-020). A refresh or
+  leaving and re-entering Practice starts a new Practice run and may clear skipped-Question exclusions in V1
+  (accepted). Answered Questions stay excluded for the whole learning day regardless.
+- **Exit and back:** "יציאה" and the browser back button return to the surface Practice was started from (Course
+  page or Progress, carried as an explicit whitelisted origin, not browser history). Answers already submitted are
+  saved; an unsent selection is simply dropped.
+- **Batch end:** a calm card "סיימת סבב תרגול" with "ענית על X · דילגת על Y" (counts only — no correct count,
+  score or percentage); primary "עוד 10" only when more Questions remain; tertiary "חזרה לקורס" / "חזרה להתקדמות".
+  Focus moves to the card title.
+- **No more questions** (at start or after a batch): neutral state "אין כרגע עוד שאלות לתרגול כאן" with
+  "חזרות נוספות יופיעו בתוכניות הלמידה הבאות."; secondary way back; no primary; not styled as an error.
+- **Errors and session expiry:** batch load error → error state with "ניסיון נוסף"; answer failure → inline red
+  error, selection kept; expired session while loading → sign-in with `next=` back to this Practice screen; expired
+  session while answering → "התשובה האחרונה שלך לא נשמרה" (as on Today); a Question that became unavailable
+  (e.g. new version) → short neutral notice and move on, no evidence recorded.
+- **Honesty:** copy never says Practice changes today's plan; feedback for a wrong answer refers to future learning
+  plans (as on Today).

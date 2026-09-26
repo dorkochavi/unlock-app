@@ -241,7 +241,8 @@ Global Today does not add a new autonomy exception.
 Per `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`
 (ADR-015), a Course a learner has archived (`CourseMembership.archivedAt !=
 null`) does not participate automatically in the DailyPlan, remains
-manually practiceable, and may be reactivated. Only non-archived,
+manually practiceable, and may be reactivated. (Temporary V1 deviation:
+Course/Topic Practice requires an active membership — see ADR-020 §7.) Only non-archived,
 non-revoked `CourseMembership` rows participate in normal DailyPlan
 generation.
 

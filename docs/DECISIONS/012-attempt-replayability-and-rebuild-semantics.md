@@ -115,6 +115,9 @@ live system actually did. `id` is the final, purely mechanical tie-break.
 
 ### 5. `learningSessionId` ownership boundary (pre-commit correctness audit)
 
+> Amendment pointer: for Attempts submitted through Course/Topic Practice, the client-owned manual-practice token
+> described below is replaced by a server-derived learning-session id — see ADR-020.
+
 A pre-commit audit, run before any of the above was committed, asked
 whether `learningSessionId` is safe to treat as a plain client-supplied
 identity field. It is not, without a boundary: `learningSessionId`
