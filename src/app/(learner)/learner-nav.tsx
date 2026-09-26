@@ -24,6 +24,7 @@ import { usePathname } from "next/navigation";
 
 import { getMessages } from "@/messages";
 
+import { useIsLearnMode } from "./learn-mode";
 import { LEARNER_NAV_ITEMS, type LearnerNavLabelKey } from "./nav-items";
 
 function isActive(pathname: string, href: string): boolean {
@@ -61,6 +62,10 @@ function NavIcon({ labelKey }: { labelKey: LearnerNavLabelKey }) {
 export function LearnerNav() {
   const messages = getMessages();
   const pathname = usePathname();
+  const learnMode = useIsLearnMode();
+
+  // Learn Mode removes the normal navigation chrome (UX_SPEC §1 item 7).
+  if (learnMode) return null;
 
   return (
     <nav

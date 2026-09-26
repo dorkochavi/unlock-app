@@ -600,7 +600,7 @@ export default function InstructorCourseManagePage() {
 
               {detailsError ? <p className="mb-3 text-sm text-red-600 dark:text-red-400">{detailsError}</p> : null}
               {!detailsError && detailsSavedAt !== null ? (
-                <p className="mb-3 text-sm text-emerald-600 dark:text-emerald-400">
+                <p className="mb-3 text-sm text-emerald-700 dark:text-emerald-400">
                   {messages.instructor.manage.saveSuccess}
                 </p>
               ) : null}

@@ -10,17 +10,21 @@
  *
  * Browse-mode container (Run UX-01 UX-1, docs/UX_SPEC.md): mobile-first
  * 16px side gutter, a constrained reading width, and the single `<main>`
- * landmark — pages render their content directly inside it.
+ * landmark — pages render their content directly inside it. In Learn Mode
+ * (UX-2) the bottom nav is removed; see `learn-mode.tsx`.
  */
+import { LearnModeProvider } from "./learn-mode";
 import { LearnerNav } from "./learner-nav";
 
 export default function LearnerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
-        {children}
-      </main>
-      <LearnerNav />
-    </div>
+    <LearnModeProvider>
+      <div className="flex min-h-full flex-1 flex-col">
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
+          {children}
+        </main>
+        <LearnerNav />
+      </div>
+    </LearnModeProvider>
   );
 }

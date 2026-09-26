@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button, ButtonLink, buttonClasses } from "@/components/button";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 import type { CourseRole } from "@/domain/course/types";
 
@@ -79,7 +80,7 @@ export default function MyCoursesPage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.myCourses.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.myCourses.signedOutAction}</ButtonLink>}
+          action={<ButtonLink href={buildSignInHref("/courses")}>{messages.myCourses.signedOutAction}</ButtonLink>}
         />
       ) : null}
 

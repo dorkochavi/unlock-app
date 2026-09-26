@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
@@ -8,14 +8,19 @@ import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { interpolate } from "@/lib/interpolate";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
+import { useIsLearnMode, useLearnMode } from "../learn-mode";
+import { QuestionCard } from "./question-card";
 import { selectDisplayedItem, type AnswerFeedback } from "./select-displayed-item";
 import { fetchTodayPlan, persistDetectedTimezone } from "./fetch-today-plan";
 import type { DailyPlanDto, DailyPlanItemDto } from "@/app/api/daily-plan/today/daily-plan-dto";
 
 type ViewState =
   | { kind: "loading" }
-  | { kind: "signed-out" }
+  // `answerNotSaved`: the session expired DURING an Answer submit, so the
+  // learner's selection was not recorded (Slice B recovery gap (c)).
+  | { kind: "signed-out"; answerNotSaved?: boolean }
   | { kind: "settingUpTimezone" }
   | { kind: "timezoneError" }
   | { kind: "error" }
@@ -87,6 +92,7 @@ export default function TodayPage() {
   const messages = getMessages();
   const [state, setState] = useState<ViewState>({ kind: "loading" });
   const [reloadToken, setReloadToken] = useState(0);
+  const learnMode = useIsLearnMode();
 
   // Effects must not call setState synchronously as their first action
   // (react-hooks/set-state-in-effect) — `run`'s first statement is always
@@ -156,16 +162,19 @@ export default function TodayPage() {
 
   return (
     <>
-      <PageHeader
-        title={messages.today.heading}
-        trailing={
-          state.kind === "ready" ? (
-            <Button variant="tertiary" className="text-sm" onClick={handleSignOut}>
-              {messages.today.signOut}
-            </Button>
-          ) : null
-        }
-      />
+      {/* Learn Mode replaces the Browse header with its own minimal context bar. */}
+      {learnMode ? null : (
+        <PageHeader
+          title={messages.today.heading}
+          trailing={
+            state.kind === "ready" ? (
+              <Button variant="tertiary" className="text-sm" onClick={handleSignOut}>
+                {messages.today.signOut}
+              </Button>
+            ) : null
+          }
+        />
+      )}
 
       {state.kind === "loading" || state.kind === "settingUpTimezone" ? (
         <LoadingState
@@ -179,8 +188,13 @@ export default function TodayPage() {
 
       {state.kind === "signed-out" ? (
         <StateBlock
-          title={messages.today.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.today.signedOutAction}</ButtonLink>}
+          title={
+            state.answerNotSaved ? messages.today.answerNotSavedTitle : messages.today.signedOutTitle
+          }
+          body={state.answerNotSaved ? messages.today.answerNotSavedBody : undefined}
+          action={
+            <ButtonLink href={buildSignInHref("/today")}>{messages.today.signedOutAction}</ButtonLink>
+          }
         />
       ) : null}
 
@@ -203,7 +217,7 @@ export default function TodayPage() {
       {state.kind === "ready" ? (
         <TodayPlanView
           plan={state.plan}
-          onUnauthenticated={() => setState({ kind: "signed-out" })}
+          onUnauthenticated={(answerNotSaved) => setState({ kind: "signed-out", answerNotSaved })}
         />
       ) : null}
     </>
@@ -218,13 +232,19 @@ export default function TodayPage() {
 function TodayLanding({
   total,
   resolved,
+  focusOnMount,
   onStart,
 }: {
   total: number;
   resolved: number;
+  focusOnMount: boolean;
   onStart: () => void;
 }) {
   const messages = getMessages().today;
+  const startRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusOnMount) startRef.current?.focus();
+  }, [focusOnMount]);
   const remaining = total - resolved;
   const title =
     resolved === 0
@@ -241,7 +261,7 @@ function TodayLanding({
           {total === 1 ? messages.landingBodyOne : interpolate(messages.landingBody, { total })}
         </p>
       </div>
-      <Button fullWidth onClick={onStart}>
+      <Button ref={startRef} fullWidth onClick={onStart}>
         {resolved === 0 ? messages.startAction : messages.continueLearning}
       </Button>
     </Card>
@@ -256,8 +276,18 @@ function TodayLanding({
  * TEMPORARY BRIDGE (UX_SPEC §9): "המשך ללמוד" routes to `/courses` until
  * Course Practice exists (UX-3); it must be replaced then, not extended.
  */
-function TodayComplete({ items }: { items: DailyPlanItemDto[] }) {
+function TodayComplete({
+  items,
+  focusOnMount,
+}: {
+  items: DailyPlanItemDto[];
+  focusOnMount: boolean;
+}) {
   const messages = getMessages().today;
+  const titleRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (focusOnMount) titleRef.current?.focus();
+  }, [focusOnMount]);
   const answered = items.filter((item) => item.status === "completed").length;
   const skipped = items.filter((item) => item.status === "skipped").length;
   const summary = [
@@ -290,7 +320,9 @@ function TodayComplete({ items }: { items: DailyPlanItemDto[] }) {
         </svg>
       </span>
       <div role="status">
-        <p className="text-xl font-semibold">{messages.completionTitle}</p>
+        <p ref={titleRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+          {messages.completionTitle}
+        </p>
         <p className="mt-2 text-muted">{messages.completionBody}</p>
       </div>
       {summary ? <p className="text-sm text-muted">{summary}</p> : null}
@@ -335,7 +367,7 @@ function TodayPlanView({
   onUnauthenticated,
 }: {
   plan: DailyPlanDto;
-  onUnauthenticated: () => void;
+  onUnauthenticated: (answerNotSaved?: boolean) => void;
 }) {
   const messages = getMessages();
   const [items, setItems] = useState<DailyPlanItemDto[]>(plan.items);
@@ -345,6 +377,18 @@ function TodayPlanView({
   // Landing gate (UX-1): the question flow starts on an explicit CTA. Local
   // only — a reload shows the landing again, with "continue" wording.
   const [started, setStarted] = useState(false);
+  // Set once the learner leaves Learn Mode via "exit", so the landing takes focus.
+  const [exited, setExited] = useState(false);
+  // An Answer/Skip request is in flight: Exit is disabled so a late result
+  // can never land on the landing screen.
+  const [pending, setPending] = useState(false);
+
+  const total = items.length;
+  const resolvedCount = items.filter((item) => item.status !== "pending").length;
+  const { item: current, feedback: activeFeedback } = selectDisplayedItem(items, feedback);
+
+  // Learn Mode (UX-2): only while a question is actually on screen.
+  useLearnMode(started && current !== null);
 
   if (items.length === 0) {
     return (
@@ -360,18 +404,37 @@ function TodayPlanView({
     );
   }
 
-  const total = items.length;
-  const resolvedCount = items.filter((item) => item.status !== "pending").length;
-  const { item: current, feedback: activeFeedback } = selectDisplayedItem(items, feedback);
-
   if (current === null) {
-    return <TodayComplete items={items} />;
+    // The learner just finished (or exited on the last answered item) in this
+    // session — move focus to the success state, not a removed control.
+    return <TodayComplete items={items} focusOnMount={started || exited} />;
   }
 
   if (!started) {
     return (
-      <TodayLanding total={total} resolved={resolvedCount} onStart={() => setStarted(true)} />
+      <TodayLanding
+        total={total}
+        resolved={resolvedCount}
+        focusOnMount={exited}
+        onStart={() => setStarted(true)}
+      />
     );
+  }
+
+  async function whilePending(request: Promise<void>) {
+    setPending(true);
+    try {
+      await request;
+    } finally {
+      setPending(false);
+    }
+  }
+
+  function exitLearnMode() {
+    setFeedback(null);
+    setSubmitError(null);
+    setExited(true);
+    setStarted(false);
   }
 
   async function handleAnswer(itemId: string, selectedAnswer: string | string[] | null) {
@@ -382,7 +445,8 @@ function TodayPlanView({
     });
 
     if (result.outcome === "UNAUTHENTICATED") {
-      onUnauthenticated();
+      // The selection was NOT recorded — say so explicitly (Slice B gap (c)).
+      onUnauthenticated(true);
       return;
     }
     if (result.outcome === "ALREADY_RESOLVED") {
@@ -442,159 +506,57 @@ function TodayPlanView({
     );
   }
 
+  // While feedback shows, the answered item is already counted as resolved.
+  const position = Math.min(total, activeFeedback ? resolvedCount : resolvedCount + 1);
+
   return (
-    <div className="w-full">
-      <div className="mb-4 flex items-center justify-between text-sm text-muted">
-        <span>{plan.plannedForDate}</span>
-        <span>
-          {interpolate(messages.today.progressLabel, { resolved: resolvedCount, total })}
-        </span>
+    <div className="mx-auto w-full max-w-xl">
+      {/* Learn Mode context bar: minimal chrome (UX_SPEC §5 item 24). */}
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium">{messages.today.heading}</p>
+          <p className="text-sm text-muted">
+            {interpolate(messages.today.questionPosition, { current: position, total })}
+          </p>
+        </div>
+        <Button variant="tertiary" onClick={exitLearnMode} disabled={pending} className="-me-3">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+          >
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+          {messages.today.exitLearn}
+        </Button>
+      </div>
+      <div aria-hidden="true" className="mb-8 h-1 overflow-hidden rounded-full bg-surface-muted">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${(resolvedCount / total) * 100}%` }}
+        />
       </div>
 
       {alreadyResolvedNotice ? (
-        <p className="mb-4 text-sm text-muted">{messages.today.alreadyResolvedError}</p>
+        <p role="status" className="mb-4 text-sm text-muted">
+          {messages.today.alreadyResolvedError}
+        </p>
       ) : null}
 
-      <TodayAnswerCard
+      <QuestionCard
         key={current.id}
         item={current}
         feedback={activeFeedback}
         submitError={submitError}
-        onSubmit={(selectedAnswer) => handleAnswer(current.id, selectedAnswer)}
+        onSubmit={(selectedAnswer) => whilePending(handleAnswer(current.id, selectedAnswer))}
         onContinue={() => setFeedback(null)}
-        onSkip={() => handleSkip(current.id)}
+        onSkip={() => whilePending(handleSkip(current.id))}
+        onSelectionChange={() => setSubmitError(null)}
       />
-    </div>
-  );
-}
-
-function TodayAnswerCard({
-  item,
-  feedback,
-  submitError,
-  onSubmit,
-  onContinue,
-  onSkip,
-}: {
-  item: DailyPlanItemDto;
-  feedback: Feedback | null;
-  submitError: string | null;
-  onSubmit: (selectedAnswer: string | string[] | null) => Promise<void>;
-  onContinue: () => void;
-  onSkip: () => Promise<void>;
-}) {
-  const messages = getMessages();
-  const isMultiple = item.questionType === "MULTIPLE_CHOICE";
-  const [selected, setSelected] = useState<string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [skipping, setSkipping] = useState(false);
-  const busy = submitting || skipping;
-
-  const actionLabel =
-    messages.today.actionType[item.actionType as keyof typeof messages.today.actionType] ??
-    item.actionType;
-
-  function toggleOption(optionId: string) {
-    if (feedback !== null || busy) return;
-    if (isMultiple) {
-      setSelected((previous) =>
-        previous.includes(optionId)
-          ? previous.filter((id) => id !== optionId)
-          : [...previous, optionId],
-      );
-    } else {
-      setSelected([optionId]);
-    }
-  }
-
-  async function handleSubmit() {
-    if (selected.length === 0 || busy) return;
-    setSubmitting(true);
-    const selectedAnswer = isMultiple ? selected : (selected[0] ?? null);
-    await onSubmit(selectedAnswer);
-    setSubmitting(false);
-  }
-
-  async function handleSkipClick() {
-    if (busy) return;
-    setSkipping(true);
-    await onSkip();
-    setSkipping(false);
-  }
-
-  return (
-    <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <p className="mb-3 font-medium">{item.prompt}</p>
-      <ul className="mb-3 flex flex-col gap-2">
-        {item.answerOptions.map((option) => {
-          const isSelected = selected.includes(option.id);
-          return (
-            <li key={option.id}>
-              <button
-                type="button"
-                onClick={() => toggleOption(option.id)}
-                disabled={feedback !== null || busy}
-                aria-pressed={isSelected}
-                className={`w-full rounded-md border px-3 py-3 text-start text-sm transition disabled:opacity-60 ${
-                  isSelected
-                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                    : "border-zinc-200 dark:border-zinc-800"
-                }`}
-              >
-                {option.content}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">{actionLabel}</div>
-
-      {submitError ? (
-        <p className="mb-3 text-sm text-red-600 dark:text-red-400">{submitError}</p>
-      ) : null}
-
-      {feedback === null ? (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={selected.length === 0 || busy}
-            className="w-full rounded-md bg-zinc-900 px-4 py-3 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            {submitting ? messages.today.submitting : messages.today.submit}
-          </button>
-          {/* Visually secondary, per Slice 3: Skip is not an answer and
-              must not compete with the primary submit action. */}
-          <button
-            type="button"
-            onClick={handleSkipClick}
-            disabled={busy}
-            className="w-full rounded-md px-4 py-2 text-sm text-zinc-500 underline disabled:opacity-50 dark:text-zinc-400"
-          >
-            {skipping ? messages.today.skipping : messages.today.skip}
-          </button>
-        </div>
-      ) : (
-        <div>
-          <p
-            className={`mb-3 font-medium ${
-              feedback.isCorrect
-                ? "text-green-700 dark:text-green-400"
-                : "text-red-700 dark:text-red-400"
-            }`}
-          >
-            {feedback.isCorrect ? messages.today.correct : messages.today.incorrect}
-          </p>
-          <button
-            type="button"
-            onClick={onContinue}
-            className="w-full rounded-md border border-zinc-300 px-4 py-3 font-medium dark:border-zinc-700"
-          >
-            {messages.today.continueAction}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

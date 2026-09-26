@@ -20,6 +20,7 @@ import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 
 import { TopicList } from "../topic-list";
@@ -106,7 +107,7 @@ export default function LearnerProgressPage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.signedOutAction}</ButtonLink>}
+          action={<ButtonLink href={buildSignInHref("/progress")}>{messages.signedOutAction}</ButtonLink>}
         />
       ) : null}
 

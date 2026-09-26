@@ -577,7 +577,7 @@ export default function InstructorQuestionEditorPage() {
 
                 {saveError ? <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p> : null}
                 {!saveError && savedAt !== null ? (
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
                     {messages.questionEditor.saveSuccess}
                   </p>
                 ) : null}
@@ -614,7 +614,7 @@ export default function InstructorQuestionEditorPage() {
 
                 {publishError ? <p className="text-sm text-red-600 dark:text-red-400">{publishError}</p> : null}
                 {!publishError && publishedAt !== null ? (
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
                     {messages.questionEditor.publishSuccess}
                   </p>
                 ) : null}

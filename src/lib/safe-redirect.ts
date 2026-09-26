@@ -8,8 +8,25 @@
  * has no such failure mode: anything that doesn't match falls back to a
  * safe default, never partially trusted.
  */
-const SAFE_NEXT_PATTERN = /^\/(today|join\/[0-9a-fA-F-]{1,64})$/;
+// Run UX-01 UX-2: the learner Browse destinations (`/courses`, `/progress`,
+// `/courses/:courseId`) are allowlisted so a learner who signs in again from
+// one of them returns there. Same exact-match, id-charset-restricted shape as
+// `/join/:courseId`; nothing broader.
+const SAFE_NEXT_PATTERN =
+  /^\/(today|courses|progress|courses\/[0-9a-fA-F-]{1,64}|join\/[0-9a-fA-F-]{1,64})$/;
 const DEFAULT_NEXT_PATH = "/today";
+
+/**
+ * The sign-in link for a learner page whose session is missing/expired.
+ * Carries `next` only for an allowlisted destination other than the default
+ * (the login page resolves `next` through `resolveSafeNextPath` again).
+ */
+export function buildSignInHref(currentPath: string): string {
+  const safeNext = resolveSafeNextPath(currentPath);
+  return safeNext === DEFAULT_NEXT_PATH || safeNext !== currentPath
+    ? "/login"
+    : `/login?next=${encodeURIComponent(safeNext)}`;
+}
 
 export function resolveSafeNextPath(candidate: string | null): string {
   if (candidate !== null && SAFE_NEXT_PATTERN.test(candidate)) {

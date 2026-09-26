@@ -7,6 +7,7 @@ import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 import type { CourseRole } from "@/domain/course/types";
 
@@ -116,7 +117,7 @@ export default function CourseViewPage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.courseView.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.courseView.signedOutAction}</ButtonLink>}
+          action={<ButtonLink href={buildSignInHref(`/courses/${courseId}`)}>{messages.courseView.signedOutAction}</ButtonLink>}
         />
       ) : null}
 
