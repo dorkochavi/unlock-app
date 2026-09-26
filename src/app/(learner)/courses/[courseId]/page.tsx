@@ -170,14 +170,15 @@ export default function CourseViewPage() {
 }
 
 /**
- * Ready Course view (Run UX-01 UX-1). One primary action, using only an
- * existing valid destination (docs/UX_SPEC.md §3, §9 — no fake Course
- * Practice):
- * - LEARNER → "continue learning in Today" (`/today`, which already pools
- *   this Course's items), plus this Course's Topic rows from the existing
- *   `topic-progress` endpoint (informational; no per-Topic action exists).
- * - OWNER / INSTRUCTOR → the existing instructor management page. The
- *   learner-only Topic endpoint is not called for them.
+ * Ready Course view (Run UX-01 UX-1). Only existing valid destinations
+ * (docs/UX_SPEC.md §3, §9 — no fake Course Practice):
+ * - LEARNER → a SECONDARY navigation link to Today (`/today`), deliberately
+ *   not a primary "continue learning" promise: Today may already be complete,
+ *   and no Course-scoped learning action exists until UX-3. No replacement
+ *   primary action is invented. Plus this Course's Topic rows from the
+ *   existing `topic-progress` endpoint (informational; no per-Topic action).
+ * - OWNER / INSTRUCTOR → the existing instructor management page (primary).
+ *   The learner-only Topic endpoint is not called for them.
  */
 function CourseReady({ courseId, data }: { courseId: string; data: CourseContextDto }) {
   const messages = getMessages().courseView;
@@ -190,8 +191,8 @@ function CourseReady({ courseId, data }: { courseId: string; data: CourseContext
       {isLearner ? (
         <>
           <div className="mb-8 flex flex-col gap-2">
-            <ButtonLink href="/today" fullWidth>
-              {messages.continueInToday}
+            <ButtonLink href="/today" variant="secondary" fullWidth>
+              {messages.goToToday}
             </ButtonLink>
             <p className="text-center text-sm text-muted">{messages.continueInTodayHint}</p>
           </div>

@@ -111,7 +111,7 @@ Each entry names its intended replacement so UX-3 can remove it deliberately.
 | Item | Run UX-01 behavior | Intended later behavior |
 | --- | --- | --- |
 | Today Complete primary CTA "המשך ללמוד" | Routes to `/courses` (existing surface) | Enters Course Practice for the most appropriate Course (UX-3) |
-| Course page primary "continue learning" action | LEARNER: "המשך ללמוד ב'היום שלי'" → `/today` (Today already pools this Course's items); OWNER/INSTRUCTOR: "לניהול הקורס" → instructor Course page. No fake Practice | Starts Course Practice (UX-3) |
+| Course page primary "continue learning" action | LEARNER: no primary learning action. A SECONDARY navigation link "לעבור להיום שלי" → `/today` (honest navigation, not a promise of available learning — Today may already be complete). No replacement primary action is invented. OWNER/INSTRUCTOR: primary "לניהול הקורס" → instructor Course page. No fake Practice | Primary "continue learning" that starts Course Practice (UX-3) |
 | Course card learning state (item 19) | Not shown: needs a Course-level rollup of Topic states that no accepted policy defines; cards show title and role only | Course-level state summary once a rollup rule is decided |
 | Progress "diagnosis → action" (item 5) | Single primary "המשך ללמוד" → `/today`; Course headings link to the Course page; Topic rows informational | Per-Topic action (Topic Practice, UX-3) |
 | Topic "practice topic" CTA / Topic page | Not shipped; Topic info stays on Course/Progress | Topic page with one primary practice CTA (UX-3) |

@@ -335,7 +335,7 @@ export const he = {
       LEARNER: "התפקיד שלך בקורס: לומד/ת",
     },
     backToToday: "חזרה ל'היום שלי'",
-    continueInToday: "המשך ללמוד ב'היום שלי'",
+    goToToday: "לעבור להיום שלי",
     continueInTodayHint: "התוכנית היומית בוחרת שאלות מכל הקורסים שלך, לפי מה שהכי כדאי ללמוד עכשיו.",
     manageCourse: "לניהול הקורס",
     backToCourses: "חזרה לקורסים שלי",
