@@ -3,7 +3,7 @@
 PLAN_VERSION: 003
 RUN_ID: 2026-09-25-009
 BASE_HEAD: afcd750
-STATUS: COMPLETE — S1 (learner Topic Progress read model, `3a1d47b`), S3 (instructor Topic Insights + analysis surface, `aa9f858`) and S2 (learner Progress UI, `5cdd2ae`) are committed and Preview-verified; a join-through-auth regression found in S2 Preview was fixed in `04597b4`. Not Production-deployed as far as this Plan knows. See `docs/RUNS/2026-09-25-009.md`.
+STATUS: COMPLETE — S1 (learner Topic Progress read model, `3a1d47b`), S3 (instructor Topic Insights + analysis surface, `aa9f858`) and S2 (learner Progress UI, `5cdd2ae`) are committed and Preview-verified; a join-through-auth regression found in S2 Preview was fixed in `04597b4`. Production-verified 2026-09-26 at `v0.1.0` (`8e137e6`; post-closeout note in the Run report). See `docs/RUNS/2026-09-25-009.md`.
 
 ## 1. Run Goal
 

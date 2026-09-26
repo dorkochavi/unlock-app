@@ -8,7 +8,7 @@ Purpose: hold the durable, reusable truth for starting the real Ruppin pilot, so
 
 This file is not a Run report and not the current execution plan. Historical evidence lives in `docs/RUNS/**` and Git.
 
-## 1. Current Status (2026-09-25)
+## 1. Current Status (2026-09-26)
 
 | Gate | Status |
 | --- | --- |
@@ -18,7 +18,7 @@ This file is not a Run report and not the current execution plan. Historical evi
 
 The Pre-Pilot Run (`2026-09-23-PRE-PILOT`) stays formally open on Content only. Content is a **pre-pilot release gate**; it does not block independent product development (Run 009).
 
-Run 009 (learner Progress + instructor Insights) is COMPLETE and Preview-verified (`docs/RUNS/2026-09-25-009.md`). It is not a gate and not a pilot approval, and its behavior is not claimed to be deployed to Production here.
+Run 009 (learner Progress + instructor Insights) is COMPLETE and was Production-verified on 2026-09-26 at `v0.1.0` (`8e137e6`; current release state: `docs/DEV_STATUS.md`, model: ADR-019). A verified Production baseline is **not** a pilot approval: the Content gate above is still open, and Run 009 is not a gate.
 
 ## 2. Environment / Release Model
 
@@ -26,9 +26,9 @@ UNLOCK is ONE application and ONE codebase; there is no separate pilot app. The 
 
 - **Local** — development, tests, Claude-assisted work, safe experimentation.
 - **Vercel Preview** — browser/manual verification before release.
-- **Production** (`https://unlock-app-pied.vercel.app`) — the one live application.
+- **Production** (`https://unlock-app-pied.vercel.app`) — the one live application. Code reaches it only from `main` after Preview verification and CI, and verified baselines are tagged; see ADR-019 (`docs/DECISIONS/019-release-and-branch-model-v1.md`).
 
-No permanent Staging today. Revisit Staging / Supabase Preview Branches / a dedicated Staging project on: more developers, higher release frequency, more complex schema/Auth changes, destructive-DB-testing risk, or production-data safety concerns. Production data is protected: no destructive development experiments on the Production DB. Git direction: `feature/project-foundation` is the active branch; long term `main` should represent released Production state (not migrated now).
+No permanent Staging today. Revisit Staging / Supabase Preview Branches / a dedicated Staging project on: more developers, higher release frequency, more complex schema/Auth changes, destructive-DB-testing risk, or production-data safety concerns. Production data is protected: no destructive development experiments on the Production DB. Git model: `main` is Production truth and work happens on short-lived branches (migrated 2026-09-26; ADR-019).
 
 Hosted configuration that must remain: `DATABASE_SSL_CA` set; `DATABASE_POOL_MAX=5`.
 
@@ -47,7 +47,7 @@ Hosted configuration that must remain: `DATABASE_SSL_CA` set; `DATABASE_POOL_MAX
 11. Supabase Auth email/SMTP capacity decision (default sender is very tightly rate-limited; a 429 was seen once; per-IP and custom-SMTP state unrecorded). Under the rehearsal protocol, a step blocked by this is BLOCKED, not GO.
 12. Production QA/test-data cleanup (throwaway "Pre-Pilot Burst Test" Course, `burst##` accounts, QA learners/courses/questions) — human-owned hosted action.
 
-Note (dependency, not a new gate): the F-02 privacy contract (Run 009 D1) is IMPLEMENTED in Run 009 S3 (`aa9f858`) and Preview-verified; **Production deployment is not verified in this document**. Until the pilot deployment runs S3, its Item Analysis still shows the responder count and rounded rate; if the real pilot starts before S3 is deployed there, that is a conscious human decision (operating rule: refresh only after a group answering window). Once deployed, confirm on the pilot URL that the analysis page shows only descriptive bands or the insufficient-data state, then update this note.
+Note (no longer a dependency): the F-02 privacy contract (Run 009 D1) is IMPLEMENTED in Run 009 S3 (`aa9f858`) and was verified in Production on 2026-09-26 (`v0.1.0`): the analysis page showed no learner identities, exact responder counts, percentages, per-option distributions or drill-down. Operating rule unchanged: refresh only after a group answering window.
 
 ## 4. Technical Evidence Pointer
 
@@ -70,10 +70,10 @@ Use only the smallest set that proves the claim; do not re-run a synthetic burst
 6. At least 2 physical phones (1 iPhone + 1 Android), Wi-Fi and cellular; a laptop for the instructor; fresh learner accounts with real email (≥5 active learners and ≥5 responders to see any aggregate).
 
 ### Student script (each phone; Wi-Fi and cellular)
-Scan QR (and once open the link from a message app) → signed-out goes to sign-up/login and back to the join page → sign-up with a real email (confirm; record email delay) or log in → join (OPEN = immediate) → open Today → answer the first question and observe correct/incorrect feedback + Continue → double-tap answer/Continue, refresh mid-answer, second tab (no duplicate, no error page) → finish the plan; kill/reopen the link (session persists, same plan) → switch Wi-Fi↔cellular mid-session and reload → Hebrew/RTL on every screen (direction, alignment, mixed numbers, no clipping, one-handed tap targets, keyboard not hiding submit). After sign-in from a join link the learner returns to the join page and taps Join (explicit consent; fixed and Preview-verified in `04597b4`). Progress (Run 009 S2, Preview-verified; confirm on the pilot deployment once Production runs it): the third bottom-nav tab shows all three tabs on both phones → a fresh learner sees the empty state → after answering, Topics show לא התחלת / בתהליך / דורש חיזוק / מבוסס with "ניסית X מתוך Y שאלות" and no percentages → the back-to-Today link works.
+Scan QR (and once open the link from a message app) → signed-out goes to sign-up/login and back to the join page → sign-up with a real email (confirm; record email delay) or log in → join (OPEN = immediate) → open Today → answer the first question and observe correct/incorrect feedback + Continue → double-tap answer/Continue, refresh mid-answer, second tab (no duplicate, no error page) → finish the plan; kill/reopen the link (session persists, same plan) → switch Wi-Fi↔cellular mid-session and reload → Hebrew/RTL on every screen (direction, alignment, mixed numbers, no clipping, one-handed tap targets, keyboard not hiding submit). After sign-in from a join link the learner returns to the join page and taps Join (explicit consent; fixed and Preview-verified in `04597b4`). Progress (Run 009 S2, Production-verified 2026-09-26): the third bottom-nav tab shows all three tabs on both phones → a fresh learner sees the empty state → after answering, Topics show לא התחלת / בתהליך / דורש חיזוק / מבוסס with "ניסית X מתוך Y שאלות" and no percentages → the back-to-Today link works.
 
 ### Instructor script (laptop; ideally while 5+ students answer)
-Confirm PUBLISHED, join policy OPEN, Topics visible, only intended Questions PUBLISHED → show join QR/link; watch memberships → announce a group answering window (e.g. 3 minutes; same Questions), do NOT refresh analysis while answers trickle in → after the window open the analysis surface and refresh once; record what is shown, last-updated, and the insufficient-data state → privacy checks: no names/emails/IDs, no per-option distribution, no interpretive labels, learner account denied, signed-out rejected → record instructor value (did it reveal something not immediately obvious; would it change what they revisit; would they use UNLOCK again) → no re-publish or Topic reassignment mid-window. Run 009 S3 UI (Preview-verified): open the analysis via the Course page "ניתוח תשובות" link (shown only for PUBLISHED Courses); the page has a Topic section and a Question section, each showing a descriptive first-answer band (רוב התשובות הראשונות נכונות / תמונה מעורבת / רוב שגויות) or "אין עדיין מספיק נתונים לסיווג"; there are no counts, percentages or per-option data, and the two insufficient reasons look identical. With a small class or many small Topics most Topics will legitimately show insufficient data (each needs ≥5 distinct responders and ≥5 active learners) — expected, not a defect. At n=5 one answer can flip a band, so do not refresh mid-window. (Earlier evidence describing responder counts pre-dates S3; confirm the pilot deployment runs S3 before relying on these steps.)
+Confirm PUBLISHED, join policy OPEN, Topics visible, only intended Questions PUBLISHED → show join QR/link; watch memberships → announce a group answering window (e.g. 3 minutes; same Questions), do NOT refresh analysis while answers trickle in → after the window open the analysis surface and refresh once; record what is shown, last-updated, and the insufficient-data state → privacy checks: no names/emails/IDs, no per-option distribution, no interpretive labels, learner account denied, signed-out rejected → record instructor value (did it reveal something not immediately obvious; would it change what they revisit; would they use UNLOCK again) → no re-publish or Topic reassignment mid-window. Run 009 S3 UI (Production-verified 2026-09-26): open the analysis via the Course page "ניתוח תשובות" link (shown only for PUBLISHED Courses); the page has a Topic section and a Question section, each showing a descriptive first-answer band (רוב התשובות הראשונות נכונות / תמונה מעורבת / רוב שגויות) or "אין עדיין מספיק נתונים לסיווג"; there are no counts, percentages or per-option data, and the two insufficient reasons look identical. With a small class or many small Topics most Topics will legitimately show insufficient data (each needs ≥5 distinct responders and ≥5 active learners) — expected, not a defect. At n=5 one answer can flip a band, so do not refresh mid-window. (Earlier evidence describing responder counts pre-dates S3.)
 
 ### Evidence to record (per device)
 Device/OS/browser, network, URL and commit, scan→first-question and scan→first-answer seconds, email delay, each failure/confusing moment, RTL/layout defects, double-tap/refresh outcome, Vercel Runtime Log errors (count and codes only); instructor: what was shown, refresh time, privacy results.

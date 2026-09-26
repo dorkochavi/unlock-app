@@ -1141,7 +1141,7 @@ No further auth change until the hosted retest shows whether this is sufficient.
 
 # FUB-028 — Item Analysis Discoverability
 
-**Status:** `RESOLVED` — Run 009 S3 (commit `aa9f858`), Preview-verified. The instructor Course page has a visible "ניתוח תשובות" entry point, rendered only for a PUBLISHED Course (DRAFT/ARCHIVED Courses expose no dead link); Preview verification passed, including learner denial on the instructor analysis surface. The original premise below ("reachable only by direct URL") was partially stale: an unconditional small text link already existed before S3; S3 made the entry intentional, visible and Course-state-safe. Kept for traceability; the observation below is historical.
+**Status:** `RESOLVED` — PRODUCTION VERIFIED 2026-09-26 (`v0.1.0`, `8e137e6`). The instructor Course page shows a "ניתוח תשובות" entry point in the Questions section header, rendered only for a PUBLISHED Course by design (DRAFT/ARCHIVED Courses expose no dead link); the analysis page loads and passed the privacy check in Production. Code: Run 009 S3 (`aa9f858`). The original premise below ("reachable only by direct URL") was inaccurate: an unconditional small text link already existed since Pre-Pilot S2; S3 made it an intentional, Course-state-safe button. Kept for traceability; the observation below is historical.
 **Area:** Instructor Course UI navigation
 
 Observed 2026-09-25 (manual QA): Item Analysis works and is authorized correctly but is only

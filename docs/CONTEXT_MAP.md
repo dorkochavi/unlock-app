@@ -75,6 +75,7 @@ High-frequency current ADRs include:
 - ADR-016 — Global DailyPlan / Today semantics
 - ADR-017 — Starter New Material V1
 - ADR-018 — Topic Model V1
+- ADR-019 — Release and Branch Model V1
 
 ## Scoped Claude Owners
 

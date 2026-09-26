@@ -135,6 +135,10 @@ When ordinary NBA candidates are empty, V1 may deterministically fall back to un
 
 Topics are flat, Course-scoped, and soft-archived (never deleted). `questions.topic_id` is current metadata, not snapshotted into Attempts or QuestionVersions, so read models attribute history to a Question's CURRENT Topic. No immutable historical Topic attribution exists in V1; hierarchy and historical attribution stay deferred (OQ-031).
 
+### ADR-019 — Release and Branch Model V1
+
+`main` is Production truth and advances by fast-forward to Preview-verified commits; work happens on short-lived `feature/*` / `fix/*` branches; minimal CI must pass; schema changes must be applied and compatible before promotion; annotated `v0.N.0` tags mark only Production-verified baselines; agents never push or deploy.
+
 ---
 
 ## Decision Rule

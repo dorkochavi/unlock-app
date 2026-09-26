@@ -5,7 +5,17 @@ Updated: 2026-09-26 (Run 009 close)
 
 ## Repository
 
-- Branch: `feature/project-foundation`.
+- Release state (2026-09-26, ADR-019): `main` is Production truth (Vercel
+  Production Branch = `main`). `v0.1.0` (`8e137e6`) is the first manually
+  verified Production RUNTIME baseline and includes Run 009; the verification
+  was performed against `8e137e6`. Docs-only commits may advance `main` (and so
+  the deployed Git SHA) past it without a new tag while runtime behavior is
+  unchanged — the currently deployed SHA is whatever `main` is; use Vercel/git,
+  not this file, for it. Minimal CI (`.github/workflows/ci.yml`: typecheck,
+  lint, unit tests) is active and passed on `8e137e6`. This baseline is NOT a pilot approval (see
+  `docs/PILOT_READINESS.md`). Development happens on short-lived `feature/*` /
+  `fix/*` branches; `feature/project-foundation` (last commit `e0f1473`) is
+  retired as the working branch.
 - Working tree: expected clean at every durable checkpoint (this document
   does not itself change that). Not pushed — remote push remains a
   manual/human action.
@@ -82,15 +92,14 @@ Current repository capabilities include:
   active learners and 5 distinct responders, else no numbers); shows responder
   count and an incorrect rate rounded to the nearest 10 points, never exact
   correct/incorrect counts; manual refresh only. It is NOT a per-answer live
-  scoreboard — refresh after a group answering window. **Run 009 S3 (`aa9f858`,
-  Preview-verified) replaced the responder count and rounded rate with coarse
+  scoreboard — refresh after a group answering window. **Run 009 S3 (`aa9f858`;
+  Production-verified at `v0.1.0`, 2026-09-26) replaced the responder count and rounded rate with coarse
   descriptive first-answer bands (MOSTLY_CORRECT / MIXED / MOSTLY_INCORRECT) or
   an explicit insufficient-data state — no counts, percentages, identity or
   per-option data (F-02 contract) — and added Topic-level Insights
   (`GET /api/courses/:courseId/topic-insights`) and a visible "ניתוח תשובות"
-  entry on the Course page for PUBLISHED Courses. Production deployment of
-  this change is NOT verified in this document.**;
-- learner Progress (Run 009 S1/S2, Preview-verified): `GET
+  entry on the Course page (PUBLISHED Courses only, intentionally).**;
+- learner Progress (Run 009 S1/S2, Production-verified at `v0.1.0`): `GET
   /api/courses/:courseId/topic-progress` returns the caller's own qualitative
   Topic states (NOT_STARTED / IN_PROGRESS / NEEDS_REINFORCEMENT / SOLID) with
   attempted-of-total coverage; access = LEARNER role + `hasAccess` (ADR-015;
@@ -472,8 +481,9 @@ from before this Run, unchanged).
 
 ## Current Manual Actions
 
-- push local HEAD to `origin/feature/project-foundation` when ready (see
-  `git status` for the ahead count);
+- pushing `main`, promoting to Production, creating/pushing tags and changing
+  Vercel/GitHub settings remain human actions (ADR-019; see `git status` for
+  the ahead count);
 - decide whether to experiment with the `CHANGE CANDIDATE` Development OS
   observation above (named-negative-case test isolation) before it is
   absorbed into `.claude/rules/testing.md`;
@@ -483,7 +493,7 @@ For the Pre-Pilot Run:
 - remaining before the REAL pilot (content gate, SMTP/Auth email capacity, QA data cleanup) is owned by `docs/PILOT_READINESS.md` §3; confirm the hosted config above stays set.
 
 For Run 009:
-- COMPLETE (RUN_ID `2026-09-25-009`; report `docs/RUNS/2026-09-25-009.md`; Plan v003). S1 `3a1d47b`, S3 `aa9f858`, S2 `5cdd2ae`, plus join-through-auth fix `04597b4`; all Preview-verified. **Preview-verified is not Production-deployed:** no document here claims Production has Run 009 behavior. Remaining for Dor: deploy to Production when ready (then update `docs/PILOT_READINESS.md` §3 F-02 note and its instructor script). Known limitation: an Attempt on an older QuestionVersion can keep contributing to the Question-level state used by Topic Progress after a new version becomes current (accepted V1 behavior; ADR-018 does not change it). Topic semantics are now owned by ADR-018.
+- COMPLETE (RUN_ID `2026-09-25-009`; report `docs/RUNS/2026-09-25-009.md`; Plan v003). S1 `3a1d47b`, S3 `aa9f858`, S2 `5cdd2ae`, plus join-through-auth fix `04597b4`; Preview-verified at close and **Production-verified 2026-09-26 at `v0.1.0` (`8e137e6`)** — Learner Progress, join-through-auth, Today answer flow, the instructor analysis entry/page and the privacy check all passed manually in Production (post-closeout note in the Run report). Known limitation: an Attempt on an older QuestionVersion can keep contributing to the Question-level state used by Topic Progress after a new version becomes current (accepted V1 behavior; ADR-018 does not change it). Topic semantics are now owned by ADR-018.
 
 ## Blockers
 
@@ -497,9 +507,9 @@ Finding status (details: Run reports; Content is not PASS):
 - F-01 (empty DailyPlan frozen for the local day): MITIGATED; underlying design issue deferred, NOT resolved — learners must still join before opening Today.
 - F-04a (revoked learner could answer/skip existing plan items): RESOLVED LOCALLY.
 - F-04b (Course PUBLISHED -> ARCHIVED after the plan exists): DECISION PENDING; untouched by Run 009. Run 009 learner Progress is PUBLISHED-only as a conservative, temporary local rule, not the final lifecycle decision for learner history.
-- F-02 (Item Analysis small-n differencing): IMPLEMENTED in Run 009 S3 (`aa9f858`) under the D1 contract (no exact or bucketed responder count, coarse descriptive bands, threshold stays 5; Item Analysis and Topic Insights) and PREVIEW-VERIFIED. Production deployment: NOT VERIFIED here — until deployed, Production still runs the previous Item Analysis. Accepted residual: at n=5 a single new answer can flip a band/eligibility between manual refreshes.
-- FUB-028 (Item Analysis discoverability): RESOLVED — Run 009 S3, Preview-verified. FUB-029 (Publish validates persisted draft): UX WATCH, unchanged.
-- Join intent across sign-in (Run 009 S2 Preview regression): FIXED in `04597b4` and Preview-verified. The login page read `?next=` during render, which on a client-side navigation from /join/:id sees the previous URL; it is now read at submit time through the existing safe-redirect allowlist (see FUB-027).
+- F-02 (Item Analysis small-n differencing): IMPLEMENTED in Run 009 S3 (`aa9f858`) under the D1 contract (no exact or bucketed responder count, coarse descriptive bands, threshold stays 5; Item Analysis and Topic Insights) and PRODUCTION-VERIFIED (`v0.1.0`, 2026-09-26). Accepted residual: at n=5 a single new answer can flip a band/eligibility between manual refreshes.
+- FUB-028 (Item Analysis discoverability): RESOLVED — PRODUCTION VERIFIED 2026-09-26 (entry is intentionally PUBLISHED-only). FUB-029 (Publish validates persisted draft): UX WATCH, unchanged.
+- Join intent across sign-in (Run 009 S2 Preview regression): FIXED in `04597b4`; Preview- and Production-verified. The login page read `?next=` during render, which on a client-side navigation from /join/:id sees the previous URL; it is now read at submit time through the existing safe-redirect allowlist (see FUB-027).
 - Operational (not an app defect): Supabase Auth email rate limiting / SMTP capacity for a class-sized cohort — decide before the real pilot.
 - Offline content validator (`docs/PILOT_CONTENT_VALIDATOR.md`) is available for the content gate.
 
