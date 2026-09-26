@@ -17,6 +17,8 @@ import { loadCourseProgress, type TopicProgressDto } from "../../progress/load-p
 interface CourseContextDto {
   course: { id: string; title: string };
   membership: { role: CourseRole; joinedAt: string };
+  /** Server-computed (ADR-020): LEARNER + active membership + PUBLISHED Course. */
+  practiceAvailable?: boolean;
 }
 
 type ViewState =
@@ -173,11 +175,12 @@ export default function CourseViewPage() {
 /**
  * Ready Course view (Run UX-01 UX-1). Only existing valid destinations
  * (docs/UX_SPEC.md §3, §9 — no fake Course Practice):
- * - LEARNER → a SECONDARY navigation link to Today (`/today`), deliberately
- *   not a primary "continue learning" promise: Today may already be complete,
- *   and no Course-scoped learning action exists until UX-3. No replacement
- *   primary action is invented. Plus this Course's Topic rows from the
- *   existing `topic-progress` endpoint (informational; no per-Topic action).
+ * - LEARNER → primary "תרגול בקורס" ONLY when the server says
+ *   `practiceAvailable` (Run UX-02, UX_SPEC §10; otherwise absent, never
+ *   disabled), above the SECONDARY navigation link to Today (`/today`), which
+ *   is deliberately not a "continue learning" promise (Today may be complete).
+ *   Plus this Course's Topic rows from the existing `topic-progress` endpoint;
+ *   each becomes a Topic Practice link when Practice is available.
  * - OWNER / INSTRUCTOR → the existing instructor management page (primary).
  *   The learner-only Topic endpoint is not called for them.
  */
@@ -192,12 +195,17 @@ function CourseReady({ courseId, data }: { courseId: string; data: CourseContext
       {isLearner ? (
         <>
           <div className="mb-8 flex flex-col gap-2">
+            {data.practiceAvailable === true ? (
+              <ButtonLink href={`/courses/${courseId}/practice?from=course`} fullWidth>
+                {messages.practiceAction}
+              </ButtonLink>
+            ) : null}
             <ButtonLink href="/today" variant="secondary" fullWidth>
               {messages.goToToday}
             </ButtonLink>
             <p className="text-center text-sm text-muted">{messages.continueInTodayHint}</p>
           </div>
-          <CourseTopics courseId={courseId} />
+          <CourseTopics courseId={courseId} practiceAvailable={data.practiceAvailable === true} />
         </>
       ) : (
         <ButtonLink href={`/instructor/courses/${courseId}`} fullWidth>
@@ -214,7 +222,13 @@ type TopicsState =
   | { kind: "unavailable" }
   | { kind: "error" };
 
-function CourseTopics({ courseId }: { courseId: string }) {
+function CourseTopics({
+  courseId,
+  practiceAvailable,
+}: {
+  courseId: string;
+  practiceAvailable: boolean;
+}) {
   const messages = getMessages().courseView;
   const [topics, setTopics] = useState<TopicsState>({ kind: "loading" });
 
@@ -253,7 +267,10 @@ function CourseTopics({ courseId }: { courseId: string }) {
         <p className="pt-2 text-sm text-muted">{messages.topicsEmpty}</p>
       ) : null}
       {topics.kind === "ready" && topics.topics.length > 0 ? (
-        <TopicList topics={topics.topics} />
+        <TopicList
+          topics={topics.topics}
+          practice={practiceAvailable ? { courseId, from: "course" } : undefined}
+        />
       ) : null}
     </Card>
   );

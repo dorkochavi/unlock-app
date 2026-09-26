@@ -20,9 +20,19 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { getMessages } from "@/messages";
-import type { DailyPlanItemDto } from "@/app/api/daily-plan/today/daily-plan-dto";
-
 import type { AnswerFeedback } from "./select-displayed-item";
+
+/**
+ * The shape the card needs. Today's `DailyPlanItemDto` and a Practice item
+ * both satisfy it; `actionType` (Today's "why this question" label) is
+ * optional — Practice has no such label.
+ */
+export interface QuestionCardItem {
+  questionType: string;
+  prompt: string;
+  answerOptions: Array<{ id: string; content: string }>;
+  actionType?: string;
+}
 
 export function QuestionCard({
   item,
@@ -33,7 +43,7 @@ export function QuestionCard({
   onSkip,
   onSelectionChange,
 }: {
-  item: DailyPlanItemDto;
+  item: QuestionCardItem;
   feedback: AnswerFeedback | null;
   submitError: string | null;
   onSubmit: (selectedAnswer: string | string[] | null) => Promise<void>;
@@ -53,7 +63,10 @@ export function QuestionCard({
   const feedbackRef = useRef<HTMLDivElement>(null);
 
   const actionLabel =
-    messages.actionType[item.actionType as keyof typeof messages.actionType] ?? item.actionType;
+    item.actionType === undefined
+      ? null
+      : (messages.actionType[item.actionType as keyof typeof messages.actionType] ??
+        item.actionType);
 
   useEffect(() => {
     promptRef.current?.focus();
@@ -98,7 +111,7 @@ export function QuestionCard({
 
   return (
     <div>
-      <p className="mb-2 text-sm text-subtle">{actionLabel}</p>
+      {actionLabel !== null ? <p className="mb-2 text-sm text-subtle">{actionLabel}</p> : null}
       <h2
         ref={promptRef}
         tabIndex={-1}

@@ -188,6 +188,8 @@ export const he = {
     coverage: "ניסית {attempted} מתוך {total} שאלות",
     backToToday: "חזרה להיום שלי",
     goToToday: "לעבור להיום שלי",
+    practiceTopic: "תרגול",
+    practiceTopicLabel: "תרגול בנושא {name}, {state}",
     state: {
       NOT_STARTED: "לא התחלת",
       IN_PROGRESS: "בתהליך",
@@ -344,6 +346,7 @@ export const he = {
     topicsError: "לא הצלחנו לטעון את הנושאים בקורס הזה",
     topicsUnavailable: "הנושאים אינם זמינים כרגע עבור הקורס הזה",
     topicsEmpty: "עדיין אין נושאים עם שאלות בקורס הזה",
+    practiceAction: "תרגול בקורס",
   },
   today: {
     heading: "היום שלי",
@@ -401,6 +404,24 @@ export const he = {
     skip: "דלג",
     skipping: "מדלג...",
     skipError: "לא ניתן היה לדלג על השאלה. נסו שוב.",
+  },
+  practice: {
+    loading: "טוען שאלות לתרגול...",
+    signedOutTitle: "יש להתחבר כדי לתרגל",
+    signedOutAction: "מעבר להתחברות",
+    genericErrorTitle: "משהו השתבש בטעינת התרגול",
+    retry: "ניסיון נוסף",
+    unavailableTitle: "התרגול אינו זמין כרגע",
+    unavailableBody: "ייתכן שהקורס או הנושא השתנו. אפשר לחזור ולנסות שוב.",
+    scopeCourse: "תרגול בקורס",
+    scopeTopic: "תרגול בנושא",
+    batchCompleteTitle: "סיימת סבב תרגול",
+    more: "עוד 10",
+    noMoreTitle: "אין כרגע עוד שאלות לתרגול כאן",
+    noMoreBody: "חזרות נוספות יופיעו בתוכניות הלמידה הבאות.",
+    backToCourse: "חזרה לקורס",
+    backToProgress: "חזרה להתקדמות",
+    questionUnavailable: "השאלה כבר לא זמינה לתרגול. ממשיכים הלאה — לא נרשמה תשובה.",
   },
 } as const;
 

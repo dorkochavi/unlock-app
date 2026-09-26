@@ -9,9 +9,9 @@
  * Diagnosis → action (Run UX-01 UX-1, docs/UX_SPEC.md §1.5, §9): each Course
  * heading links to its existing Course page, and a SECONDARY navigation link
  * goes to Today — deliberately not a primary "continue learning" promise,
- * since Today may already be complete. No replacement primary learning action
- * is invented until Topic/Course Practice exists (UX-3). Topic rows stay
- * informational.
+ * since Today may already be complete. No page-level primary learning action is
+ * invented. Run UX-02: each Topic with published Questions is one Topic
+ * Practice link (a Course listed here is a LEARNER's active PUBLISHED Course).
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -66,7 +66,7 @@ function CourseSection({
       ) : null}
 
       {progress.kind === "ready" && progress.topics.length > 0 ? (
-        <TopicList topics={progress.topics} />
+        <TopicList topics={progress.topics} practice={{ courseId: id, from: "progress" }} />
       ) : null}
     </Card>
   );
