@@ -66,7 +66,7 @@ Preserved from owners:
 | 10 | Legacy MCQ Extraction / Answer Resolution | M0 | C | Named here only; no repository design |
 | 11 | Assessment / Item Intelligence | M1 | C | Only coarse first-answer bands; difficulty/discrimination/distractor health need pilot data |
 | 12 | Product Analytics & Experimentation | M1 | A (baseline) / D (experimentation) | Authoritative records exist; no event instrumentation; provider decision open |
-| 13 | UX / Accessibility / Performance | M2 | A | UX-01 learner shell (mocked evidence); Today proven on real phones; a11y and latency only partly evidenced |
+| 13 | UX / Accessibility / Performance | M2 | A | UX-01 learner shell (mocked tests + manual Production acceptance); Today proven on real phones; a11y and latency only partly evidenced |
 | 14 | Trust / Security / Privacy | M2 (authz at M3) | A | Strong server-side authz + aggregate privacy; no privacy/legal pages, deletion semantics or rate limiting |
 | 15 | Platform / Operations / Observability | M2 | A (minimum) | Release model + CI + manual backup; no runtime monitoring, no restore drill |
 | 16 | Growth / SEO / Public Web | M0 | D | Minimal root page + app metadata only |
@@ -242,7 +242,8 @@ Preserved from owners:
 
 ### 13. UX / Accessibility / Performance — M2 · A
 - **Owns:** learner/instructor experience quality: Hebrew/RTL/mobile, Learn Mode, a11y, latency.
-- **Proven:** UX-01 learner shell and Learn Mode (mocked browser evidence; `UX_SPEC.md` §8); Today flow on real phones
+- **Proven:** UX-01 learner shell and Learn Mode (mocked browser tests, `UX_SPEC.md` §8; deployed Production UX manually
+  checked and accepted by the product owner 2026-09-26, `DEV_STATUS.md`); Today flow on real phones
   (S4); Today a11y spot-checked at 375/320 px.
 - **Partial:** a11y walkthroughs of login/join/Progress/instructor flows not done; Today p95 4.85 s at 30 learners
   (FUB-026 round-trip reduction deferred); no Hebrew `not-found`/`error` boundaries.

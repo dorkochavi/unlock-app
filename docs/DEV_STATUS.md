@@ -79,15 +79,17 @@ Current repository capabilities include:
 - Today answer + Skip behavior;
 - New Material fallback V1;
 - learner shell / My Courses / Course View — redesigned in Run UX-01
-  (merged to `main` and pushed — `origin/main` at `d052e5c` — so it is on the
-  Production branch per ADR-019; NOT Production-verified;
-  `docs/RUNS/2026-09-26-UX-01.md`): semantic tokens and shared primitives,
+  (merged to `main` at `d052e5c` and deployed through the Production branch,
+  ADR-019; `docs/RUNS/2026-09-26-UX-01.md`): semantic tokens and shared primitives,
   Today landing + Today Complete success state, Learn Mode for the Today
   question flow (nav hidden, inline neutral feedback, focus management),
   learner sign-in `next=` for `/courses`, `/progress`, `/courses/:id`.
   UX authority: `docs/UX_SPEC.md` (temporary bridges in §9). Course/Topic
-  Practice deferred (`FUB-030`). Verified with mocked browser evidence only
-  (no real Supabase integration run);
+  Practice deferred (`FUB-030`, since promoted to Run UX-02). Evidence, kept
+  distinct: mocked browser tests during the Run (UX states only, no real
+  Supabase integration); the deployed Production UX manually checked and
+  accepted by the product owner on 2026-09-26. A real-phone Preview
+  verification is separate evidence and is not recorded here;
 - Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY
   Questions, with source-size AND row-count HTTP/application-layer limits
   (Run 008 S1.D);
@@ -475,7 +477,7 @@ Product roadmap:
 - Run 008 — Authoring Integration + Pilot Readiness (**COMPLETE**)
 - Pre-Pilot Validation Run — IN PROGRESS, formally open on Content Go/No-Go only (Technical S4 PASS 2026-09-25; waiting for real pilot material); not a renumbering of Run 009
 - Run 009 — Learner Progress + Instructor Insights (**COMPLETE**; S1/S2/S3 committed and Preview-verified; `docs/RUNS/2026-09-25-009.md`). Not a Pre-Pilot release requirement and not a pilot approval.
-- Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE**, merged to `main` and pushed (`d052e5c`), not Production-verified; `docs/RUNS/2026-09-26-UX-01.md`). Open human checks: verification on a real phone; hosted Supabase Auth Redirect URL allow-list for the new `next=` values. Early Practice + FSRS semantics (`FUB-030`) decided and promoted to Run UX-02 (`docs/CHATGPT_PLAN.md`).
+- Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE**, merged to `main` (`d052e5c`), deployed via the Production branch and manually verified/accepted in Production by the product owner on 2026-09-26; `docs/RUNS/2026-09-26-UX-01.md`). Not recorded as done: real-phone Preview verification (separate evidence); hosted Supabase Auth Redirect URL allow-list for the new `next=` values. Early Practice + FSRS semantics (`FUB-030`) decided and promoted to Run UX-02 (`docs/CHATGPT_PLAN.md`).
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
