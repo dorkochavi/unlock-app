@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-26 (Run 009 close)
+Updated: 2026-09-26 (Run UX-01 close)
 
 ## Repository
 
@@ -76,7 +76,15 @@ Current repository capabilities include:
 - persisted DailyPlan / DailyPlanItems;
 - Today answer + Skip behavior;
 - New Material fallback V1;
-- learner shell / My Courses / Course View;
+- learner shell / My Courses / Course View — redesigned in Run UX-01
+  (branch `feature/run-ux-01-learner-ux`, local, NOT yet merged/deployed;
+  `docs/RUNS/2026-09-26-UX-01.md`): semantic tokens and shared primitives,
+  Today landing + Today Complete success state, Learn Mode for the Today
+  question flow (nav hidden, inline neutral feedback, focus management),
+  learner sign-in `next=` for `/courses`, `/progress`, `/courses/:id`.
+  UX authority: `docs/UX_SPEC.md` (temporary bridges in §9). Course/Topic
+  Practice deferred (`FUB-030`). Verified with mocked browser evidence only
+  (no real Supabase integration run);
 - Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY
   Questions, with source-size AND row-count HTTP/application-layer limits
   (Run 008 S1.D);
@@ -464,6 +472,7 @@ Product roadmap:
 - Run 008 — Authoring Integration + Pilot Readiness (**COMPLETE**)
 - Pre-Pilot Validation Run — IN PROGRESS, formally open on Content Go/No-Go only (Technical S4 PASS 2026-09-25; waiting for real pilot material); not a renumbering of Run 009
 - Run 009 — Learner Progress + Instructor Insights (**COMPLETE**; S1/S2/S3 committed and Preview-verified; `docs/RUNS/2026-09-25-009.md`). Not a Pre-Pilot release requirement and not a pilot approval.
+- Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE** locally, not pushed/merged; `docs/RUNS/2026-09-26-UX-01.md`). Open human checks: Preview verification on a real phone; hosted Supabase Auth Redirect URL allow-list for the new `next=` values. Next decision: Early Practice + FSRS semantics (`FUB-030`).
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale

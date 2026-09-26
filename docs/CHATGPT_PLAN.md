@@ -3,7 +3,7 @@
 PLAN_VERSION: 001
 RUN_ID: 2026-09-26-UX-01
 BASE_HEAD: 032153e
-STATUS: PLANNED — approved in principle 2026-09-26; implementation not started. Docs-only Step 0 (this Plan, `docs/UX_SPEC.md`, backlog entry `FUB-030`) precedes UX-1.
+STATUS: COMPLETE — Step 0 (`eec16ae`), UX-1 (`174d30b`, corrections `5861c31`, `4b0b728`) and UX-2 (`29f9087`) committed locally on `feature/run-ux-01-learner-ux` (not pushed). Mocked browser evidence only. See `docs/RUNS/2026-09-26-UX-01.md`.
 
 ## 1. Run Goal
 
