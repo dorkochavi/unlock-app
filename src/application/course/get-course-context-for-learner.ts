@@ -14,6 +14,7 @@
  * Does not create an independent per-course Today/plan — this function only
  * reads a Course summary and the caller's own membership row.
  */
+import { isPracticeEligible } from "../practice/practice-eligibility";
 import type { CourseMembership, CourseRepositories, CourseSummary } from "./ports";
 
 export interface GetCourseContextForLearnerCommand {
@@ -25,7 +26,16 @@ export type GetCourseContextForLearnerResult =
   | { outcome: "COURSE_NOT_FOUND" }
   | { outcome: "NOT_A_MEMBER" }
   | { outcome: "ACCESS_REVOKED" }
-  | { outcome: "READY"; course: CourseSummary; membership: CourseMembership };
+  | {
+      outcome: "READY";
+      course: CourseSummary;
+      membership: CourseMembership;
+      /**
+       * Server-computed (Run UX-02, ADR-020 §6): LEARNER + active non-archived
+       * membership + PUBLISHED Course. The client never derives this itself.
+       */
+      practiceAvailable: boolean;
+    };
 
 export async function getCourseContextForLearner(
   command: GetCourseContextForLearnerCommand,
@@ -51,5 +61,11 @@ export async function getCourseContextForLearner(
     return { outcome: "ACCESS_REVOKED" };
   }
 
-  return { outcome: "READY", course, membership };
+  const practiceAvailable = await isPracticeEligible(
+    repos,
+    command.actorUserId,
+    command.courseId,
+  );
+
+  return { outcome: "READY", course, membership, practiceAvailable };
 }

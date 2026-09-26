@@ -77,6 +77,7 @@ describe("handleGetCourseContext", () => {
           revokedAt: null,
           archivedAt: null,
         },
+        practiceAvailable: true,
       }),
     });
 
@@ -85,6 +86,7 @@ describe("handleGetCourseContext", () => {
       body: {
         course: { id: VALID_UUID, title: "Intro to Economics" },
         membership: { role: "LEARNER", joinedAt: "2026-01-01T00:00:00.000Z" },
+        practiceAvailable: true,
       },
     });
   });
@@ -105,6 +107,7 @@ describe("handleGetCourseContext", () => {
           revokedAt: null,
           archivedAt: null,
         },
+        practiceAvailable: true,
       }),
     });
 

@@ -12,8 +12,18 @@
 // `/courses/:courseId`) are allowlisted so a learner who signs in again from
 // one of them returns there. Same exact-match, id-charset-restricted shape as
 // `/join/:courseId`; nothing broader.
-const SAFE_NEXT_PATTERN =
-  /^\/(today|courses|progress|courses\/[0-9a-fA-F-]{1,64}|join\/[0-9a-fA-F-]{1,64})$/;
+//
+// Run UX-02 P3: the Practice screen `/courses/:id/practice` is allowlisted with
+// EXACTLY the two query parameters it uses — `topic=<id>` and
+// `from=course|progress` (each at most once, either order) — so a learner whose
+// session expires on Practice signs in and returns to the same scope and origin.
+const ID = "[0-9a-fA-F-]{1,64}";
+const FROM = "from=(?:course|progress)";
+const TOPIC = `topic=${ID}`;
+const PRACTICE_PATH = `courses\\/${ID}\\/practice(?:\\?(?:${TOPIC}(?:&${FROM})?|${FROM}(?:&${TOPIC})?))?`;
+const SAFE_NEXT_PATTERN = new RegExp(
+  `^\\/(today|courses|progress|courses\\/${ID}|join\\/${ID}|${PRACTICE_PATH})$`,
+);
 const DEFAULT_NEXT_PATH = "/today";
 
 /**

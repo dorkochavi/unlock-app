@@ -17,7 +17,7 @@
  * - malformed courseId or `COURSE_NOT_FOUND` -> 404, `{error: {code: "COURSE_NOT_FOUND"}}`.
  * - `NOT_A_MEMBER` -> 403, `{error: {code: "NOT_AUTHORIZED"}}`.
  * - `ACCESS_REVOKED` -> 403, `{error: {code: "ACCESS_REVOKED"}}`.
- * - `READY` -> 200, `{course: {id, title}, membership: {role, joinedAt}}`.
+ * - `READY` -> 200, `{course: {id, title}, membership: {role, joinedAt}, practiceAvailable}`.
  * - unexpected thrown error -> 500, `{error: {code: "INTERNAL_ERROR"}}`.
  */
 import { isUuid } from "../../../../../lib/uuid";
@@ -95,6 +95,7 @@ export async function handleGetCourseContext(
             role: result.membership.role,
             joinedAt: result.membership.joinedAt.toISOString(),
           },
+          practiceAvailable: result.practiceAvailable,
         },
       };
 
