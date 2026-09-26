@@ -5,6 +5,28 @@ RUN_ID: 2026-09-25-009
 BASE_HEAD: afcd750
 STATUS: COMPLETE — S1 (learner Topic Progress read model, `3a1d47b`), S3 (instructor Topic Insights + analysis surface, `aa9f858`) and S2 (learner Progress UI, `5cdd2ae`) are committed and Preview-verified; a join-through-auth regression found in S2 Preview was fixed in `04597b4`. Production-verified 2026-09-26 at `v0.1.0` (`8e137e6`; post-closeout note in the Run report). See `docs/RUNS/2026-09-25-009.md`.
 
+## Slice A — Canonical Truth Reconciliation (docs/comments only)
+
+A Slice, not a Run: no telemetry ceremony, no Run Report. Base: `d3dfa9d`.
+
+**Goal:** remove drift between the repository and current truth without changing behavior.
+
+**In scope (comments and Markdown only):**
+1. Stale source comments (`dailyPlan/ports.ts`, `domain/course/types.ts`, `user/get-user-timezone.ts`, plus other provably false "not implemented" hits).
+2. `docs/PERSISTENCE_SCHEMA_V1.md`: make TodaySession passages consistent (label HISTORICAL; migration #13).
+3. `docs/UNLOCK_ROADMAP.md`: Milestone D wording (capability built, hypothesis pending pilot); Run 012 as Operational / Scale Hardening.
+4. `docs/FOLLOW_UP_BACKLOG.md`: move closed FUB entries to `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`, keep an index.
+5. Archive provably fully historical docs to `docs/archive/` with `README.md`; `CONTEXT_MAP` marks it RESTRICTED.
+6. `docs/DEV_STATUS.md`: one Verification Baseline bullet for `d3dfa9d`.
+
+**Out of scope:** error/not-found pages, security headers, session refresh/middleware, accessibility, performance, CI changes, Prettier/max-lines, splitting large files, CLAUDE.md/AGENTS.md/.cursor duplication, Run 010.
+
+**Guardrail:** proven stale canonical information → fix if trivial and in scope; anything needing a product, architecture, security or behavior decision → report only.
+
+**Definition of Done:** only comments/Markdown changed (proved by diff); typecheck and lint unchanged (same single pre-existing warning); no dangling references to moved files; local commit(s) on `docs/canonical-truth-reconciliation`; no push; clean tree.
+
+---
+
 ## 1. Run Goal
 
 Expose the learning state UNLOCK already derives in two small, honest, read-only views:

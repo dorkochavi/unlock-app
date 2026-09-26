@@ -6,8 +6,8 @@
  * `SubmitAnswerCommand.userId`'s existing precedent
  * (`src/application/learning/submit-answer.ts`) — deriving it from a real
  * authenticated principal, never client-supplied request data, is the
- * future API boundary's job (`docs/API_V1_DRAFT.md`, ADR-015
- * Consequences), not implemented here. This function does not fake
+ * API boundary's job (`src/app/api/courses/[courseId]/join/route.ts`,
+ * ADR-015 Consequences), not implemented here. This function does not fake
  * authentication; it simply does not implement it.
  *
  * Possession of a Course id/link is never itself authorization (ADR-015

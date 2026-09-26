@@ -74,7 +74,7 @@ fixed-size claim baked into the definition itself. A future Global Today
 implementation does not require redefining these terms, only their key
 shape — which lives in ADR-011/schema, not the glossary.
 
-### `docs/ROADMAP.md` — no contradiction
+### `docs/archive/ROADMAP.md` — no contradiction
 
 §10 "Phase 8 — Today V1" (lines 342-357) is a V1 delivery-scope
 description ("Turn Next Best Action into a simple persistent daily plan"),
@@ -198,7 +198,7 @@ actively contradicted... not merely superseded-eventually," and here the
 document's own explicit options-analysis already flags the exact ambiguity
 rather than asserting a wrong conclusion as settled.
 
-### `docs/V1_VERTICAL_SLICE_PLAN.md` — no contradiction
+### `docs/archive/V1_VERTICAL_SLICE_PLAN.md` — no contradiction
 
 Read in full for Today-scope references. This document plans checkpoints
 against the CURRENT (course-scoped) `TodaySessionKey`/`getOrCreateTodaySession`

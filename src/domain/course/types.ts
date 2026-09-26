@@ -67,9 +67,10 @@ export function hasAccess(membership: CourseMembership): boolean {
  * A membership participates in this learner's active learning set:
  * currently has access AND is not archived (ADR-015 §7, §9). Used to
  * exclude both revoked and archived memberships from automatic
- * Today/active-Course enumeration — future work, not implemented by this
- * slice, but the predicate itself belongs in domain code since it is pure
- * policy, not a persistence concern.
+ * active-Course enumeration (`CourseMembershipRepository.listActiveForUser`,
+ * used by `listMyCourses` and DailyPlan course discovery). The predicate
+ * itself belongs in domain code since it is pure policy, not a persistence
+ * concern.
  */
 export function isActiveMembership(membership: CourseMembership): boolean {
   return hasAccess(membership) && membership.archivedAt === null;

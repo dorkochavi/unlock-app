@@ -14,7 +14,7 @@ This document does not redesign anything already decided. It takes as given:
 Today, currently accepted V1 behavior, zero new schema required), ADR-015
 (the `OPEN`-join-policy self-join flow — `QR → Course → sign in → join →
 membership created → learn` — already the decided Ruppin demo onboarding
-mechanism, not redesigned here), and `docs/ROADMAP.md` §19 (Pilot Readiness).
+mechanism, not redesigned here), and `docs/archive/ROADMAP.md` §19 (Pilot Readiness).
 
 ## 0. Starting point, stated plainly
 
@@ -278,6 +278,6 @@ change based on cost alone.
   (ADR-015)
 - `docs/DECISIONS/010-answer-submission-transaction-model.md` (ADR-010)
 - `docs/DECISIONS/005-attempts-are-immutable.md` (ADR-005)
-- `docs/ROADMAP.md` §19 (Pilot Readiness)
+- `docs/archive/ROADMAP.md` §19 (Pilot Readiness)
 - `docs/PRODUCT.md` §13 (new learner ≠ nothing to review)
 - `CLAUDE.md` §6 (non-negotiable security/infra boundaries)

@@ -18,8 +18,7 @@ Status: **IMPLEMENTED IN REPOSITORY** — thirteen forward-only migrations exist
 
 Hosted Supabase migration state at this Development OS V1.2 baseline:
 
-* migrations #1–#12 are confirmed applied to the hosted Supabase project;
-* migration #13 is committed and locally/PGlite verified but deliberately NOT applied hosted yet — pending the backup-readiness gate (`docs/FOLLOW_UP_BACKLOG.md` FUB-009), per `docs/DEV_STATUS.md`. The hosted physical schema still retains `today_sessions`/`today_session_items` and `attempts.today_session_id`/`attempts.today_session_item_id` until migration #13 is applied there — only the application/runtime model has been retired (see `docs/DECISIONS/011-today-is-course-scoped-v1.md`), not yet the hosted schema.
+* all 13 migrations (#1–#13) are recorded as applied to the hosted Supabase project (`docs/DEV_STATUS.md` is the authority for this status). Migration #13 dropped `today_sessions`/`today_session_items` and `attempts.today_session_id`/`attempts.today_session_item_id` (see `docs/DECISIONS/011-today-is-course-scoped-v1.md`); passages below that describe those objects are HISTORICAL design rationale, not current schema.
 
 Hosted migration state is operational status, not physical-schema authority. It may advance independently of this document and should be tracked in `docs/DEV_STATUS.md`.
 
@@ -162,8 +161,8 @@ other path to Course access. Added by
 - **Unique constraints**: `UNIQUE (user_id, course_id)` — at most one
   membership row per user per Course; also what makes `joinCourse`
   race-free by construction (`INSERT ... ON CONFLICT (user_id, course_id)
-  DO NOTHING RETURNING`, mirroring `today_sessions.createIfNotExists`'s own
-  established pattern), never a check-then-insert race.
+  DO NOTHING RETURNING`, mirroring the since-retired
+  `today_sessions.createIfNotExists`'s own pattern), never a check-then-insert race.
 - **Mutable**: `revoked_at`, `archived_at` — independent facts, never
   conflated (ADR-015 §7); each is a single conditional `UPDATE`. `role` is
   not currently mutated by any application code path (no "promote/demote a
@@ -232,8 +231,8 @@ Stable logical identity only — see ADR-009.
 | `updated_at` | timestamptz | no | |
 
 - **Unique constraints**: `UNIQUE (id, course_id)` — exists purely so
-  `attempts` and `today_session_items` can composite-FK against
-  `(question_id, course_id)`, enforcing that an Attempt's `course_id` can
+  `attempts` (and, HISTORICALLY, the since-retired `today_session_items`)
+  can composite-FK against `(question_id, course_id)`, enforcing that an Attempt's `course_id` can
   never diverge from its Question's actual Course (Phase 2 audit finding
   #19 — this was previously unenforced).
 - **`current_version_id` nullability note (\*)**: `questions` and
@@ -280,9 +279,9 @@ never deleted.**
 | `created_at` | timestamptz | no | the only timestamp this table needs — **no `updated_at`**, since a version is never updated |
 
 - **Unique constraints**: `UNIQUE (question_id, version_number)`;
-  `UNIQUE (question_id, id)` — the latter exists purely so `attempts` and
-  `today_session_items` can composite-FK against `(question_id,
-  question_version_id)`, enforcing that a referenced version actually
+  `UNIQUE (question_id, id)` — the latter exists purely so `attempts` (and,
+  HISTORICALLY, the since-retired `today_session_items`) can composite-FK
+  against `(question_id, question_version_id)`, enforcing that a referenced version actually
   belongs to the referenced Question (Phase 2 audit findings #3/#20 —
   previously unenforced).
 - **Mutable columns**: none. This is the entire point of the table.
@@ -331,7 +330,10 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
   - `(question_id, question_version_id) REFERENCES question_versions
     (question_id, id)` — closes audit findings #3/#20 (QuestionVersion must
     belong to the referenced Question).
-  - `(today_session_item_id, user_id) REFERENCES today_session_items (id,
+  - **HISTORICAL — dropped by migration #13** (superseded by ADR-016 /
+    DailyPlan; the next two bullets describe FKs that no longer exist,
+    preserved as design rationale only):
+    `(today_session_item_id, user_id) REFERENCES today_session_items (id,
     user_id)` — closes audit findings **#17/#18**, the two BLOCKING gaps
     found in Phase 2: this makes it a database-enforced impossibility, not
     just an application-level check, for an Attempt to reference a
@@ -347,7 +349,8 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
     PostgreSQL engine, see `supabase/tests/schema.integration.test.ts`'s
     "10b" test. See `today_session_items` below for the rest of the
     reasoning.
-  - `(today_session_item_id, today_session_id) REFERENCES
+  - HISTORICAL (dropped by migration #13):
+    `(today_session_item_id, today_session_id) REFERENCES
     today_session_items (id, today_session_id)`, `ON DELETE SET NULL
     (today_session_item_id, today_session_id)` — a SEPARATE composite FK
     (not merged into one 3-column FK with `user_id`: `user_id` is `NOT
@@ -361,8 +364,10 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
   - `daily_plan_id` / `daily_plan_item_id` are added by
     `20260924000000_daily_plan_answer_attempts.sql` for the current Today path.
     The migration enforces ownership/parent consistency and mutually exclusive
-    planned-item origin: an Attempt cannot simultaneously claim the legacy
-    TodaySessionItem path and the DailyPlanItem path. DailyPlan deletion clears
+    planned-item origin (HISTORICAL: an Attempt could not simultaneously
+    claim the legacy TodaySessionItem path and the DailyPlanItem path; that
+    exclusivity CHECK was dropped by migration #13 together with the legacy
+    columns). DailyPlan deletion clears
     only the planning pointers so immutable Attempt evidence survives.
 - **Mutable columns**: none. Entirely append-only.
 - **Delete behavior**: never deleted or updated by application code.
@@ -374,8 +379,9 @@ Immutable historical evidence — ADR-005. **Never updated after creation.**
   originally-suggested 3-column version, see the migration's own comment
   for why): `(user_id, question_id, answered_at, created_at, id)` — matches
   `rebuild.ts`'s exact canonical replay order (ADR-012 §4), so Postgres can
-  satisfy the replay `ORDER BY` via an index scan; `(today_session_item_id)`
-  partial index `WHERE today_session_item_id IS NOT NULL`.
+  satisfy the replay `ORDER BY` via an index scan. (HISTORICAL: a partial
+  index on `today_session_item_id` also existed; it was dropped with that
+  column by migration #13.)
 - **Source of truth**: THE primary historical evidence table.
 
 ---
@@ -504,7 +510,7 @@ replay contract and its open questions).
   (keeps the row's `created_at` meaningful), but this is not decided here.
 - **Indexes**: `questions (course_id)` — supports `listForUser(userId,
   courseId)`'s join to `questions`, the actual query
-  `getOrCreateTodaySession` uses. **Deviation from this document's earlier
+  the (since-retired) `getOrCreateTodaySession` used. **Deviation from this document's earlier
   draft, found and corrected during migration-writing**: a
   `(user_id, scheduled_review_at)` "find due reviews" index was previously
   suggested here, but the currently-IMPLEMENTED `listForUser` loads ALL
@@ -545,16 +551,16 @@ decided).
 | `started_at` | timestamptz | yes | |
 | `completed_at` | timestamptz | yes | |
 
-- **Legacy identity and uniqueness**: this table remains implemented exactly
-  as ADR-011 defined it: `course_id NOT NULL` plus
+- **HISTORICAL — legacy identity and uniqueness** (superseded by migration
+  #13 / ADR-016; this table no longer exists): it was implemented as ADR-011
+  defined it: `course_id NOT NULL` plus
   `UNIQUE (user_id, course_id, planned_for_date)`.
   ADR-016 supersedes this as the current Today product architecture.
   Current Today generation/orchestration persists one `DailyPlan` per
   learner-local day and reads Course Today / Global Today as views over the
-  same `daily_plan_items`. The legacy TodaySession tables remain intact and
-  usable by the older path; they are compatibility/history infrastructure,
-  not the primary current planner persistence.
-- `getOrCreateTodaySession` is implemented as `INSERT ... ON CONFLICT DO
+  same `daily_plan_items`.
+- HISTORICAL: `getOrCreateTodaySession` (removed with the TodaySession
+  application model) was implemented as `INSERT ... ON CONFLICT DO
   NOTHING RETURNING` against this key, with a fallback `SELECT` — race-free
   by Postgres's own unique-index insert semantics (verified by hand-tracing
   in Phase 2, audit finding #11).
@@ -574,9 +580,8 @@ decided).
 ## `today_session_items` — RETIRED
 
 **This table no longer exists in the repository's target schema** — dropped
-by migration #13, same as `today_sessions` above, and likewise not yet
-applied to the hosted Supabase project (see that section's note). Preserved
-as historical design-rationale record only.
+by migration #13, same as `today_sessions` above (see that section's note
+on hosted status). Preserved as historical design-rationale record only.
 
 The frozen plan, one row per planned Question within a session — ADR-010's
 "Today Session freeze model."
@@ -749,10 +754,9 @@ plan (ADR-016 §1).
 - **Single-use resolution (ADR-016 §19)**: enforced by the repository layer
   (`PostgresDailyPlanRepository.markCompleted`/`markSkipped`, a conditional
   `UPDATE ... WHERE status = 'pending'`), not by a DB constraint —
-  `markItemCompleted` on the existing `today_session_items` table is
-  deliberately NOT gated this way today (a known, pre-existing gap this
-  migration does not retrofit onto the old table); the new
-  `daily_plan_items` methods close that gap for the new table from the
+  HISTORICAL: `markItemCompleted` on the legacy `today_session_items` table
+  (since dropped by migration #13) was deliberately NOT gated this way; the
+  `daily_plan_items` methods closed that gap for the new table from the
   start.
 - **Delete behavior**: cascades from `daily_plans`.
 - **Source of truth**: frozen decision output for the plan-shape columns;

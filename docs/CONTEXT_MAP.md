@@ -94,6 +94,7 @@ High-frequency current ADRs include:
 
 Do not load by default:
 - `docs/RUNS/**`
+- `docs/archive/**` (RESTRICTED, same tier as `docs/RUNS/**`; see its README)
 - `docs/GLOBAL_TODAY_*`
 - old drafts such as `COURSE_ACCESS_MODEL_DRAFT.md`
 - old roadmap/vertical-slice planning artifacts

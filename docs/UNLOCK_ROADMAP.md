@@ -439,7 +439,7 @@ A real instructor can upload teaching material and produce a reviewed, publishab
 
 ---
 
-## Product Run 012 — Production / Scale Hardening
+## Product Run 012 — Operational / Scale Hardening
 
 ### Goal
 
@@ -447,7 +447,8 @@ Make UNLOCK safe and reliable enough to place in front of real external users �
 
 ### Primary outcomes
 
-- production deployment;
+Initial Production deployment is already done (`v0.1.0`, ADR-019, minimal CI, manual Production verification). This Run hardens operation of that deployment:
+
 - browser E2E for critical flows;
 - basic observability/error monitoring;
 - analytics events for core product funnel;
@@ -577,11 +578,11 @@ An instructor can create and publish a course — using manual question authorin
 Structured Import — entirely without developer/database intervention, and the full
 instructor-to-learner loop (Runs 004–008) is pilot-ready.
 
-## Milestone D — Learner Progress & Instructor Insight Hypothesis Tested
+## Milestone D — Learner Progress & Instructor Insights Capability Built (hypothesis validation pending pilot)
 
-Reached after Run 009.
+Capability reached after Run 009.
 
-Learners can see topic-level strong/weak progress, and the instructor-insights hypothesis (Run 009) has real pilot evidence for or against it.
+Learners can see topic-level strong/weak progress, and instructors have privacy-safe Topic Insights and Item Analysis. Whether the instructor-insights hypothesis holds is NOT yet validated: it needs real pilot evidence (the real pilot has not happened; see `docs/PILOT_READINESS.md`).
 
 ## Milestone E — Differentiated Learning Intelligence
 

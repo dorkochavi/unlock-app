@@ -405,6 +405,8 @@ Run 008 (Authoring Integration + Pilot Readiness) final evidence:
 - browser/E2E: automated suite not run; manual hosted browser proof
   completed 2026-09-23 — see "Pilot Readiness" above.
 
+Independent audit baseline on `d3dfa9d` (clean tree, 2026-09-26): typecheck clean; lint 0 errors + 1 pre-existing unrelated warning (`.claude/telemetry/statusline.mjs`); unit 1453/1453 (143 files); schema/PGlite, production build and Playwright E2E NOT run for this baseline; static audit: 0 import cycles, 0 layer violations.
+
 ## Development OS V1.2
 
 V1.2 direction is established:

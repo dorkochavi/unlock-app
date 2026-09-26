@@ -10,7 +10,7 @@ gap §1-§8 found.
 ## 0. What this audits
 
 A claim made earlier in this session (recorded in
-`docs/V1_VERTICAL_SLICE_PLAN.md`, Checkpoint 3 and Checkpoint 4) is that
+`docs/archive/V1_VERTICAL_SLICE_PLAN.md`, Checkpoint 3 and Checkpoint 4) is that
 the Learning Engine's policy/config objects lack production defaults and
 that no composition root exists. This document independently re-verifies
 that claim against the actual current source tree rather than trusting it.
@@ -142,7 +142,7 @@ instantiated with concrete numbers are `__tests__/*.test.ts` files.
 
 ## 5. Is `src/app/` "still the default Next.js scaffold"? — Partially stale claim, flagged
 
-`docs/V1_VERTICAL_SLICE_PLAN.md:47-51` states: "No API routes. `src/app/`
+`docs/archive/V1_VERTICAL_SLICE_PLAN.md:47-51` states: "No API routes. `src/app/`
 is still the default Next.js scaffold (`layout.tsx`, `page.tsx`,
 `favicon.ico`, `globals.css` only). No UI beyond the default scaffold. No
 `src/messages/` usage in any route yet (the messages layer itself exists
@@ -167,7 +167,7 @@ Checked via `git log --follow -- src/app/layout.tsx`: this content was
 introduced in the `c133afe` ("chore: complete foundation cleanup") /
 `bdb4215` ("chore: establish project foundation") commits — i.e. it has
 been present since near the very start of this repository's history,
-*before* `docs/V1_VERTICAL_SLICE_PLAN.md` itself was authored/last touched
+*before* `docs/archive/V1_VERTICAL_SLICE_PLAN.md` itself was authored/last touched
 (that document was last modified in `ca3547f`, the current HEAD commit,
 per `git log --follow`). So this was not a claim that went stale later —
 it appears to have been inaccurate at the moment it was written, most
@@ -179,7 +179,7 @@ that actually matters for this audit — no `route.ts` files exist, no
 composition root exists, nothing calls the learning engine outside tests
 — is independently confirmed accurate by this audit (§3, §4). Only the
 narrower "default scaffold" / "no messages usage" phrasing is wrong. This
-is flagged for whoever maintains `docs/V1_VERTICAL_SLICE_PLAN.md` next;
+is flagged for whoever maintains `docs/archive/V1_VERTICAL_SLICE_PLAN.md` next;
 per this audit's own scope (Learning Engine composition, not general doc
 maintenance) no edit is made to that file here.
 
@@ -204,7 +204,7 @@ production value anywhere in the codebase**:
 
 A route author would either have to (a) block until these are decided, or
 (b) invent numbers on the spot inside route code — which is exactly the
-outcome `docs/V1_VERTICAL_SLICE_PLAN.md` Checkpoint 3 already flags as
+outcome `docs/archive/V1_VERTICAL_SLICE_PLAN.md` Checkpoint 3 already flags as
 unacceptable ("This is not this checkpoint's decision to make silently").
 So: **the ONLY blocker is not Auth. A production run would also
 immediately fail (or silently invent policy) for lack of these values,
@@ -381,7 +381,7 @@ implemented comparison.
 
 ## Related Documents
 
-- `docs/V1_VERTICAL_SLICE_PLAN.md` (source of the audited claim, Checkpoints 3-4)
+- `docs/archive/V1_VERTICAL_SLICE_PLAN.md` (source of the audited claim, Checkpoints 3-4)
 - `docs/OPEN_QUESTIONS.md` (#11, #12, #13, #16 — all still open)
 - `docs/DECISIONS/008-fsrs-memory-scheduler.md` (ADR-008)
 - `src/domain/learning/today-planner.ts`, `retrieval-qualification.ts`,

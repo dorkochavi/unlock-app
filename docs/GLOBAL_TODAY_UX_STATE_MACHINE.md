@@ -249,7 +249,7 @@ uncertainty, not confidence.
 Illustrative copy: *"עוד אין לנו מספיק מידע כדי להמליץ בביטחון — בואו נתחיל
 לאסוף קצת"* ("We don't have enough information yet to recommend with
 confidence — let's start gathering some") — paired with a starter-style path
-into initial content (the Starter Experience is `docs/ROADMAP.md` Phase 5
+into initial content (the Starter Experience is `docs/archive/ROADMAP.md` Phase 5
 territory, not designed by this document). Never phrased as "nothing to
 review" (the exact anti-pattern `docs/PRODUCT.md` §13 names).
 
@@ -281,7 +281,7 @@ S2/S3/S9 (any day D)       --[local day rolls over to D+1, learner opens Today]-
 S11 (error)                --[learner retries]--> S12 --[retry succeeds]--> S1 or S2
 S11 (error)                --[retry fails again]--> S11
 S13 (genuinely empty)      --[new significant evidence arrives later same day, e.g. via Manual Practice]--> may transition to S3/S2 only via significant-event adaptation rules (§12 of product spec) — not a full replan
-S14 (not enough evidence)  --[learner completes Starter-style initial items]--> eventually S2/S3 on a later day once evidence accrues (exact transition owned by Starter Experience design, `docs/ROADMAP.md` Phase 5 — not decided here)
+S14 (not enough evidence)  --[learner completes Starter-style initial items]--> eventually S2/S3 on a later day once evidence accrues (exact transition owned by Starter Experience design, `docs/archive/ROADMAP.md` Phase 5 — not decided here)
 ```
 
 Notes on the diagram:
@@ -312,7 +312,7 @@ Notes on the diagram:
   instruction; also consistent with `docs/PRODUCT.md` §19's messages-layer
   requirement).
 - Starter Experience internal states (S14's downstream path) — owned by
-  `docs/ROADMAP.md` Phase 5, not designed here.
+  `docs/archive/ROADMAP.md` Phase 5, not designed here.
 - Manual Practice UI states — a separate, non-Today path (product spec §3,
   §14).
 - Numeric thresholds for what counts as a "significant learning event"

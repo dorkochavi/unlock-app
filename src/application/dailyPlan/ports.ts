@@ -12,10 +12,12 @@
  * only, not the public entry point; see that file's own doc comment) — and
  * this file additionally carries that generation core's own transaction
  * contract (`DailyPlanTransactionalRepositories`/`DailyPlanUnitOfWork`,
- * below). Still NOT implemented: a `PostgresDailyPlanUnitOfWork`, the
- * public timezone/membership-driven entry point, and any wiring into
- * `submitAnswer` — see `docs/GLOBAL_TODAY_IMPLEMENTATION_SLICES.md` step 6
- * for what remains before this is used end-to-end.
+ * below). The Postgres implementation is
+ * `src/infrastructure/postgres/daily-plan-unit-of-work.ts`, and the public
+ * timezone/membership-driven entry point is
+ * `get-or-create-daily-plan-for-today.ts`. DailyPlan-attached Attempts are
+ * handled by `submitAnswer` (`dailyPlanItemId`, see
+ * `src/application/learning/submit-answer.ts`).
  */
 import {
   NEXT_BEST_ACTION_REASONS,
@@ -212,7 +214,8 @@ export interface DailyPlanUnitOfWork {
    * `application/learning/ports.ts`'s `UnitOfWork.runInTransaction`
    * contract exactly (any thrown error rolls the whole transaction back;
    * nothing partial is ever committed) without importing that file's
-   * types. No Postgres implementation exists yet — a later slice.
+   * types. Postgres implementation: `PostgresDailyPlanUnitOfWork`
+   * (`src/infrastructure/postgres/daily-plan-unit-of-work.ts`).
    */
   runInTransaction<T>(
     fn: (repos: DailyPlanTransactionalRepositories) => Promise<T>,

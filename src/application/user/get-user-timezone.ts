@@ -4,8 +4,10 @@
  * `actorUserId` is trusted as-is at this boundary, matching
  * `SubmitAnswerCommand.userId`'s existing precedent
  * (`src/application/learning/submit-answer.ts`) — deriving it from a real
- * authenticated principal is the future API boundary's job, not implemented
- * here.
+ * authenticated principal is the API boundary's job, not this use case's
+ * (the sibling `setUserTimezone` is already served that way by
+ * `src/app/api/user/timezone/route.ts`; this read use case has no route
+ * caller yet).
  */
 import type { UserRepository } from "./ports";
 
