@@ -9,9 +9,11 @@
  * the instructor lands where they configure/publish it next.
  */
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { Button, ButtonLink } from "@/components/button";
+import { Card } from "@/components/card";
+import { Input, Label } from "@/components/input";
 import { getMessages } from "@/messages";
 
 type CreateOutcome =
@@ -83,52 +85,39 @@ export default function NewInstructorCoursePage() {
   }
 
   return (
-    <div className="flex flex-1 items-start justify-center p-6 sm:p-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-md">
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight">
-          {messages.instructor.newCourse.heading}
-        </h1>
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight">{messages.instructor.newCourse.heading}</h1>
 
-        <label className="mb-4 block">
-          <span className="mb-1 block text-sm font-medium">{messages.instructor.newCourse.titleLabel}</span>
-          <input
-            type="text"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder={messages.instructor.newCourse.titlePlaceholder}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-            required
-          />
-        </label>
+      <Card as="section">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="block">
+            <Label>{messages.instructor.newCourse.titleLabel}</Label>
+            <Input
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder={messages.instructor.newCourse.titlePlaceholder}
+              required
+            />
+          </label>
 
-        <label className="mb-6 block">
-          <span className="mb-1 block text-sm font-medium">{messages.instructor.newCourse.examDateLabel}</span>
-          <input
-            type="date"
-            value={examDate}
-            onChange={(event) => setExamDate(event.target.value)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </label>
+          <label className="block">
+            <Label>{messages.instructor.newCourse.examDateLabel}</Label>
+            <Input type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} />
+          </label>
 
-        {error ? <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+          {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            {submitting ? messages.instructor.newCourse.creating : messages.instructor.newCourse.createAction}
-          </button>
-          <Link
-            href="/instructor/courses"
-            className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
-          >
-            {messages.instructor.newCourse.cancelAction}
-          </Link>
-        </div>
-      </form>
-    </div>
+          <div className="flex gap-3">
+            <Button type="submit" disabled={submitting}>
+              {submitting ? messages.instructor.newCourse.creating : messages.instructor.newCourse.createAction}
+            </Button>
+            <ButtonLink href="/instructor/courses" variant="secondary">
+              {messages.instructor.newCourse.cancelAction}
+            </ButtonLink>
+          </div>
+        </form>
+      </Card>
+    </main>
   );
 }

@@ -14,6 +14,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { Button, ButtonLink } from "@/components/button";
+import { PageHeader } from "@/components/page-header";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 import type { CourseRole } from "@/domain/course/types";
 
@@ -84,82 +87,70 @@ export default function InstructorCoursesPage() {
   }, [retryCount]);
 
   return (
-    <div className="flex flex-1 flex-col p-6 sm:p-10">
-      <header className="mb-8 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">{messages.instructor.courses.heading}</h1>
-        {state.kind === "ready" ? (
-          <Link
-            href="/instructor/courses/new"
-            className="shrink-0 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            {messages.instructor.courses.createAction}
-          </Link>
-        ) : null}
-      </header>
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:max-w-3xl">
+      <PageHeader
+        title={messages.instructor.courses.heading}
+        trailing={
+          // Suppressed when the list is empty: the empty StateBlock below carries
+          // its own "Create Course" primary action, and two equal-weight primaries
+          // on one screen would violate UX_SPEC §11 item 3.
+          state.kind === "ready" && state.courses.length > 0 ? (
+            <ButtonLink href="/instructor/courses/new">{messages.instructor.courses.createAction}</ButtonLink>
+          ) : undefined
+        }
+      />
 
-      <main className="flex flex-1 items-start justify-center">
-        {state.kind === "loading" ? (
-          <p className="text-zinc-600 dark:text-zinc-400">{messages.instructor.courses.loading}</p>
-        ) : null}
+      {state.kind === "loading" ? <LoadingState label={messages.instructor.courses.loading} /> : null}
 
-        {state.kind === "signed-out" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.instructor.courses.signedOutTitle}</p>
-            <Link
-              href="/login"
-              className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.instructor.courses.signedOutAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "signed-out" ? (
+        <StateBlock
+          title={messages.instructor.courses.signedOutTitle}
+          action={<ButtonLink href="/login">{messages.instructor.courses.signedOutAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "error" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.instructor.courses.genericErrorTitle}</p>
-            <button
-              type="button"
+      {state.kind === "error" ? (
+        <StateBlock
+          tone="error"
+          title={messages.instructor.courses.genericErrorTitle}
+          action={
+            <Button
+              variant="secondary"
               onClick={() => {
                 setState({ kind: "loading" });
                 setRetryCount((count) => count + 1);
               }}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
             >
               {messages.instructor.courses.retry}
-            </button>
-          </div>
-        ) : null}
+            </Button>
+          }
+        />
+      ) : null}
 
-        {state.kind === "ready" && state.courses.length === 0 ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.instructor.courses.emptyTitle}</p>
-            <p className="mb-6 text-zinc-600 dark:text-zinc-400">{messages.instructor.courses.emptyBody}</p>
-            <Link
-              href="/instructor/courses/new"
-              className="inline-block rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.instructor.courses.createAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "ready" && state.courses.length === 0 ? (
+        <StateBlock
+          title={messages.instructor.courses.emptyTitle}
+          body={messages.instructor.courses.emptyBody}
+          action={<ButtonLink href="/instructor/courses/new">{messages.instructor.courses.createAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "ready" && state.courses.length > 0 ? (
-          <ul className="flex w-full max-w-2xl flex-col gap-3">
-            {state.courses.map((course) => (
-              <li key={course.id}>
-                <Link
-                  href={`/instructor/courses/${course.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 p-4 transition hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
-                >
-                  <span className="min-w-0 truncate font-medium" title={course.title}>
-                    {course.title}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </main>
-    </div>
+      {state.kind === "ready" && state.courses.length > 0 ? (
+        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {state.courses.map((course) => (
+            <li key={course.id}>
+              <Link
+                href={`/instructor/courses/${course.id}`}
+                className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <span className="min-w-0 truncate font-medium" title={course.title}>
+                  {course.title}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </main>
   );
 }

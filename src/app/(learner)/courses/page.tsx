@@ -16,6 +16,8 @@ interface MyCourseDto {
   role: CourseRole;
 }
 
+const MANAGEMENT_ROLES: readonly CourseRole[] = ["OWNER", "INSTRUCTOR"];
+
 type ViewState =
   | { kind: "loading" }
   | { kind: "signed-out" }
@@ -71,9 +73,21 @@ export default function MyCoursesPage() {
     };
   }, [retryCount]);
 
+  const hasManagementRole =
+    state.kind === "ready" && state.courses.some((course) => MANAGEMENT_ROLES.includes(course.role));
+
   return (
     <>
-      <PageHeader title={messages.myCourses.heading} />
+      <PageHeader
+        title={messages.myCourses.heading}
+        trailing={
+          hasManagementRole ? (
+            <ButtonLink href="/instructor/courses" variant="secondary">
+              {messages.myCourses.instructorLink}
+            </ButtonLink>
+          ) : undefined
+        }
+      />
 
       {state.kind === "loading" ? <LoadingState label={messages.myCourses.loading} /> : null}
 
@@ -143,7 +157,7 @@ export default function MyCoursesPage() {
         </ul>
       ) : null}
 
-      {state.kind === "ready" ? (
+      {state.kind === "ready" && !hasManagementRole ? (
         <footer className="mt-10 text-center">
           <Link
             href="/instructor/courses"
