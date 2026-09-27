@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-27 (Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS; DevOS longitudinal review)
+Updated: 2026-09-27 (Run UX-03 complete locally, not merged/deployed; Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS; DevOS longitudinal review)
 
 ## Repository
 
@@ -117,6 +117,26 @@ Current repository capabilities include:
   matrix). NOT proven: real multi-connection concurrency. The hosted Auth
   Redirect URL allow-list for Practice `next=` remains an open, non-blocking
   follow-up;
+- Product experience / visual system — Run UX-03 (standalone UX Run, not a
+  roadmap Product Run; **COMPLETE locally**, `feature/run-ux-03-product-experience`
+  at `e6b91da`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03.md`): the
+  instructor surface and the login/join pre-product entry points converged
+  onto the token-based design system the learner surface already had
+  (button hierarchy, `Skeleton`/`Input`/`Select`/`Label`/`Textarea`
+  primitives, a global `prefers-reduced-motion` convention, and two new
+  `Button` variants — `dangerSecondary`/`dangerTertiary` — for a consistent
+  destructive-action hierarchy). A durable whole-product Visual Contract was
+  recorded at a required product-owner checkpoint (`docs/UX_SPEC.md`
+  §11-§12: calm/mature/professional direction approved, purple/indigo
+  accent retained, "one dominant primary per screen" extended to instructor
+  surfaces, desktop composition named as an explicit ongoing requirement).
+  Instructor and learner Browse-mode desktop layouts were widened/grouped
+  into multi-column grids instead of a narrow mobile column centered in a
+  wide viewport; two real client-side fetch waterfalls were measured and
+  fixed (instructor Course-manage page, learner Course page — evidence:
+  local mocked-latency timing, not hosted). No product/learning semantics,
+  API, DB, or auth logic changed. Not yet merged/deployed — awaiting the
+  product owner's decision on promotion;
 - Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY
   Questions, with source-size AND row-count HTTP/application-layer limits
   (Run 008 S1.D);
@@ -476,8 +496,9 @@ Rolling state only — not a diary. An item leaves this list the moment it resol
 - **`src/domain/import/types.ts` bundles three concerns** (canonical row shape, row-content validation, Topic-name resolution) in one file. Not costly today — reconsider only if a fourth concern or new external fan-out appears.
 - **Telemetry has no native per-Slice attribution** — a per-Slice breakdown currently requires manual reconstruction from commit timestamps / Run-report prose. Confirmed again by the 2026-09-27 longitudinal review, which needed the same manual reconstruction. Remains `WATCH`.
 - **Edit/Write tool-result echoes as a large fraction of tool-response characters** — recurred cross-Run (007 yes; 008 no/non-binding; Pre-Pilot yes again at 48%, `docs/RUNS/2026-09-23-PRE-PILOT.md` §8.3/§10). Never once caused a compaction across any Run measured through UX-02 (peaks 41–59%, `docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §2.1). Remains `WATCH`, not `CHANGE` — no Run has shown actual harm, and the pattern has recurred rather than disappeared, so it is not a `DROP` candidate either.
-- **RUN_ID attribution drift for post-close/meta sessions** — a Run's telemetry keeps accumulating under its `RUN_ID` until `docs/CHATGPT_PLAN.md`'s `RUN_ID:` field is changed, so docs-only or meta sessions after a Run closes (and a stray artifact, `2026-09-26-010`) get folded into that Run's cost/duration figures. Observed 2026-09-27 (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §5). Run-local so far — `WATCH`. Give the next unrelated session (Run UX-03) its own `RUN_ID` before starting.
-- **Telemetry-summary generation skipped at Run close for two consecutive Runs** (UX-01, UX-02) — unlike 007/008/Pre-Pilot/009, `summarize.mjs` was not run until backfilled by the 2026-09-27 longitudinal review (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §6). Cross-Run (2 Runs) — `WATCH`; recommend adding it to the Run-close checklist, not yet decided.
+- **RUN_ID attribution drift for post-close/meta sessions** — a Run's telemetry keeps accumulating under its `RUN_ID` until `docs/CHATGPT_PLAN.md`'s `RUN_ID:` field is changed, so docs-only or meta sessions after a Run closes (and a stray artifact, `2026-09-26-010`) get folded into that Run's cost/duration figures. Observed 2026-09-27 (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §5). Run UX-03 followed the recommendation and set its own fresh `RUN_ID` before starting — `WATCH`, one clean data point so far; needs a second Run to confirm this becomes habitual rather than one-off.
+- **Telemetry-summary generation skipped at Run close for two consecutive Runs** (UX-01, UX-02) — unlike 007/008/Pre-Pilot/009, `summarize.mjs` was not run until backfilled by the 2026-09-27 longitudinal review (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §6). Run UX-03 generated its summary at close as required (`docs/RUNS/2026-09-27-UX-03.md` §13) — breaks the two-Run streak; `WATCH`, not yet `DROP` (one Run's recovery isn't 3+ Runs of non-recurrence).
+- **`NEW` — Tailwind class-conflict pattern (no class-merge helper in this repo)**: a shared component's own base sizing/color classes (e.g. `Button`'s `min-h-11 px-5`, `Input`'s `py-2`) can silently lose to a conflicting `className` override, since Tailwind's compiled-CSS order — not JSX class-string order — decides which wins, and this repo has no `tailwind-merge`/`cn()` helper. Found and fixed three separate times within Run UX-03 alone (cross-Slice, not yet cross-Run) before the convention ("use a plain element instead of overriding") was written down in `docs/UX_SPEC.md` §12 item 56 partway through the Run — see `docs/RUNS/2026-09-27-UX-03.md` §13. `WATCH`; a second Run showing the same recurrence would be cross-Run evidence for a lint rule or a `cn()` helper, per `DEVOS_OBSERVABILITY.md` §8.
 
 Dropped this review (evidence no longer holds, 3+ Runs without recurrence — see
 `docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §3/§7): `src/domain/learning/answer.ts`'s
@@ -502,6 +523,7 @@ Product roadmap:
 - Run 009 — Learner Progress + Instructor Insights (**COMPLETE**; S1/S2/S3 committed and Preview-verified; `docs/RUNS/2026-09-25-009.md`). Not a Pre-Pilot release requirement and not a pilot approval.
 - Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE**, merged to `main` (`d052e5c`), deployed via the Production branch; real-phone Preview verification PASS and, separately, manual Production verification/acceptance, both by the product owner on 2026-09-26; `docs/RUNS/2026-09-26-UX-01.md`). Open, non-blocking follow-up: hosted Supabase Auth Redirect URL allow-list for the new `next=` values — an observed login return did not preserve the intended `/courses` destination. Early Practice + FSRS semantics (`FUB-030`) decided and promoted to Run UX-02 (`docs/CHATGPT_PLAN.md`).
 - Run UX-02 — Course & Topic Practice (standalone learner Run; **COMPLETE**, merged to `main` (`c85d870`) and deployed via the Production branch; manual Preview QA gate PASSED 2026-09-27 and manual Production smoke verification PASSED 2026-09-27, both by the product owner; `docs/RUNS/2026-09-27-UX-02.md`). Open, non-blocking: hosted Auth Redirect URL allow-list for Practice `next=` values; OQ-044 (FSRS learning-step calibration).
+- Run UX-03 — Product Experience, Visual System & Usability (standalone UX Run; **COMPLETE locally**, `feature/run-ux-03-product-experience` at `e6b91da`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03.md`). Required product-owner checkpoint after UX3-1 returned APPROVED WITH CALIBRATION CORRECTIONS; the resulting Visual Contract is recorded in `docs/UX_SPEC.md` §11-§12. Open, non-blocking: `FUB-033` (archive-action color consistency; possible dual-primary states on the instructor Course-manage page); a `WATCH` observation on a Tailwind class-conflict pattern that recurred three times within this Run (see the Run report §13).
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
@@ -524,6 +546,9 @@ from before this Run, unchanged).
 - pushing `main`, promoting to Production, creating/pushing tags and changing
   Vercel/GitHub settings remain human actions (ADR-019; see `git status` for
   the ahead count);
+- decide whether/when to merge and deploy `feature/run-ux-03-product-experience`
+  (Run UX-03, COMPLETE locally at `e6b91da`, not pushed) — a human decision,
+  not attempted by this Run;
 - decide whether to experiment with the `CHANGE CANDIDATE` Development OS
   observation above (named-negative-case test isolation) before it is
   absorbed into `.claude/rules/testing.md`;
