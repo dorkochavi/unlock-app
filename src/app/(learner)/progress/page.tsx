@@ -19,100 +19,32 @@
  * `TopicList`); this page stays Course-level and scannable, and each
  * Course's card shows only a real, evidence-only activity summary
  * (`summarizeCourseActivity`) — never a new mastery/percentage claim.
+ *
+ * QA2-B (product-owner Preview QA "Progress needs visual states, not
+ * decoration"): the whole Course card is now one real navigation `Link`
+ * (list semantics, no nested interactive controls — the card previously only
+ * made its title text clickable) with visible hover/focus/pressed states.
+ * The one visual accent this page adds is a left-border tone drawn from the
+ * SAME already-computed attempted/not-attempted signal the text above already
+ * shows (`summarizeCourseActivity`) — never a new derived mastery/qualitative
+ * claim, just a visual echo of data already rendered.
  */
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import { Button, ButtonLink } from "@/components/button";
-import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
-import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 
-import {
-  loadProgress,
-  summarizeCourseActivity,
-  type CourseProgress,
-  type ProgressLoadResult,
-  type TopicProgressDto,
-} from "./load-progress";
+import { CourseSection } from "./course-section";
+import { loadProgress, type ProgressLoadResult } from "./load-progress";
 
 type ViewState =
   | { kind: "loading" }
   | { kind: "signed-out" }
   | { kind: "error" }
   | { kind: "ready"; courses: Extract<ProgressLoadResult, { outcome: "READY" }>["courses"] };
-
-function CourseSection({
-  id,
-  title,
-  progress,
-}: {
-  id: string;
-  title: string;
-  progress: CourseProgress;
-}) {
-  const messages = getMessages().progress;
-  return (
-    <Card>
-      <h2 className="mb-1 break-words text-lg font-semibold">
-        <Link
-          href={`/courses/${id}`}
-          className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
-          {title}
-        </Link>
-      </h2>
-
-      {progress.kind === "unavailable" ? (
-        <p className="pt-2 text-sm text-muted">{messages.courseUnavailable}</p>
-      ) : null}
-
-      {progress.kind === "error" ? (
-        <p className="pt-2 text-sm text-muted">{messages.courseError}</p>
-      ) : null}
-
-      {progress.kind === "ready" && progress.topics.length === 0 ? (
-        <p className="pt-2 text-sm text-muted">{messages.courseNoTopics}</p>
-      ) : null}
-
-      {progress.kind === "ready" && progress.topics.length > 0 ? (
-        <CourseActivitySummary topics={progress.topics} />
-      ) : null}
-    </Card>
-  );
-}
-
-/**
- * UX-03-QA1 Finding 10: real activity, visible immediately; no mastery claim
- * (see `summarizeCourseActivity`'s own doc comment for why no aggregate
- * qualitative state is computed here). Topic-level detail lives on the
- * Course page, reached via this same Card's heading link above.
- */
-function CourseActivitySummary({ topics }: { topics: TopicProgressDto[] }) {
-  const messages = getMessages().progress;
-  const summary = summarizeCourseActivity(topics);
-
-  if (summary.attempted === 0) {
-    return <p className="pt-2 text-sm text-muted">{messages.courseNotStartedYet}</p>;
-  }
-
-  return (
-    <div className="pt-2">
-      <p className="text-sm text-muted">
-        {interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total })}
-      </p>
-      {summary.topicsWithActivity > 1 ? (
-        <p className="text-sm text-muted">
-          {interpolate(messages.courseTopicsTouched, { count: summary.topicsWithActivity })}
-        </p>
-      ) : null}
-      <p className="mt-1 text-sm font-medium text-foreground">{messages.courseActivityEncouragement}</p>
-    </div>
-  );
-}
 
 export default function LearnerProgressPage() {
   const messages = getMessages().progress;
@@ -185,7 +117,7 @@ export default function LearnerProgressPage() {
 
       {state.kind === "ready" && state.courses.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
             {state.courses.map((course) => (
               <CourseSection
                 key={course.id}
@@ -194,7 +126,7 @@ export default function LearnerProgressPage() {
                 progress={course.progress}
               />
             ))}
-          </div>
+          </ul>
           <div className="mt-8">
             <ButtonLink href="/today" variant="secondary" fullWidth>
               {messages.goToToday}

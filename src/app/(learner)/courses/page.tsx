@@ -8,15 +8,8 @@ import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
-import type { CourseRole } from "@/domain/course/types";
 
-interface MyCourseDto {
-  id: string;
-  title: string;
-  role: CourseRole;
-}
-
-const MANAGEMENT_ROLES: readonly CourseRole[] = ["OWNER", "INSTRUCTOR"];
+import { CourseRow, MANAGEMENT_ROLES, type MyCourseDto } from "./course-row";
 
 type ViewState =
   | { kind: "loading" }
@@ -123,37 +116,13 @@ export default function MyCoursesPage() {
       {/* Each Course is one card and the whole card is the link (no competing
           primary button per card). A per-Course learning-state summary is
           deferred (docs/UX_SPEC.md §9): it would need a Course-level rollup
-          of Topic states that no accepted policy defines yet. */}
+          of Topic states that no accepted policy defines yet. See `CourseRow`
+          above for the QA2-B visual-accent rationale. */}
       {state.kind === "ready" && state.courses.length > 0 ? (
         <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {state.courses.map((course) => {
-            const roleLabel = messages.myCourses.roleLabel[course.role];
-            return (
-              <li key={course.id}>
-                <Link
-                  href={`/courses/${course.id}`}
-                  className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                >
-                  <span className="min-w-0 break-words font-medium">{course.title}</span>
-                  <span className="flex shrink-0 items-center gap-2 text-sm text-muted">
-                    {roleLabel ? <span>{roleLabel}</span> : null}
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="size-5 rtl:rotate-180"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.75}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="m9 6 6 6-6 6" />
-                    </svg>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
+          {state.courses.map((course) => (
+            <CourseRow key={course.id} course={course} roleLabel={messages.myCourses.roleLabel[course.role]} />
+          ))}
         </ul>
       ) : null}
 
