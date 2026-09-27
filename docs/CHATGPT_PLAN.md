@@ -3,7 +3,7 @@
 PLAN_VERSION: 001
 RUN_ID: 2026-09-26-UX-02
 BASE_HEAD: d052e5c
-STATUS: APPROVED — P0 and P0.5–P0.7 (design, research, selector simulation) accepted 2026-09-26 and committed on `feature/run-ux-02-practice`; ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 ACCEPTED. P1–P4 COMPLETE locally 2026-09-27 (commits on `feature/run-ux-02-practice`, not pushed); see `docs/RUNS/2026-09-27-UX-02.md`. Remaining: human Preview walkthrough with an isolated QA learner.
+STATUS: APPROVED — P0 and P0.5–P0.7 (design, research, selector simulation) accepted 2026-09-26 and committed on `feature/run-ux-02-practice`; ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 ACCEPTED. P1–P4 COMPLETE locally 2026-09-27 (commits on `feature/run-ux-02-practice`, not pushed); see `docs/RUNS/2026-09-27-UX-02.md`. Manual Preview QA gate PASSED by the product owner 2026-09-27 (Run report §5a). Remaining: none blocking; hosted Auth Redirect URL allow-list for `next=` stays open, non-blocking.
 
 ## 1. Run Goal
 
@@ -113,7 +113,7 @@ No second Learning Engine or ranking policy; no Today mutation; no client-chosen
 ## 11. Open Human Items
 
 1. (Done 2026-09-26) ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 accepted.
-2. Preview walkthrough with an isolated QA learner after P4.
+2. (Done 2026-09-27) Preview walkthrough with an isolated QA learner — manual Preview QA gate PASSED by the product owner; see `docs/RUNS/2026-09-27-UX-02.md` §5a.
 3. (Carried) hosted Supabase Auth Redirect URL allow-list check for `next=` values.
 4. OQ-044 (FSRS learning-step "due within minutes") — open calibration, non-blocking.
 
