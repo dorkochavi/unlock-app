@@ -164,3 +164,66 @@ the evidence behind it: `docs/FEATURES/COURSE_TOPIC_PRACTICE_DESIGN.md` §1.
   (e.g. new version) → short neutral notice and move on, no evidence recorded.
 - **Honesty:** copy never says Practice changes today's plan; feedback for a wrong answer refers to future learning
   plans (as on Today).
+
+## 11. UNLOCK Experience Principles & Non-Goals (Run UX-03, product-owner APPROVED — durable)
+
+Canonical across learner AND instructor/auth/authoring/import surfaces (§1-§10 above remain the learner-specific
+authority; this section is the whole-product experience contract). Recorded at the UX3-1 human checkpoint after
+reviewing the visual-system direction; governs UX3-2 onward and any future UX work.
+
+**Principles:**
+1. Calm, mature, professional — clear, focused, not childish, not noisy.
+2. Simple outside, intelligent inside — complexity belongs in the Learning Engine; the UI reduces decisions, it does
+   not expose internal complexity.
+3. One dominant page-level primary action per screen/state — applies to instructor surfaces too, not only Learn
+   Mode. Secondary/tertiary actions stay visibly subordinate. A local form action may matter, but must not compete
+   visually with the page-level primary unless the current state genuinely requires it.
+4. Mobile-first does not mean mobile-stretched-to-desktop — mobile stays compact and obvious; desktop uses width,
+   grouping and density intentionally. Do not leave a narrow phone-like column centered in a wide viewport without a
+   product reason. Instructor/authoring surfaces may appropriately be denser and wider than learner learning
+   surfaces.
+5. Cards are for meaningful grouping — avoid card soup; do not wrap every section in the same bordered container
+   merely by habit; use hierarchy, whitespace, layout and grouping deliberately.
+6. Motion explains state — no decorative motion for its own sake; no animation may delay a user action; honor
+   `prefers-reduced-motion`.
+7. Perceived performance matters — immediate acknowledgement, layout-preserving loading, skeletons where they
+   reduce visual jump, avoid blank-screen transitions.
+8. Familiar interaction patterns, innovation at the product-decision layer — do not reinvent buttons, forms or
+   navigation to look unique; UNLOCK's differentiation is what it learns over time and what it recommends next, not
+   novel UI mechanics.
+9. Do not expose implementation intelligence — FSRS, scheduler internals, ranking internals, evidence mechanics stay
+   invisible to learners/instructors unless a future product decision explicitly requires otherwise.
+10. Avoid fake precision — do not surface exact-looking mastery/learning precision unless the evidence/model truly
+    supports it (see §4 item 22-23, already binding for learner Progress).
+
+**Explicit non-goals / anti-patterns** (product-experience boundaries, not references to specific competing
+products): heavy gamification (Duolingo-style streak pressure, hearts, XP everywhere); childish/overly playful
+visual language; traditional heavy-LMS complexity; dense dashboard-metric overload; a generic-chat-box product
+experience; card soup; mobile layout merely stretched onto desktop; multiple equal-weight primary CTAs; decorative
+animation; guilt/dark-pattern engagement pressure; fake precision; exposing FSRS/scheduler/engine internals as
+normal UX; adding complexity merely to appear innovative.
+
+**Reference-product principle:** respected existing products may be used as *interaction* references (calm density
+and action placement, predictable navigation, clear CTA hierarchy, strong desktop use of space, professional
+semantic color use, immediate feedback, guided next-action clarity) — never as visual templates. Never copy
+branding, layouts or visual identity from an external product. Do not introduce playful/gamified styling unless
+already justified by UNLOCK's own product language.
+
+**Destructive-action hierarchy:** a Course-level (or otherwise higher-stakes) destructive/lifecycle action uses a
+restrained *danger-secondary* treatment (outlined, danger-toned); a lower-stakes/local destructive action (e.g. a
+Topic row) uses a *danger-tertiary* text-level treatment. Both read as the same semantic danger family without
+receiving identical visual weight (`Button` variants `dangerSecondary`/`dangerTertiary`, §7).
+
+## 12. Component / Implementation Principles (instructor + shared surfaces)
+
+Extends §7 (learner-scoped) to the whole product:
+56. `Button` variants: `primary`, `secondary`, `tertiary`, `dangerSecondary`, `dangerTertiary` — the two danger
+    variants exist so a component never needs a `className` override that fights the shared component's own base
+    sizing/color classes (no `tailwind-merge`/`cn` helper exists in this repo; conflicting Tailwind utility classes
+    passed via `className` do not reliably override a component's own classes — cascade order follows Tailwind's
+    internal stylesheet order, not JSX class-string order). A genuinely different size/shape than any existing
+    variant provides is a plain element with explicit token classes, not a `Button`/`Input`/`Select` with a
+    conflicting override.
+57. Desktop composition on Browse-mode/authoring pages is a deliberate layout decision per page (wider container,
+    grouping, optional multi-column), not a fixed `max-w-2xl` applied everywhere out of habit — but Learn Mode's own
+    constrained-width rule (§5 item 24) is unchanged.

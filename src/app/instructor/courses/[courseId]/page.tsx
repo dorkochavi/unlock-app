@@ -514,7 +514,7 @@ export default function InstructorCourseManagePage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:max-w-4xl">
       {state.kind === "loading" ? <LoadingState label={messages.instructor.manage.loading} /> : null}
 
       {state.kind === "signed-out" ? (
@@ -563,70 +563,78 @@ export default function InstructorCourseManagePage() {
             subtitle={messages.instructor.manage.statusLabel[state.course.status]}
           />
 
-          <Card as="section">
-            <form onSubmit={handleSaveDetails} className="flex flex-col gap-4">
-              <label className="block">
-                <Label>{messages.instructor.manage.titleLabel}</Label>
-                <Input
-                  type="text"
-                  value={titleDraft}
-                  onChange={(event) => setTitleDraft(event.target.value)}
-                  disabled={state.course.status === "ARCHIVED"}
-                  required
-                />
-              </label>
-
-              <label className="block">
-                <Label>{messages.instructor.manage.examDateLabel}</Label>
-                <div className="flex items-center gap-2">
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+            <Card as="section">
+              <form onSubmit={handleSaveDetails} className="flex flex-col gap-4">
+                <label className="block">
+                  <Label>{messages.instructor.manage.titleLabel}</Label>
                   <Input
-                    type="date"
-                    value={examDateDraft}
-                    onChange={(event) => setExamDateDraft(event.target.value)}
+                    type="text"
+                    value={titleDraft}
+                    onChange={(event) => setTitleDraft(event.target.value)}
                     disabled={state.course.status === "ARCHIVED"}
+                    required
                   />
-                  {examDateDraft !== "" && state.course.status !== "ARCHIVED" ? (
-                    <button
-                      type="button"
-                      onClick={() => setExamDateDraft("")}
-                      className="shrink-0 text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
-                    >
-                      {messages.instructor.manage.clearExamDate}
-                    </button>
-                  ) : null}
+                </label>
+
+                <label className="block">
+                  <Label>{messages.instructor.manage.examDateLabel}</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      value={examDateDraft}
+                      onChange={(event) => setExamDateDraft(event.target.value)}
+                      disabled={state.course.status === "ARCHIVED"}
+                    />
+                    {examDateDraft !== "" && state.course.status !== "ARCHIVED" ? (
+                      <button
+                        type="button"
+                        onClick={() => setExamDateDraft("")}
+                        className="shrink-0 text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+                      >
+                        {messages.instructor.manage.clearExamDate}
+                      </button>
+                    ) : null}
+                  </div>
+                </label>
+
+                {detailsError ? <p className="text-sm text-danger">{detailsError}</p> : null}
+                {!detailsError && detailsSavedAt !== null ? (
+                  <p className="text-sm text-state-solid">{messages.instructor.manage.saveSuccess}</p>
+                ) : null}
+
+                <div>
+                  {/* Local form action, not the page-level primary (UX_SPEC §11 item 3) — Publish carries that weight below. */}
+                  <Button
+                    variant="secondary"
+                    type="submit"
+                    disabled={savingDetails || state.course.status === "ARCHIVED"}
+                  >
+                    {savingDetails ? messages.instructor.manage.saving : messages.instructor.manage.saveAction}
+                  </Button>
                 </div>
+              </form>
+            </Card>
+
+            <Card as="section">
+              <label className="block">
+                <Label>{messages.instructor.manage.joinPolicyLabel}</Label>
+                <Select
+                  value={state.course.joinPolicy}
+                  disabled={savingJoinPolicy || state.course.status === "ARCHIVED"}
+                  onChange={(event) => handleJoinPolicyChange(event.target.value as CourseJoinPolicy)}
+                >
+                  <option value="AUTHORIZED_ONLY">
+                    {messages.instructor.manage.joinPolicyOption.AUTHORIZED_ONLY}
+                  </option>
+                  <option value="OPEN">{messages.instructor.manage.joinPolicyOption.OPEN}</option>
+                </Select>
               </label>
+              {joinPolicyError ? <p className="mt-3 text-sm text-danger">{joinPolicyError}</p> : null}
+            </Card>
+          </div>
 
-              {detailsError ? <p className="text-sm text-danger">{detailsError}</p> : null}
-              {!detailsError && detailsSavedAt !== null ? (
-                <p className="text-sm text-state-solid">{messages.instructor.manage.saveSuccess}</p>
-              ) : null}
-
-              <div>
-                <Button type="submit" disabled={savingDetails || state.course.status === "ARCHIVED"}>
-                  {savingDetails ? messages.instructor.manage.saving : messages.instructor.manage.saveAction}
-                </Button>
-              </div>
-            </form>
-          </Card>
-
-          <Card as="section">
-            <label className="block">
-              <Label>{messages.instructor.manage.joinPolicyLabel}</Label>
-              <Select
-                value={state.course.joinPolicy}
-                disabled={savingJoinPolicy || state.course.status === "ARCHIVED"}
-                onChange={(event) => handleJoinPolicyChange(event.target.value as CourseJoinPolicy)}
-              >
-                <option value="AUTHORIZED_ONLY">
-                  {messages.instructor.manage.joinPolicyOption.AUTHORIZED_ONLY}
-                </option>
-                <option value="OPEN">{messages.instructor.manage.joinPolicyOption.OPEN}</option>
-              </Select>
-            </label>
-            {joinPolicyError ? <p className="mt-3 text-sm text-danger">{joinPolicyError}</p> : null}
-          </Card>
-
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
           <Card as="section">
             <h2 className="mb-3 text-lg font-semibold">{messages.instructor.manage.topics.heading}</h2>
 
@@ -825,6 +833,7 @@ export default function InstructorCourseManagePage() {
               </>
             ) : null}
           </Card>
+          </div>
 
           <Card as="section">
             {transitionError ? <p className="mb-3 text-sm text-danger">{transitionError}</p> : null}
@@ -838,7 +847,7 @@ export default function InstructorCourseManagePage() {
                     {publishing ? messages.instructor.manage.publishing : messages.instructor.manage.publishAction}
                   </Button>
                 ) : null}
-                <Button variant="secondary" onClick={handleArchive} disabled={archiving}>
+                <Button variant="dangerSecondary" onClick={handleArchive} disabled={archiving}>
                   {archiving ? messages.instructor.manage.archiving : messages.instructor.manage.archiveAction}
                 </Button>
               </div>
