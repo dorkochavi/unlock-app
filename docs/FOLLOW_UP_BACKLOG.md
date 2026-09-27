@@ -1192,6 +1192,32 @@ Run 011 start.
 
 ---
 
+# FUB-036 — Author-Can-Learn-Own-Course Blocked by Single-Role Membership Schema (QA2-D, STOPPED)
+
+**Status:** `RECORDED — decision needed before Run 010/011 pick this up`
+**Area:** Course Membership / Authorization (ADR-015)
+
+QA2-D ("Author can learn their own Course") was investigated and STOPPED per its own gate — see
+`docs/RUNS/` entry for this Slice for full detail. One-line summary: `course_memberships` has a physical
+`UNIQUE (user_id, course_id)` constraint with a single scalar `role` column
+(`supabase/migrations/20260919000000_course_membership_v1.sql`), so one user can hold exactly one role on
+one Course, ever. `createCourse` gives the creator an `OWNER` row
+(`src/application/course/create-course.ts`); the existing self-join path
+(`src/application/course/join-course.ts` -> `createMembership`'s `ON CONFLICT (user_id, course_id) DO
+NOTHING`) would just return that same `OWNER` row unchanged (`ALREADY_MEMBER`), never add a concurrent
+`LEARNER` row. Both eligibility checks that gate Today/Practice
+(`src/application/dailyPlan/live-learner-membership.ts`, `src/application/practice/practice-eligibility.ts`)
+require `membership.role === "LEARNER"` on that same single row. There is no existing, already-authorized
+mechanism for one user to hold two roles on one Course — closing this requires an explicit product/schema
+decision (e.g. multi-row membership per user/Course, or a role-set column), not an implementation-only fix.
+
+## Promotion Trigger
+
+Before Run 010 or inside Run 011 — product owner to decide the membership-plurality model; do not let an
+implementation Slice invent it ad hoc.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.
