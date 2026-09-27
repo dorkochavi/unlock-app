@@ -132,7 +132,7 @@ export default function MyCoursesPage() {
               <li key={course.id}>
                 <Link
                   href={`/courses/${course.id}`}
-                  className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   <span className="min-w-0 break-words font-medium">{course.title}</span>
                   <span className="flex shrink-0 items-center gap-2 text-sm text-muted">

@@ -80,7 +80,7 @@ export function TopicList({
                   name: topic.name,
                   state: messages.state[topic.state],
                 })}
-                className="-mx-2 flex min-h-14 items-center justify-between gap-3 rounded-lg px-2 py-3 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="-mx-2 flex min-h-14 items-center justify-between gap-3 rounded-lg px-2 py-3 transition hover:bg-surface-muted active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {content}
               </Link>

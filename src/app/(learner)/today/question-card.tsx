@@ -193,7 +193,7 @@ function QuestionOption({
       onClick={onToggle}
       disabled={locked}
       aria-pressed={selected}
-      className={`flex min-h-12 w-full items-start gap-3 rounded-xl border px-4 py-3 text-start text-base leading-relaxed transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default ${
+      className={`flex min-h-12 w-full items-start gap-3 rounded-xl border px-4 py-3 text-start text-base leading-relaxed transition enabled:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default ${
         selected
           ? "border-primary bg-primary-soft"
           : "border-border bg-surface enabled:hover:border-border-strong"

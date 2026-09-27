@@ -141,7 +141,7 @@ export default function InstructorCoursesPage() {
             <li key={course.id}>
               <Link
                 href={`/instructor/courses/${course.id}`}
-                className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <span className="min-w-0 truncate font-medium" title={course.title}>
                   {course.title}

@@ -18,7 +18,7 @@ import type { ComponentProps } from "react";
 export type ButtonVariant = "primary" | "secondary" | "tertiary" | "dangerSecondary" | "dangerTertiary";
 
 const BASE =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-center font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-center font-medium transition active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-primary text-primary-contrast hover:bg-primary-hover",
