@@ -14,6 +14,12 @@ During implementation, prefer targeted tests for fast feedback.
 After review-driven fixes, run the final relevant verification set.
 Do not automatically run every suite at every Slice or Run boundary.
 
+When a Slice's accepted acceptance criteria name a specific negative or isolation scenario (a race
+condition, a rollback path, a specific rejected input, an assertion that a state persists), targeted
+verification must explicitly enumerate and prove that exact scenario before requesting review —
+do not rely on review to discover the gap. Cross-Run evidence: Run 007 S4/S6, Run 008 S4, Run UX-01
+(see `docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md`).
+
 ## 2. Freshness Model
 
 Evidence remains fresh while no later change materially affects what it proves.

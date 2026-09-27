@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-27 (Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS)
+Updated: 2026-09-27 (Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS; DevOS longitudinal review)
 
 ## Repository
 
@@ -467,25 +467,21 @@ The Development OS V1.2 Final Compression Patch is complete in this repository s
 
 Rolling state only — not a diary. An item leaves this list the moment it resolves (`DROP`/`ABSORB`/`REVERT`); see `docs/DEVOS_OBSERVABILITY.md` §8 for the promotion lifecycle. Evidence lives in `docs/RUNS/2026-09-22-008.md` and its own follow-up audits, not copied here.
 
-- **`CHANGE CANDIDATE` (promoted this Run — crossed the cross-Run bar,
-  `docs/DEVOS_OBSERVABILITY.md` §6): named negative/isolation scenarios
-  proven only at review, not before it.** Observed cross-Run (Run 007
-  S4/S6, then again Run 008 S4) — full evidence and the required
-  evidence/change/owner/effect/guardrail fields are in
-  `docs/RUNS/2026-09-22-008.md`'s telemetry section, not restated here.
-  Proposed smallest change: one line added to `.claude/rules/testing.md`.
-  Not yet experimented with or edited this Run — a human or a future Run
-  decides whether to run the experiment before `ABSORB`/`REVERT`.
+- **`ABSORBED` (2026-09-27, DevOS longitudinal review):** named negative/isolation scenarios
+  proven only at review, not before it. Cross-Run evidence reached three separate Runs (007 S4/S6,
+  008 S4, UX-01's golden-path reload-assertion CORRECTION) — see
+  `docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §2.2/§7. Absorbed as one line in
+  `.claude/rules/testing.md` §1. Guardrail: if this exact pattern recurs a fourth time after the
+  rule exists, the rule itself needs revisiting, not just its presence.
 - **`src/domain/import/types.ts` bundles three concerns** (canonical row shape, row-content validation, Topic-name resolution) in one file. Not costly today — reconsider only if a fourth concern or new external fan-out appears.
-- **`src/domain/learning/answer.ts`**: Run 007 needed a full read of this dense, multi-function file to extract confidence about one reused function's contract. Not recurred in Run 008 — no full read of this file was needed. Candidate for `DROP` if it does not recur in one more Run.
-- **Test-fakes-as-template reads** (`in-memory-fakes.ts` style files read in full purely to copy an established fake-construction convention). Recurred in Run 008 (reading `application/course/__tests__/in-memory-fakes.ts` in full to extend it with `listStatuses`/`seedMembership`'s default-fill). Still not costly — the read was necessary to add a real new method correctly, not merely to copy convention. Remains `WATCH`.
-- **Telemetry has no native per-Slice attribution** — a per-Slice breakdown currently requires manual reconstruction from commit timestamps. Remains `WATCH` unless it materially limits a future analysis.
-- **Development OS audit, Pre-Pilot Run (2026-09-24)** — detail in `docs/RUNS/2026-09-23-PRE-PILOT.md` §8/§9; all `WATCH`, none promoted:
-  (1) Edit/Write tool-result echoes were 48% of tool-response characters (494K of 1.03M) vs Read 14% — recurred after Run 008's quiet result; the large echoes coincide with "file changed on disk" reminders after shell-side patching;
-  (2) shell-based file reads (`cat`/`sed`) are invisible to `FILE_READ` telemetry (main-context Read-tool reads: 4), so read/re-read statistics undercount real source consumption;
-  (3) shell-embedded code patching (`node -e`/heredocs) caused repeated quoting failures and one corrupted regex (6 recorded tool failures vs 0-3 before);
-  (4) local test harnesses that share one connection or one clock can mask production request-boundary behavior (duplicate-answer and pool findings).
-- **Main-session `Edit`/`Write` tool-result echoes measured larger than file-read cost in Run 007** (~147k vs. ~93k main-context tokens). Run 008 ran as a single ~54%-peak-context session with 100% average cache hit ratio and 0 compactions across the whole multi-Slice Run (`docs/RUNS/2026-09-22-008.md` telemetry section) — no evidence this Run that Edit/Write echo cost became a binding constraint. Candidate for `DROP` if a future Run also shows no material impact.
+- **Telemetry has no native per-Slice attribution** — a per-Slice breakdown currently requires manual reconstruction from commit timestamps / Run-report prose. Confirmed again by the 2026-09-27 longitudinal review, which needed the same manual reconstruction. Remains `WATCH`.
+- **Edit/Write tool-result echoes as a large fraction of tool-response characters** — recurred cross-Run (007 yes; 008 no/non-binding; Pre-Pilot yes again at 48%, `docs/RUNS/2026-09-23-PRE-PILOT.md` §8.3/§10). Never once caused a compaction across any Run measured through UX-02 (peaks 41–59%, `docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §2.1). Remains `WATCH`, not `CHANGE` — no Run has shown actual harm, and the pattern has recurred rather than disappeared, so it is not a `DROP` candidate either.
+- **RUN_ID attribution drift for post-close/meta sessions** — a Run's telemetry keeps accumulating under its `RUN_ID` until `docs/CHATGPT_PLAN.md`'s `RUN_ID:` field is changed, so docs-only or meta sessions after a Run closes (and a stray artifact, `2026-09-26-010`) get folded into that Run's cost/duration figures. Observed 2026-09-27 (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §5). Run-local so far — `WATCH`. Give the next unrelated session (Run UX-03) its own `RUN_ID` before starting.
+- **Telemetry-summary generation skipped at Run close for two consecutive Runs** (UX-01, UX-02) — unlike 007/008/Pre-Pilot/009, `summarize.mjs` was not run until backfilled by the 2026-09-27 longitudinal review (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §6). Cross-Run (2 Runs) — `WATCH`; recommend adding it to the Run-close checklist, not yet decided.
+
+Dropped this review (evidence no longer holds, 3+ Runs without recurrence — see
+`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §3/§7): `src/domain/learning/answer.ts`'s
+Run-007 full-read pattern; test-fakes-as-template full reads (hot in Runs 007/008 only).
 
 ## Development OS Safety
 
