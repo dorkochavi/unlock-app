@@ -3,6 +3,9 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/button";
+import { Card } from "@/components/card";
+import { Input, Label } from "@/components/input";
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { getMessages } from "@/messages";
 import { buildSignUpEmailRedirectTo } from "@/lib/auth-redirect";
@@ -84,66 +87,54 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
+    <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
       <div className="w-full max-w-sm">
         <h1 className="mb-6 text-center text-2xl font-semibold tracking-tight">
           {mode === "sign-in" ? messages.auth.signInHeading : messages.auth.signUpHeading}
         </h1>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              {messages.auth.emailLabel}
-            </span>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              {messages.auth.passwordLabel}
-            </span>
-            <input
-              type="password"
-              required
-              minLength={6}
-              autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
+        <Card as="section">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <label className="block">
+              <Label>{messages.auth.emailLabel}</Label>
+              <Input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            <label className="block">
+              <Label>{messages.auth.passwordLabel}</Label>
+              <Input
+                type="password"
+                required
+                minLength={6}
+                autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
 
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          {info ? <p className="text-sm text-emerald-700">{info}</p> : null}
+            {error ? <p className="text-sm text-danger">{error}</p> : null}
+            {info ? <p className="text-sm text-state-solid">{info}</p> : null}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-md bg-zinc-900 px-4 py-3 font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            {pending
-              ? mode === "sign-in"
-                ? messages.auth.signInPending
-                : messages.auth.signUpPending
-              : mode === "sign-in"
-                ? messages.auth.signInSubmit
-                : messages.auth.signUpSubmit}
-          </button>
-        </form>
+            <Button type="submit" disabled={pending} fullWidth>
+              {pending
+                ? mode === "sign-in"
+                  ? messages.auth.signInPending
+                  : messages.auth.signUpPending
+                : mode === "sign-in"
+                  ? messages.auth.signInSubmit
+                  : messages.auth.signUpSubmit}
+            </Button>
+          </form>
+        </Card>
 
-        <button
-          type="button"
-          onClick={switchMode}
-          className="mt-4 w-full text-center text-sm text-zinc-600 underline dark:text-zinc-400"
-        >
+        <Button variant="tertiary" onClick={switchMode} fullWidth className="mt-4">
           {mode === "sign-in" ? messages.auth.switchToSignUp : messages.auth.switchToSignIn}
-        </button>
+        </Button>
       </div>
-    </div>
+    </main>
   );
 }

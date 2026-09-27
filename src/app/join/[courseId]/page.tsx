@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+import { Button } from "@/components/button";
+import { Card } from "@/components/card";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 
 type ViewState =
@@ -135,66 +138,52 @@ export default function JoinCoursePage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
+    <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
       <div className="w-full max-w-sm text-center">
         <h1 className="mb-6 text-2xl font-semibold tracking-tight">{messages.join.heading}</h1>
 
-        {state.kind === "loading" ? <p className="text-zinc-600 dark:text-zinc-400">{messages.join.loading}</p> : null}
+        {state.kind === "loading" ? <LoadingState label={messages.join.loading} /> : null}
 
         {state.kind === "notFound" ? (
-          <div>
-            <p className="mb-2 text-lg">{messages.join.notFoundTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.join.notFoundBody}</p>
-          </div>
+          <StateBlock title={messages.join.notFoundTitle} body={messages.join.notFoundBody} />
         ) : null}
 
         {state.kind === "error" ? (
-          <div>
-            <p className="mb-4 text-lg">{messages.join.genericErrorTitle}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setState({ kind: "loading" });
-                setRetryCount((count) => count + 1);
-              }}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
-            >
-              {messages.join.retry}
-            </button>
-          </div>
+          <StateBlock
+            tone="error"
+            title={messages.join.genericErrorTitle}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setState({ kind: "loading" });
+                  setRetryCount((count) => count + 1);
+                }}
+              >
+                {messages.join.retry}
+              </Button>
+            }
+          />
         ) : null}
 
         {state.kind === "notAuthorized" ? (
-          <div>
-            <p className="mb-2 text-lg">{messages.join.notAuthorizedTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.join.notAuthorizedBody}</p>
-          </div>
+          <StateBlock title={messages.join.notAuthorizedTitle} body={messages.join.notAuthorizedBody} />
         ) : null}
 
         {state.kind === "accessRevoked" ? (
-          <div>
-            <p className="mb-2 text-lg">{messages.join.accessRevokedTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.join.accessRevokedBody}</p>
-          </div>
+          <StateBlock title={messages.join.accessRevokedTitle} body={messages.join.accessRevokedBody} />
         ) : null}
 
         {state.kind === "ready" ? (
-          <div>
+          <Card as="section">
             <p className="mb-6 text-lg font-medium">{state.title}</p>
-            {state.joinError ? (
-              <p className="mb-4 text-sm text-red-600 dark:text-red-400">{messages.join.joinErrorTitle}</p>
-            ) : null}
-            <button
-              type="button"
-              onClick={handleJoin}
-              disabled={joining}
-              className="w-full rounded-md bg-zinc-900 px-4 py-3 font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-            >
+            {state.joinError ? <p className="mb-4 text-sm text-danger">{messages.join.joinErrorTitle}</p> : null}
+            <Button onClick={handleJoin} disabled={joining} fullWidth>
               {joining ? messages.join.joining : messages.join.joinAction}
-            </button>
-          </div>
+            </Button>
+          </Card>
         ) : null}
       </div>
-    </div>
+    </main>
   );
 }
