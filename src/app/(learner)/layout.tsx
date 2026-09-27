@@ -12,15 +12,23 @@
  * 16px side gutter, a constrained reading width, and the single `<main>`
  * landmark — pages render their content directly inside it. In Learn Mode
  * (UX-2) the bottom nav is removed; see `learn-mode.tsx`.
+ *
+ * UX-03-QA1 Finding 12: `LearnerUtilityBar` (sign-out) is rendered ONCE here,
+ * above every page, instead of each page carrying its own copy — previously
+ * only Today did, so sign-out was undiscoverable from Courses/Progress/
+ * Course. It hides itself during Learn Mode (its own doc comment explains
+ * why that never competes with Learn Mode's own `יציאה`).
  */
 import { LearnModeProvider } from "./learn-mode";
 import { LearnerMain } from "./learner-main";
 import { LearnerNav } from "./learner-nav";
+import { LearnerUtilityBar } from "./learner-utility-bar";
 
 export default function LearnerLayout({ children }: { children: React.ReactNode }) {
   return (
     <LearnModeProvider>
       <div className="flex min-h-full flex-1 flex-col">
+        <LearnerUtilityBar />
         <LearnerMain>{children}</LearnerMain>
         <LearnerNav />
       </div>

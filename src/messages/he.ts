@@ -8,6 +8,7 @@ export const he = {
     tagline: "למידה מסתגלת. עברית ו־RTL קודם.",
     goToToday: "למעבר ל'היום שלי'",
     signIn: "התחברות",
+    signOut: "התנתקות",
     navLabel: "ניווט ראשי",
     nav: {
       today: "היום שלי",
@@ -378,7 +379,6 @@ export const he = {
     continueLearning: "המשך ללמוד",
     itemsHeading: "פריטים להיום",
     statusLabel: "סטטוס",
-    signOut: "התנתקות",
     actionType: {
       REVIEW_DUE: "חזרה מתוזמנת",
       RELEARN_LAPSE: "למידה מחדש",

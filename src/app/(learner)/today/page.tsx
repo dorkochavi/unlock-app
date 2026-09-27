@@ -6,7 +6,6 @@ import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
-import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { interpolate } from "@/lib/interpolate";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
@@ -169,27 +168,13 @@ export default function TodayPage() {
     setReloadToken((token) => token + 1);
   }, []);
 
-  async function handleSignOut() {
-    const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    setState({ kind: "signed-out" });
-  }
-
   return (
     <>
       {/* Learn Mode replaces the Browse header with its own minimal context bar. */}
-      {learnMode ? null : (
-        <PageHeader
-          title={messages.today.heading}
-          trailing={
-            state.kind === "ready" ? (
-              <Button variant="tertiary" className="text-sm" onClick={handleSignOut}>
-                {messages.today.signOut}
-              </Button>
-            ) : null
-          }
-        />
-      )}
+      {/* UX-03-QA1 Finding 12: sign-out moved to the shared LearnerUtilityBar
+          (layout.tsx), rendered above every learner page — no longer local
+          to Today's own PageHeader trailing slot. */}
+      {learnMode ? null : <PageHeader title={messages.today.heading} />}
 
       {state.kind === "loading" || state.kind === "settingUpTimezone" ? (
         <LoadingState
