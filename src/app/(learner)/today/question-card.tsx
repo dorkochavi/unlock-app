@@ -26,6 +26,14 @@
  * Accessibility (item 30): the prompt receives focus when the card mounts
  * (start / next question); after a submit, focus moves to "המשך" and the
  * feedback is announced from a persistent `role="status"` region.
+ *
+ * QA2-A: post-submit order is Question -> feedback/explanation -> annotated
+ * answer options -> sticky Continue. Feedback always renders in normal
+ * document flow (never a floating/translucent overlay above the options) so
+ * it cannot cover the answer choices; the Continue CTA is instead stabilized
+ * independently via the sticky action bar below. Every state pairs color with
+ * text/an icon (never color alone): selectedIncorrect uses the calm
+ * `state-reinforce` (amber) tokens, not `danger`.
  */
 import { useEffect, useRef, useState } from "react";
 
@@ -55,9 +63,10 @@ function shuffleOptions<T>(options: readonly T[]): T[] {
   return result;
 }
 
-type OptionFeedbackState = "selectedCorrect" | "selectedIncorrect" | "missedCorrect" | null;
+export type OptionFeedbackState = "selectedCorrect" | "selectedIncorrect" | "missedCorrect" | null;
 
-function optionFeedbackState(
+/** Exported for direct unit coverage (QA2-A) — pure, no component state involved. */
+export function optionFeedbackState(
   optionId: string,
   selected: boolean,
   feedback: AnswerFeedback | null,
@@ -115,9 +124,9 @@ export function QuestionCard({
 
   useEffect(() => {
     if (feedback === null) return;
-    // On a long question the feedback can render below the fold (behind the
-    // sticky mobile action bar): bring it into view, then move focus to
-    // "המשך" without scrolling it away again.
+    // On a long question the feedback can render off-screen (e.g. below a long
+    // prompt): bring it into view, then move focus to "המשך" without scrolling
+    // it away again.
     feedbackRef.current?.scrollIntoView({ block: "nearest" });
     continueRef.current?.focus({ preventScroll: true });
   }, [feedback]);
@@ -161,6 +170,18 @@ export function QuestionCard({
         {item.prompt}
       </h2>
 
+      {/* Desired structure after submit (docs/UX_SPEC.md §11-§12, Visual Contract):
+          Question -> feedback/explanation -> annotated answer options -> sticky Continue.
+          Feedback renders in normal document flow, ABOVE the options, never as a
+          floating/translucent overlay on top of them — the CTA is stabilized via the
+          sticky action bar below, independently of the learning content. Persistent
+          live region so the feedback is announced when it appears. */}
+      <div ref={feedbackRef} role="status" className={feedback !== null ? "mb-6" : undefined}>
+        {feedback !== null ? (
+          <FeedbackBlock isCorrect={feedback.isCorrect} explanation={feedback.explanation} />
+        ) : null}
+      </div>
+
       {isMultiple ? <p className="mb-3 text-sm text-muted">{messages.multipleHint}</p> : null}
 
       <ul className="flex flex-col gap-3">
@@ -182,14 +203,6 @@ export function QuestionCard({
           );
         })}
       </ul>
-
-      {/* Persistent live region so the feedback is announced when it appears. */}
-      {/* scroll-mb keeps it clear of the sticky mobile action bar. */}
-      <div ref={feedbackRef} role="status" className="mt-6 scroll-mb-32 sm:scroll-mb-0">
-        {feedback !== null ? (
-          <FeedbackBlock isCorrect={feedback.isCorrect} explanation={feedback.explanation} />
-        ) : null}
-      </div>
 
       {submitError ? (
         <p role="alert" className="mt-4 text-sm font-medium text-danger">
@@ -270,7 +283,8 @@ function XIcon() {
   );
 }
 
-function QuestionOption({
+/** Exported for direct unit coverage (QA2-A) — pure/presentational, no internal state. */
+export function QuestionOption({
   content,
   multiple,
   selected,
