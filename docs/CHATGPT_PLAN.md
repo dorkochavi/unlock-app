@@ -1,9 +1,90 @@
-# UNLOCK — Run UX-02 — Course & Topic Practice
+# UNLOCK — Run UX-03 — Product Experience, Visual System & Usability
 
 PLAN_VERSION: 001
-RUN_ID: 2026-09-26-UX-02
-BASE_HEAD: d052e5c
-STATUS: APPROVED — P0 and P0.5–P0.7 (design, research, selector simulation) accepted 2026-09-26 and committed on `feature/run-ux-02-practice`; ADR-020, `LEARNING_ENGINE.md` §39A and `UX_SPEC.md` §10 ACCEPTED. P1–P4 COMPLETE 2026-09-27; see `docs/RUNS/2026-09-27-UX-02.md`. Manual Preview QA gate PASSED 2026-09-27 (Run report §5a); merged to `main` (`c85d870`), deployed via the Production branch, and manual Production smoke verification PASSED 2026-09-27 (Run report §5b), both by the product owner. Remaining: none blocking; hosted Auth Redirect URL allow-list for `next=` stays open, non-blocking.
+RUN_ID: 2026-09-27-UX-03
+BASE_HEAD: d7c6f57
+STATUS: IN PROGRESS — Phase A (Product Experience Audit) underway. Fresh RUN_ID established per DevOS longitudinal review recommendation (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §8.2) so UX-03 telemetry is not attributed to the closed `2026-09-26-UX-02` folder. Run UX-02's own plan content is preserved below this Run's own content is written above it, and the full historical UX-02 plan/carried-over Slice-B table is retained further down for reference until archived.
+
+This Run is mostly autonomous, with one intentional product-owner checkpoint after UX3-1 (visual-system direction). See the pasted Run brief (not duplicated here) for full scope, decisions, guardrails, and stop conditions; this file owns the ordered Slice queue only, per `CLAUDE.md` §2/§4.
+
+## 1. Run Goal
+
+Make UNLOCK feel like one intentional, coherent, fast and comfortable product across its V1 user-facing surfaces (learner, instructor, auth, authoring, import, progress/insights). No new product capabilities; product gaps found during UX work are recorded/deferred (`docs/FOLLOW_UP_BACKLOG.md`) unless they make an existing V1 flow unusable.
+
+## 2. Authority
+
+- `docs/UX_SPEC.md` owns durable UX/product rules (navigation model, Learn Mode, visual system principles) — implemented, not redesigned.
+- This Plan owns Run UX-03 Slice order/scope only.
+- Unchanged and binding: ADR-016/017/018/020, `LEARNING_ENGINE.md`, `.claude/rules/*` — no learning/role/auth semantics change in this Run.
+
+## 3. Phase A — Product Experience Audit (COMPLETE 2026-09-27)
+
+Read-only inspection of the actual repository implementation (not docs) across every listed learner/instructor surface, real journey traces via Link/router targets, and a motion/loading pass. Full method: real file reads + Grep across `src/app/**`, `src/components/**`, journeys traced through actual route/link targets (not assumed).
+
+### 3.1 Visual system finding
+
+The learner surface (`src/app/(learner)/**`) is a fully realized token-based system (100% semantic tokens + shared primitives: `Button`/`Card`/`PageHeader`/`StateBlock`/`StatusPill`). The two pre-product entry points (`src/app/login/page.tsx`, `src/app/join/[courseId]/page.tsx`, `src/app/page.tsx`) and the entire instructor surface (`src/app/instructor/**`) are a different, older raw-Tailwind (`zinc`/manual `dark:`) visual language with **zero** shared-primitive usage and no button-hierarchy at all (the instructor Course-manage page had ~18 identically-weighted `bg-zinc-900` buttons/links on one screen).
+
+### 3.2 UX debt map
+
+**P0 — broken/confusing V1 experience**
+1. Instructor Course-manage page (`instructor/courses/[courseId]/page.tsx`) — no button hierarchy among Create Question / Add Topic / Import / Publish / Item Analysis. → **UX3-1 (DONE)**: migrated to tokens/primitives with primary/secondary/tertiary weights.
+2. `login/page.tsx`, `join/[courseId]/page.tsx` — raw styling on the two screens every user sees first. → **UX3-3**.
+3. Instructor Course-manage page: Course-metadata fetch → Questions fetch is a real sequential waterfall (`instructor/courses/[courseId]/page.tsx:270-292` pre-Slice numbering). → **UX3-6** (measure first).
+
+**P1 — high-value coherence/usability improvement**
+4. Instructor dashboard reachable only via one small tertiary footer link on `/courses` — buried for any OWNER/INSTRUCTOR. → **UX3-2**.
+5. No instructor nav shell (Courses/Students/Insights) despite `DEV_STATUS.md`'s stated direction. → **UX3-2**.
+6. Instructor Course-manage page mixed metadata/Topics/Questions/Import/Insights in one flat page. → **UX3-1 (DONE)**: now Card-sectioned; further IA cleanup deferred to UX3-2 if needed.
+7. Learner Course page: Course context loads, then Topics load separately — a visible two-stage reveal. → **UX3-1 (DONE)**: skeleton added to smooth the visual jump; the underlying two-request shape itself is a UX3-6 measurement candidate, not changed here.
+8. No route-level `loading.tsx`/skeleton anywhere — plain text loading state everywhere, causing layout jumps. → **UX3-1 (DONE)** for the two representative surfaces (`Skeleton`/`SkeletonRows` primitive added); propagate elsewhere only where a real jump is observed (UX3-3/UX3-4).
+9. Instructor question editor and import page fully raw-styled, same issue as #2 at sub-surface level. → **UX3-4**.
+10. Item Analysis page paginates fetches correctly (`Promise.all`) but is still raw-styled. → **UX3-4**.
+
+**P2 — worthwhile polish**
+11. Root `/` splash raw-styled (low priority, not on a critical path). → **UX3-4** (bundle with #9/#10) or defer to `FOLLOW_UP_BACKLOG.md` if time-boxed out.
+12. Instructor side has no "active section" nav affordance once a nav exists (tied to #5). → **UX3-2**.
+13. Today/Practice progress-bar transition had no reduced-motion guard. → **UX3-1 (DONE)**: global `prefers-reduced-motion` convention added in `globals.css`.
+14. `TopicList` "תרגול ›" trailing affordance could be visually stronger. → deferred, `FOLLOW_UP_BACKLOG.md` (cosmetic only).
+15. Ad hoc `<Link className="rounded-md border ...">` mimicking a secondary button instead of `ButtonLink`. → fixed for the instructor Course-manage page in UX3-1; recurs on other unmigrated instructor pages, folded into UX3-4.
+
+### 3.3 Journey audit (worst finding)
+
+Instructor "entry → Course" is the worst journey in the app: `/` → Courses tab → small tertiary "instructor dashboard" link → `/instructor/courses` → course card = **4 clicks**, with a low-discoverability step 3 (P1 #4). All other traced journeys (learner Today/Course/Practice/Topic-Practice/Progress; instructor create/edit/publish Question, Structured Import, Topics, Insights) are 0–3 clicks with no dead ends or duplicate navigation.
+
+### 3.4 Motion/loading audit
+
+No `prefers-reduced-motion` handling existed anywhere pre-UX3-1 (now fixed globally). No skeleton loading existed anywhere pre-UX3-1 (now available via `Skeleton`/`SkeletonRows`, applied to the two representative surfaces). One genuine fetch waterfall confirmed in the instructor Course-manage page (Course metadata → Questions, sequential); Item Analysis's existing `Promise.all` pattern is the model to point to when addressing it in UX3-6 (measure-first, per Run brief).
+
+## 4. Slice Queue
+
+1. **UX3-1 — Visual System & Shared Interaction Foundation (DONE, this commit).** Representative surfaces: Today (verified as reference/no regression), learner Course page (skeleton added), instructor Course-manage page (full token/primitive migration + button hierarchy). New shared primitives: `Skeleton`/`SkeletonRows` (`src/components/skeleton.tsx`), `Input`/`Select`/`Label` (`src/components/input.tsx`). Global `prefers-reduced-motion` convention (`globals.css`). Instructor layout header token migration. **REQUIRED PRODUCT-OWNER CHECKPOINT after this Slice — see `scratch/development_checkpoint.md`.**
+2. **UX3-2 — Navigation / information architecture.** Instructor-dashboard discoverability for OWNER/INSTRUCTOR members (item 4); minimal instructor nav shell (item 5/12); revisit Course-manage page IA once a nav exists (item 6 follow-up) only if still warranted.
+3. **UX3-3 — Learner surface convergence.** Token/primitive migration for `login/page.tsx`, `join/[courseId]/page.tsx` (item 2); propagate skeleton pattern to other learner loading states only where a real layout jump is observed.
+4. **UX3-4 — Instructor / auth / authoring / import convergence.** Token/primitive migration for question editor, import page, item-analysis page, instructor courses list, new-course page, root `/` splash (items 9/10/11/15).
+5. **UX3-5 — Motion / feedback / loading.** Subtle pressed/pending feedback for answer submission; any further motion convention needs surfaced by UX3-2–UX3-4.
+6. **UX3-6 — Evidence-backed performance fixes.** Measure first: instructor Course-manage sequential fetch (item 3), learner Course-page two-request shape (item 7 follow-up). Fix only if material; record as `FOLLOW_UP_BACKLOG.md` otherwise.
+7. **UX3-7 — Integrated V1 experience verification and Run close.** End-to-end experience review of major journeys, before/after comparison where meaningful, telemetry summary, Run report, `DEV_STATUS.md` update.
+
+The audit may refine these boundaries if later repository evidence supports a better decomposition; no ceremony Slices.
+
+## 5. Guardrails
+
+No new product capability, role/permission change, or Learning Engine/Today/Practice semantic change. No fake functionality. Reuse first; new shared primitives only where real duplication/inconsistency is shown (per audit). Hebrew/RTL-first, mobile-first. No push/merge/deploy/hosted mutation. `PLAN_CONFLICT`/HARD STOP per `CLAUDE.md` §4/§17 and the Run brief's stop-condition list (new product semantics, role/permission changes, Learning Engine semantic changes, non-additive schema change not justified by a direct UX defect, privacy/security decisions, destructive/hosted actions, major new dependency).
+
+## 6. Verification
+
+Per `.claude/rules/testing.md`, UI/presentation change-class: typecheck + lint + targeted mocked-browser evidence (375px mobile, desktop, dark mode, RTL, keyboard/focus, loading/disabled states, no horizontal overflow, reduced-motion where relevant). No schema/DB/security reviewer merely because the project has those layers — reviewer selection stays with `/review-commit` per actual changed-surface risk. Full unit/schema suites reused unless a Slice touches shared domain/application logic (none planned before UX3-6, and even then only if the fix requires it).
+
+## 7. Open Human Items
+
+1. Required checkpoint after UX3-1 (visual-system direction) — see `scratch/development_checkpoint.md`.
+2. Hosted Auth Redirect URL allow-list for `next=` values (carried from UX-01/UX-02, still open, non-blocking).
+3. OQ-044 (FSRS learning-step calibration, carried, non-blocking, unrelated to this Run).
+
+---
+
+## Historical — Run UX-02 Plan (superseded; reference only — see `docs/RUNS/2026-09-27-UX-02.md` for the Run report)
 
 ## 1. Run Goal
 
