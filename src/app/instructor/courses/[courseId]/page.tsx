@@ -250,8 +250,12 @@ export default function InstructorCourseManagePage() {
     };
   }, [courseId, retryCount]);
 
+  // Fires in parallel with the Course-metadata fetch above rather than waiting
+  // for it (UX3-6, measured waterfall: this used to start only after `manage`
+  // resolved). Safe: this route only needs `courseId` and authenticates/
+  // authorizes itself independently (defense in depth unchanged); the render
+  // below still only shows Topics once the page is otherwise `ready`.
   useEffect(() => {
-    if (state.kind !== "ready") return;
     let cancelled = false;
 
     async function run() {
@@ -267,11 +271,11 @@ export default function InstructorCourseManagePage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseId, state.kind === "ready", topicsRetryCount]);
+  }, [courseId, topicsRetryCount]);
 
+  // Same reasoning as the Topics effect above — fires in parallel, not gated
+  // on `state.kind === "ready"`.
   useEffect(() => {
-    if (state.kind !== "ready") return;
     let cancelled = false;
 
     async function run() {
@@ -294,8 +298,7 @@ export default function InstructorCourseManagePage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseId, state.kind === "ready", questionsRetryCount]);
+  }, [courseId, questionsRetryCount]);
 
   async function handleCreateQuestion() {
     if (creatingQuestion) return;

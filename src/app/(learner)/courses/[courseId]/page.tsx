@@ -78,6 +78,7 @@ export default function CourseViewPage() {
   const courseId = String(params.courseId);
   const [state, setState] = useState<ViewState>({ kind: "loading" });
   const [retryCount, setRetryCount] = useState(0);
+  const [topics, setTopics] = useState<TopicsState>({ kind: "loading" });
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +113,28 @@ export default function CourseViewPage() {
       cancelled = true;
     };
   }, [courseId, retryCount]);
+
+  // Fires immediately, in parallel with the context fetch above, instead of
+  // waiting for it (UX3-6: measured waterfall showed ~300ms lost waiting for
+  // context to resolve first). This endpoint is LEARNER-only by convention —
+  // firing it before the role is known means an OWNER/INSTRUCTOR previewing
+  // their own course wastes one harmless, already-authorized request (their
+  // fetched result is simply never rendered, below); the endpoint itself
+  // still authorizes independently, so this is not a data-exposure change.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      const result = await loadCourseProgress((url, init) => fetch(url, init), courseId);
+      if (cancelled) return;
+      setTopics(result.kind === "unauthenticated" ? { kind: "error" } : result);
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
 
   return (
     <>
@@ -168,7 +191,7 @@ export default function CourseViewPage() {
         />
       ) : null}
 
-      {state.kind === "ready" ? <CourseReady courseId={courseId} data={state.data} /> : null}
+      {state.kind === "ready" ? <CourseReady courseId={courseId} data={state.data} topics={topics} /> : null}
     </>
   );
 }
@@ -183,9 +206,20 @@ export default function CourseViewPage() {
  *   Plus this Course's Topic rows from the existing `topic-progress` endpoint;
  *   each becomes a Topic Practice link when Practice is available.
  * - OWNER / INSTRUCTOR → the existing instructor management page (primary).
- *   The learner-only Topic endpoint is not called for them.
+ *   The learner-only Topic endpoint IS still called for them (fired
+ *   unconditionally on mount, UX3-6, to avoid a sequential waterfall) but its
+ *   result is never rendered outside the LEARNER branch below — see the
+ *   `topics` effect above `CourseViewPage` for the tradeoff this accepts.
  */
-function CourseReady({ courseId, data }: { courseId: string; data: CourseContextDto }) {
+function CourseReady({
+  courseId,
+  data,
+  topics,
+}: {
+  courseId: string;
+  data: CourseContextDto;
+  topics: TopicsState;
+}) {
   const messages = getMessages().courseView;
   const isLearner = data.membership.role === "LEARNER";
 
@@ -206,7 +240,7 @@ function CourseReady({ courseId, data }: { courseId: string; data: CourseContext
             </ButtonLink>
             <p className="text-center text-sm text-muted">{messages.continueInTodayHint}</p>
           </div>
-          <CourseTopics courseId={courseId} practiceAvailable={data.practiceAvailable === true} />
+          <CourseTopics courseId={courseId} practiceAvailable={data.practiceAvailable === true} topics={topics} />
         </>
       ) : (
         <ButtonLink href={`/instructor/courses/${courseId}`} fullWidth>
@@ -226,29 +260,13 @@ type TopicsState =
 function CourseTopics({
   courseId,
   practiceAvailable,
+  topics,
 }: {
   courseId: string;
   practiceAvailable: boolean;
+  topics: TopicsState;
 }) {
   const messages = getMessages().courseView;
-  const [topics, setTopics] = useState<TopicsState>({ kind: "loading" });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      const result = await loadCourseProgress((url, init) => fetch(url, init), courseId);
-      if (cancelled) return;
-      // A 401 here (session expired between the two requests) degrades to the
-      // Topic-level error line; the page-level context already loaded.
-      setTopics(result.kind === "unauthenticated" ? { kind: "error" } : result);
-    }
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [courseId]);
 
   return (
     <Card>
