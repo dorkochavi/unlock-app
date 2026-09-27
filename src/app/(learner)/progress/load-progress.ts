@@ -78,6 +78,36 @@ function isTopicProgressDto(value: unknown): value is TopicProgressDto {
 export type CourseOutcome = { kind: "unauthenticated" } | CourseProgress;
 
 /**
+ * UX-03-QA1 Finding 10/11: a pure, evidence-only Course-level activity
+ * summary — used by the top-level Progress page's compact per-Course card.
+ * Topic-level detail moved to the Course page (`CourseTopics`, which already
+ * rendered `TopicList`); Progress now shows only what real attempted/total
+ * data across this Course's own Topics already supports. Deliberately does
+ * NOT invent a course-wide qualitative state/mastery label (no aggregate of
+ * `LearnerTopicState` exists as an accepted product concept) — only plain
+ * counts, matching Finding 10's "effort visible immediately, mastery claims
+ * wait for evidence" principle.
+ */
+export interface CourseActivitySummary {
+  attempted: number;
+  total: number;
+  topicsWithActivity: number;
+  topicsTotal: number;
+}
+
+export function summarizeCourseActivity(topics: readonly TopicProgressDto[]): CourseActivitySummary {
+  let attempted = 0;
+  let total = 0;
+  let topicsWithActivity = 0;
+  for (const topic of topics) {
+    attempted += topic.attemptedCount;
+    total += topic.totalCount;
+    if (topic.attemptedCount > 0) topicsWithActivity++;
+  }
+  return { attempted, total, topicsWithActivity, topicsTotal: topics.length };
+}
+
+/**
  * One Course's Topic states (S1 endpoint). Also used on its own by the
  * Course page (Run UX-01 UX-1) to show that Course's Topic rows.
  */

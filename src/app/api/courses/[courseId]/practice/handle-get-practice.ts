@@ -23,7 +23,9 @@
  * - `TOPIC_NOT_FOUND` -> 404 `TOPIC_NOT_FOUND`.
  * - `TIMEZONE_NOT_SET` -> 422 `TIMEZONE_NOT_SET` (same as Today).
  * - `READY` -> 200 `{scope, items, hasMore}`; items carry learner-safe
- *   content only (never a correct answer or explanation).
+ *   content only (never a correct answer or explanation). `topicId` (UX-03-QA1
+ *   Finding 7) is current Topic attribution, not grading data — included so
+ *   the client can honestly summarize how many Topics a batch touched.
  * - unexpected error -> 500 `INTERNAL_ERROR`, logged server-side only.
  */
 import { isUuid } from "../../../../../lib/uuid";
@@ -117,6 +119,7 @@ export async function handleGetPractice(
             questionType: item.questionType,
             prompt: item.prompt,
             answerOptions: item.options.map((option) => ({ id: option.id, content: option.content })),
+            topicId: item.topicId,
           })),
           hasMore: result.hasMore,
         },

@@ -19,6 +19,8 @@ export interface PracticeItemDto {
   questionType: string;
   prompt: string;
   answerOptions: Array<{ id: string; content: string }>;
+  /** UX-03-QA1 Finding 7: current Topic attribution, not grading data. */
+  topicId: string | null;
 }
 
 export interface PracticeBatchDto {
@@ -36,7 +38,12 @@ export type FetchPracticeBatchOutcome =
   | { outcome: "ERROR" };
 
 export type SubmitPracticeAnswerOutcome =
-  | { outcome: "ACCEPTED"; isCorrect: boolean }
+  | {
+      outcome: "ACCEPTED";
+      isCorrect: boolean;
+      correctOptionIds: string[];
+      explanation: string | null;
+    }
   | { outcome: "UNAUTHENTICATED" }
   /** 409 pending-in-Today / new version, 404 unpublished: move on, nothing was recorded. */
   | { outcome: "QUESTION_UNAVAILABLE" }
@@ -94,7 +101,8 @@ function isPracticeItem(value: unknown): value is PracticeItemDto {
         o !== null &&
         typeof (o as Record<string, unknown>).id === "string" &&
         typeof (o as Record<string, unknown>).content === "string",
-    )
+    ) &&
+    (v.topicId === null || typeof v.topicId === "string")
   );
 }
 
@@ -162,10 +170,19 @@ export async function submitPracticeAnswer(
         : { outcome: "ERROR" };
     }
     if (!response.ok) return { outcome: "ERROR" };
-    const json = (await response.json()) as { isCorrect?: unknown };
-    return typeof json.isCorrect === "boolean"
-      ? { outcome: "ACCEPTED", isCorrect: json.isCorrect }
-      : { outcome: "ERROR" };
+    const json = (await response.json()) as {
+      isCorrect?: unknown;
+      correctOptionIds?: unknown;
+      explanation?: unknown;
+    };
+    if (typeof json.isCorrect !== "boolean") return { outcome: "ERROR" };
+    const correctOptionIds =
+      Array.isArray(json.correctOptionIds) &&
+      json.correctOptionIds.every((id) => typeof id === "string")
+        ? json.correctOptionIds
+        : [];
+    const explanation = typeof json.explanation === "string" ? json.explanation : null;
+    return { outcome: "ACCEPTED", isCorrect: json.isCorrect, correctOptionIds, explanation };
   } catch {
     return { outcome: "ERROR" };
   }

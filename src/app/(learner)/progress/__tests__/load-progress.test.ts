@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { getMessages } from "@/messages";
 
 import { LEARNER_NAV_ITEMS } from "../../nav-items";
-import { loadProgress, type FetchFn, type TopicProgressDto } from "../load-progress";
+import {
+  loadProgress,
+  summarizeCourseActivity,
+  type FetchFn,
+  type TopicProgressDto,
+} from "../load-progress";
 
 const json = (status: number, body: unknown): Response =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -282,5 +287,40 @@ describe("loadProgress — discoverability", () => {
       "/api/courses/mine",
       `/api/courses/${COURSE_A}/topic-progress`,
     ]);
+  });
+});
+
+describe("summarizeCourseActivity", () => {
+  it("sums attempted/total across Topics and counts Topics with any activity", () => {
+    const topics = [
+      topic({ attemptedCount: 3, totalCount: 5 }),
+      topic({ attemptedCount: 0, totalCount: 4 }),
+      topic({ attemptedCount: 2, totalCount: 2 }),
+    ];
+    expect(summarizeCourseActivity(topics)).toEqual({
+      attempted: 5,
+      total: 11,
+      topicsWithActivity: 2,
+      topicsTotal: 3,
+    });
+  });
+
+  it("no Topics: all zeros, never throws", () => {
+    expect(summarizeCourseActivity([])).toEqual({
+      attempted: 0,
+      total: 0,
+      topicsWithActivity: 0,
+      topicsTotal: 0,
+    });
+  });
+
+  it("no activity anywhere: attempted and topicsWithActivity are both 0", () => {
+    const topics = [topic({ attemptedCount: 0, totalCount: 3 }), topic({ attemptedCount: 0, totalCount: 2 })];
+    expect(summarizeCourseActivity(topics)).toEqual({
+      attempted: 0,
+      total: 5,
+      topicsWithActivity: 0,
+      topicsTotal: 2,
+    });
   });
 });

@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => ({
   PostgresUnitOfWork: vi.fn(),
   createProductionSubmitAnswerContext: vi.fn(),
   submitDailyPlanItemAnswer: vi.fn(),
+  PostgresAnswerFeedbackContentRepository: vi.fn(),
+  findByVersionId: vi.fn(),
 }));
 
 vi.mock("@/infrastructure/supabase/server-client", () => ({
@@ -60,6 +62,10 @@ vi.mock("@/application/dailyPlan/submit-daily-plan-item-answer", () => ({
   submitDailyPlanItemAnswer: mocks.submitDailyPlanItemAnswer,
 }));
 
+vi.mock("@/infrastructure/postgres/answer-feedback-content-repository", () => ({
+  PostgresAnswerFeedbackContentRepository: mocks.PostgresAnswerFeedbackContentRepository,
+}));
+
 // `vi.mock` calls above are hoisted above this import by Vitest, so `POST`
 // here is the real production route, wired against the mocks above.
 import { POST } from "../route";
@@ -80,6 +86,10 @@ describe("POST /api/daily-plan/items/:itemId/answer — real route wiring: auth 
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.createSupabaseServerClient.mockResolvedValue({});
+    mocks.PostgresAnswerFeedbackContentRepository.mockImplementation(function () {
+      return { findByVersionId: mocks.findByVersionId };
+    });
+    mocks.findByVersionId.mockResolvedValue({ correctOptionIds: [], explanation: null });
   });
 
   it("A. unauthenticated: 401, getPool/repository/unit-of-work construction never reached", async () => {
@@ -124,7 +134,7 @@ describe("POST /api/daily-plan/items/:itemId/answer — real route wiring: auth 
     mocks.getPool.mockReturnValue(fakePool);
     mocks.submitDailyPlanItemAnswer.mockResolvedValue({
       kind: "ACCEPTED",
-      attempt: { isCorrect: true },
+      attempt: { isCorrect: true, questionVersionId: "qv-1" },
       progress: {},
       wasIdempotentRetry: false,
       wasReconciledViaRebuild: false,
@@ -137,8 +147,19 @@ describe("POST /api/daily-plan/items/:itemId/answer — real route wiring: auth 
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ status: "COMPLETED", isCorrect: true, wasIdempotentRetry: false });
-    expect(mocks.getPool).toHaveBeenCalledTimes(1);
+    expect(body).toEqual({
+      status: "COMPLETED",
+      isCorrect: true,
+      wasIdempotentRetry: false,
+      correctOptionIds: [],
+      explanation: null,
+    });
+    expect(mocks.findByVersionId).toHaveBeenCalledExactlyOnceWith("qv-1");
+    // getPool() is called twice (once for submit, once for the separate
+    // getFeedbackContent closure) — both lazy, both only reached after
+    // auth+validation; getPool() itself is a memoized singleton (see its
+    // own doc comment), so this is not a second real connection.
+    expect(mocks.getPool).toHaveBeenCalledTimes(2);
     expect(mocks.PostgresDailyPlanRepository).toHaveBeenCalledWith(fakePool);
     expect(mocks.PostgresUnitOfWork).toHaveBeenCalledTimes(1);
     expect(mocks.submitDailyPlanItemAnswer).toHaveBeenCalledTimes(1);
@@ -222,6 +243,10 @@ describe("POST /api/daily-plan/items/:itemId/answer — real route wiring: auth 
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.createSupabaseServerClient.mockResolvedValue({});
+    mocks.PostgresAnswerFeedbackContentRepository.mockImplementation(function () {
+      return { findByVersionId: mocks.findByVersionId };
+    });
+    mocks.findByVersionId.mockResolvedValue({ correctOptionIds: [], explanation: null });
   });
 
   it("never calls request.json() for an unauthenticated request", async () => {
@@ -242,7 +267,7 @@ describe("POST /api/daily-plan/items/:itemId/answer — real route wiring: auth 
     });
     mocks.submitDailyPlanItemAnswer.mockResolvedValue({
       kind: "ACCEPTED",
-      attempt: { isCorrect: true },
+      attempt: { isCorrect: true, questionVersionId: "qv-1" },
       progress: {},
       wasIdempotentRetry: false,
       wasReconciledViaRebuild: false,

@@ -1121,6 +1121,77 @@ explicit product-owner decision on either color hierarchy or the "one primary pe
 
 ---
 
+# FUB-034 — Open-Ended Practice, Same-Day Repetition, Daily Plan Budget, PARTIAL Grading (Run UX-03-QA1 Findings 8/9, PARTIAL)
+
+**Status:** `PROMOTED — owned by Run 010` (recorded here so it is never silently dropped; the actionable decision
+belongs in `docs/CHATGPT_PLAN.md` once Run 010 starts, not in this file)
+**Area:** Learning Engine — evidence/scheduler semantics, Today plan sizing, grading vocabulary
+
+Product-owner QA (real 30-question course) surfaced four explicit product directions that this Run (UX-03-QA1) was
+authorized to record but NOT implement, because each requires a new Learning Engine evidence/semantics decision this
+Run has no authority to invent (`.claude/rules/learning-engine.md`).
+
+1. **Practice must not dead-end.** Today is finite by design; Practice is learner-initiated and should feel
+   open-ended (a batch of 10 is pacing/UI only, never a hard session limit) — but the CURRENT same-day exclusion
+   rules (a Question already answered in the current learning session is excluded from the Practice pool,
+   `select-practice-batch.ts`) exist for evidence/scheduler integrity. Simply re-enabling already-answered Questions
+   and counting each repetition as fresh independent evidence risks mastery inflation. Run 010 must decide, as an
+   explicit product/domain decision, ALL of: when a same-day Question may reappear in Practice; minimum
+   spacing/interleaving before a repeat; how a same-day repeated CORRECT answer affects evidence (vs. the existing
+   §39A "early correct = evidence-only, no scheduler review" rule, which governs a DIFFERENT case — first-time-that-day
+   correct before the FSRS due date); how a same-day repeated INCORRECT answer affects evidence; scheduler behavior;
+   mastery/progress behavior; explicit mastery-inflation prevention; Course vs. Topic scope; session/day boundaries.
+2. **Today Daily Plan Budget.** Today's plan currently often contains ~3 Questions; the product owner believes this is
+   too small for the eventual product and floated a **30–50 upper-bound hypothesis to test** — explicitly NOT a
+   proposal to hard-code 30 or 50 as the default. Run 010 must define a real Daily Plan Budget policy: minimum
+   meaningful plan, normal target, adaptive target, upper bound, and how exam proximity / amount of due material /
+   learner state / course load / available evidence / psychological workload each affect it.
+3. **PARTIAL grading outcome.** The product owner observed MULTIPLE_CHOICE attempts that "felt partially correct."
+   Investigated in UX-03-QA1: confirmed the domain/application layer has NO canonical PARTIAL outcome — grading is
+   `isCorrect: boolean` only (`src/domain/learning/answer.ts`'s `evaluateAnswerCorrectness`, `types.ts`'s `Attempt
+   .isCorrect`). UX-03-QA1 did NOT invent PARTIAL semantics; instead it shipped correct-answer reveal + selected/
+   missed-option feedback (Finding 3) so the learner still understands what happened, without a new grading category.
+   Whether MULTIPLE_CHOICE should ever have a real PARTIAL/partial-credit outcome (and what it would mean for
+   `isCorrect`, mastery, scheduler review) is an open Run-010 product/domain decision.
+4. **Practice ranking diversification (partially resolved this Run).** UX-03-QA1 already fixed the reported
+   symptom safely: Tier 2 (unseen)/Tier 3 (broader coverage) candidates within `selectPracticeBatch` are now
+   Topic-interleaved (`interleaveByTopic`) instead of raw creation/import order, without touching the canonical NBA
+   ranking Today also uses. If Run 010 revisits ranking/tie-break policy more broadly (e.g., for Today itself), start
+   from this same "diversify ties, never priorities" principle rather than re-deciding it from scratch.
+
+## Promotion Trigger
+
+Run 010 start — this item is the Run's own required early input, not backlog to rediscover later.
+
+---
+
+# FUB-035 — Assessment/Content-Quality Critic Signals (Run UX-03-QA1 Finding 6, owned by Run 011)
+
+**Status:** `PROMOTED — owned by Run 011` (content-generation / AI critic / assessment-quality intelligence; explicitly
+out of scope for any Run before 011, including UX-03-QA1 which found it)
+**Area:** Content Intelligence (future) — authoring-time / import-time quality signals
+
+Product-owner QA (real 30-question course) found the CONTENT itself, not runtime code, leaked assessment patterns a
+learner could exploit instead of learning the material: correct answers noticeably longer/more specific/more polished
+than distractors, alongside the separately-fixed position bias (UX-03-QA1 Finding 4, resolved with a stable
+per-presentation shuffle). UX-03-QA1 explicitly did NOT build a speculative AI/content-quality engine. Suggested
+future Run-011 signals, none designed or scoped yet:
+
+- correct-answer position bias across a Question set (now mitigated at PRESENTATION time by Finding 4's shuffle, but
+  not detected/flagged at AUTHORING/IMPORT time — a critic could still warn an instructor their SOURCE data is
+  positionally biased even though learners no longer see it);
+- correct-answer average length vs. distractor length;
+- correct-answer lexical/stylistic distinctiveness vs. distractors;
+- distractor plausibility/ambiguity;
+- MULTIPLE_CHOICE correct-option-count distribution (predictable patterns across a set);
+- duplicated/templated-question detection across a content set.
+
+## Promotion Trigger
+
+Run 011 start.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

@@ -27,7 +27,12 @@ type ViewState =
   | { kind: "ready"; plan: DailyPlanDto };
 
 type SubmitAnswerOutcome =
-  | { outcome: "ACCEPTED"; isCorrect: boolean }
+  | {
+      outcome: "ACCEPTED";
+      isCorrect: boolean;
+      correctOptionIds: string[];
+      explanation: string | null;
+    }
   | { outcome: "UNAUTHENTICATED" }
   | { outcome: "ALREADY_RESOLVED" }
   | { outcome: "ERROR" };
@@ -56,8 +61,18 @@ async function submitDailyPlanItemAnswer(
     return { outcome: "ERROR" };
   }
   try {
-    const json = (await response.json()) as { isCorrect: boolean };
-    return { outcome: "ACCEPTED", isCorrect: json.isCorrect };
+    const json = (await response.json()) as {
+      isCorrect: boolean;
+      correctOptionIds?: unknown;
+      explanation?: unknown;
+    };
+    const correctOptionIds =
+      Array.isArray(json.correctOptionIds) &&
+      json.correctOptionIds.every((id) => typeof id === "string")
+        ? json.correctOptionIds
+        : [];
+    const explanation = typeof json.explanation === "string" ? json.explanation : null;
+    return { outcome: "ACCEPTED", isCorrect: json.isCorrect, correctOptionIds, explanation };
   } catch {
     return { outcome: "ERROR" };
   }
@@ -471,7 +486,12 @@ function TodayPlanView({
     setItems((previous) =>
       previous.map((item) => (item.id === itemId ? { ...item, status: "completed" } : item)),
     );
-    setFeedback({ itemId, isCorrect: result.isCorrect });
+    setFeedback({
+      itemId,
+      isCorrect: result.isCorrect,
+      correctOptionIds: result.correctOptionIds,
+      explanation: result.explanation,
+    });
   }
 
   async function handleSkip(itemId: string) {

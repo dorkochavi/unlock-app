@@ -29,6 +29,7 @@ import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/
 import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import { PostgresDailyPlanRepository } from "../../../src/infrastructure/postgres/daily-plan-repository";
 import { PostgresDailyPlanUnitOfWork } from "../../../src/infrastructure/postgres/daily-plan-unit-of-work";
+import { PostgresAnswerFeedbackContentRepository } from "../../../src/infrastructure/postgres/answer-feedback-content-repository";
 import { PostgresLearnerQuestionContentRepository } from "../../../src/infrastructure/postgres/learner-question-content-repository";
 import { PostgresPracticeReadRepository } from "../../../src/infrastructure/postgres/practice-read-repository";
 import { PostgresUnitOfWork } from "../../../src/infrastructure/postgres/postgres-unit-of-work";
@@ -124,6 +125,8 @@ describe("Run UX-02 integrated vertical path (real handlers, real repositories, 
         now: NOW,
         submit: (command) =>
           submitPracticeAnswer(command, settings, createProductionSubmitAnswerContext(NOW), ports()),
+        getFeedbackContent: (questionVersionId) =>
+          new PostgresAnswerFeedbackContentRepository(db as never).findByVersionId(questionVersionId),
       });
 
     // 1. Course Practice: only non-pending Questions, learner-safe DTO, hasMore false.
@@ -161,10 +164,16 @@ describe("Run UX-02 integrated vertical path (real handlers, real repositories, 
     // 4. Practice answers (Course scope + Topic scope) -> 200 {isCorrect} only.
     const practiceQ = seeded.find((s) => !pending.has(s.questionId))!;
     const ok = await post({ questionId: practiceQ.questionId, questionVersionId: practiceQ.versionId, submissionId: "s-1", selectedAnswer: "A" });
-    expect(ok).toEqual({ status: 200, body: { isCorrect: true } });
+    expect(ok).toEqual({
+      status: 200,
+      body: { isCorrect: true, correctOptionIds: ["A"], explanation: null },
+    });
     const wrong = seeded.filter((s) => !pending.has(s.questionId))[1];
     const wrongRes = await post({ questionId: wrong.questionId, questionVersionId: wrong.versionId, submissionId: "s-2", selectedAnswer: "B", topicId: wrong === seeded[4] || wrong === seeded[5] ? undefined : topicId });
-    expect(wrongRes).toEqual({ status: 200, body: { isCorrect: false } });
+    expect(wrongRes).toEqual({
+      status: 200,
+      body: { isCorrect: false, correctOptionIds: ["A"], explanation: null },
+    });
 
     // 5. Attempts are normal, immutable, server-session-stamped, and not Today-attached.
     const attempts = await db.query<Record<string, unknown>>(

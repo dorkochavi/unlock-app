@@ -56,6 +56,13 @@ export interface SelectPracticeBatchPorts extends GetOrCreateDailyPlanForTodayPo
 
 export interface PracticeBatchItem extends LearnerQuestionContent {
   questionId: string;
+  /**
+   * UX-03-QA1 Finding 7: current Topic attribution (ADR-018), exposed on the
+   * wire so the batch-completion summary can honestly report how many
+   * distinct Topics the learner touched in this batch — no new persistence,
+   * reusing the same `topicId` `PracticeScopeQuestion` already carries.
+   */
+  topicId: string | null;
 }
 
 export type SelectPracticeBatchResult =
@@ -71,6 +78,51 @@ export type SelectPracticeBatchResult =
 
 export function eligibilityPorts(ports: GetOrCreateDailyPlanForTodayPorts) {
   return { memberships: ports.courseMemberships, courses: ports.courses };
+}
+
+/**
+ * UX-03-QA1 Finding 5: interleaves an already-sorted list by Topic, so a
+ * Practice batch does not surface content in raw import/creation order (all
+ * of Topic A, then all of Topic B, ...) merely because Tier 2/3 have no other
+ * ranking signal. Preserves each item's RELATIVE order within its own Topic
+ * (the canonical `created_at`/id or `dueAt`/id tie-break stays intact
+ * per-Topic); only regroups ACROSS Topics, via deterministic round-robin —
+ * no randomness, fully reproducible for the same input.
+ *
+ * Deliberately never applied to Tier 1 (the canonical NBA ranking — the
+ * SAME shared, pure function Today's own generation calls, see
+ * `next-best-action-ranking.ts`): this function only ever receives Tier 2/3
+ * candidates below, which are wholly owned by Practice selection and have no
+ * effect on Today. "Randomize ties, not learning priorities" — Tier order
+ * (1 before 2 before 3) and each Tier's own ranking signal are both
+ * untouched; only which Topic's item comes first among otherwise-equal
+ * candidates changes.
+ */
+export function interleaveByTopic<T extends { topicId: string | null }>(
+  items: readonly T[],
+): T[] {
+  const buckets = new Map<string, T[]>();
+  const bucketOrder: string[] = [];
+  for (const item of items) {
+    const key = item.topicId ?? "";
+    let bucket = buckets.get(key);
+    if (bucket === undefined) {
+      bucket = [];
+      buckets.set(key, bucket);
+      bucketOrder.push(key);
+    }
+    bucket.push(item);
+  }
+  const result: T[] = [];
+  for (let round = 0; result.length < items.length; round++) {
+    for (const key of bucketOrder) {
+      const bucket = buckets.get(key) as T[];
+      if (round < bucket.length) {
+        result.push(bucket[round]);
+      }
+    }
+  }
+  return result;
 }
 
 export async function selectPracticeBatch(
@@ -145,19 +197,27 @@ export async function selectPracticeBatch(
   const ordered: string[] = ranked.map((entry) => entry.candidate.questionId);
   const chosen = new Set(ordered);
 
-  // Tier 2 — unseen (no prior real Attempt); `eligible` is already created_at, id ordered.
-  for (const question of eligible) {
-    if (!question.attempted && !chosen.has(question.questionId)) {
-      ordered.push(question.questionId);
-      chosen.add(question.questionId);
-    }
+  // Tier 2 — unseen (no prior real Attempt); `eligible` is already created_at,
+  // id ordered. UX-03-QA1 Finding 5: Topic-interleaved (see
+  // `interleaveByTopic`'s own doc comment) — a fresh, just-imported course has
+  // ALL its Questions in this tier with no other ranking signal, which is
+  // exactly where raw import order was visible to the learner as a
+  // predictable sequence.
+  const unseen = eligible.filter(
+    (question) => !question.attempted && !chosen.has(question.questionId),
+  );
+  for (const question of interleaveByTopic(unseen)) {
+    ordered.push(question.questionId);
+    chosen.add(question.questionId);
   }
 
-  // Tier 3 — broader coverage: earliest scheduledReviewAt, then id.
+  // Tier 3 — broader coverage: earliest scheduledReviewAt, then id; then
+  // Topic-interleaved on top of that tie-break, same reasoning as Tier 2.
   const coverage = eligible
     .filter((question) => !chosen.has(question.questionId))
     .map((question) => ({
       questionId: question.questionId,
+      topicId: question.topicId,
       dueAt:
         progressByQuestion.get(question.questionId)?.memory?.scheduledReviewAt.getTime() ??
         Infinity,
@@ -167,9 +227,10 @@ export async function selectPracticeBatch(
         a.dueAt - b.dueAt ||
         (a.questionId < b.questionId ? -1 : a.questionId > b.questionId ? 1 : 0),
     );
-  for (const entry of coverage) ordered.push(entry.questionId);
+  for (const entry of interleaveByTopic(coverage)) ordered.push(entry.questionId);
 
   const versionByQuestion = new Map(eligible.map((q) => [q.questionId, q.questionVersionId]));
+  const topicByQuestion = new Map(eligible.map((q) => [q.questionId, q.topicId]));
   const batchIds = ordered.slice(0, PRACTICE_BATCH_SIZE);
   const contents = await ports.content.findManyByVersionIds(
     batchIds.map((questionId) => versionByQuestion.get(questionId) as string),
@@ -179,7 +240,9 @@ export async function selectPracticeBatch(
   const items: PracticeBatchItem[] = [];
   for (const questionId of batchIds) {
     const content = contentByVersion.get(versionByQuestion.get(questionId) as string);
-    if (content !== undefined) items.push({ questionId, ...content });
+    if (content !== undefined) {
+      items.push({ questionId, topicId: topicByQuestion.get(questionId) ?? null, ...content });
+    }
   }
 
   return {

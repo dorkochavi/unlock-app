@@ -28,8 +28,10 @@
  * - `IDEMPOTENCY_KEY_CONFLICT` -> 409 `SUBMISSION_ID_REUSED`.
  * - `INVALID_SELECTED_ANSWER` -> 400 `INVALID_ANSWER` (reason logged only).
  * - `TIMEZONE_NOT_SET` -> 422 `TIMEZONE_NOT_SET`.
- * - `ACCEPTED` -> 200 `{isCorrect}` only (no correct option, explanation,
- *   scheduler or mastery state).
+ * - `ACCEPTED` -> 200 `{isCorrect, correctOptionIds, explanation}` (UX-03-QA1
+ *   Finding 2/3 — the correct option id(s) and explanation, fetched via
+ *   `deps.getFeedbackContent` AFTER acceptance, keyed by the exact
+ *   `questionVersionId` answered; still no scheduler/mastery state).
  * - unexpected error -> 500 `INTERNAL_ERROR`.
  */
 import { isUuid } from "../../../../../../lib/uuid";
@@ -55,6 +57,13 @@ export interface HandleSubmitPracticeAnswerDependencies {
     responseTimeSeconds: number | null;
     now: Date;
   }) => Promise<SubmitPracticeAnswerResult>;
+  /**
+   * UX-03-QA1 Finding 2/3: called ONLY after `submit` returns `ACCEPTED`,
+   * with the exact `questionVersionId` the learner answered.
+   */
+  getFeedbackContent: (
+    questionVersionId: string,
+  ) => Promise<{ correctOptionIds: string[]; explanation: string | null }>;
 }
 
 export interface RouteJsonResponse {
@@ -166,8 +175,17 @@ export async function handleSubmitPracticeAnswer(
         `POST /api/courses/:courseId/practice/answer: INVALID_SELECTED_ANSWER — ${result.reason}`,
       );
       return error(400, "INVALID_ANSWER");
-    case "ACCEPTED":
-      return { status: 200, body: { isCorrect: result.isCorrect } };
+    case "ACCEPTED": {
+      const feedback = await deps.getFeedbackContent(questionVersionId);
+      return {
+        status: 200,
+        body: {
+          isCorrect: result.isCorrect,
+          correctOptionIds: feedback.correctOptionIds,
+          explanation: feedback.explanation,
+        },
+      };
+    }
     default: {
       const exhaustiveCheck: never = result;
       console.error("POST /api/courses/:courseId/practice/answer: unhandled outcome", exhaustiveCheck);

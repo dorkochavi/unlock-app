@@ -173,6 +173,36 @@ export interface LearnerQuestionContentRepository {
   ): Promise<LearnerQuestionContent[]>;
 }
 
+/**
+ * POST-SUBMIT-ONLY feedback content for one QuestionVersion (UX-03-QA1
+ * Finding 2/3) — the exact opposite trust boundary from
+ * `LearnerQuestionContent` above: this type carries `correctOptionIds`
+ * (order-irrelevant set semantics, matching `QuestionAnswerDefinition`) and
+ * `explanation` on purpose. Callers MUST only fetch this AFTER `submitAnswer`
+ * (or `submitPracticeAnswer`) has returned `ACCEPTED` for the SAME
+ * `questionVersionId` the learner actually answered — never on a GET/preview
+ * path. There is no port here that could accidentally reach this content
+ * before an Attempt exists; the discipline is enforced by which route
+ * handlers call `findByVersionId` at all (see
+ * `handle-submit-daily-plan-item-answer.ts` /
+ * `handle-submit-practice-answer.ts`), not by a runtime flag on this type.
+ */
+export interface AnswerFeedbackContent {
+  correctOptionIds: string[];
+  explanation: string | null;
+}
+
+/**
+ * Real Postgres implementation: `PostgresAnswerFeedbackContentRepository`
+ * (`src/infrastructure/postgres/answer-feedback-content-repository.ts`) —
+ * selects `correct_answer, explanation` from `question_versions`, deliberately
+ * the two columns `PostgresLearnerQuestionContentRepository` deliberately
+ * never selects.
+ */
+export interface AnswerFeedbackContentRepository {
+  findByVersionId(questionVersionId: string): Promise<AnswerFeedbackContent>;
+}
+
 export interface QuestionVersionRepository {
   /** The Question's current version at the moment of the call. */
   getCurrentVersion(

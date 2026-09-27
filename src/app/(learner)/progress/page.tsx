@@ -2,16 +2,23 @@
 
 /**
  * Learner Progress (Run 009 S2) — a simple, read-only, DESCRIPTIVE view of
- * the learner's own Topic states, grouped by their active Courses. Composed
- * from existing read models (see `load-progress.ts`); no percentages, scores,
- * readiness, streaks, ranking, or Topic practice controls.
+ * the learner's own Courses. Composed from existing read models (see
+ * `load-progress.ts`); no percentages, scores, readiness, streaks, ranking,
+ * or Topic practice controls.
  *
  * Diagnosis → action (Run UX-01 UX-1, docs/UX_SPEC.md §1.5, §9): each Course
  * heading links to its existing Course page, and a SECONDARY navigation link
  * goes to Today — deliberately not a primary "continue learning" promise,
  * since Today may already be complete. No page-level primary learning action is
- * invented. Run UX-02: each Topic with published Questions is one Topic
- * Practice link (a Course listed here is a LEARNER's active PUBLISHED Course).
+ * invented.
+ *
+ * UX-03-QA1 Findings 10/11 (product-owner Preview QA): with several
+ * Courses/Topics this page became visually heavy — each Course used to
+ * expand into its full `TopicList` inline. Topic-level detail now lives only
+ * on the Course page (`CourseTopics`, which already renders the same
+ * `TopicList`); this page stays Course-level and scannable, and each
+ * Course's card shows only a real, evidence-only activity summary
+ * (`summarizeCourseActivity`) — never a new mastery/percentage claim.
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -21,10 +28,16 @@ import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
+import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 
-import { TopicList } from "../topic-list";
-import { loadProgress, type CourseProgress, type ProgressLoadResult } from "./load-progress";
+import {
+  loadProgress,
+  summarizeCourseActivity,
+  type CourseProgress,
+  type ProgressLoadResult,
+  type TopicProgressDto,
+} from "./load-progress";
 
 type ViewState =
   | { kind: "loading" }
@@ -66,9 +79,38 @@ function CourseSection({
       ) : null}
 
       {progress.kind === "ready" && progress.topics.length > 0 ? (
-        <TopicList topics={progress.topics} practice={{ courseId: id, from: "progress" }} />
+        <CourseActivitySummary topics={progress.topics} />
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * UX-03-QA1 Finding 10: real activity, visible immediately; no mastery claim
+ * (see `summarizeCourseActivity`'s own doc comment for why no aggregate
+ * qualitative state is computed here). Topic-level detail lives on the
+ * Course page, reached via this same Card's heading link above.
+ */
+function CourseActivitySummary({ topics }: { topics: TopicProgressDto[] }) {
+  const messages = getMessages().progress;
+  const summary = summarizeCourseActivity(topics);
+
+  if (summary.attempted === 0) {
+    return <p className="pt-2 text-sm text-muted">{messages.courseNotStartedYet}</p>;
+  }
+
+  return (
+    <div className="pt-2">
+      <p className="text-sm text-muted">
+        {interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total })}
+      </p>
+      {summary.topicsWithActivity > 1 ? (
+        <p className="text-sm text-muted">
+          {interpolate(messages.courseTopicsTouched, { count: summary.topicsWithActivity })}
+        </p>
+      ) : null}
+      <p className="mt-1 text-sm font-medium text-foreground">{messages.courseActivityEncouragement}</p>
+    </div>
   );
 }
 

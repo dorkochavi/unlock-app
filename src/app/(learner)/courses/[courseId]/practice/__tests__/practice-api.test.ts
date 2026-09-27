@@ -80,6 +80,7 @@ describe("fetchPracticeBatch", () => {
         questionType: "SINGLE_CHOICE",
         prompt: "?",
         answerOptions: [{ id: "a", content: "א" }],
+        topicId: null,
       },
     ],
   };
@@ -139,11 +140,27 @@ describe("submitPracticeAnswer", () => {
     topicId: null,
   };
 
-  it("ACCEPTED carries only isCorrect", async () => {
+  it("ACCEPTED carries isCorrect + correctOptionIds/explanation (UX-03-QA1 Finding 2/3), defaulting to [] / null when the server omits them", async () => {
     stubFetch(respond(200, { isCorrect: false }));
     await expect(submitPracticeAnswer(COURSE, body)).resolves.toEqual({
       outcome: "ACCEPTED",
       isCorrect: false,
+      correctOptionIds: [],
+      explanation: null,
+    });
+
+    stubFetch(
+      respond(200, {
+        isCorrect: true,
+        correctOptionIds: ["opt-a"],
+        explanation: "כי אפשרות א' נכונה.",
+      }),
+    );
+    await expect(submitPracticeAnswer(COURSE, body)).resolves.toEqual({
+      outcome: "ACCEPTED",
+      isCorrect: true,
+      correctOptionIds: ["opt-a"],
+      explanation: "כי אפשרות א' נכונה.",
     });
   });
 

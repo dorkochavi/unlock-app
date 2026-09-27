@@ -23,6 +23,7 @@ import {
   createProductionPracticePorts,
   createProductionPracticeSettings,
 } from "@/infrastructure/practice/composition-root";
+import { PostgresAnswerFeedbackContentRepository } from "@/infrastructure/postgres/answer-feedback-content-repository";
 import { PgConnectionProvider } from "@/infrastructure/postgres/pg-connection-provider";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
@@ -74,6 +75,12 @@ export async function POST(
           createProductionPracticeSettings(),
           createProductionSubmitAnswerContext(now),
           ports,
+        );
+      },
+      getFeedbackContent: (questionVersionId) => {
+        const pool = getPool();
+        return new PostgresAnswerFeedbackContentRepository(pool).findByVersionId(
+          questionVersionId,
         );
       },
     });

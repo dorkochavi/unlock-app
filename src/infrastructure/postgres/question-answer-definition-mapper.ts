@@ -49,7 +49,14 @@ export function readAnswerOptions(value: unknown): AnswerOption[] {
   });
 }
 
-function readCorrectOptionIds(value: unknown): string[] {
+/**
+ * Exported so `answer-feedback-content-repository.ts` (this codebase's
+ * dedicated POST-SUBMIT-ONLY feedback read path,
+ * `src/application/learning/ports.ts`'s `AnswerFeedbackContentRepository`)
+ * can reuse the exact same `correct_answer` shape validation without
+ * duplicating it.
+ */
+export function readCorrectOptionIds(value: unknown): string[] {
   if (!Array.isArray(value)) {
     throw new MalformedRowError(
       TABLE,

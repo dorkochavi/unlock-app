@@ -8,7 +8,12 @@ function makeItem(id: string, status: string): DailyPlanItemDto {
   return { id, status } as unknown as DailyPlanItemDto;
 }
 
-const fb = (itemId: string) => ({ itemId, isCorrect: true });
+const fb = (itemId: string) => ({
+  itemId,
+  isCorrect: true,
+  correctOptionIds: [] as string[],
+  explanation: null,
+});
 
 describe("selectDisplayedItem", () => {
   it("no feedback: shows first pending item", () => {

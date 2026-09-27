@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   createProductionPracticeSettings: vi.fn(),
   createProductionSubmitAnswerContext: vi.fn(),
   submitPracticeAnswer: vi.fn(),
+  PostgresAnswerFeedbackContentRepository: vi.fn(),
+  findByVersionId: vi.fn(),
 }));
 
 vi.mock("@/infrastructure/supabase/server-client", () => ({
@@ -37,6 +39,9 @@ vi.mock("@/infrastructure/learning/composition-root", () => ({
 vi.mock("@/application/practice/submit-practice-answer", () => ({
   submitPracticeAnswer: mocks.submitPracticeAnswer,
 }));
+vi.mock("@/infrastructure/postgres/answer-feedback-content-repository", () => ({
+  PostgresAnswerFeedbackContentRepository: mocks.PostgresAnswerFeedbackContentRepository,
+}));
 
 import { POST } from "../route";
 
@@ -56,6 +61,10 @@ const params = (courseId = COURSE) => ({ params: Promise.resolve({ courseId }) }
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.createSupabaseServerClient.mockResolvedValue({});
+  mocks.PostgresAnswerFeedbackContentRepository.mockImplementation(function () {
+    return { findByVersionId: mocks.findByVersionId };
+  });
+  mocks.findByVersionId.mockResolvedValue({ correctOptionIds: [], explanation: null });
 });
 
 describe("POST practice/answer route ordering", () => {
@@ -105,8 +114,17 @@ describe("POST practice/answer route ordering", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ isCorrect: true });
-    expect(mocks.getPool).toHaveBeenCalledTimes(1);
+    expect(await response.json()).toEqual({
+      isCorrect: true,
+      correctOptionIds: [],
+      explanation: null,
+    });
+    expect(mocks.findByVersionId).toHaveBeenCalledExactlyOnceWith(V);
+    // getPool() is called twice (once for submit, once for the separate
+    // getFeedbackContent closure) — both lazy, both only reached after
+    // auth+validation; getPool() itself is a memoized singleton (see its
+    // own doc comment), so this is not a second real connection.
+    expect(mocks.getPool).toHaveBeenCalledTimes(2);
     expect(mocks.createProductionPracticePorts).toHaveBeenCalledTimes(1);
     const [command] = mocks.submitPracticeAnswer.mock.calls[0];
     expect(command.userId).toBe("u1");

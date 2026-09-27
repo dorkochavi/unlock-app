@@ -17,13 +17,17 @@ function authenticated(userId = "supabase-user-1") {
   );
 }
 
-function acceptedAttempt(isCorrect: boolean, wasIdempotentRetry = false) {
+function acceptedAttempt(
+  isCorrect: boolean,
+  wasIdempotentRetry = false,
+  questionVersionId = "qv-1",
+) {
   return vi.fn(
     async (command: Record<string, unknown>): Promise<SubmitDailyPlanItemAnswerResult> => {
       void command; // asserted from submit.mock.calls below, not here
       return {
         kind: "ACCEPTED",
-        attempt: { isCorrect } as never,
+        attempt: { isCorrect, questionVersionId } as never,
         progress: {} as never,
         wasIdempotentRetry,
         wasReconciledViaRebuild: false,
@@ -45,6 +49,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(401);
@@ -61,6 +66,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: null,
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(400);
@@ -77,6 +83,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(400);
@@ -93,6 +100,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(400);
@@ -108,6 +116,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: 42 },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(400);
@@ -123,6 +132,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A", confidenceLevel: "very-high" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(400);
@@ -138,6 +148,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A", responseTimeSeconds: -1 },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(400);
@@ -153,6 +164,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: ["A", "B"] },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(200);
@@ -170,6 +182,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: null },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(200);
@@ -184,6 +197,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A", userId: "attacker-supplied-id" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(submit).toHaveBeenCalledTimes(1);
@@ -203,6 +217,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A", dailyPlanItemId: "item-from-body" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     const [command] = submit.mock.calls[0];
@@ -218,10 +233,34 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A", answeredAt: "2020-01-01T00:00:00Z" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     const [command] = submit.mock.calls[0];
     expect(command.answeredAt).toBe(NOW);
+  });
+
+  it("SECURITY: getFeedbackContent (correctOptionIds/explanation) is never called for a non-ACCEPTED outcome", async () => {
+    const submit = vi.fn(
+      async (): Promise<SubmitDailyPlanItemAnswerResult> => ({
+        kind: "DAILY_PLAN_ITEM_ALREADY_RESOLVED",
+        dailyPlanItemId: "item-1",
+        status: "completed",
+      }),
+    );
+    const getFeedbackContent = vi.fn(async () => ({ correctOptionIds: ["A"], explanation: null }));
+
+    const response = await handleSubmitDailyPlanItemAnswer({
+      authenticate: authenticated(),
+      itemId: "item-1",
+      body: { submissionId: "sub-1", selectedAnswer: "A" },
+      now: NOW,
+      submit,
+      getFeedbackContent,
+    });
+
+    expect(response.status).toBe(409);
+    expect(getFeedbackContent).not.toHaveBeenCalled();
   });
 
   it("ITEM_NOT_FOUND_OR_NOT_OWNED: 404 ITEM_NOT_FOUND", async () => {
@@ -237,6 +276,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(404);
@@ -257,6 +297,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(404);
@@ -278,6 +319,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(409);
@@ -299,6 +341,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(409);
@@ -320,6 +363,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: ["A", "A"] },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(400);
@@ -345,6 +389,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(500);
@@ -354,8 +399,12 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it("ACCEPTED: 200 with isCorrect + wasIdempotentRetry only — no correctOptionIds/grading-definition/internal fields", async () => {
-    const submit = acceptedAttempt(true, false);
+  it("ACCEPTED: 200 with isCorrect + wasIdempotentRetry + correctOptionIds/explanation from getFeedbackContent (UX-03-QA1 Finding 2/3), keyed by the attempt's questionVersionId — no other internal field", async () => {
+    const submit = acceptedAttempt(true, false, "qv-42");
+    const getFeedbackContent = vi.fn(async () => ({
+      correctOptionIds: ["opt-a"],
+      explanation: "כי אפשרות א' נכונה.",
+    }));
 
     const response = await handleSubmitDailyPlanItemAnswer({
       authenticate: authenticated(),
@@ -363,6 +412,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent,
     });
 
     expect(response.status).toBe(200);
@@ -370,13 +420,16 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       status: "COMPLETED",
       isCorrect: true,
       wasIdempotentRetry: false,
+      correctOptionIds: ["opt-a"],
+      explanation: "כי אפשרות א' נכונה.",
     });
     expect(Object.keys(response.body as object).sort()).toEqual(
-      ["isCorrect", "status", "wasIdempotentRetry"].sort(),
+      ["correctOptionIds", "explanation", "isCorrect", "status", "wasIdempotentRetry"].sort(),
     );
+    expect(getFeedbackContent).toHaveBeenCalledExactlyOnceWith("qv-42");
   });
 
-  it("ACCEPTED via idempotent retry: wasIdempotentRetry true", async () => {
+  it("ACCEPTED via idempotent retry: wasIdempotentRetry true, feedback content still returned", async () => {
     const submit = acceptedAttempt(false, true);
 
     const response = await handleSubmitDailyPlanItemAnswer({
@@ -385,12 +438,15 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: ["opt-a"], explanation: null })),
     });
 
     expect(response.body).toEqual({
       status: "COMPLETED",
       isCorrect: false,
       wasIdempotentRetry: true,
+      correctOptionIds: ["opt-a"],
+      explanation: null,
     });
   });
 
@@ -406,6 +462,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(500);
@@ -428,6 +485,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       body: { submissionId: "sub-1", selectedAnswer: "A" },
       now: NOW,
       submit,
+      getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     });
 
     expect(response.status).toBe(500);

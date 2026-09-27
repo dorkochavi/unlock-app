@@ -1,6 +1,13 @@
 import type { DailyPlanItemDto } from "@/app/api/daily-plan/today/daily-plan-dto";
 
-export type AnswerFeedback = { itemId: string; isCorrect: boolean };
+export type AnswerFeedback = {
+  itemId: string;
+  isCorrect: boolean;
+  /** UX-03-QA1 Finding 3: canonical correct option id(s), revealed only post-submit. */
+  correctOptionIds: string[];
+  /** UX-03-QA1 Finding 2: canonical explanation, or null when none was authored. */
+  explanation: string | null;
+};
 
 /**
  * Which item the Today page shows, and the feedback (if any) bound to it.

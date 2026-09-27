@@ -60,11 +60,17 @@
  *   DailyPlanItem (its own composite FKs already guarantee this
  *   consistency); logged loudly as a data-consistency fault, never a normal
  *   client error.
- * - `ACCEPTED` -> 200, `{status: "COMPLETED", isCorrect, wasIdempotentRetry}`
- *   — deliberately excludes `correctOptionIds`/any grading-definition
- *   field/internal scheduler or mastery state. `isCorrect` alone is the
- *   only grading signal returned, matching this slice's explicit
- *   allowance ("correctness if permitted by existing contract").
+ * - `ACCEPTED` -> 200, `{status: "COMPLETED", isCorrect, wasIdempotentRetry,
+ *   correctOptionIds, explanation}` — UX-03-QA1 Finding 2/3: the correct
+ *   option id(s) and the published QuestionVersion's explanation (or `null`
+ *   when none was authored) are now included, but ONLY here, in the
+ *   POST-submit ACCEPTED response — never on any GET/preview path. Fetched
+ *   via the dedicated `deps.getFeedbackContent` port AFTER `deps.submit`
+ *   already returned ACCEPTED, keyed by the exact `questionVersionId` the
+ *   learner answered (not the Question's current version, matching every
+ *   other frozen-version read in this codebase). Still excludes internal
+ *   scheduler/mastery state — `isCorrect`/`correctOptionIds`/`explanation`
+ *   are the only grading/feedback signals returned.
  * - An unexpected thrown error (from `authenticate` or `deps.submit`) -> 500,
  *   `{error: {code: "INTERNAL_ERROR"}}`. Logged server-side only.
  */
@@ -89,6 +95,15 @@ export interface HandleSubmitDailyPlanItemAnswerDependencies {
     responseTimeSeconds: number | null;
     answeredAt: Date;
   }) => Promise<SubmitDailyPlanItemAnswerResult>;
+  /**
+   * UX-03-QA1 Finding 2/3: called ONLY after `submit` returns `ACCEPTED`, with
+   * the exact `questionVersionId` the Attempt was recorded against. Never
+   * called for any other outcome (an error, a rejected/malformed request, or
+   * before `submit` at all).
+   */
+  getFeedbackContent: (
+    questionVersionId: string,
+  ) => Promise<{ correctOptionIds: string[]; explanation: string | null }>;
 }
 
 export interface RouteJsonResponse {
@@ -237,15 +252,19 @@ export async function handleSubmitDailyPlanItemAnswer(
       );
       return internalErrorResponse();
 
-    case "ACCEPTED":
+    case "ACCEPTED": {
+      const feedback = await deps.getFeedbackContent(result.attempt.questionVersionId);
       return {
         status: 200,
         body: {
           status: "COMPLETED",
           isCorrect: result.attempt.isCorrect,
           wasIdempotentRetry: result.wasIdempotentRetry,
+          correctOptionIds: feedback.correctOptionIds,
+          explanation: feedback.explanation,
         },
       };
+    }
 
     default: {
       const exhaustiveCheck: never = result;

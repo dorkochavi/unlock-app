@@ -50,6 +50,12 @@ interface RunState {
   hasMore: boolean;
   stage: Stage;
   isCorrect: boolean | null;
+  correctOptionIds: string[];
+  explanation: string | null;
+  /** UX-03-QA1 Finding 7: real counts from THIS batch's own answers only. */
+  correctCount: number;
+  /** Distinct non-null Topic ids answered in this batch (may repeat before dedup). */
+  topicIdsAnswered: string[];
 }
 
 type ViewState =
@@ -98,6 +104,10 @@ function runFromBatch(batch: PracticeBatchDto): RunState {
     hasMore: batch.hasMore,
     stage: batch.items.length === 0 ? "noMore" : "question",
     isCorrect: null,
+    correctOptionIds: [],
+    explanation: null,
+    correctCount: 0,
+    topicIdsAnswered: [],
   };
 }
 
@@ -218,6 +228,8 @@ function PracticeScreen() {
       ...counts,
       index: nextIndex,
       isCorrect: null,
+      correctOptionIds: [],
+      explanation: null,
       stage: nextIndex >= total ? "batchComplete" : "question",
     });
   }
@@ -234,7 +246,18 @@ function PracticeScreen() {
     });
     switch (result.outcome) {
       case "ACCEPTED":
-        update({ answered: run.answered + 1, stage: "feedback", isCorrect: result.isCorrect });
+        update({
+          answered: run.answered + 1,
+          stage: "feedback",
+          isCorrect: result.isCorrect,
+          correctOptionIds: result.correctOptionIds,
+          explanation: result.explanation,
+          correctCount: result.isCorrect ? run.correctCount + 1 : run.correctCount,
+          topicIdsAnswered:
+            current.topicId !== null
+              ? [...run.topicIdsAnswered, current.topicId]
+              : run.topicIdsAnswered,
+        });
         return;
       case "UNAUTHENTICATED":
         // The selection was NOT recorded — say so explicitly (as on Today).
@@ -325,7 +348,12 @@ function PracticeScreen() {
           item={current}
           feedback={
             run.stage === "feedback" && run.isCorrect !== null
-              ? { itemId: current.questionId, isCorrect: run.isCorrect }
+              ? {
+                  itemId: current.questionId,
+                  isCorrect: run.isCorrect,
+                  correctOptionIds: run.correctOptionIds,
+                  explanation: run.explanation,
+                }
               : null
           }
           submitError={submitError}
@@ -340,6 +368,8 @@ function PracticeScreen() {
         <BatchComplete
           answered={run.answered}
           skipped={run.skipped}
+          correctCount={run.correctCount}
+          topicsTouched={new Set(run.topicIdsAnswered).size}
           hasMore={run.hasMore}
           originHref={originHref}
           from={from}
@@ -357,10 +387,19 @@ function backLabel(from: PracticeFrom): string {
   return from === "progress" ? messages.backToProgress : messages.backToCourse;
 }
 
-/** Counts only — no correct count, score or percentage (UX_SPEC §10). */
+/**
+ * UX-03-QA1 Finding 7: a real learning summary from this batch's own answers
+ * — questions practiced, how many were correct, and how many Topics were
+ * touched (Course Practice only; Topic Practice is trivially always 1) — plus
+ * one restrained, non-gamified encouragement line. No score/percentage/streak
+ * framing (UX_SPEC §10 remains binding): every number here is a plain count
+ * the batch itself already produced, never a derived mastery claim.
+ */
 function BatchComplete({
   answered,
   skipped,
+  correctCount,
+  topicsTouched,
   hasMore,
   originHref,
   from,
@@ -368,6 +407,8 @@ function BatchComplete({
 }: {
   answered: number;
   skipped: number;
+  correctCount: number;
+  topicsTouched: number;
   hasMore: boolean;
   originHref: string;
   from: PracticeFrom;
@@ -388,6 +429,14 @@ function BatchComplete({
   ]
     .filter(Boolean)
     .join(" · ");
+  const correctLine =
+    answered > 0
+      ? interpolate(messages.practice.batchCorrectSummary, { correct: correctCount, answered })
+      : null;
+  const topicsLine =
+    topicsTouched > 1
+      ? interpolate(messages.practice.batchTopicsTouched, { count: topicsTouched })
+      : null;
 
   return (
     <Card className="flex flex-col items-center gap-4 p-6 text-center">
@@ -397,6 +446,11 @@ function BatchComplete({
         </p>
       </div>
       {summary ? <p className="text-sm text-muted">{summary}</p> : null}
+      {correctLine ? <p className="text-sm text-muted">{correctLine}</p> : null}
+      {topicsLine ? <p className="text-sm text-muted">{topicsLine}</p> : null}
+      {answered > 0 ? (
+        <p className="text-sm font-medium text-foreground">{messages.practice.batchEncouragement}</p>
+      ) : null}
       <div className="mt-2 flex w-full flex-col gap-2">
         {hasMore ? (
           <Button fullWidth onClick={onMore}>

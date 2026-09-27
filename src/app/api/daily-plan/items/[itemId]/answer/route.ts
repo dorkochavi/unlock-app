@@ -30,6 +30,7 @@ import { NextResponse } from "next/server";
 
 import { submitDailyPlanItemAnswer } from "@/application/dailyPlan/submit-daily-plan-item-answer";
 import { createProductionSubmitAnswerContext } from "@/infrastructure/learning/composition-root";
+import { PostgresAnswerFeedbackContentRepository } from "@/infrastructure/postgres/answer-feedback-content-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresDailyPlanRepository } from "@/infrastructure/postgres/daily-plan-repository";
 import { PgConnectionProvider } from "@/infrastructure/postgres/pg-connection-provider";
@@ -103,6 +104,14 @@ export async function POST(
             context: createProductionSubmitAnswerContext(now),
             uow: new PostgresUnitOfWork(connectionProvider),
           },
+        );
+      },
+      getFeedbackContent: (questionVersionId) => {
+        // Reached only after `submit` above returned ACCEPTED — same lazy
+        // pool-access discipline as `submit`'s own closure.
+        const pool = getPool();
+        return new PostgresAnswerFeedbackContentRepository(pool).findByVersionId(
+          questionVersionId,
         );
       },
     });

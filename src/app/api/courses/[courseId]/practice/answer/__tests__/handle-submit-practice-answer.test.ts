@@ -18,8 +18,9 @@ function deps(over: Partial<Deps> = {}) {
     body: good,
     now: NOW,
     submit: vi.fn(),
+    getFeedbackContent: vi.fn(async () => ({ correctOptionIds: [], explanation: null })),
     ...over,
-  } as Deps & { submit: ReturnType<typeof vi.fn> };
+  } as Deps & { submit: ReturnType<typeof vi.fn>; getFeedbackContent: ReturnType<typeof vi.fn> };
 }
 
 describe("handleSubmitPracticeAnswer", () => {
@@ -91,7 +92,7 @@ describe("handleSubmitPracticeAnswer", () => {
     });
   });
 
-  it("maps outcomes to stable 403/404/409/422/400 and ACCEPTED to {isCorrect} only", async () => {
+  it("maps non-ACCEPTED outcomes to stable 403/404/409/422/400, and never calls getFeedbackContent for any of them (SECURITY)", async () => {
     const table: Array<[Record<string, unknown>, number, unknown]> = [
       [{ kind: "NOT_ELIGIBLE" }, 403, { error: { code: "PRACTICE_NOT_AVAILABLE" } }],
       [{ kind: "NOT_IN_SCOPE" }, 404, { error: { code: "QUESTION_NOT_FOUND" } }],
@@ -104,7 +105,6 @@ describe("handleSubmitPracticeAnswer", () => {
         400,
         { error: { code: "INVALID_ANSWER" } },
       ],
-      [{ kind: "ACCEPTED", isCorrect: false, wasIdempotentRetry: true }, 200, { isCorrect: false }],
     ];
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     for (const [outcome, status, body] of table) {
@@ -113,8 +113,24 @@ describe("handleSubmitPracticeAnswer", () => {
       const r = await handleSubmitPracticeAnswer(d);
       expect(r).toEqual({ status, body });
       expect(JSON.stringify(r)).not.toContain("zzz");
+      expect(d.getFeedbackContent).not.toHaveBeenCalled();
     }
     spy.mockRestore();
+  });
+
+  it("ACCEPTED -> 200 {isCorrect, correctOptionIds, explanation} from getFeedbackContent, keyed by the answered questionVersionId (UX-03-QA1 Finding 2/3)", async () => {
+    const d = deps();
+    d.submit.mockResolvedValue({ kind: "ACCEPTED", isCorrect: false, wasIdempotentRetry: true });
+    d.getFeedbackContent.mockResolvedValue({
+      correctOptionIds: ["opt-a"],
+      explanation: "כי אפשרות א' נכונה.",
+    });
+    const r = await handleSubmitPracticeAnswer(d);
+    expect(r).toEqual({
+      status: 200,
+      body: { isCorrect: false, correctOptionIds: ["opt-a"], explanation: "כי אפשרות א' נכונה." },
+    });
+    expect(d.getFeedbackContent).toHaveBeenCalledExactlyOnceWith(V);
   });
 
   it("500 INTERNAL_ERROR without leaking when submit throws", async () => {
