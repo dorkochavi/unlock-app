@@ -1,6 +1,22 @@
-# UNLOCK — Run UX-03-QA1 — Preview QA Corrections
+# UNLOCK — Run UX-03-QA2 — Preview QA2 Corrections (Autonomous Run experiment)
 
-PLAN_VERSION: 002
+PLAN_VERSION: 003
+RUN_ID: 2026-09-28-UX-03-QA2-AUTONOMOUS-001
+BASE_HEAD: 8f45cc3 (== pushed QA1 HEAD)
+STATUS: IN PROGRESS
+
+This is a Long Autonomous Run experiment: thin parent orchestrator + fresh scoped workers (`Agent` tool, `subagent_type: general-purpose`, one at a time, zero inherited context) per Slice. See the pasted Run brief (not duplicated here) for full scope/decisions/guardrails/stop conditions; this file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4. Not Run010/Run011. All work stays local; no push/merge/deploy.
+
+## 0. Slice Queue
+
+1. **QA2-A — Learn Mode feedback + sticky Continue.** Post-submit layout: Question → Feedback/Explanation (in normal flow, not overlay) → annotated options → sticky Continue. Calm, non-punitive tone; correctness not color-only.
+2. **QA2-B — Progress + Courses visual hierarchy.** Whole-card click/keyboard nav, hover/focus/pressed states, restrained accent, Course-level only on Progress (no Topic expansion regression).
+3. **QA2-C — Authoring bounded visual polish.** Question Management visual consistency only; no IA/scalability redesign; preserve bulk publish/Draft/Published/import behavior.
+4. **QA2-D — Author can learn own Course** (gated on existing membership/eligibility architecture supporting it cleanly; STOP this Slice only if not).
+5. **QA2-E — Integrated focused verification + Run close.**
+
+## 1. Historical — Run UX-03-QA1 (superseded; reference only — see `docs/RUNS/2026-09-27-UX-03-QA1.md`)
+
 RUN_ID: 2026-09-27-UX-03-QA1
 BASE_HEAD: 8b98dcb
 STATUS: **COMPLETE (locally)** — all Slices QA1-A through QA1-H done; see `docs/RUNS/2026-09-27-UX-03-QA1.md` for the full Run report and final QA disposition table. Final HEAD `0442c91`, not merged/pushed/deployed.
