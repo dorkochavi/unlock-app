@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-28 (Run UX-03-QA1 complete locally, not merged/deployed — pre-merge Preview QA correction pass on top of Run UX-03; Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS; DevOS longitudinal review)
+Updated: 2026-09-28 (Run UX-03-QA2 complete locally, not merged/deployed — second pre-merge Preview QA correction pass on the same branch, run as a Long Autonomous Run experiment (thin parent + fresh scoped workers); Run UX-03-QA1 complete locally; Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS; DevOS longitudinal review)
 
 ## Repository
 
@@ -168,6 +168,39 @@ Current repository capabilities include:
   Preview/Supabase integration, real hosted latency, true multi-connection
   concurrency — a fresh product-owner Preview QA pass against this same
   branch remains the next step before any merge/deploy decision;
+- Preview QA2 corrections — Run UX-03-QA2 (second pre-merge correction pass
+  on top of QA1, same branch `feature/run-ux-03-product-experience`, final
+  HEAD `3272582`; **COMPLETE locally**, NOT merged/deployed;
+  `docs/RUNS/2026-09-28-UX-03-QA2.md`): executed as a Long Autonomous Run
+  experiment — a thin parent orchestrator dispatching fresh, zero-context
+  scoped workers (`Agent` tool, `subagent_type: general-purpose`) one Slice
+  at a time, each running its own targeted verification and (where
+  warranted) its own independent reviewer sub-dispatch, returning only a
+  compact handoff to the parent. Four findings implemented and verified:
+  Learn Mode post-submit feedback moved into normal document flow (Question
+  → feedback/explanation → annotated options → sticky Continue, no overlay,
+  color paired with text/icon, calm non-punitive incorrect tone); Progress
+  and Courses cards converted to whole-card semantic navigation (single
+  `<Link>` per card, hover/focus/pressed states, Progress confirmed still
+  Course-level only); instructor Question Management row visual polish
+  (`StatusPill` for Draft/Published) with bulk-select/publish verified
+  byte-identical outside the changed hunk. One Slice — Author-can-learn-
+  their-own-Course — was investigated and correctly STOPPED rather than
+  implemented: `course_memberships` has `UNIQUE(user_id, course_id)` plus a
+  scalar `role` column, so an Author's OWNER row cannot coexist with a
+  LEARNER row on the same Course without a schema change; recorded as
+  `docs/FOLLOW_UP_BACKLOG.md` FUB-036, owned by a pre-Run010/Run011 product
+  decision, not invented ad hoc. `docs/FOLLOW_UP_BACKLOG.md` FUB-037 records
+  the still-open future Question Management Workspace (Run011 scope).
+  Evidence: typecheck/lint/full unit suite (158 files/1555 tests) /
+  production build all clean across the combined diff. NOT proven: real
+  hosted Preview/Supabase integration, real hosted latency, true
+  multi-connection concurrency, and no new mocked-browser/Playwright
+  evidence was added this Run (existing hosted E2E fixtures were not
+  available in this environment; the four acceptance scenarios were instead
+  confirmed by direct code reading — see the Run report) — a fresh
+  product-owner Preview QA pass against this same branch remains the next
+  step before any merge/deploy decision;
 - Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY
   Questions, with source-size AND row-count HTTP/application-layer limits
   (Run 008 S1.D);
@@ -508,6 +541,19 @@ confirm genuine (non-deterministic across loads, stable within one presentation)
 proven: real hosted Preview/Supabase integration, real hosted latency (Finding 14 was audited at the code
 level only — no new/fixable client-side fetch waterfall found), true multi-connection concurrency.
 
+Run UX-03-QA2 (Preview QA2 corrections, Long Autonomous Run experiment; `docs/RUNS/2026-09-28-UX-03-QA2.md`)
+final evidence, HEAD `3272582`: typecheck clean; lint 0 errors + the same 1 pre-existing unrelated warning;
+full unit suite 1555/1555 passed (158 files, includes 4 new targeted `.tsx` render tests via
+`renderToStaticMarkup`, no jsdom/testing-library added); production build clean (`next build`, 14 routes).
+Each of the 3 implementing Slices (QA2-A/B/C) also passed its own general-reviewer pass with no blocking
+findings; the 4th Slice (QA2-D, Author-can-learn-own-Course) was correctly STOPPED before any implementation
+on a hard `UNIQUE(user_id, course_id)` DB-constraint finding (`FUB-036`) — no reviewer needed for a docs-only
+STOP. NOT proven this Run: real hosted Preview/Supabase integration, real hosted latency, true
+multi-connection concurrency, and no new/extended mocked-browser evidence (hosted E2E fixtures were not
+available in this environment; the 4 named acceptance scenarios were instead confirmed by direct code
+reading during the integrated verification Slice, QA2-E — see the Run report for exactly what was and
+was not proven this way).
+
 ## Development OS V1.2
 
 V1.2 direction is established:
@@ -540,6 +586,7 @@ Rolling state only — not a diary. An item leaves this list the moment it resol
 - **RUN_ID attribution drift for post-close/meta sessions** — a Run's telemetry keeps accumulating under its `RUN_ID` until `docs/CHATGPT_PLAN.md`'s `RUN_ID:` field is changed, so docs-only or meta sessions after a Run closes (and a stray artifact, `2026-09-26-010`) get folded into that Run's cost/duration figures. Observed 2026-09-27 (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §5). Run UX-03 followed the recommendation and set its own fresh `RUN_ID` before starting — `WATCH`, one clean data point so far; needs a second Run to confirm this becomes habitual rather than one-off.
 - **Telemetry-summary generation skipped at Run close for two consecutive Runs** (UX-01, UX-02) — unlike 007/008/Pre-Pilot/009, `summarize.mjs` was not run until backfilled by the 2026-09-27 longitudinal review (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §6). Run UX-03 generated its summary at close as required (`docs/RUNS/2026-09-27-UX-03.md` §13) — breaks the two-Run streak; `WATCH`, not yet `DROP` (one Run's recovery isn't 3+ Runs of non-recurrence).
 - **`NEW` — Tailwind class-conflict pattern (no class-merge helper in this repo)**: a shared component's own base sizing/color classes (e.g. `Button`'s `min-h-11 px-5`, `Input`'s `py-2`) can silently lose to a conflicting `className` override, since Tailwind's compiled-CSS order — not JSX class-string order — decides which wins, and this repo has no `tailwind-merge`/`cn()` helper. Found and fixed three separate times within Run UX-03 alone (cross-Slice, not yet cross-Run) before the convention ("use a plain element instead of overriding") was written down in `docs/UX_SPEC.md` §12 item 56 partway through the Run — see `docs/RUNS/2026-09-27-UX-03.md` §13. `WATCH`; a second Run showing the same recurrence would be cross-Run evidence for a lint rule or a `cn()` helper, per `DEVOS_OBSERVABILITY.md` §8.
+- **`NEW` — Long Autonomous Run architecture, first experiment (Run UX-03-QA2, one data point only — see `docs/RUNS/2026-09-28-UX-03-QA2.md` §"DevOS Experiment Review" for full evidence, not duplicated here):** thin parent + fresh scoped workers (`Agent` tool, `subagent_type: general-purpose`, sequential, zero inherited context) produced 4 Slices (3 KEEP + 1 correct STOP) at 15% peak parent context, 0 compactions, 97% cache hit ratio, 1 substantive file read in the main/parent context vs. 62 inside subagents, 0 historical-Run files read. `KEEP candidate` for continuing to use this mechanism on similarly-scoped multi-Slice work; `WATCH` for whether it holds on a second Run and at larger Slice counts before any promotion into `CLAUDE.md`/canonical DevOS policy (explicitly not promoted from this one Run, per the Run's own First-Run Experiment Rule).
 
 Dropped this review (evidence no longer holds, 3+ Runs without recurrence — see
 `docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §3/§7): `src/domain/learning/answer.ts`'s
@@ -589,10 +636,15 @@ from before this Run, unchanged).
   Vercel/GitHub settings remain human actions (ADR-019; see `git status` for
   the ahead count);
 - decide whether/when to merge and deploy `feature/run-ux-03-product-experience`
-  (Run UX-03 + Run UX-03-QA1, COMPLETE locally at `0442c91`, not pushed) — a
-  human decision, not attempted by either Run. A fresh hosted Preview QA
-  pass against this branch (`docs/RUNS/2026-09-27-UX-03-QA1.md` §8) is the
+  (Run UX-03 + Run UX-03-QA1 + Run UX-03-QA2, COMPLETE locally at `3272582`,
+  not pushed) — a human decision, not attempted by any of the three Runs. A
+  fresh hosted Preview QA pass against this branch (see
+  `docs/RUNS/2026-09-28-UX-03-QA2.md` §"Morning Human Review") is the
   recommended next step before that decision;
+- decide the product/schema question blocking FUB-036 (Author-can-learn-
+  their-own-Course): whether `course_memberships` should allow more than one
+  role row per (user, Course) — needed before Run010/Run011 can implement
+  this;
 - decide whether to experiment with the `CHANGE CANDIDATE` Development OS
   observation above (named-negative-case test isolation) before it is
   absorbed into `.claude/rules/testing.md`;

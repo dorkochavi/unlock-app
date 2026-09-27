@@ -3,17 +3,17 @@
 PLAN_VERSION: 003
 RUN_ID: 2026-09-28-UX-03-QA2-AUTONOMOUS-001
 BASE_HEAD: 8f45cc3 (== pushed QA1 HEAD)
-STATUS: IN PROGRESS
+STATUS: **COMPLETE (locally)** — QA2-A/B/C/E done, QA2-D correctly STOPPED (architecture gap, not a failure); see `docs/RUNS/2026-09-28-UX-03-QA2.md` for the full Run report. Final HEAD `3272582`, not merged/pushed/deployed.
 
-This is a Long Autonomous Run experiment: thin parent orchestrator + fresh scoped workers (`Agent` tool, `subagent_type: general-purpose`, one at a time, zero inherited context) per Slice. See the pasted Run brief (not duplicated here) for full scope/decisions/guardrails/stop conditions; this file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4. Not Run010/Run011. All work stays local; no push/merge/deploy.
+This was a Long Autonomous Run experiment: thin parent orchestrator + fresh scoped workers (`Agent` tool, `subagent_type: general-purpose`, one at a time, zero inherited context) per Slice. See the pasted Run brief (not duplicated here) for full scope/decisions/guardrails/stop conditions; this file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4. Not Run010/Run011. All work stayed local; no push/merge/deploy.
 
 ## 0. Slice Queue
 
-1. **QA2-A — Learn Mode feedback + sticky Continue.** Post-submit layout: Question → Feedback/Explanation (in normal flow, not overlay) → annotated options → sticky Continue. Calm, non-punitive tone; correctness not color-only.
-2. **QA2-B — Progress + Courses visual hierarchy.** Whole-card click/keyboard nav, hover/focus/pressed states, restrained accent, Course-level only on Progress (no Topic expansion regression).
-3. **QA2-C — Authoring bounded visual polish.** Question Management visual consistency only; no IA/scalability redesign; preserve bulk publish/Draft/Published/import behavior.
-4. **QA2-D — Author can learn own Course** (gated on existing membership/eligibility architecture supporting it cleanly; STOP this Slice only if not).
-5. **QA2-E — Integrated focused verification + Run close.**
+1. **QA2-A — Learn Mode feedback + sticky Continue (DONE `8f6bdcd`).** Post-submit layout reordered to Question → Feedback/Explanation (in normal flow, not overlay) → annotated options → sticky Continue. Calm, non-punitive tone; correctness not color-only.
+2. **QA2-B — Progress + Courses visual hierarchy (DONE `ca489da`).** Whole-card semantic click/keyboard nav, hover/focus/pressed states, restrained accent, Course-level only on Progress (no Topic expansion regression) confirmed.
+3. **QA2-C — Authoring bounded visual polish (DONE `567b364`).** Question Management row visual consistency (StatusPill) only; no IA/scalability redesign; bulk publish/Draft/Published/import behavior verified unchanged.
+4. **QA2-D — Author can learn own Course (STOPPED `3738975`, docs-only).** `course_memberships` `UNIQUE(user_id, course_id)` + scalar `role` structurally blocks this without a schema decision — recorded `FUB-036`, not implemented ad hoc.
+5. **QA2-E — Integrated focused verification + Run close (DONE `3272582`).** Combined-diff full unit/typecheck/lint/build all clean; `FUB-037` (Question Management Workspace, Run011) recorded.
 
 ## 1. Historical — Run UX-03-QA1 (superseded; reference only — see `docs/RUNS/2026-09-27-UX-03-QA1.md`)
 
