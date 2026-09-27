@@ -3,19 +3,17 @@
  * Course, one Course's Topic list, the Today summary. Do not nest cards;
  * use `Row` dividers inside a card instead.
  */
-import type { ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
-export function Card({
-  as: Tag = "section",
-  className,
-  children,
-}: {
+type CardProps = {
   as?: "section" | "div" | "article" | "li";
   className?: string;
   children: ReactNode;
-}) {
+} & Pick<ComponentPropsWithoutRef<"section">, "aria-labelledby" | "aria-label" | "id">;
+
+export function Card({ as: Tag = "section", className, children, ...rest }: CardProps) {
   return (
-    <Tag className={`rounded-xl border border-border bg-surface p-5 ${className ?? ""}`}>
+    <Tag className={`rounded-xl border border-border bg-surface p-5 ${className ?? ""}`} {...rest}>
       {children}
     </Tag>
   );

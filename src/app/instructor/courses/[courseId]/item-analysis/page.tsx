@@ -15,6 +15,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { Button, ButtonLink } from "@/components/button";
+import { Card } from "@/components/card";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 
 type Band = "MOSTLY_CORRECT" | "MIXED" | "MOSTLY_INCORRECT";
@@ -98,7 +101,7 @@ function interpolate(template: string, values: Record<string, string>): string {
 function BandLine({ disclosure, band }: { disclosure: Disclosure; band: Band | null }) {
   const messages = getMessages().itemAnalysis;
   return (
-    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+    <p className="text-sm text-muted">
       {disclosure === "ELIGIBLE" && band !== null ? messages.band[band] : messages.insufficientData}
     </p>
   );
@@ -160,143 +163,118 @@ export default function InstructorItemAnalysisPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-6 sm:p-10">
-      <main className="flex flex-1 items-start justify-center">
-        {state.kind === "loading" ? (
-          <p className="text-zinc-600 dark:text-zinc-400">{loadingMessage}</p>
-        ) : null}
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
+      {state.kind === "loading" ? <LoadingState label={loadingMessage} /> : null}
 
-        {state.kind === "signed-out" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.signedOutTitle}</p>
-            <Link
-              href="/login"
-              className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.signedOutAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "signed-out" ? (
+        <StateBlock
+          title={messages.signedOutTitle}
+          action={<ButtonLink href="/login">{messages.signedOutAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "notFound" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.notFoundTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.notFoundBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notFound" ? (
+        <StateBlock title={messages.notFoundTitle} body={messages.notFoundBody} />
+      ) : null}
 
-        {state.kind === "notAuthorized" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.notAuthorizedTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.notAuthorizedBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notAuthorized" ? (
+        <StateBlock title={messages.notAuthorizedTitle} body={messages.notAuthorizedBody} />
+      ) : null}
 
-        {state.kind === "notActive" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.courseNotActiveTitle}</p>
+      {state.kind === "notActive" ? (
+        <StateBlock
+          title={messages.courseNotActiveTitle}
+          action={
             <Link
               href={`/instructor/courses/${courseId}`}
-              className="text-sm text-zinc-500 underline dark:text-zinc-400"
+              className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
             >
               {messages.backToCourse}
             </Link>
-          </div>
-        ) : null}
+          }
+        />
+      ) : null}
 
-        {state.kind === "error" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.genericErrorTitle}</p>
-            <button
-              type="button"
-              onClick={retry}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
-            >
+      {state.kind === "error" ? (
+        <StateBlock
+          tone="error"
+          title={messages.genericErrorTitle}
+          action={
+            <Button variant="secondary" onClick={retry}>
               {messages.retry}
-            </button>
-          </div>
-        ) : null}
+            </Button>
+          }
+        />
+      ) : null}
 
-        {state.kind === "ready" ? (
-          <div className="w-full max-w-4xl">
-            <Link
-              href={`/instructor/courses/${courseId}`}
-              className="mb-4 inline-block text-sm text-zinc-500 underline dark:text-zinc-400"
-            >
-              {messages.backToCourse}
-            </Link>
+      {state.kind === "ready" ? (
+        <div className="flex flex-col gap-4">
+          <Link
+            href={`/instructor/courses/${courseId}`}
+            className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {messages.backToCourse}
+          </Link>
 
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">{messages.heading}</h1>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {interpolate(messages.lastUpdated, {
-                    time: new Date(state.generatedAt).toLocaleTimeString("he-IL"),
-                  })}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-                >
-                  {refreshing ? messages.refreshing : messages.refreshAction}
-                </button>
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">{messages.heading}</h1>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted">
+                {interpolate(messages.lastUpdated, {
+                  time: new Date(state.generatedAt).toLocaleTimeString("he-IL"),
+                })}
+              </span>
+              {/* A manual-refresh utility action, not a page-level create/publish
+                  action — secondary, not primary (UX_SPEC §11 item 3). */}
+              <Button variant="secondary" onClick={handleRefresh} disabled={refreshing}>
+                {refreshing ? messages.refreshing : messages.refreshAction}
+              </Button>
             </div>
-            <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">{messages.subheading}</p>
-
-            <section className="mb-8" aria-labelledby="topic-insights-heading">
-              <h2 id="topic-insights-heading" className="mb-3 text-lg font-medium">
-                {messages.topicsHeading}
-              </h2>
-              {state.topics.length === 0 ? (
-                <p className="text-zinc-600 dark:text-zinc-400">{messages.noTopicsTitle}</p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {state.topics.map((topic) => (
-                    <li
-                      key={topic.topicId ?? "no-topic"}
-                      className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-                    >
-                      <p className="mb-2 text-base font-medium">
-                        {topic.topicId === null ? messages.noTopicLabel : topic.name}
-                        {topic.archived ? (
-                          <span className="ms-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">
-                            {messages.archivedTopicLabel}
-                          </span>
-                        ) : null}
-                      </p>
-                      <BandLine disclosure={topic.disclosure} band={topic.band} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section aria-labelledby="item-analysis-heading">
-              <h2 id="item-analysis-heading" className="mb-3 text-lg font-medium">
-                {messages.questionsHeading}
-              </h2>
-              {state.items.length === 0 ? (
-                <p className="text-zinc-600 dark:text-zinc-400">{messages.emptyTitle}</p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {state.items.map((item) => (
-                    <li
-                      key={item.questionId}
-                      className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-                    >
-                      <p className="mb-3 text-base font-medium">{item.prompt}</p>
-                      <BandLine disclosure={item.disclosure} band={item.band} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
           </div>
-        ) : null}
-      </main>
-    </div>
+          <p className="text-sm text-muted">{messages.subheading}</p>
+
+          <Card as="section" aria-labelledby="topic-insights-heading">
+            <h2 id="topic-insights-heading" className="mb-3 text-lg font-semibold">
+              {messages.topicsHeading}
+            </h2>
+            {state.topics.length === 0 ? (
+              <p className="text-muted">{messages.noTopicsTitle}</p>
+            ) : (
+              <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {state.topics.map((topic) => (
+                  <li key={topic.topicId ?? "no-topic"} className="rounded-lg border border-border p-4">
+                    <p className="mb-2 text-base font-medium">
+                      {topic.topicId === null ? messages.noTopicLabel : topic.name}
+                      {topic.archived ? (
+                        <span className="ms-2 text-sm font-normal text-subtle">{messages.archivedTopicLabel}</span>
+                      ) : null}
+                    </p>
+                    <BandLine disclosure={topic.disclosure} band={topic.band} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card as="section" aria-labelledby="item-analysis-heading">
+            <h2 id="item-analysis-heading" className="mb-3 text-lg font-semibold">
+              {messages.questionsHeading}
+            </h2>
+            {state.items.length === 0 ? (
+              <p className="text-muted">{messages.emptyTitle}</p>
+            ) : (
+              <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                {state.items.map((item) => (
+                  <li key={item.questionId} className="rounded-lg border border-border p-4">
+                    <p className="mb-3 text-base font-medium">{item.prompt}</p>
+                    <BandLine disclosure={item.disclosure} band={item.band} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      ) : null}
+    </main>
   );
 }

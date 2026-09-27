@@ -24,6 +24,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { Button, ButtonLink } from "@/components/button";
+import { Card } from "@/components/card";
+import { Input, Label, Select, Textarea } from "@/components/input";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 import type { CourseStatus } from "@/domain/course/types";
 
@@ -394,90 +398,76 @@ export default function InstructorQuestionEditorPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-6 sm:p-10">
-      <main className="flex flex-1 items-start justify-center">
-        {state.kind === "loading" ? (
-          <p className="text-zinc-600 dark:text-zinc-400">{messages.questionEditor.loading}</p>
-        ) : null}
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:max-w-3xl">
+      {state.kind === "loading" ? <LoadingState label={messages.questionEditor.loading} /> : null}
 
-        {state.kind === "signed-out" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.questionEditor.signedOutTitle}</p>
-            <Link
-              href="/login"
-              className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.questionEditor.signedOutAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "signed-out" ? (
+        <StateBlock
+          title={messages.questionEditor.signedOutTitle}
+          action={<ButtonLink href="/login">{messages.questionEditor.signedOutAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "notFound" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.questionEditor.notFoundTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.questionEditor.notFoundBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notFound" ? (
+        <StateBlock title={messages.questionEditor.notFoundTitle} body={messages.questionEditor.notFoundBody} />
+      ) : null}
 
-        {state.kind === "notAuthorized" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.questionEditor.notAuthorizedTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.questionEditor.notAuthorizedBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notAuthorized" ? (
+        <StateBlock
+          title={messages.questionEditor.notAuthorizedTitle}
+          body={messages.questionEditor.notAuthorizedBody}
+        />
+      ) : null}
 
-        {state.kind === "error" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.questionEditor.genericErrorTitle}</p>
-            <button
-              type="button"
-              onClick={() => setRetryCount((count) => count + 1)}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
-            >
+      {state.kind === "error" ? (
+        <StateBlock
+          tone="error"
+          title={messages.questionEditor.genericErrorTitle}
+          action={
+            <Button variant="secondary" onClick={() => setRetryCount((count) => count + 1)}>
               {messages.questionEditor.retry}
-            </button>
-          </div>
-        ) : null}
+            </Button>
+          }
+        />
+      ) : null}
 
-        {state.kind === "ready" ? (
-          <div className="w-full max-w-2xl">
-            <Link
-              href={`/instructor/courses/${courseId}`}
-              className="mb-4 inline-block text-sm text-zinc-500 underline dark:text-zinc-400"
-            >
-              {messages.questionEditor.backToCourse}
-            </Link>
+      {state.kind === "ready" ? (
+        <div className="flex flex-col gap-4">
+          <Link
+            href={`/instructor/courses/${courseId}`}
+            className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {messages.questionEditor.backToCourse}
+          </Link>
 
-            <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
-              {messages.questionEditor.stateLabel[state.question.state]}
+          <p className="text-sm text-muted">{messages.questionEditor.stateLabel[state.question.state]}</p>
+
+          {state.courseStatus === "ARCHIVED" ? (
+            <p className="rounded-lg border border-border p-3 text-sm text-muted">
+              {messages.questionEditor.archivedNotice}
             </p>
+          ) : null}
 
-            {state.courseStatus === "ARCHIVED" ? (
-              <p className="mb-6 rounded-md border border-zinc-200 p-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-                {messages.questionEditor.archivedNotice}
-              </p>
-            ) : null}
+          {/* No dedicated "informational notice" token exists; reusing the amber
+              state-reinforce role here (same visual semantic as NEEDS_REINFORCEMENT
+              — a pending, not-yet-final state) rather than a raw amber-* color. */}
+          {state.question.state === "DRAFT_ONLY" ? (
+            <p className="rounded-lg border border-state-reinforce/30 bg-state-reinforce-soft p-3 text-sm text-state-reinforce">
+              {messages.questionEditor.draftNoticeNeverPublished}
+            </p>
+          ) : null}
+          {state.question.state === "PUBLISHED_WITH_DRAFT_CHANGES" ? (
+            <p className="rounded-lg border border-state-reinforce/30 bg-state-reinforce-soft p-3 text-sm text-state-reinforce">
+              {messages.questionEditor.draftNoticePendingChanges}
+            </p>
+          ) : null}
 
-            {state.question.state === "DRAFT_ONLY" ? (
-              <p className="mb-6 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                {messages.questionEditor.draftNoticeNeverPublished}
-              </p>
-            ) : null}
-            {state.question.state === "PUBLISHED_WITH_DRAFT_CHANGES" ? (
-              <p className="mb-6 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                {messages.questionEditor.draftNoticePendingChanges}
-              </p>
-            ) : null}
-
-            <fieldset disabled={state.courseStatus === "ARCHIVED"} className="disabled:opacity-60">
-              <form onSubmit={handleSave} className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <fieldset disabled={state.courseStatus === "ARCHIVED"} className="disabled:opacity-60">
+            <Card as="section">
+              <form onSubmit={handleSave} className="flex flex-col gap-4">
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium">{messages.questionEditor.topicLabel}</span>
-                  <select
-                    value={topicIdDraft}
-                    onChange={(event) => setTopicIdDraft(event.target.value)}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                  >
+                  <Label>{messages.questionEditor.topicLabel}</Label>
+                  <Select value={topicIdDraft} onChange={(event) => setTopicIdDraft(event.target.value)}>
                     <option value="">{messages.questionEditor.topicPlaceholder}</option>
                     {/* The currently-associated Topic may be archived (Run 006 S1 decision #10: no forced
                         reassociation) and therefore absent from `state.topics` (active-only) — shown here
@@ -496,34 +486,32 @@ export default function InstructorQuestionEditorPage() {
                         {topic.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium">{messages.questionEditor.typeLabel}</span>
-                  <select
+                  <Label>{messages.questionEditor.typeLabel}</Label>
+                  <Select
                     value={questionTypeDraft}
                     onChange={(event) => handleQuestionTypeChange(event.target.value as QuestionType)}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                   >
                     <option value="SINGLE_CHOICE">{messages.questionEditor.typeOption.SINGLE_CHOICE}</option>
                     <option value="MULTIPLE_CHOICE">{messages.questionEditor.typeOption.MULTIPLE_CHOICE}</option>
-                  </select>
+                  </Select>
                 </label>
 
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium">{messages.questionEditor.promptLabel}</span>
-                  <textarea
+                  <Label>{messages.questionEditor.promptLabel}</Label>
+                  <Textarea
                     value={promptDraft}
                     onChange={(event) => setPromptDraft(event.target.value)}
                     placeholder={messages.questionEditor.promptPlaceholder}
                     rows={3}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                   />
                 </label>
 
                 <div>
-                  <span className="mb-2 block text-sm font-medium">{messages.questionEditor.optionsHeading}</span>
+                  <Label>{messages.questionEditor.optionsHeading}</Label>
                   <ul className="flex flex-col gap-2">
                     {optionsDraft.map((option) => (
                       <li key={option.id} className="flex items-center gap-2">
@@ -538,58 +526,49 @@ export default function InstructorQuestionEditorPage() {
                               : messages.questionEditor.correctMultipleLabel
                           }
                         />
-                        <input
+                        <Input
                           type="text"
                           value={option.content}
                           onChange={(event) => handleOptionContentChange(option.id, event.target.value)}
                           placeholder={messages.questionEditor.optionContentPlaceholder}
-                          className="min-w-0 flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                          className="min-w-0 flex-1 text-sm"
                         />
                         <button
                           type="button"
                           onClick={() => handleRemoveOption(option.id)}
-                          className="shrink-0 text-sm text-red-600 underline dark:text-red-400"
+                          className="shrink-0 text-sm text-danger underline-offset-4 hover:underline"
                         >
                           {messages.questionEditor.removeOptionAction}
                         </button>
                       </li>
                     ))}
                   </ul>
-                  <button
-                    type="button"
-                    onClick={handleAddOption}
-                    className="mt-2 rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium dark:border-zinc-700"
-                  >
+                  <Button variant="secondary" onClick={handleAddOption} className="mt-2">
                     {messages.questionEditor.addOptionAction}
-                  </button>
+                  </Button>
                 </div>
 
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium">{messages.questionEditor.explanationLabel}</span>
-                  <textarea
+                  <Label>{messages.questionEditor.explanationLabel}</Label>
+                  <Textarea
                     value={explanationDraft}
                     onChange={(event) => setExplanationDraft(event.target.value)}
                     placeholder={messages.questionEditor.explanationPlaceholder}
                     rows={2}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
                   />
                 </label>
 
-                {saveError ? <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p> : null}
+                {saveError ? <p className="text-sm text-danger">{saveError}</p> : null}
                 {!saveError && savedAt !== null ? (
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                    {messages.questionEditor.saveSuccess}
-                  </p>
+                  <p className="text-sm text-state-solid">{messages.questionEditor.saveSuccess}</p>
                 ) : null}
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="self-start rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-                  >
+                  {/* Save is a local form action, not the page-level primary (UX_SPEC §11 item 3) —
+                      Publish/Re-publish carries that weight below when it is available. */}
+                  <Button variant="secondary" type="submit" disabled={saving}>
                     {saving ? messages.questionEditor.saving : messages.questionEditor.saveAction}
-                  </button>
+                  </Button>
 
                   {/* Publish/Re-publish: only when there is real pending content to publish
                       (DRAFT_ONLY or PUBLISHED_WITH_DRAFT_CHANGES) — a plain PUBLISHED Question
@@ -597,32 +576,25 @@ export default function InstructorQuestionEditorPage() {
                       by S5's NOTHING_TO_PUBLISH outcome; this hides the action for that case
                       rather than relying only on the server to reject it). */}
                   {state.question.state !== "PUBLISHED" ? (
-                    <button
-                      type="button"
-                      onClick={handlePublish}
-                      disabled={publishing}
-                      className="self-start rounded-md border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 disabled:opacity-50 dark:border-emerald-500 dark:text-emerald-400"
-                    >
+                    <Button onClick={handlePublish} disabled={publishing}>
                       {publishing
                         ? messages.questionEditor.publishing
                         : state.question.state === "DRAFT_ONLY"
                           ? messages.questionEditor.publishAction
                           : messages.questionEditor.republishAction}
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
 
-                {publishError ? <p className="text-sm text-red-600 dark:text-red-400">{publishError}</p> : null}
+                {publishError ? <p className="text-sm text-danger">{publishError}</p> : null}
                 {!publishError && publishedAt !== null ? (
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                    {messages.questionEditor.publishSuccess}
-                  </p>
+                  <p className="text-sm text-state-solid">{messages.questionEditor.publishSuccess}</p>
                 ) : null}
               </form>
-            </fieldset>
-          </div>
-        ) : null}
-      </main>
-    </div>
+            </Card>
+          </fieldset>
+        </div>
+      ) : null}
+    </main>
   );
 }

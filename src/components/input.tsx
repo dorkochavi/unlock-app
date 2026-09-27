@@ -17,6 +17,10 @@ export function Select({ className, ...rest }: ComponentProps<"select">) {
   return <select className={`${FIELD_BASE} ${className ?? ""}`} {...rest} />;
 }
 
+export function Textarea({ className, ...rest }: ComponentProps<"textarea">) {
+  return <textarea className={`${FIELD_BASE} ${className ?? ""}`} {...rest} />;
+}
+
 export function Label({ children, className }: { children: ReactNode; className?: string }) {
   return <span className={`mb-1 block text-sm font-medium ${className ?? ""}`}>{children}</span>;
 }

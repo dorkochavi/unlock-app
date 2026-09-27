@@ -22,6 +22,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { Button, ButtonLink } from "@/components/button";
+import { Card } from "@/components/card";
+import { Label, Select, Textarea } from "@/components/input";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 import type { CourseStatus } from "@/domain/course/types";
 
@@ -288,211 +292,185 @@ export default function InstructorImportPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-6 sm:p-10">
-      <main className="flex flex-1 items-start justify-center">
-        {state.kind === "loading" ? (
-          <p className="text-zinc-600 dark:text-zinc-400">{messages.instructor.manage.loading}</p>
-        ) : null}
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:max-w-4xl">
+      {state.kind === "loading" ? <LoadingState label={messages.instructor.manage.loading} /> : null}
 
-        {state.kind === "signed-out" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.importQuestions.signedOutTitle}</p>
-            <Link
-              href="/login"
-              className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.importQuestions.signedOutAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "signed-out" ? (
+        <StateBlock
+          title={messages.importQuestions.signedOutTitle}
+          action={<ButtonLink href="/login">{messages.importQuestions.signedOutAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "notFound" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.importQuestions.notFoundTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.importQuestions.notFoundBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notFound" ? (
+        <StateBlock title={messages.importQuestions.notFoundTitle} body={messages.importQuestions.notFoundBody} />
+      ) : null}
 
-        {state.kind === "notAuthorized" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.importQuestions.notAuthorizedTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.importQuestions.notAuthorizedBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notAuthorized" ? (
+        <StateBlock
+          title={messages.importQuestions.notAuthorizedTitle}
+          body={messages.importQuestions.notAuthorizedBody}
+        />
+      ) : null}
 
-        {state.kind === "error" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.importQuestions.genericErrorTitle}</p>
-            <button
-              type="button"
-              onClick={() => setRetryCount((count) => count + 1)}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
-            >
+      {state.kind === "error" ? (
+        <StateBlock
+          tone="error"
+          title={messages.importQuestions.genericErrorTitle}
+          action={
+            <Button variant="secondary" onClick={() => setRetryCount((count) => count + 1)}>
               {messages.importQuestions.retry}
-            </button>
-          </div>
-        ) : null}
+            </Button>
+          }
+        />
+      ) : null}
 
-        {state.kind === "ready" ? (
-          <div className="w-full max-w-2xl">
-            <Link
-              href={`/instructor/courses/${courseId}`}
-              className="mb-4 inline-block text-sm text-zinc-500 underline dark:text-zinc-400"
-            >
-              {messages.importQuestions.backToCourse}
-            </Link>
+      {state.kind === "ready" ? (
+        <div className="flex flex-col gap-4">
+          <Link
+            href={`/instructor/courses/${courseId}`}
+            className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {messages.importQuestions.backToCourse}
+          </Link>
 
-            <h1 className="mb-6 text-2xl font-semibold tracking-tight">{messages.importQuestions.heading}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{messages.importQuestions.heading}</h1>
 
-            {state.courseStatus === "ARCHIVED" ? (
-              <p className="mb-6 rounded-md border border-zinc-200 p-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-                {messages.importQuestions.archivedNotice}
+          {state.courseStatus === "ARCHIVED" ? (
+            <p className="rounded-lg border border-border p-3 text-sm text-muted">
+              {messages.importQuestions.archivedNotice}
+            </p>
+          ) : null}
+
+          <fieldset disabled={state.courseStatus === "ARCHIVED"} className="disabled:opacity-60">
+            <Card as="section">
+              <div className="flex flex-col gap-4">
+                <label className="block">
+                  <Label>{messages.importQuestions.formatLabel}</Label>
+                  <Select
+                    value={format}
+                    onChange={(event) => handleFormatChange(event.target.value as ImportFormat)}
+                  >
+                    <option value="JSON">{messages.importQuestions.formatOption.JSON}</option>
+                    <option value="CSV">{messages.importQuestions.formatOption.CSV}</option>
+                  </Select>
+                </label>
+
+                <label className="block">
+                  <Label>{messages.importQuestions.sourceLabel}</Label>
+                  <Textarea
+                    value={sourceText}
+                    onChange={(event) => handleSourceTextChange(event.target.value)}
+                    placeholder={messages.importQuestions.sourcePlaceholder}
+                    rows={10}
+                    className="font-mono text-sm"
+                  />
+                </label>
+
+                <label className="block">
+                  <Label>{messages.importQuestions.uploadAction}</Label>
+                  <input
+                    type="file"
+                    accept=".json,.csv,text/csv,application/json"
+                    onChange={handleUploadFile}
+                    className="w-full text-sm text-muted"
+                  />
+                </label>
+
+                <div>
+                  <Button
+                    variant="secondary"
+                    onClick={handlePreview}
+                    disabled={previewState.kind === "loading" || sourceText.trim() === ""}
+                  >
+                    {previewState.kind === "loading"
+                      ? messages.importQuestions.previewing
+                      : messages.importQuestions.previewAction}
+                  </Button>
+                </div>
+
+                {previewState.kind === "error" ? <p className="text-sm text-danger">{previewState.message}</p> : null}
+              </div>
+            </Card>
+          </fieldset>
+
+          {previewState.kind === "ready" ? (
+            <Card as="section">
+              <p className="mb-4 text-sm font-medium">
+                {interpolate(messages.importQuestions.summary, {
+                  validCount: String(previewState.preview.validCount),
+                  totalRows: String(previewState.preview.totalRows),
+                  invalidCount: String(previewState.preview.invalidCount),
+                })}
               </p>
-            ) : null}
 
-            <fieldset
-              disabled={state.courseStatus === "ARCHIVED"}
-              className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4 disabled:opacity-60 dark:border-zinc-800"
-            >
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">{messages.importQuestions.formatLabel}</span>
-                <select
-                  value={format}
-                  onChange={(event) => handleFormatChange(event.target.value as ImportFormat)}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-                >
-                  <option value="JSON">{messages.importQuestions.formatOption.JSON}</option>
-                  <option value="CSV">{messages.importQuestions.formatOption.CSV}</option>
-                </select>
-              </label>
+              <h2 className="mb-2 text-sm font-medium">{messages.importQuestions.rowsHeading}</h2>
+              <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                {previewState.preview.rows.map((row) => (
+                  <li key={row.sourceRowNumber} className="rounded-lg border border-border px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">
+                        {interpolate(messages.importQuestions.rowNumber, {
+                          number: String(row.sourceRowNumber),
+                        })}
+                      </span>
+                      <span className={row.outcome === "VALID" ? "text-state-solid" : "text-danger"}>
+                        {row.outcome === "VALID" ? messages.importQuestions.rowValid : messages.importQuestions.rowInvalid}
+                      </span>
+                    </div>
+                    {row.outcome === "VALID" ? (
+                      <p className="mt-1 truncate text-muted" title={row.prompt ?? undefined}>
+                        {row.prompt}
+                      </p>
+                    ) : (
+                      <ul className="mt-1 list-inside list-disc text-danger">
+                        {row.errors?.map((error, index) => <li key={index}>{error}</li>)}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">{messages.importQuestions.sourceLabel}</span>
-                <textarea
-                  value={sourceText}
-                  onChange={(event) => handleSourceTextChange(event.target.value)}
-                  placeholder={messages.importQuestions.sourcePlaceholder}
-                  rows={10}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">{messages.importQuestions.uploadAction}</span>
-                <input
-                  type="file"
-                  accept=".json,.csv,text/csv,application/json"
-                  onChange={handleUploadFile}
-                  className="w-full text-sm"
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={handlePreview}
-                disabled={previewState.kind === "loading" || sourceText.trim() === ""}
-                className="self-start rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-              >
-                {previewState.kind === "loading"
-                  ? messages.importQuestions.previewing
-                  : messages.importQuestions.previewAction}
-              </button>
-
-              {previewState.kind === "error" ? (
-                <p className="text-sm text-red-600 dark:text-red-400">{previewState.message}</p>
+              {previewState.preview.invalidCount > 0 ? (
+                <p className="mt-4 text-sm text-state-reinforce">{messages.importQuestions.confirmDisabledHint}</p>
               ) : null}
-            </fieldset>
 
-            {previewState.kind === "ready" ? (
-              <div className="mt-6 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <p className="mb-4 text-sm font-medium">
-                  {interpolate(messages.importQuestions.summary, {
-                    validCount: String(previewState.preview.validCount),
-                    totalRows: String(previewState.preview.totalRows),
-                    invalidCount: String(previewState.preview.invalidCount),
-                  })}
-                </p>
-
-                <h2 className="mb-2 text-sm font-medium">{messages.importQuestions.rowsHeading}</h2>
-                <ul className="flex flex-col gap-2">
-                  {previewState.preview.rows.map((row) => (
-                    <li
-                      key={row.sourceRowNumber}
-                      className="rounded-md border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">
-                          {interpolate(messages.importQuestions.rowNumber, {
-                            number: String(row.sourceRowNumber),
-                          })}
-                        </span>
-                        <span
-                          className={
-                            row.outcome === "VALID"
-                              ? "text-emerald-700 dark:text-emerald-400"
-                              : "text-red-600 dark:text-red-400"
-                          }
-                        >
-                          {row.outcome === "VALID"
-                            ? messages.importQuestions.rowValid
-                            : messages.importQuestions.rowInvalid}
-                        </span>
-                      </div>
-                      {row.outcome === "VALID" ? (
-                        <p className="mt-1 truncate text-zinc-600 dark:text-zinc-400" title={row.prompt ?? undefined}>
-                          {row.prompt}
-                        </p>
-                      ) : (
-                        <ul className="mt-1 list-inside list-disc text-red-600 dark:text-red-400">
-                          {row.errors?.map((error, index) => <li key={index}>{error}</li>)}
-                        </ul>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-
-                {previewState.preview.invalidCount > 0 ? (
-                  <p className="mt-4 text-sm text-amber-700 dark:text-amber-400">
-                    {messages.importQuestions.confirmDisabledHint}
+              {confirmState.kind === "success" ? (
+                <div className="mt-4 rounded-lg border border-state-solid/30 bg-state-solid-soft p-3 text-sm text-state-solid">
+                  <p className="mb-2">
+                    {interpolate(messages.importQuestions.confirmSuccess, {
+                      createdCount: String(confirmState.createdCount),
+                    })}
                   </p>
-                ) : null}
-
-                {confirmState.kind === "success" ? (
-                  <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-                    <p className="mb-2">
-                      {interpolate(messages.importQuestions.confirmSuccess, {
-                        createdCount: String(confirmState.createdCount),
-                      })}
-                    </p>
-                    <Link href={`/instructor/courses/${courseId}`} className="underline">
-                      {messages.importQuestions.viewQuestionsAction}
-                    </Link>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
+                  <Link
+                    href={`/instructor/courses/${courseId}`}
+                    className="underline-offset-4 hover:underline"
+                  >
+                    {messages.importQuestions.viewQuestionsAction}
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <Button
                     onClick={handleConfirm}
                     disabled={
                       confirmState.kind === "loading" ||
                       state.courseStatus === "ARCHIVED" ||
                       previewState.preview.invalidCount > 0
                     }
-                    className="mt-4 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-emerald-600"
                   >
                     {confirmState.kind === "loading"
                       ? messages.importQuestions.confirming
                       : messages.importQuestions.confirmAction}
-                  </button>
-                )}
+                  </Button>
+                </div>
+              )}
 
-                {confirmState.kind === "error" ? (
-                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{confirmState.message}</p>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </main>
-    </div>
+              {confirmState.kind === "error" ? <p className="mt-2 text-sm text-danger">{confirmState.message}</p> : null}
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
+    </main>
   );
 }
