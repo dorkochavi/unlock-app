@@ -227,3 +227,10 @@ Extends §7 (learner-scoped) to the whole product:
 57. Desktop composition on Browse-mode/authoring pages is a deliberate layout decision per page (wider container,
     grouping, optional multi-column), not a fixed `max-w-2xl` applied everywhere out of habit — but Learn Mode's own
     constrained-width rule (§5 item 24) is unchanged.
+58. Sign-out (Run UX-03-QA1 Finding 12): ONE shared top-left affordance per authenticated shell — the learner shell's
+    `LearnerUtilityBar` (`src/app/(learner)/learner-utility-bar.tsx`, rendered once by `layout.tsx` above every
+    Browse-mode page) and the instructor shell's own header (`src/app/instructor/layout.tsx`). Never a per-page local
+    sign-out button. "Top-left" is achieved via a `justify-between`/`justify-end` row's trailing child, which already
+    renders on the visual left in this RTL-first app (no manual left/right logic). Hidden during Learn Mode — it must
+    never render simultaneously with Learn Mode's own `יציאה`; the two are structurally mutually exclusive, not
+    visually de-emphasized against each other.
