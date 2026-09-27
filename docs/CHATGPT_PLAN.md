@@ -1,8 +1,52 @@
-# UNLOCK — Run UX-03 — Product Experience, Visual System & Usability
+# UNLOCK — Run UX-03-QA1 — Preview QA Corrections
 
-PLAN_VERSION: 001
-RUN_ID: 2026-09-27-UX-03
-BASE_HEAD: d7c6f57
+PLAN_VERSION: 002
+RUN_ID: 2026-09-27-UX-03-QA1
+BASE_HEAD: 8b98dcb
+STATUS: IN PROGRESS
+
+This is a pre-merge correction Run, NOT Run 010/011. Run UX-03 was completed locally and pushed to Preview; the product owner then performed hands-on QA using a real 30-question course (`מבוא לכלכלה התנהגותית — QA`) and filed 15 findings. See the pasted Run brief (not duplicated here) for full scope, per-finding detail, guardrails and stop conditions; this file owns the ordered Slice queue, classification table and status only, per `CLAUDE.md` §2/§4. All work stays local on `feature/run-ux-03-product-experience`; no push/merge/deploy; Run 010/011 are not started.
+
+## 0. Finding Classification
+
+| # | Finding | Class | Slice |
+|---|---|---|---|
+| 1 | Bulk review/publish for imported Questions | IMPLEMENT NOW (reuse `publishQuestion` per-id, no new source-of-truth) | QA1-E |
+| 2 | Explanation after every submitted answer | IMPLEMENT NOW | QA1-B |
+| 3 | Reveal correct answer(s) after submission | IMPLEMENT NOW | QA1-B |
+| 4 | Answer-option order must not teach the test | IMPLEMENT NOW (client-side stable per-presentation shuffle) | QA1-B |
+| 5 | Question order must not mirror import/ID order | IMPLEMENT NOW, tie-break only (Topic-interleave among fully-tied NBA candidates; no ranking/priority change) | QA1-C |
+| 6 | Assessment-pattern leakage (position/length/style bias in content) | RECORD FOR RUN 011 (content-quality critic) | — |
+| 7 | Practice batch completion learning summary | IMPLEMENT NOW (existing batch data only) | QA1-C |
+| 8 | Practice must not dead-end (open-ended same-day repetition) | DESIGN + RECORD FOR RUN 010 (evidence/scheduler semantics) — NOT implemented this Run | QA1-C (record only) |
+| 9 | Today plan size / Daily Plan Budget | DESIGN + RECORD FOR RUN 010 — NOT changed this Run | QA1-C (record only) |
+| 10 | Progress: acknowledge effort before mastery certainty | IMPLEMENT NOW (existing attempted/total data only) | QA1-D |
+| 11 | Topic detail off top-level Progress, into Course context | IMPLEMENT NOW | QA1-D |
+| 12 | Consistent top-left logout | IMPLEMENT NOW | QA1-F |
+| 13 | Canonical Hebrew label `"היום שלי"` | IMPLEMENT NOW (copy audit) | QA1-F |
+| 14 | Hosted loading feels slow | IMPLEMENT NOW where measured/evidence-backed; else recorded | QA1-G |
+| 15 | Learning-not-grading tone | IMPLEMENT NOW (folded into QA1-B/C copy) | QA1-B/C |
+| PARTIAL | MULTIPLE_CHOICE "partially correct" | Confirmed: no canonical PARTIAL outcome exists (`isCorrect: boolean` only, `src/domain/learning/answer.ts`/`types.ts`). RECORD FOR RUN 010; not invented this Run. | QA1-B (record) |
+
+## 1. Slice Queue
+
+1. **QA1-A — Grounding + Run plan.** DONE — findings verified against repository reality (explanation/correct-answer columns exist and are already excluded from the pre-answer learner-safe read path `LearnerQuestionContentRepository`/`PostgresLearnerQuestionContentRepository`; grading is `isCorrect: boolean` only, no PARTIAL; NBA ranking's final tie-break is plain `questionId` ascending, shared with Today generation — must not be touched directly; Progress/Course page IA already split the right way structurally (Course page already renders `TopicList`); `publishQuestion` is a clean single-Question transaction safe to call per-id in a loop for bulk publish).
+2. **QA1-B — Learning feedback.** Post-submit explanation + correct-answer reveal for Today and Practice (shared `QuestionCard`); new POST-submit-only `AnswerFeedbackContentRepository` read path (explicitly separate from the pre-answer-safe `LearnerQuestionContentRepository`); stable per-presentation answer-option shuffle; tone pass; security/negative tests proving explanation/correct-answer never appear pre-submit.
+3. **QA1-C — Practice presentation.** Batch-completion learning summary (existing batch counts only); Topic-interleave tie-break for Practice candidate ordering (post-ranking, ranking itself untouched, Today untouched); Findings 8/9 recorded for Run 010 (not implemented).
+4. **QA1-D — Progress + IA + motivation.** Progress becomes Course-level + activity-based summary; Topic detail stays only on the Course page (already correct there); restrained evidence-grounded activity copy.
+5. **QA1-E — Instructor bulk publish.** Selection + "Publish selected" / "Publish all valid" on the Course-manage Questions list, calling the existing `publishQuestion` use case once per selected id (no new transaction spanning multiple Questions, no new persistence model); honest partial-failure reporting.
+6. **QA1-F — Shell/copy.** Consistent top-left logout via the shared learner/instructor shell; canonical `"היום שלי"` Hebrew copy audit (3 non-compliant strings found: `progress.backToToday`, `progress.goToToday`, `courseView.goToToday`).
+7. **QA1-G — Loading/performance.** Measure representative journeys; low-risk evidence-backed fixes only; honest local-vs-hosted evidence labeling.
+8. **QA1-H — Integrated verification + Run close.** Full QA matrix, docs, telemetry summary, commit chain, STOP.
+
+## 2. Guardrails (unchanged from Run UX-03, still binding)
+
+No new Learning Engine/scheduler/mastery/PARTIAL semantics; no Today mutation; no new persistence/schema beyond what is explicitly justified; no push/merge/deploy/hosted mutation; Hebrew/RTL-first, mobile-first; Visual Contract (`docs/UX_SPEC.md` §11-§12) remains authoritative.
+
+---
+
+## Historical — Run UX-03 Plan (superseded; reference only — see `docs/RUNS/2026-09-27-UX-03.md` for the Run report)
+
 STATUS: **COMPLETE (locally)** — all Slices UX3-1 through UX3-7 done; see `docs/RUNS/2026-09-27-UX-03.md` for the full Run report. Phase A audit COMPLETE (`7d04f47`). UX3-1 COMPLETE + product-owner checkpoint APPROVED WITH CALIBRATION CORRECTIONS (`9eefe3d`, `01fd917`) — Visual Contract recorded in `docs/UX_SPEC.md` §11-§12. UX3-2 COMPLETE (`c969e69`). UX3-3 COMPLETE (`46bb7ee`). UX3-4 COMPLETE (`770b374`). UX3-6 COMPLETE (`b81ff01`). UX3-5 COMPLETE (`f5ca16c`). UX3-7 COMPLETE (`e6b91da` + this Run report). Final HEAD `e6b91da`, not merged/pushed/deployed. Fresh RUN_ID established per DevOS longitudinal review recommendation (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §8.2) so UX-03 telemetry is not attributed to the closed `2026-09-26-UX-02` folder. Run UX-02's own plan content is preserved below this Run's own content is written above it, and the full historical UX-02 plan/carried-over Slice-B table is retained further down for reference until archived.
 
 This Run is mostly autonomous, with one intentional product-owner checkpoint after UX3-1 (visual-system direction). See the pasted Run brief (not duplicated here) for full scope, decisions, guardrails, and stop conditions; this file owns the ordered Slice queue only, per `CLAUDE.md` §2/§4.
