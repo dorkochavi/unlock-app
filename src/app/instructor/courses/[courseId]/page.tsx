@@ -28,6 +28,8 @@ import { getMessages } from "@/messages";
 import { canSelfJoinCourse, type CourseJoinPolicy, type CourseStatus } from "@/domain/course/types";
 import { canOpenAnswerAnalysis } from "@/domain/insights/analysis-entry";
 
+import { QuestionRow } from "./question-row";
+
 interface CourseAuthoringDto {
   id: string;
   title: string;
@@ -862,7 +864,7 @@ export default function InstructorCourseManagePage() {
                 {questionsState.questions.length === 0 ? (
                   <p className="mb-3 text-sm text-muted">{messages.instructor.manage.questions.emptyTitle}</p>
                 ) : (
-                  <ul className="mb-4 flex flex-col gap-2">
+                  <ul className="mb-4 divide-y divide-border">
                     {questionsState.questions.map((question) => {
                       const topic = question.topicId !== null ? questionsState.topicById[question.topicId] : undefined;
                       const topicLabel = topic
@@ -872,41 +874,21 @@ export default function InstructorCourseManagePage() {
                         question.draft.prompt ?? questionsState.publishedPromptByQuestionId[question.id] ?? null;
                       const publishable = question.state !== "PUBLISHED";
                       return (
-                        <li
+                        <QuestionRow
                           key={question.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
-                        >
-                          <div className="flex min-w-0 flex-1 items-center gap-2">
-                            {publishable && state.course.status !== "ARCHIVED" ? (
-                              <input
-                                type="checkbox"
-                                checked={selectedQuestionIds.has(question.id)}
-                                onChange={() => toggleQuestionSelection(question.id)}
-                                aria-label={interpolate(
-                                  messages.instructor.manage.questions.selectQuestionLabel,
-                                  { prompt: displayPrompt ?? messages.instructor.manage.questions.untitled },
-                                )}
-                                className="size-4 shrink-0 accent-primary"
-                              />
-                            ) : null}
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm" title={displayPrompt ?? undefined}>
-                                {displayPrompt ?? messages.instructor.manage.questions.untitled}
-                              </p>
-                              <p className="mt-0.5 text-xs text-subtle">
-                                {topicLabel}
-                                {" · "}
-                                {messages.instructor.manage.questions.stateLabel[question.state]}
-                              </p>
-                            </div>
-                          </div>
-                          <Link
-                            href={`/instructor/courses/${courseId}/questions/${question.id}`}
-                            className="shrink-0 text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
-                          >
-                            {messages.instructor.manage.questions.editAction}
-                          </Link>
-                        </li>
+                          displayPrompt={displayPrompt ?? messages.instructor.manage.questions.untitled}
+                          topicLabel={topicLabel}
+                          state={question.state}
+                          stateLabel={messages.instructor.manage.questions.stateLabel[question.state]}
+                          selectable={publishable && state.course.status !== "ARCHIVED"}
+                          selected={selectedQuestionIds.has(question.id)}
+                          onToggleSelected={() => toggleQuestionSelection(question.id)}
+                          selectAriaLabel={interpolate(messages.instructor.manage.questions.selectQuestionLabel, {
+                            prompt: displayPrompt ?? messages.instructor.manage.questions.untitled,
+                          })}
+                          editHref={`/instructor/courses/${courseId}/questions/${question.id}`}
+                          editLabel={messages.instructor.manage.questions.editAction}
+                        />
                       );
                     })}
                   </ul>
