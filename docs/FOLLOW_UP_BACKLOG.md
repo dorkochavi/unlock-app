@@ -1218,6 +1218,24 @@ implementation Slice invent it ad hoc.
 
 ---
 
+# FUB-037 — Question Management Workspace (Search/Filter/Pagination/Review Queue)
+
+**Status:** `RECORDED — owned by Run 011`
+**Area:** Instructor Question Management (`src/app/instructor/courses/[courseId]/page.tsx`, `question-row.tsx`)
+
+QA2-C (bounded visual polish of the per-row Question Management markup — `StatusPill`, divider rows) left
+the underlying list itself unchanged: it still renders every Question in one flat, unpaginated list with no
+search, no state/topic filter, and no dedicated review-queue view for pending-draft Questions. That is fine
+at current pilot scale but will not hold as a Course's Question count grows. A future Slice should design a
+real Question Management workspace (search, filter by state/Topic, pagination or virtualization, and a
+focused review queue) rather than an implementation Slice inventing this ad hoc.
+
+## Promotion Trigger
+
+Inside Run 011, once Question-list scale (or instructor feedback) makes the flat list impractical.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.
