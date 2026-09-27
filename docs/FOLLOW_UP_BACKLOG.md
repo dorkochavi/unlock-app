@@ -1093,6 +1093,34 @@ Real pilot usage showing any of the above, or the FUB-025 idempotency fix.
 
 ---
 
+# FUB-033 — UX3-1 Visual System Polish Leftovers (Run UX-03)
+
+**Status:** `LATENT` (cosmetic only, no defect)
+**Area:** Instructor Course-manage page / visual system
+
+Recorded during Run UX-03 UX3-1 general review; both are pre-existing choices carried through the token migration
+unchanged, not new decisions, and neither blocks the Slice or the Run.
+
+- **Archive-action color inconsistency.** "Archive Course" (Course-manage page, transition card) renders as a neutral
+  `secondary` button while "Remove Topic" (same page, Topics card) renders in `text-danger` red. Both are
+  destructive-ish, non-undoable lifecycle actions but are weighted/colored differently — this was already true before
+  the migration (`bg-zinc-900`-bordered vs `text-red-600`); the token migration remapped it faithfully rather than
+  deciding it. Worth a single deliberate color-hierarchy decision across both actions if a future UX Slice touches
+  this page again.
+- **Two simultaneous primary CTAs on the instructor Course-manage page.** In the DRAFT-course ready state, "Save"
+  (details form) and "Publish" (transition card) can both render as `variant="primary"` at once.
+  `docs/UX_SPEC.md` item 8 ("one visually dominant primary CTA per screen/state") is written under the
+  Learner-UX-scoped document and is not clearly binding on the instructor authoring surface; the change is already a
+  net improvement over the pre-Slice state (every action was equally dominant). Worth a future explicit decision on
+  whether the "one dominant primary" rule should extend to instructor authoring screens.
+
+## Promotion Trigger
+
+A future UX Slice (UX3-2 or UX3-4) revisiting the instructor Course-manage page's information architecture, or an
+explicit product-owner decision on either color hierarchy or the "one primary per screen" rule's instructor scope.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

@@ -16,11 +16,8 @@ export default function InstructorLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-        <Link
-          href="/courses"
-          className="text-sm font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-        >
+      <header className="border-b border-border px-6 py-4">
+        <Link href="/courses" className="text-sm font-medium text-subtle transition hover:text-foreground">
           {messages.instructor.backToMyCourses}
         </Link>
       </header>

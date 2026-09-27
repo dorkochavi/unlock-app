@@ -7,6 +7,7 @@ import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { SkeletonRows } from "@/components/skeleton";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 import type { CourseRole } from "@/domain/course/types";
@@ -253,9 +254,9 @@ function CourseTopics({
     <Card>
       <h2 className="mb-1 text-lg font-semibold">{messages.topicsHeading}</h2>
       {topics.kind === "loading" ? (
-        <p role="status" className="pt-2 text-sm text-muted">
-          {messages.topicsLoading}
-        </p>
+        <div className="pt-2">
+          <SkeletonRows count={3} label={messages.topicsLoading} rowClassName="h-14 w-full" />
+        </div>
       ) : null}
       {topics.kind === "error" ? (
         <p className="pt-2 text-sm text-muted">{messages.topicsError}</p>

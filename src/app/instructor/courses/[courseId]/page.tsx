@@ -17,6 +17,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
+import { Button, ButtonLink } from "@/components/button";
+import { Card } from "@/components/card";
+import { Input, Label, Select } from "@/components/input";
+import { PageHeader } from "@/components/page-header";
+import { SkeletonRows } from "@/components/skeleton";
+import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 import { canSelfJoinCourse, type CourseJoinPolicy, type CourseStatus } from "@/domain/course/types";
 import { canOpenAnswerAnalysis } from "@/domain/insights/analysis-entry";
@@ -508,89 +514,82 @@ export default function InstructorCourseManagePage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col p-6 sm:p-10">
-      <main className="flex flex-1 items-start justify-center">
-        {state.kind === "loading" ? (
-          <p className="text-zinc-600 dark:text-zinc-400">{messages.instructor.manage.loading}</p>
-        ) : null}
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
+      {state.kind === "loading" ? <LoadingState label={messages.instructor.manage.loading} /> : null}
 
-        {state.kind === "signed-out" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.instructor.manage.signedOutTitle}</p>
-            <Link
-              href="/login"
-              className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {messages.instructor.manage.signedOutAction}
-            </Link>
-          </div>
-        ) : null}
+      {state.kind === "signed-out" ? (
+        <StateBlock
+          title={messages.instructor.manage.signedOutTitle}
+          action={<ButtonLink href="/login">{messages.instructor.manage.signedOutAction}</ButtonLink>}
+        />
+      ) : null}
 
-        {state.kind === "notFound" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.instructor.manage.notFoundTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.instructor.manage.notFoundBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notFound" ? (
+        <StateBlock
+          title={messages.instructor.manage.notFoundTitle}
+          body={messages.instructor.manage.notFoundBody}
+        />
+      ) : null}
 
-        {state.kind === "notAuthorized" ? (
-          <div className="text-center">
-            <p className="mb-2 text-lg">{messages.instructor.manage.notAuthorizedTitle}</p>
-            <p className="text-zinc-600 dark:text-zinc-400">{messages.instructor.manage.notAuthorizedBody}</p>
-          </div>
-        ) : null}
+      {state.kind === "notAuthorized" ? (
+        <StateBlock
+          title={messages.instructor.manage.notAuthorizedTitle}
+          body={messages.instructor.manage.notAuthorizedBody}
+        />
+      ) : null}
 
-        {state.kind === "error" ? (
-          <div className="text-center">
-            <p className="mb-4 text-lg">{messages.instructor.manage.genericErrorTitle}</p>
-            <button
-              type="button"
+      {state.kind === "error" ? (
+        <StateBlock
+          tone="error"
+          title={messages.instructor.manage.genericErrorTitle}
+          action={
+            <Button
+              variant="secondary"
               onClick={() => {
                 setState({ kind: "loading" });
                 setRetryCount((count) => count + 1);
               }}
-              className="rounded-md border border-zinc-300 px-4 py-2 font-medium dark:border-zinc-700"
             >
               {messages.instructor.manage.retry}
-            </button>
-          </div>
-        ) : null}
+            </Button>
+          }
+        />
+      ) : null}
 
-        {state.kind === "ready" ? (
-          <div className="w-full max-w-2xl">
-            <h1 className="mb-1 text-2xl font-semibold tracking-tight">{state.course.title}</h1>
-            <p className="mb-8 text-sm text-zinc-600 dark:text-zinc-400">
-              {messages.instructor.manage.statusLabel[state.course.status]}
-            </p>
+      {state.kind === "ready" ? (
+        <div className="flex flex-col gap-6">
+          <PageHeader
+            title={state.course.title}
+            subtitle={messages.instructor.manage.statusLabel[state.course.status]}
+          />
 
-            <form onSubmit={handleSaveDetails} className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              <label className="mb-4 block">
-                <span className="mb-1 block text-sm font-medium">{messages.instructor.manage.titleLabel}</span>
-                <input
+          <Card as="section">
+            <form onSubmit={handleSaveDetails} className="flex flex-col gap-4">
+              <label className="block">
+                <Label>{messages.instructor.manage.titleLabel}</Label>
+                <Input
                   type="text"
                   value={titleDraft}
                   onChange={(event) => setTitleDraft(event.target.value)}
                   disabled={state.course.status === "ARCHIVED"}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900"
                   required
                 />
               </label>
 
-              <label className="mb-4 block">
-                <span className="mb-1 block text-sm font-medium">{messages.instructor.manage.examDateLabel}</span>
+              <label className="block">
+                <Label>{messages.instructor.manage.examDateLabel}</Label>
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="date"
                     value={examDateDraft}
                     onChange={(event) => setExamDateDraft(event.target.value)}
                     disabled={state.course.status === "ARCHIVED"}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900"
                   />
                   {examDateDraft !== "" && state.course.status !== "ARCHIVED" ? (
                     <button
                       type="button"
                       onClick={() => setExamDateDraft("")}
-                      className="shrink-0 text-sm text-zinc-500 underline dark:text-zinc-400"
+                      className="shrink-0 text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
                     >
                       {messages.instructor.manage.clearExamDate}
                     </button>
@@ -598,358 +597,302 @@ export default function InstructorCourseManagePage() {
                 </div>
               </label>
 
-              {detailsError ? <p className="mb-3 text-sm text-red-600 dark:text-red-400">{detailsError}</p> : null}
+              {detailsError ? <p className="text-sm text-danger">{detailsError}</p> : null}
               {!detailsError && detailsSavedAt !== null ? (
-                <p className="mb-3 text-sm text-emerald-700 dark:text-emerald-400">
-                  {messages.instructor.manage.saveSuccess}
-                </p>
+                <p className="text-sm text-state-solid">{messages.instructor.manage.saveSuccess}</p>
               ) : null}
 
-              <button
-                type="submit"
-                disabled={savingDetails || state.course.status === "ARCHIVED"}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-              >
-                {savingDetails ? messages.instructor.manage.saving : messages.instructor.manage.saveAction}
-              </button>
+              <div>
+                <Button type="submit" disabled={savingDetails || state.course.status === "ARCHIVED"}>
+                  {savingDetails ? messages.instructor.manage.saving : messages.instructor.manage.saveAction}
+                </Button>
+              </div>
             </form>
+          </Card>
 
-            <div className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">{messages.instructor.manage.joinPolicyLabel}</span>
-                <select
-                  value={state.course.joinPolicy}
-                  disabled={savingJoinPolicy || state.course.status === "ARCHIVED"}
-                  onChange={(event) => handleJoinPolicyChange(event.target.value as CourseJoinPolicy)}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900"
-                >
-                  <option value="AUTHORIZED_ONLY">
-                    {messages.instructor.manage.joinPolicyOption.AUTHORIZED_ONLY}
-                  </option>
-                  <option value="OPEN">{messages.instructor.manage.joinPolicyOption.OPEN}</option>
-                </select>
-              </label>
-              {joinPolicyError ? (
-                <p className="mt-3 text-sm text-red-600 dark:text-red-400">{joinPolicyError}</p>
-              ) : null}
-            </div>
+          <Card as="section">
+            <label className="block">
+              <Label>{messages.instructor.manage.joinPolicyLabel}</Label>
+              <Select
+                value={state.course.joinPolicy}
+                disabled={savingJoinPolicy || state.course.status === "ARCHIVED"}
+                onChange={(event) => handleJoinPolicyChange(event.target.value as CourseJoinPolicy)}
+              >
+                <option value="AUTHORIZED_ONLY">
+                  {messages.instructor.manage.joinPolicyOption.AUTHORIZED_ONLY}
+                </option>
+                <option value="OPEN">{messages.instructor.manage.joinPolicyOption.OPEN}</option>
+              </Select>
+            </label>
+            {joinPolicyError ? <p className="mt-3 text-sm text-danger">{joinPolicyError}</p> : null}
+          </Card>
 
-            <div className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="mb-3 text-lg font-medium">{messages.instructor.manage.topics.heading}</h2>
+          <Card as="section">
+            <h2 className="mb-3 text-lg font-semibold">{messages.instructor.manage.topics.heading}</h2>
 
-              {topicsState.kind === "loading" ? (
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {messages.instructor.manage.topics.loading}
-                </p>
-              ) : null}
+            {topicsState.kind === "loading" ? (
+              <SkeletonRows count={2} label={messages.instructor.manage.topics.loading} rowClassName="h-11 w-full" />
+            ) : null}
 
-              {topicsState.kind === "error" ? (
-                <div>
-                  <p className="mb-2 text-sm text-red-600 dark:text-red-400">
-                    {messages.instructor.manage.topics.genericError}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setTopicsRetryCount((count) => count + 1)}
-                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium dark:border-zinc-700"
-                  >
-                    {messages.instructor.manage.retry}
-                  </button>
-                </div>
-              ) : null}
-
-              {topicsState.kind === "ready" ? (
-                <>
-                  {topicsState.topics.length === 0 ? (
-                    <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
-                      {messages.instructor.manage.topics.emptyTitle}
-                    </p>
-                  ) : (
-                    <ul className="mb-4 flex flex-col gap-2">
-                      {topicsState.topics.map((topic) => (
-                        <li
-                          key={topic.id}
-                          className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
-                        >
-                          {editingTopicId === topic.id ? (
-                            <>
-                              <input
-                                type="text"
-                                value={renameDraft}
-                                onChange={(event) => setRenameDraft(event.target.value)}
-                                className="min-w-0 flex-1 rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                                autoFocus
-                              />
-                              <div className="flex shrink-0 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveRename(topic.id)}
-                                  disabled={savingTopicId === topic.id}
-                                  className="text-sm font-medium text-zinc-900 disabled:opacity-50 dark:text-zinc-100"
-                                >
-                                  {messages.instructor.manage.topics.renameSave}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={handleCancelRename}
-                                  className="text-sm text-zinc-500 dark:text-zinc-400"
-                                >
-                                  {messages.instructor.manage.topics.renameCancel}
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <span className="min-w-0 truncate text-sm" title={topic.name}>
-                                {topic.name}
-                              </span>
-                              <div className="flex shrink-0 gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => handleStartRename(topic)}
-                                  className="text-sm text-zinc-500 underline dark:text-zinc-400"
-                                >
-                                  {messages.instructor.manage.topics.renameAction}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleArchiveTopic(topic.id)}
-                                  disabled={archivingTopicId === topic.id}
-                                  className="text-sm text-red-600 underline disabled:opacity-50 dark:text-red-400"
-                                >
-                                  {archivingTopicId === topic.id
-                                    ? messages.instructor.manage.topics.archiving
-                                    : messages.instructor.manage.topics.archiveAction}
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {renameError ? (
-                    <p className="mb-2 text-sm text-red-600 dark:text-red-400">{renameError}</p>
-                  ) : null}
-                  {archiveTopicError ? (
-                    <p className="mb-2 text-sm text-red-600 dark:text-red-400">{archiveTopicError}</p>
-                  ) : null}
-
-                  <form onSubmit={handleAddTopic} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newTopicName}
-                      onChange={(event) => setNewTopicName(event.target.value)}
-                      placeholder={messages.instructor.manage.topics.addPlaceholder}
-                      className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      disabled={addingTopic}
-                      className="shrink-0 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-                    >
-                      {addingTopic ? messages.instructor.manage.topics.adding : messages.instructor.manage.topics.addAction}
-                    </button>
-                  </form>
-                  {addTopicError ? (
-                    <p className="mt-2 text-sm text-red-600 dark:text-red-400">{addTopicError}</p>
-                  ) : null}
-                </>
-              ) : null}
-            </div>
-
-            <div className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h2 className="text-lg font-medium">{messages.instructor.manage.questions.heading}</h2>
-                <div className="flex shrink-0 items-center gap-3">
-                  {canOpenAnswerAnalysis(state.course.status) ? (
-                    <Link
-                      href={`/instructor/courses/${courseId}/item-analysis`}
-                      className="rounded-md border border-zinc-300 px-3 py-1 text-sm font-medium dark:border-zinc-700"
-                    >
-                      {messages.instructor.manage.questions.itemAnalysisAction}
-                    </Link>
-                  ) : null}
-                  <Link
-                    href={`/instructor/courses/${courseId}/import`}
-                    className="text-sm text-zinc-500 underline dark:text-zinc-400"
-                  >
-                    {messages.instructor.manage.questions.importAction}
-                  </Link>
-                </div>
+            {topicsState.kind === "error" ? (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-sm text-danger">{messages.instructor.manage.topics.genericError}</p>
+                <Button variant="secondary" onClick={() => setTopicsRetryCount((count) => count + 1)}>
+                  {messages.instructor.manage.retry}
+                </Button>
               </div>
+            ) : null}
 
-              {questionsState.kind === "loading" ? (
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {messages.instructor.manage.questions.loading}
-                </p>
-              ) : null}
-
-              {questionsState.kind === "error" ? (
-                <div>
-                  <p className="mb-2 text-sm text-red-600 dark:text-red-400">
-                    {messages.instructor.manage.questions.genericError}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setQuestionsRetryCount((count) => count + 1)}
-                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium dark:border-zinc-700"
-                  >
-                    {messages.instructor.manage.retry}
-                  </button>
-                </div>
-              ) : null}
-
-              {questionsState.kind === "ready" ? (
-                <>
-                  {questionsState.questions.length === 0 ? (
-                    <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
-                      {messages.instructor.manage.questions.emptyTitle}
-                    </p>
-                  ) : (
-                    <ul className="mb-4 flex flex-col gap-2">
-                      {questionsState.questions.map((question) => {
-                        const topic = question.topicId !== null ? questionsState.topicById[question.topicId] : undefined;
-                        const topicLabel = topic
-                          ? topic.name + (topic.archivedAt !== null ? messages.questionEditor.topicArchivedSuffix : "")
-                          : messages.instructor.manage.questions.noTopic;
-                        const displayPrompt =
-                          question.draft.prompt ?? questionsState.publishedPromptByQuestionId[question.id] ?? null;
-                        return (
-                          <li
-                            key={question.id}
-                            className="flex items-center justify-between gap-2 rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm" title={displayPrompt ?? undefined}>
-                                {displayPrompt ?? messages.instructor.manage.questions.untitled}
-                              </p>
-                              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                                {topicLabel}
-                                {" · "}
-                                {messages.instructor.manage.questions.stateLabel[question.state]}
-                              </p>
+            {topicsState.kind === "ready" ? (
+              <>
+                {topicsState.topics.length === 0 ? (
+                  <p className="mb-3 text-sm text-muted">{messages.instructor.manage.topics.emptyTitle}</p>
+                ) : (
+                  <ul className="mb-4 flex flex-col gap-2">
+                    {topicsState.topics.map((topic) => (
+                      <li
+                        key={topic.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                      >
+                        {editingTopicId === topic.id ? (
+                          <>
+                            <input
+                              type="text"
+                              value={renameDraft}
+                              onChange={(event) => setRenameDraft(event.target.value)}
+                              className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                              autoFocus
+                            />
+                            <div className="flex shrink-0 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleSaveRename(topic.id)}
+                                disabled={savingTopicId === topic.id}
+                                className="text-sm font-medium text-foreground disabled:opacity-50"
+                              >
+                                {messages.instructor.manage.topics.renameSave}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelRename}
+                                className="text-sm text-subtle"
+                              >
+                                {messages.instructor.manage.topics.renameCancel}
+                              </button>
                             </div>
-                            <Link
-                              href={`/instructor/courses/${courseId}/questions/${question.id}`}
-                              className="shrink-0 text-sm text-zinc-500 underline dark:text-zinc-400"
-                            >
-                              {messages.instructor.manage.questions.editAction}
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
+                          </>
+                        ) : (
+                          <>
+                            <span className="min-w-0 truncate text-sm" title={topic.name}>
+                              {topic.name}
+                            </span>
+                            <div className="flex shrink-0 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => handleStartRename(topic)}
+                                className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+                              >
+                                {messages.instructor.manage.topics.renameAction}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleArchiveTopic(topic.id)}
+                                disabled={archivingTopicId === topic.id}
+                                className="text-sm text-danger underline-offset-4 hover:underline disabled:opacity-50"
+                              >
+                                {archivingTopicId === topic.id
+                                  ? messages.instructor.manage.topics.archiving
+                                  : messages.instructor.manage.topics.archiveAction}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
-                  {createQuestionError ? (
-                    <p className="mb-2 text-sm text-red-600 dark:text-red-400">{createQuestionError}</p>
-                  ) : null}
+                {renameError ? <p className="mb-2 text-sm text-danger">{renameError}</p> : null}
+                {archiveTopicError ? <p className="mb-2 text-sm text-danger">{archiveTopicError}</p> : null}
 
-                  <button
-                    type="button"
-                    onClick={handleCreateQuestion}
-                    disabled={creatingQuestion || state.course.status === "ARCHIVED"}
-                    className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+                <form onSubmit={handleAddTopic} className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={newTopicName}
+                    onChange={(event) => setNewTopicName(event.target.value)}
+                    placeholder={messages.instructor.manage.topics.addPlaceholder}
+                    className="min-w-0 flex-1 text-sm"
+                    required
+                  />
+                  <Button variant="secondary" type="submit" disabled={addingTopic} className="shrink-0">
+                    {addingTopic ? messages.instructor.manage.topics.adding : messages.instructor.manage.topics.addAction}
+                  </Button>
+                </form>
+                {addTopicError ? <p className="mt-2 text-sm text-danger">{addTopicError}</p> : null}
+              </>
+            ) : null}
+          </Card>
+
+          <Card as="section">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">{messages.instructor.manage.questions.heading}</h2>
+              <div className="flex shrink-0 items-center gap-4">
+                {canOpenAnswerAnalysis(state.course.status) ? (
+                  <Link
+                    href={`/instructor/courses/${courseId}/item-analysis`}
+                    className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
                   >
-                    {creatingQuestion
-                      ? messages.instructor.manage.questions.creating
-                      : messages.instructor.manage.questions.createAction}
-                  </button>
-                </>
-              ) : null}
+                    {messages.instructor.manage.questions.itemAnalysisAction}
+                  </Link>
+                ) : null}
+                <Link
+                  href={`/instructor/courses/${courseId}/import`}
+                  className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  {messages.instructor.manage.questions.importAction}
+                </Link>
+              </div>
             </div>
 
-            <div className="mb-8 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              {transitionError ? (
-                <p className="mb-3 text-sm text-red-600 dark:text-red-400">{transitionError}</p>
-              ) : null}
+            {questionsState.kind === "loading" ? (
+              <SkeletonRows
+                count={3}
+                label={messages.instructor.manage.questions.loading}
+                rowClassName="h-14 w-full"
+              />
+            ) : null}
 
-              {state.course.status === "ARCHIVED" ? (
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {messages.instructor.manage.archivedNotice}
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-3">
-                  {state.course.status === "DRAFT" ? (
-                    <button
-                      type="button"
-                      onClick={handlePublish}
-                      disabled={publishing}
-                      className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-                    >
-                      {publishing ? messages.instructor.manage.publishing : messages.instructor.manage.publishAction}
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={handleArchive}
-                    disabled={archiving}
-                    className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium disabled:opacity-50 dark:border-zinc-700"
-                  >
-                    {archiving ? messages.instructor.manage.archiving : messages.instructor.manage.archiveAction}
-                  </button>
-                </div>
-              )}
-              {state.course.status !== "ARCHIVED" && questionsState.kind === "ready" && questionsState.questions.length > 0 ? (
-                <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-                  {messages.instructor.manage.questionPublishSummary
-                    .replace(
-                      "{published}",
-                      String(questionsState.questions.filter((q) => q.state !== "DRAFT_ONLY").length),
+            {questionsState.kind === "error" ? (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-sm text-danger">{messages.instructor.manage.questions.genericError}</p>
+                <Button variant="secondary" onClick={() => setQuestionsRetryCount((count) => count + 1)}>
+                  {messages.instructor.manage.retry}
+                </Button>
+              </div>
+            ) : null}
+
+            {questionsState.kind === "ready" ? (
+              <>
+                {questionsState.questions.length === 0 ? (
+                  <p className="mb-3 text-sm text-muted">{messages.instructor.manage.questions.emptyTitle}</p>
+                ) : (
+                  <ul className="mb-4 flex flex-col gap-2">
+                    {questionsState.questions.map((question) => {
+                      const topic = question.topicId !== null ? questionsState.topicById[question.topicId] : undefined;
+                      const topicLabel = topic
+                        ? topic.name + (topic.archivedAt !== null ? messages.questionEditor.topicArchivedSuffix : "")
+                        : messages.instructor.manage.questions.noTopic;
+                      const displayPrompt =
+                        question.draft.prompt ?? questionsState.publishedPromptByQuestionId[question.id] ?? null;
+                      return (
+                        <li
+                          key={question.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm" title={displayPrompt ?? undefined}>
+                              {displayPrompt ?? messages.instructor.manage.questions.untitled}
+                            </p>
+                            <p className="mt-0.5 text-xs text-subtle">
+                              {topicLabel}
+                              {" · "}
+                              {messages.instructor.manage.questions.stateLabel[question.state]}
+                            </p>
+                          </div>
+                          <Link
+                            href={`/instructor/courses/${courseId}/questions/${question.id}`}
+                            className="shrink-0 text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+                          >
+                            {messages.instructor.manage.questions.editAction}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                {createQuestionError ? <p className="mb-2 text-sm text-danger">{createQuestionError}</p> : null}
+
+                <Button
+                  variant="secondary"
+                  onClick={handleCreateQuestion}
+                  disabled={creatingQuestion || state.course.status === "ARCHIVED"}
+                >
+                  {creatingQuestion
+                    ? messages.instructor.manage.questions.creating
+                    : messages.instructor.manage.questions.createAction}
+                </Button>
+              </>
+            ) : null}
+          </Card>
+
+          <Card as="section">
+            {transitionError ? <p className="mb-3 text-sm text-danger">{transitionError}</p> : null}
+
+            {state.course.status === "ARCHIVED" ? (
+              <p className="text-sm text-muted">{messages.instructor.manage.archivedNotice}</p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {state.course.status === "DRAFT" ? (
+                  <Button onClick={handlePublish} disabled={publishing}>
+                    {publishing ? messages.instructor.manage.publishing : messages.instructor.manage.publishAction}
+                  </Button>
+                ) : null}
+                <Button variant="secondary" onClick={handleArchive} disabled={archiving}>
+                  {archiving ? messages.instructor.manage.archiving : messages.instructor.manage.archiveAction}
+                </Button>
+              </div>
+            )}
+            {state.course.status !== "ARCHIVED" && questionsState.kind === "ready" && questionsState.questions.length > 0 ? (
+              <p className="mt-3 text-sm text-subtle">
+                {messages.instructor.manage.questionPublishSummary
+                  .replace(
+                    "{published}",
+                    String(questionsState.questions.filter((q) => q.state !== "DRAFT_ONLY").length),
+                  )
+                  .replace("{total}", String(questionsState.questions.length))}
+              </p>
+            ) : null}
+            {state.course.status === "DRAFT" ? (
+              <p className="mt-1 text-sm text-subtle">{messages.instructor.manage.publishHint}</p>
+            ) : null}
+          </Card>
+
+          {state.course.status === "PUBLISHED" && !canSelfJoinCourse(state.course) ? (
+            // Same rule the join API enforces: a link to an AUTHORIZED_ONLY
+            // Course would reject ordinary learners, so do not offer it.
+            <Card as="section">
+              <h2 className="mb-2 text-lg font-semibold">{messages.instructor.manage.shareHeading}</h2>
+              <p className="text-sm text-muted">{messages.instructor.manage.shareUnavailableBody}</p>
+            </Card>
+          ) : null}
+
+          {canSelfJoinCourse(state.course) ? (
+            <Card as="section">
+              <h2 className="mb-2 text-lg font-semibold">{messages.instructor.manage.shareHeading}</h2>
+              <p className="mb-3 text-sm text-muted">{messages.instructor.manage.shareBody}</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-muted px-3 py-2 text-sm">
+                  {typeof window !== "undefined" ? `${window.location.origin}/join/${state.course.id}` : `/join/${state.course.id}`}
+                </code>
+                <Button
+                  variant="secondary"
+                  className="shrink-0"
+                  onClick={() =>
+                    handleCopyLink(
+                      typeof window !== "undefined"
+                        ? `${window.location.origin}/join/${state.course.id}`
+                        : `/join/${state.course.id}`,
                     )
-                    .replace("{total}", String(questionsState.questions.length))}
-                </p>
-              ) : null}
-              {state.course.status === "DRAFT" ? (
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  {messages.instructor.manage.publishHint}
-                </p>
-              ) : null}
-            </div>
-
-            {state.course.status === "PUBLISHED" && !canSelfJoinCourse(state.course) ? (
-              // Same rule the join API enforces: a link to an AUTHORIZED_ONLY
-              // Course would reject ordinary learners, so do not offer it.
-              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <h2 className="mb-2 text-lg font-medium">{messages.instructor.manage.shareHeading}</h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {messages.instructor.manage.shareUnavailableBody}
-                </p>
+                  }
+                >
+                  {linkCopied ? messages.instructor.manage.linkCopied : messages.instructor.manage.copyLink}
+                </Button>
               </div>
-            ) : null}
-
-            {canSelfJoinCourse(state.course) ? (
-              <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                <h2 className="mb-2 text-lg font-medium">{messages.instructor.manage.shareHeading}</h2>
-                <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
-                  {messages.instructor.manage.shareBody}
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <code className="min-w-0 flex-1 truncate rounded-md bg-zinc-100 px-3 py-2 text-sm dark:bg-zinc-800">
-                    {typeof window !== "undefined" ? `${window.location.origin}/join/${state.course.id}` : `/join/${state.course.id}`}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyLink(
-                        typeof window !== "undefined"
-                          ? `${window.location.origin}/join/${state.course.id}`
-                          : `/join/${state.course.id}`,
-                      )
-                    }
-                    className="shrink-0 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-700"
-                  >
-                    {linkCopied ? messages.instructor.manage.linkCopied : messages.instructor.manage.copyLink}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </main>
-    </div>
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
+    </main>
   );
 }

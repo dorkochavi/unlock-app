@@ -101,3 +101,21 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/*
+ * Motion convention (docs/UX_SPEC.md §6, Run UX-03 UX3-1): motion communicates
+ * state, never decoration, and must honor `prefers-reduced-motion` globally
+ * rather than per-component. Component-level `motion-reduce:` variants (e.g.
+ * `Skeleton`) still apply on top of this for anything animation-only (no
+ * duration to collapse).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
