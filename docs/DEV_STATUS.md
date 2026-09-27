@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-27 (Run UX-03 complete locally, not merged/deployed; Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS; DevOS longitudinal review)
+Updated: 2026-09-28 (Run UX-03-QA1 complete locally, not merged/deployed — pre-merge Preview QA correction pass on top of Run UX-03; Run UX-02 merged/deployed; manual Preview QA gate + Production smoke verification both PASS; DevOS longitudinal review)
 
 ## Repository
 
@@ -136,7 +136,38 @@ Current repository capabilities include:
   fixed (instructor Course-manage page, learner Course page — evidence:
   local mocked-latency timing, not hosted). No product/learning semantics,
   API, DB, or auth logic changed. Not yet merged/deployed — awaiting the
-  product owner's decision on promotion;
+  product owner's decision on promotion. Followed by Run UX-03-QA1 (below),
+  a pre-merge Preview QA correction pass on the SAME branch;
+- Preview QA corrections — Run UX-03-QA1 (pre-merge correction pass on top of
+  Run UX-03, same branch `feature/run-ux-03-product-experience`, final HEAD
+  `0442c91`; **COMPLETE locally**, NOT merged/deployed;
+  `docs/RUNS/2026-09-27-UX-03-QA1.md`): the product owner ran hands-on
+  Preview QA against a real 30-question course and filed 15 findings. Every
+  finding was verified against repository reality first; 11 were implemented
+  and verified this Run (post-submit explanation + correct-answer reveal
+  with a new POST-submit-only `AnswerFeedbackContentRepository`, deliberately
+  the opposite trust boundary from the pre-answer-safe
+  `LearnerQuestionContentRepository`; a stable per-presentation answer-option
+  shuffle; Practice-only Topic-interleave tie-break for Tier 2/3 candidates,
+  `select-practice-batch.ts`'s `interleaveByTopic`, with Tier 1/Today's own
+  NBA ranking untouched; a real Practice batch-completion learning summary;
+  instructor bulk review/publish reusing the existing single-Question
+  `publishQuestion` transaction per selected id; Progress reduced to a
+  Course-level evidence-only activity summary, Topic detail staying only on
+  the Course page; a shared top-left sign-out shell control,
+  `docs/UX_SPEC.md` §12 item 58; the remaining non-compliant `"היום שלי"`
+  Hebrew copy instances fixed). 4 items (same-day Practice repetition
+  evidence/scheduler semantics, the Today Daily Plan Budget policy, a
+  possible PARTIAL grading outcome, and content-quality/position-bias
+  detection signals) were investigated and explicitly recorded — never
+  invented — as `docs/FOLLOW_UP_BACKLOG.md` FUB-034 (owned by Run 010) and
+  FUB-035 (owned by Run 011). Evidence: typecheck/lint/full unit
+  suite (1533/1533)/full schema-PGlite suite/production build all clean; a
+  real mocked-browser Playwright pass (network-mocked, no real Supabase)
+  covering every new UI state, 17/17 checks passed. NOT proven: real hosted
+  Preview/Supabase integration, real hosted latency, true multi-connection
+  concurrency — a fresh product-owner Preview QA pass against this same
+  branch remains the next step before any merge/deploy decision;
 - Structured Import V1 (JSON/CSV) — preview/confirm into DRAFT_ONLY
   Questions, with source-size AND row-count HTTP/application-layer limits
   (Run 008 S1.D);
@@ -467,6 +498,16 @@ Run 008 (Authoring Integration + Pilot Readiness) final evidence:
 
 Independent audit baseline on `d3dfa9d` (clean tree, 2026-09-26): typecheck clean; lint 0 errors + 1 pre-existing unrelated warning (`.claude/telemetry/statusline.mjs`); unit 1453/1453 (143 files); schema/PGlite, production build and Playwright E2E NOT run for this baseline; static audit: 0 import cycles, 0 layer violations.
 
+Run UX-03-QA1 (Preview QA corrections; `docs/RUNS/2026-09-27-UX-03-QA1.md`) final evidence, HEAD `0442c91`:
+typecheck clean; lint 0 errors + the same 1 pre-existing unrelated warning; full unit suite 1533/1533 passed
+(154 files); full schema/PGlite suite passed (includes 2 new dedicated integration test files proving the
+POST-submit-only feedback content boundary and the Practice Topic-interleave tie-break against real seeded
+data); production build clean; a real mocked-browser Playwright pass (network-mocked, no real Supabase;
+`scratch/ux03qa1/verify-qa1.mjs`, untracked) covering every new UI state, 17/17 checks passed, run twice to
+confirm genuine (non-deterministic across loads, stable within one presentation) answer-option shuffling. NOT
+proven: real hosted Preview/Supabase integration, real hosted latency (Finding 14 was audited at the code
+level only — no new/fixable client-side fetch waterfall found), true multi-connection concurrency.
+
 ## Development OS V1.2
 
 V1.2 direction is established:
@@ -523,7 +564,8 @@ Product roadmap:
 - Run 009 — Learner Progress + Instructor Insights (**COMPLETE**; S1/S2/S3 committed and Preview-verified; `docs/RUNS/2026-09-25-009.md`). Not a Pre-Pilot release requirement and not a pilot approval.
 - Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE**, merged to `main` (`d052e5c`), deployed via the Production branch; real-phone Preview verification PASS and, separately, manual Production verification/acceptance, both by the product owner on 2026-09-26; `docs/RUNS/2026-09-26-UX-01.md`). Open, non-blocking follow-up: hosted Supabase Auth Redirect URL allow-list for the new `next=` values — an observed login return did not preserve the intended `/courses` destination. Early Practice + FSRS semantics (`FUB-030`) decided and promoted to Run UX-02 (`docs/CHATGPT_PLAN.md`).
 - Run UX-02 — Course & Topic Practice (standalone learner Run; **COMPLETE**, merged to `main` (`c85d870`) and deployed via the Production branch; manual Preview QA gate PASSED 2026-09-27 and manual Production smoke verification PASSED 2026-09-27, both by the product owner; `docs/RUNS/2026-09-27-UX-02.md`). Open, non-blocking: hosted Auth Redirect URL allow-list for Practice `next=` values; OQ-044 (FSRS learning-step calibration).
-- Run UX-03 — Product Experience, Visual System & Usability (standalone UX Run; **COMPLETE locally**, `feature/run-ux-03-product-experience` at `e6b91da`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03.md`). Required product-owner checkpoint after UX3-1 returned APPROVED WITH CALIBRATION CORRECTIONS; the resulting Visual Contract is recorded in `docs/UX_SPEC.md` §11-§12. Open, non-blocking: `FUB-033` (archive-action color consistency; possible dual-primary states on the instructor Course-manage page); a `WATCH` observation on a Tailwind class-conflict pattern that recurred three times within this Run (see the Run report §13).
+- Run UX-03 — Product Experience, Visual System & Usability (standalone UX Run; **COMPLETE locally**, `feature/run-ux-03-product-experience` at `e6b91da`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03.md`). Required product-owner checkpoint after UX3-1 returned APPROVED WITH CALIBRATION CORRECTIONS; the resulting Visual Contract is recorded in `docs/UX_SPEC.md` §11-§12. Open, non-blocking: `FUB-033` (archive-action color consistency; possible dual-primary states on the instructor Course-manage page); a `WATCH` observation on a Tailwind class-conflict pattern that recurred three times within this Run (see the Run report §13). Followed by Run UX-03-QA1 (below), a pre-merge Preview QA correction pass on the same branch.
+- Run UX-03-QA1 — Preview QA Corrections (pre-merge correction pass on top of Run UX-03, same branch, **COMPLETE locally** at `0442c91`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03-QA1.md`). 15 product-owner-filed findings from real hosted Preview usage; 11 implemented and verified, 4 explicitly recorded (never invented) as `docs/FOLLOW_UP_BACKLOG.md` FUB-034 (owned by Run 010 — same-day Practice repetition semantics, Daily Plan Budget policy, PARTIAL grading) and FUB-035 (owned by Run 011 — content-quality/position-bias detection). A fresh product-owner Preview QA pass against this branch is the required next step before any merge/deploy decision.
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
@@ -547,8 +589,10 @@ from before this Run, unchanged).
   Vercel/GitHub settings remain human actions (ADR-019; see `git status` for
   the ahead count);
 - decide whether/when to merge and deploy `feature/run-ux-03-product-experience`
-  (Run UX-03, COMPLETE locally at `e6b91da`, not pushed) — a human decision,
-  not attempted by this Run;
+  (Run UX-03 + Run UX-03-QA1, COMPLETE locally at `0442c91`, not pushed) — a
+  human decision, not attempted by either Run. A fresh hosted Preview QA
+  pass against this branch (`docs/RUNS/2026-09-27-UX-03-QA1.md` §8) is the
+  recommended next step before that decision;
 - decide whether to experiment with the `CHANGE CANDIDATE` Development OS
   observation above (named-negative-case test isolation) before it is
   absorbed into `.claude/rules/testing.md`;

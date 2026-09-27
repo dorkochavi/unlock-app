@@ -3,7 +3,7 @@
 PLAN_VERSION: 002
 RUN_ID: 2026-09-27-UX-03-QA1
 BASE_HEAD: 8b98dcb
-STATUS: IN PROGRESS
+STATUS: **COMPLETE (locally)** — all Slices QA1-A through QA1-H done; see `docs/RUNS/2026-09-27-UX-03-QA1.md` for the full Run report and final QA disposition table. Final HEAD `0442c91`, not merged/pushed/deployed.
 
 This is a pre-merge correction Run, NOT Run 010/011. Run UX-03 was completed locally and pushed to Preview; the product owner then performed hands-on QA using a real 30-question course (`מבוא לכלכלה התנהגותית — QA`) and filed 15 findings. See the pasted Run brief (not duplicated here) for full scope, per-finding detail, guardrails and stop conditions; this file owns the ordered Slice queue, classification table and status only, per `CLAUDE.md` §2/§4. All work stays local on `feature/run-ux-03-product-experience`; no push/merge/deploy; Run 010/011 are not started.
 
@@ -31,13 +31,11 @@ This is a pre-merge correction Run, NOT Run 010/011. Run UX-03 was completed loc
 ## 1. Slice Queue
 
 1. **QA1-A — Grounding + Run plan.** DONE — findings verified against repository reality (explanation/correct-answer columns exist and are already excluded from the pre-answer learner-safe read path `LearnerQuestionContentRepository`/`PostgresLearnerQuestionContentRepository`; grading is `isCorrect: boolean` only, no PARTIAL; NBA ranking's final tie-break is plain `questionId` ascending, shared with Today generation — must not be touched directly; Progress/Course page IA already split the right way structurally (Course page already renders `TopicList`); `publishQuestion` is a clean single-Question transaction safe to call per-id in a loop for bulk publish).
-2. **QA1-B — Learning feedback.** Post-submit explanation + correct-answer reveal for Today and Practice (shared `QuestionCard`); new POST-submit-only `AnswerFeedbackContentRepository` read path (explicitly separate from the pre-answer-safe `LearnerQuestionContentRepository`); stable per-presentation answer-option shuffle; tone pass; security/negative tests proving explanation/correct-answer never appear pre-submit.
-3. **QA1-C — Practice presentation.** Batch-completion learning summary (existing batch counts only); Topic-interleave tie-break for Practice candidate ordering (post-ranking, ranking itself untouched, Today untouched); Findings 8/9 recorded for Run 010 (not implemented).
-4. **QA1-D — Progress + IA + motivation.** Progress becomes Course-level + activity-based summary; Topic detail stays only on the Course page (already correct there); restrained evidence-grounded activity copy.
-5. **QA1-E — Instructor bulk publish.** Selection + "Publish selected" / "Publish all valid" on the Course-manage Questions list, calling the existing `publishQuestion` use case once per selected id (no new transaction spanning multiple Questions, no new persistence model); honest partial-failure reporting.
-6. **QA1-F — Shell/copy.** Consistent top-left logout via the shared learner/instructor shell; canonical `"היום שלי"` Hebrew copy audit (3 non-compliant strings found: `progress.backToToday`, `progress.goToToday`, `courseView.goToToday`).
-7. **QA1-G — Loading/performance.** Measure representative journeys; low-risk evidence-backed fixes only; honest local-vs-hosted evidence labeling.
-8. **QA1-H — Integrated verification + Run close.** Full QA matrix, docs, telemetry summary, commit chain, STOP.
+2. **QA1-B/C/D — Learning feedback, Practice presentation, Progress IA (DONE `814eace`).** Post-submit explanation + correct-answer reveal for Today and Practice (shared `QuestionCard`); new POST-submit-only `AnswerFeedbackContentRepository` read path; stable per-presentation answer-option shuffle; Practice Topic-interleave tie-break (`interleaveByTopic`, Tier 1/Today untouched) + batch-completion learning summary; Findings 6/8/9 + PARTIAL grading recorded (`docs/FOLLOW_UP_BACKLOG.md` FUB-034/FUB-035), not implemented; Progress reduced to Course-level activity summary.
+3. **QA1-E — Instructor bulk publish (DONE `ab03784`).** Selection + "Publish selected" / "Select all valid" on the Course-manage Questions list, calling the existing `publishQuestion` use case once per selected id; honest partial-failure reporting.
+4. **QA1-F — Shell/copy (DONE `cea7219`, `0442c91`).** Consistent top-left sign-out via a new shared `LearnerUtilityBar` + the instructor shell; canonical `"היום שלי"` Hebrew copy audit closed (0 remaining non-compliant instances); convention recorded in `docs/UX_SPEC.md` §12 item 58.
+5. **QA1-G — Loading/performance (DONE, audit only — no code change).** Code-level journey audit found no new/fixable client-side fetch waterfall; recorded honestly, no speculative fix applied.
+6. **QA1-H — Integrated verification + Run close (DONE `0442c91`).** Full QA matrix incl. a real mocked-browser Playwright pass (17/17 checks), `docs/RUNS/2026-09-27-UX-03-QA1.md`, `docs/DEV_STATUS.md` update, telemetry summary, final disposition table. STOP — not merged/pushed/deployed; Run 010/011 not started.
 
 ## 2. Guardrails (unchanged from Run UX-03, still binding)
 
