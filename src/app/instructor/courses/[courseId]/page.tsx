@@ -23,6 +23,7 @@ import { Input, Label, Select } from "@/components/input";
 import { PageHeader } from "@/components/page-header";
 import { SkeletonRows } from "@/components/skeleton";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 import { canSelfJoinCourse, type CourseJoinPolicy, type CourseStatus } from "@/domain/course/types";
 import { canOpenAnswerAnalysis } from "@/domain/insights/analysis-entry";
@@ -217,6 +218,18 @@ export default function InstructorCourseManagePage() {
   const [creatingQuestion, setCreatingQuestion] = useState(false);
   const [createQuestionError, setCreateQuestionError] = useState<string | null>(null);
 
+  // UX-03-QA1 Finding 1: bulk review/publish for imported (or any pending-draft)
+  // Questions. Reuses the EXISTING single-Question publish endpoint/transaction
+  // once per selected id — no new persistence model, no batch source-of-truth,
+  // no new validation path. Selection is cleared whenever the underlying
+  // Question list reloads (a fresh fetch may drop/rename ids).
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<ReadonlySet<string>>(new Set());
+  const [bulkPublishing, setBulkPublishing] = useState(false);
+  const [bulkPublishResult, setBulkPublishResult] = useState<{
+    published: number;
+    failed: number;
+  } | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -292,6 +305,9 @@ export default function InstructorCourseManagePage() {
             }
           : { kind: "error" },
       );
+      // A fresh fetch may drop/rename ids (or change readiness) — never keep
+      // a stale selection across a reload.
+      setSelectedQuestionIds(new Set());
     }
 
     run();
@@ -299,6 +315,65 @@ export default function InstructorCourseManagePage() {
       cancelled = true;
     };
   }, [courseId, questionsRetryCount]);
+
+  function toggleQuestionSelection(questionId: string) {
+    setSelectedQuestionIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(questionId)) {
+        next.delete(questionId);
+      } else {
+        next.add(questionId);
+      }
+      return next;
+    });
+  }
+
+  /**
+   * "Select all approved/valid" (UX-03-QA1 Finding 1): every Question that
+   * currently has a pending draft (`state !== "PUBLISHED"`) — not a claim
+   * that each one will actually pass server-side publish-ready validation.
+   * A NOT_READY Question stays selectable and, if published anyway, simply
+   * fails its own individual publish call in `handleBulkPublish` below (never
+   * silently skipped, never force-published) — this button is a convenience
+   * for selection, not a second validation pass.
+   */
+  function selectAllPublishable() {
+    if (questionsState.kind !== "ready") return;
+    const ids = questionsState.questions
+      .filter((question) => question.state !== "PUBLISHED")
+      .map((question) => question.id);
+    setSelectedQuestionIds(new Set(ids));
+  }
+
+  async function handleBulkPublish() {
+    if (bulkPublishing || selectedQuestionIds.size === 0) return;
+    setBulkPublishing(true);
+    setBulkPublishResult(null);
+    const ids = [...selectedQuestionIds];
+    let published = 0;
+    let failed = 0;
+    // Sequential, not Promise.all: each call is its own independent,
+    // already-transactional publish (publishQuestion) — sequencing here is
+    // only to keep server load bounded for a bulk instructor action, not a
+    // correctness requirement.
+    for (const id of ids) {
+      try {
+        const response = await fetch(`/api/courses/${courseId}/questions/${id}/publish`, {
+          method: "POST",
+        });
+        if (response.ok) {
+          published++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+    setBulkPublishResult({ published, failed });
+    setBulkPublishing(false);
+    setQuestionsRetryCount((count) => count + 1);
+  }
 
   async function handleCreateQuestion() {
     if (creatingQuestion) return;
@@ -795,20 +870,35 @@ export default function InstructorCourseManagePage() {
                         : messages.instructor.manage.questions.noTopic;
                       const displayPrompt =
                         question.draft.prompt ?? questionsState.publishedPromptByQuestionId[question.id] ?? null;
+                      const publishable = question.state !== "PUBLISHED";
                       return (
                         <li
                           key={question.id}
                           className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
                         >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm" title={displayPrompt ?? undefined}>
-                              {displayPrompt ?? messages.instructor.manage.questions.untitled}
-                            </p>
-                            <p className="mt-0.5 text-xs text-subtle">
-                              {topicLabel}
-                              {" · "}
-                              {messages.instructor.manage.questions.stateLabel[question.state]}
-                            </p>
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            {publishable && state.course.status !== "ARCHIVED" ? (
+                              <input
+                                type="checkbox"
+                                checked={selectedQuestionIds.has(question.id)}
+                                onChange={() => toggleQuestionSelection(question.id)}
+                                aria-label={interpolate(
+                                  messages.instructor.manage.questions.selectQuestionLabel,
+                                  { prompt: displayPrompt ?? messages.instructor.manage.questions.untitled },
+                                )}
+                                className="size-4 shrink-0 accent-primary"
+                              />
+                            ) : null}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm" title={displayPrompt ?? undefined}>
+                                {displayPrompt ?? messages.instructor.manage.questions.untitled}
+                              </p>
+                              <p className="mt-0.5 text-xs text-subtle">
+                                {topicLabel}
+                                {" · "}
+                                {messages.instructor.manage.questions.stateLabel[question.state]}
+                              </p>
+                            </div>
                           </div>
                           <Link
                             href={`/instructor/courses/${courseId}/questions/${question.id}`}
@@ -824,15 +914,48 @@ export default function InstructorCourseManagePage() {
 
                 {createQuestionError ? <p className="mb-2 text-sm text-danger">{createQuestionError}</p> : null}
 
-                <Button
-                  variant="secondary"
-                  onClick={handleCreateQuestion}
-                  disabled={creatingQuestion || state.course.status === "ARCHIVED"}
-                >
-                  {creatingQuestion
-                    ? messages.instructor.manage.questions.creating
-                    : messages.instructor.manage.questions.createAction}
-                </Button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    onClick={handleCreateQuestion}
+                    disabled={creatingQuestion || state.course.status === "ARCHIVED"}
+                  >
+                    {creatingQuestion
+                      ? messages.instructor.manage.questions.creating
+                      : messages.instructor.manage.questions.createAction}
+                  </Button>
+                  {state.course.status !== "ARCHIVED" &&
+                  questionsState.questions.some((q) => q.state !== "PUBLISHED") ? (
+                    <>
+                      <Button variant="tertiary" onClick={selectAllPublishable} disabled={bulkPublishing}>
+                        {messages.instructor.manage.questions.selectAllAction}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={handleBulkPublish}
+                        disabled={bulkPublishing || selectedQuestionIds.size === 0}
+                      >
+                        {bulkPublishing
+                          ? messages.instructor.manage.questions.publishingSelected
+                          : interpolate(messages.instructor.manage.questions.publishSelectedAction, {
+                              count: selectedQuestionIds.size,
+                            })}
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+                {bulkPublishResult !== null ? (
+                  <p className="mt-2 text-sm text-muted" role="status">
+                    {bulkPublishResult.failed > 0
+                      ? interpolate(messages.instructor.manage.questions.bulkPublishSummaryWithFailures, {
+                          published: bulkPublishResult.published,
+                          failed: bulkPublishResult.failed,
+                        })
+                      : interpolate(messages.instructor.manage.questions.bulkPublishSummary, {
+                          published: bulkPublishResult.published,
+                        })}
+                  </p>
+                ) : null}
               </>
             ) : null}
           </Card>
