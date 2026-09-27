@@ -143,7 +143,7 @@ export default function LearnerProgressPage() {
 
       {state.kind === "ready" && state.courses.length > 0 ? (
         <>
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
             {state.courses.map((course) => (
               <CourseSection
                 key={course.id}

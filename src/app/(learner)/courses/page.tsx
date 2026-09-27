@@ -125,7 +125,7 @@ export default function MyCoursesPage() {
           deferred (docs/UX_SPEC.md §9): it would need a Course-level rollup
           of Topic states that no accepted policy defines yet. */}
       {state.kind === "ready" && state.courses.length > 0 ? (
-        <ul className="flex flex-col gap-3">
+        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {state.courses.map((course) => {
             const roleLabel = messages.myCourses.roleLabel[course.role];
             return (

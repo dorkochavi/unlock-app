@@ -72,7 +72,7 @@ export function LearnerNav() {
       className="sticky bottom-0 z-10 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
       aria-label={messages.shell.navLabel}
     >
-      <div className="mx-auto flex max-w-2xl">
+      <div className="mx-auto flex max-w-2xl lg:max-w-3xl">
         {LEARNER_NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (

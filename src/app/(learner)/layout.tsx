@@ -14,15 +14,14 @@
  * (UX-2) the bottom nav is removed; see `learn-mode.tsx`.
  */
 import { LearnModeProvider } from "./learn-mode";
+import { LearnerMain } from "./learner-main";
 import { LearnerNav } from "./learner-nav";
 
 export default function LearnerLayout({ children }: { children: React.ReactNode }) {
   return (
     <LearnModeProvider>
       <div className="flex min-h-full flex-1 flex-col">
-        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
-          {children}
-        </main>
+        <LearnerMain>{children}</LearnerMain>
         <LearnerNav />
       </div>
     </LearnModeProvider>
