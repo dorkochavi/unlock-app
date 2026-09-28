@@ -139,8 +139,8 @@ Current repository capabilities include:
   product owner's decision on promotion. Followed by Run UX-03-QA1 (below),
   a pre-merge Preview QA correction pass on the SAME branch;
 - Preview QA corrections — Run UX-03-QA1 (pre-merge correction pass on top of
-  Run UX-03, same branch `feature/run-ux-03-product-experience`, final HEAD
-  `8f45cc3`; **COMPLETE locally**, NOT merged/deployed;
+  Run UX-03, same branch `feature/run-ux-03-product-experience`, START_HEAD
+  `8b98dcb`, LAST_VERIFIED_HEAD `8f45cc3`; **COMPLETE locally**, NOT merged/deployed;
   `docs/RUNS/2026-09-27-UX-03-QA1.md`): the product owner ran hands-on
   Preview QA against a real 30-question course and filed 15 findings. Every
   finding was verified against repository reality first; 11 were implemented
@@ -169,8 +169,8 @@ Current repository capabilities include:
   concurrency — a fresh product-owner Preview QA pass against this same
   branch remains the next step before any merge/deploy decision;
 - Preview QA2 corrections — Run UX-03-QA2 (second pre-merge correction pass
-  on top of QA1, same branch `feature/run-ux-03-product-experience`, final
-  HEAD `1c4ae33`; **COMPLETE locally**, NOT merged/deployed;
+  on top of QA1, same branch `feature/run-ux-03-product-experience`,
+  START_HEAD `8f45cc3`, LAST_VERIFIED_HEAD `1c4ae33`; **COMPLETE locally**, NOT merged/deployed;
   `docs/RUNS/2026-09-28-UX-03-QA2.md`): executed as a Long Autonomous Run
   experiment — a thin parent orchestrator dispatching fresh, zero-context
   scoped workers (`Agent` tool, `subagent_type: general-purpose`) one Slice

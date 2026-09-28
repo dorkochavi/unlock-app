@@ -3,7 +3,10 @@
 PLAN_VERSION: 003
 RUN_ID: 2026-09-28-UX-03-QA2-AUTONOMOUS-001
 BASE_HEAD: 8f45cc3 (== pushed QA1 HEAD)
-STATUS: **COMPLETE (locally)** — QA2-A/B/C/E done, QA2-D correctly STOPPED (architecture gap, not a failure); see `docs/RUNS/2026-09-28-UX-03-QA2.md` for the full Run report. Final HEAD `1c4ae33` (Run-close docs commit; QA2-E's own integrated-verification commit is `3272582`), not merged/pushed/deployed.
+START_HEAD: `8f45cc3`
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `1c4ae33`
+STATUS: **COMPLETE (locally)** — QA2-A/B/C/E done, QA2-D correctly STOPPED (architecture gap, not a failure); see `docs/RUNS/2026-09-28-UX-03-QA2.md` for the full Run report. LAST_VERIFIED_HEAD `1c4ae33` (Run-close docs commit; QA2-E's own integrated-verification commit is `3272582`), not merged/pushed/deployed.
 
 This was a Long Autonomous Run experiment: thin parent orchestrator + fresh scoped workers (`Agent` tool, `subagent_type: general-purpose`, one at a time, zero inherited context) per Slice. See the pasted Run brief (not duplicated here) for full scope/decisions/guardrails/stop conditions; this file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4. Not Run010/Run011. All work stayed local; no push/merge/deploy.
 
@@ -19,7 +22,7 @@ This was a Long Autonomous Run experiment: thin parent orchestrator + fresh scop
 
 RUN_ID: 2026-09-27-UX-03-QA1
 BASE_HEAD: 8b98dcb
-STATUS: **COMPLETE (locally)** — all Slices QA1-A through QA1-H done; see `docs/RUNS/2026-09-27-UX-03-QA1.md` for the full Run report and final QA disposition table. Final HEAD `8f45cc3`, not merged/pushed/deployed.
+STATUS: **COMPLETE (locally)** — all Slices QA1-A through QA1-H done; see `docs/RUNS/2026-09-27-UX-03-QA1.md` for the full Run report and final QA disposition table. LAST_VERIFIED_HEAD `8f45cc3` (historical/superseded — reference only), not merged/pushed/deployed.
 
 This is a pre-merge correction Run, NOT Run 010/011. Run UX-03 was completed locally and pushed to Preview; the product owner then performed hands-on QA using a real 30-question course (`מבוא לכלכלה התנהגותית — QA`) and filed 15 findings. See the pasted Run brief (not duplicated here) for full scope, per-finding detail, guardrails and stop conditions; this file owns the ordered Slice queue, classification table and status only, per `CLAUDE.md` §2/§4. All work stays local on `feature/run-ux-03-product-experience`; no push/merge/deploy; Run 010/011 are not started.
 
@@ -61,7 +64,7 @@ No new Learning Engine/scheduler/mastery/PARTIAL semantics; no Today mutation; n
 
 ## Historical — Run UX-03 Plan (superseded; reference only — see `docs/RUNS/2026-09-27-UX-03.md` for the Run report)
 
-STATUS: **COMPLETE (locally)** — all Slices UX3-1 through UX3-7 done; see `docs/RUNS/2026-09-27-UX-03.md` for the full Run report. Phase A audit COMPLETE (`7d04f47`). UX3-1 COMPLETE + product-owner checkpoint APPROVED WITH CALIBRATION CORRECTIONS (`9eefe3d`, `01fd917`) — Visual Contract recorded in `docs/UX_SPEC.md` §11-§12. UX3-2 COMPLETE (`c969e69`). UX3-3 COMPLETE (`46bb7ee`). UX3-4 COMPLETE (`770b374`). UX3-6 COMPLETE (`b81ff01`). UX3-5 COMPLETE (`f5ca16c`). UX3-7 COMPLETE (`e6b91da` + this Run report). Final HEAD `e6b91da`, not merged/pushed/deployed. Fresh RUN_ID established per DevOS longitudinal review recommendation (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §8.2) so UX-03 telemetry is not attributed to the closed `2026-09-26-UX-02` folder. Run UX-02's own plan content is preserved below this Run's own content is written above it, and the full historical UX-02 plan/carried-over Slice-B table is retained further down for reference until archived.
+STATUS: **COMPLETE (locally)** — all Slices UX3-1 through UX3-7 done; see `docs/RUNS/2026-09-27-UX-03.md` for the full Run report. Phase A audit COMPLETE (`7d04f47`). UX3-1 COMPLETE + product-owner checkpoint APPROVED WITH CALIBRATION CORRECTIONS (`9eefe3d`, `01fd917`) — Visual Contract recorded in `docs/UX_SPEC.md` §11-§12. UX3-2 COMPLETE (`c969e69`). UX3-3 COMPLETE (`46bb7ee`). UX3-4 COMPLETE (`770b374`). UX3-6 COMPLETE (`b81ff01`). UX3-5 COMPLETE (`f5ca16c`). UX3-7 COMPLETE (`e6b91da` + this Run report). LAST_VERIFIED_HEAD `e6b91da` (historical/superseded — reference only), not merged/pushed/deployed. Fresh RUN_ID established per DevOS longitudinal review recommendation (`docs/RUNS/2026-09-27-DEVOS-LONGITUDINAL-REVIEW.md` §8.2) so UX-03 telemetry is not attributed to the closed `2026-09-26-UX-02` folder. Run UX-02's own plan content is preserved below this Run's own content is written above it, and the full historical UX-02 plan/carried-over Slice-B table is retained further down for reference until archived.
 
 This Run is mostly autonomous, with one intentional product-owner checkpoint after UX3-1 (visual-system direction). See the pasted Run brief (not duplicated here) for full scope, decisions, guardrails, and stop conditions; this file owns the ordered Slice queue only, per `CLAUDE.md` §2/§4.
 
