@@ -165,6 +165,19 @@ export interface CourseRepository {
   listStatuses(courseIds: string[]): Promise<{ id: string; status: CourseStatus }[]>;
 
   /**
+   * Batched exam-date lookup (RUN010-D) — same batching shape/convention as
+   * `listStatuses` (silently omits any `courseId` with no matching row).
+   * Used only to build the per-Course signal
+   * `getOrCreateDailyPlanForToday` threads into DailyPlan generation's
+   * exam-urgency amplifier (`src/domain/learning/exam-urgency.ts`,
+   * `next-best-action-ranking.ts`'s `examUrgencyAmplifierByQuestionId`) —
+   * never exposed as learner-facing urgency/panic copy. `examDate` is
+   * `YYYY-MM-DD`, or `null` when unset — same convention as
+   * `CourseAuthoringRecord.examDate`.
+   */
+  listExamDates(courseIds: string[]): Promise<{ id: string; examDate: string | null }[]>;
+
+  /**
    * Returns `null` if the Course does not exist; otherwise the join policy
    * actually persisted after the write (always equal to `joinPolicy`).
    * Does not itself check the caller's authorization — that is

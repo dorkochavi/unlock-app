@@ -241,6 +241,89 @@ describe("TsFsrsMemoryScheduler", () => {
     });
   });
 
+  describe("RUN010-D / OQ-044 — estimateCardPhase", () => {
+    it("classifies a brand-new card's first review (Learning state) as 'learning'", () => {
+      const scheduler = new TsFsrsMemoryScheduler();
+      const t0 = new Date("2026-01-01T00:00:00.000Z");
+
+      const state = scheduler.initialize({ reviewedAt: t0, rating: "GOOD" })
+        .nextState;
+
+      expect(state.implementationState.state.state).toBe("Learning");
+      expect(scheduler.estimateCardPhase(state)).toBe("learning");
+    });
+
+    it("classifies a graduated card (Review state) as 'review'", () => {
+      const scheduler = new TsFsrsMemoryScheduler();
+      const t0 = new Date("2026-01-01T00:00:00.000Z");
+
+      const afterFirstGood = scheduler.initialize({
+        reviewedAt: t0,
+        rating: "GOOD",
+      }).nextState;
+      const afterSecondGood = scheduler.review(afterFirstGood, {
+        reviewedAt: afterFirstGood.scheduledReviewAt,
+        rating: "GOOD",
+      }).nextState;
+
+      expect(afterSecondGood.implementationState.state.state).toBe("Review");
+      expect(scheduler.estimateCardPhase(afterSecondGood)).toBe("review");
+    });
+
+    it("classifies a post-lapse Relearning card as 'learning' (short-term, same as New/Learning)", () => {
+      const scheduler = new TsFsrsMemoryScheduler();
+      const t0 = new Date("2026-01-01T00:00:00.000Z");
+      const t1 = addDays(t0, 10);
+      const t2 = addDays(t1, 20);
+      const t3 = addDays(t2, 20);
+
+      const s1 = scheduler.initialize({ reviewedAt: t0, rating: "GOOD" }).nextState;
+      const s2 = scheduler.review(s1, { reviewedAt: t1, rating: "GOOD" }).nextState;
+      const s3 = scheduler.review(s2, { reviewedAt: t2, rating: "GOOD" }).nextState;
+      expect(s3.implementationState.state.state).toBe("Review"); // graduated
+
+      const lapsed = scheduler.review(s3, { reviewedAt: t3, rating: "AGAIN" })
+        .nextState;
+
+      expect(lapsed.implementationState.state.state).toBe("Relearning");
+      expect(scheduler.estimateCardPhase(lapsed)).toBe("learning");
+    });
+
+    it("survives a JSON.stringify/JSON.parse round-trip — the exact production Postgres persistence shape — proving cardPhase is durable without a dedicated stored field (RUN010-D review finding)", () => {
+      // This is deliberately the same round-trip shape as the
+      // "round-trips through JSON.stringify/JSON.parse" test above:
+      // implementationState is already JSON-safe, and the ts-fsrs adapter
+      // only ever reads it back through toFsrsCardInput — exactly what
+      // estimateCardPhase itself calls. A prior version of this Slice
+      // stored cardPhase as an ad hoc top-level field on SchedulerMemoryState
+      // instead, which a real Postgres round-trip (progress-mapper.ts
+      // reconstructs the object from named/JSON columns, not by
+      // spreading an arbitrary extra field) would silently drop — this
+      // test guards against that regression recurring.
+      const scheduler = new TsFsrsMemoryScheduler();
+      const t0 = new Date("2026-01-01T00:00:00.000Z");
+      const state = scheduler.initialize({ reviewedAt: t0, rating: "GOOD" })
+        .nextState;
+      expect(scheduler.estimateCardPhase(state)).toBe("learning");
+
+      const serialized = JSON.stringify(state);
+      const parsed = JSON.parse(serialized) as Omit<
+        SchedulerMemoryState,
+        "scheduledReviewAt" | "lastReviewAt"
+      > & {
+        scheduledReviewAt: string;
+        lastReviewAt: string | null;
+      };
+      const revived: SchedulerMemoryState = {
+        ...parsed,
+        scheduledReviewAt: new Date(parsed.scheduledReviewAt),
+        lastReviewAt: parsed.lastReviewAt ? new Date(parsed.lastReviewAt) : null,
+      };
+
+      expect(scheduler.estimateCardPhase(revived)).toBe("learning");
+    });
+  });
+
   it("keeps ts-fsrs out of the domain layer", () => {
     const testFileDir = dirname(fileURLToPath(import.meta.url));
     const domainDir = join(testFileDir, "..", "..", "..", "..", "domain");

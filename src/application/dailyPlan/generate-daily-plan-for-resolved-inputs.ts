@@ -44,10 +44,12 @@ import {
   type NextBestActionContext,
 } from "../../domain/learning/next-best-action";
 import { rankNextBestActionCandidates } from "../../domain/learning/next-best-action-ranking";
+import { generateTodayPlan } from "../../domain/learning/today-planner";
 import {
-  generateTodayPlan,
-  type TodayPlannerPolicy,
-} from "../../domain/learning/today-planner";
+  computeTodayPlanBudget,
+  type TodayPlanBudgetPolicy,
+} from "../../domain/learning/today-plan-budget";
+import { computeExamUrgencyAmplifier } from "../../domain/learning/exam-urgency";
 import type { MemoryScheduler } from "../../domain/learning/scheduler";
 import type { UserQuestionProgress } from "../../domain/learning/types";
 import {
@@ -119,7 +121,14 @@ export interface DailyPlanGenerationContext {
   now: Date;
   engineVersion: string;
   memoryScheduler: MemoryScheduler;
-  todayPlannerPolicy: TodayPlannerPolicy;
+  /**
+   * RUN010-D: replaces the old flat `todayPlannerPolicy: TodayPlannerPolicy`
+   * — this function now derives the actual `TodayPlannerPolicy.maxItems` it
+   * passes to `generateTodayPlan` from `computeTodayPlanBudget(ranked,
+   * todayPlanBudgetPolicy)` rather than passing a fixed ceiling straight
+   * through. See today-plan-budget.ts.
+   */
+  todayPlanBudgetPolicy: TodayPlanBudgetPolicy;
 }
 
 export interface GenerateDailyPlanForResolvedInputsCommand {
@@ -134,6 +143,17 @@ export interface GenerateDailyPlanForResolvedInputsCommand {
    * module doc comment.
    */
   eligibleCourseIds: string[];
+  /**
+   * RUN010-D — optional, already-resolved `courses.exam_date` per eligible
+   * Course (`YYYY-MM-DD`, or `null`/absent when unset), used ONLY to build
+   * the exam-urgency amplifier passed into ranking
+   * (next-best-action-ranking.ts's `examUrgencyAmplifierByQuestionId`).
+   * Entirely optional and additive: omitting it (every caller before this
+   * Slice, and any caller that does not care about exam urgency) produces
+   * ranking output byte-identical to before this field existed — see
+   * next-best-action-ranking.ts's own doc comment on that field.
+   */
+  examDatesByCourseId?: ReadonlyMap<string, string | null>;
 }
 
 export async function generateDailyPlanForResolvedInputs(
@@ -200,19 +220,54 @@ export async function generateDailyPlanForResolvedInputs(
     const candidates = progresses.flatMap((progress) =>
       generateNextBestActionCandidates(progress, nbaContext),
     );
+
+    // RUN010-D: resolve the exam-urgency amplifier per questionId (never
+    // per courseId — see next-best-action-ranking.ts's own doc comment on
+    // `examUrgencyAmplifierByQuestionId`), reusing `questionCourseId`
+    // (already built above) to map each candidate's Question back to its
+    // Course's exam date. Left `undefined` entirely when the caller did not
+    // supply `examDatesByCourseId` — the ranking function's own contract
+    // guarantees `undefined` here means neutral/byte-identical output.
+    let examUrgencyAmplifierByQuestionId: Map<string, number> | undefined;
+    if (command.examDatesByCourseId) {
+      const amplifierByCourseId = new Map<string, number>();
+      examUrgencyAmplifierByQuestionId = new Map();
+      for (const [questionId, courseId] of questionCourseId) {
+        let amplifier = amplifierByCourseId.get(courseId);
+        if (amplifier === undefined) {
+          const examDateString = command.examDatesByCourseId.get(courseId) ?? null;
+          const examDate =
+            examDateString === null ? null : new Date(`${examDateString}T00:00:00.000Z`);
+          amplifier = computeExamUrgencyAmplifier(examDate, context.now);
+          amplifierByCourseId.set(courseId, amplifier);
+        }
+        examUrgencyAmplifierByQuestionId.set(questionId, amplifier);
+      }
+    }
+
     // Ranked ONCE, globally, across the merged multi-Course pool — no
     // per-Course quota, no fairness balancing, no per-Course planning
     // (ADR-016 §9/§10). rankNextBestActionCandidates/generateTodayPlan
-    // carry no courseId concept at all and are called completely
-    // unmodified.
-    const ranked = rankNextBestActionCandidates(candidates, { now: context.now });
+    // carry no courseId concept at all; the exam-urgency amplifier above is
+    // the one additive, questionId-keyed extension RUN010-D introduces.
+    const ranked = rankNextBestActionCandidates(candidates, {
+      now: context.now,
+      examUrgencyAmplifierByQuestionId,
+    });
 
     let items: Array<Omit<DailyPlanItem, "id" | "dailyPlanId">>;
 
     if (ranked.length > 0) {
+      // RUN010-D: the actual truncation ceiling is now DERIVED per
+      // generation from the ranked pool's own tier composition
+      // (computeTodayPlanBudget), not passed straight through as a fixed
+      // constant — see today-plan-budget.ts. generateTodayPlan itself is
+      // unchanged: still a pure top-N truncation over the already-ranked
+      // list, never re-ranking, never fabricating filler.
+      const maxItems = computeTodayPlanBudget(ranked, context.todayPlanBudgetPolicy);
       const plan = generateTodayPlan(
         { rankedCandidates: ranked, plannedForDate: command.plannedForDate },
-        context.todayPlannerPolicy,
+        { maxItems },
       );
 
       // QuestionVersion resolution/freezing is an application-layer

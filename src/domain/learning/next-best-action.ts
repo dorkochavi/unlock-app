@@ -115,6 +115,21 @@ export interface NextBestActionCandidate {
    * progress-update.ts's own treatment).
    */
   retrievability: number | null;
+  /**
+   * RUN010-D / OQ-044: `context.memoryScheduler.estimateCardPhase(progress
+   * .memory)` — recomputed here from `progress.memory`, exactly like
+   * `retrievability` above, NEVER read from a stored field (a value stored
+   * only on the in-memory `SchedulerMemoryState` object would not survive a
+   * real persistence round-trip; see `MemoryScheduler.estimateCardPhase`'s
+   * own doc comment, scheduler.ts). Null when no scheduler memory exists,
+   * or when the injected scheduler does not implement this optional method
+   * — either way treated as "no positive evidence of a short-term
+   * artifact" by every downstream reader (today-plan-budget.ts), never as
+   * "learning". Attached uniformly (same treatment as `dueAt`/
+   * `retrievability`) — this file makes no applicability/tier decision
+   * based on it.
+   */
+  cardPhase?: "learning" | "review" | null;
 }
 
 export interface NextBestActionContext {
@@ -150,6 +165,10 @@ export function generateNextBestActionCandidates(
           context.now,
         )
       : null;
+  const cardPhase =
+    progress.memory !== null
+      ? (context.memoryScheduler.estimateCardPhase?.(progress.memory) ?? null)
+      : null;
 
   const candidates: NextBestActionCandidate[] = [];
 
@@ -163,6 +182,7 @@ export function generateNextBestActionCandidates(
       reasons: ["SCHEDULED_REVIEW_DUE"],
       dueAt,
       retrievability,
+      cardPhase,
     });
   }
 
@@ -175,6 +195,7 @@ export function generateNextBestActionCandidates(
       reasons: ["UNRESOLVED_LAPSE"],
       dueAt,
       retrievability,
+      cardPhase,
     });
   }
 
@@ -192,6 +213,7 @@ export function generateNextBestActionCandidates(
       ],
       dueAt,
       retrievability,
+      cardPhase,
     });
   }
 
@@ -202,6 +224,7 @@ export function generateNextBestActionCandidates(
       reasons: ["STRENGTHENING_NOT_YET_MASTERED"],
       dueAt,
       retrievability,
+      cardPhase,
     });
   }
 

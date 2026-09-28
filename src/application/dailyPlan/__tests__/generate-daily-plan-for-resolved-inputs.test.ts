@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TodayPlannerPolicy } from "../../../domain/learning/today-planner";
+import type { TodayPlanBudgetPolicy } from "../../../domain/learning/today-plan-budget";
 import type { UserQuestionProgress } from "../../../domain/learning/types";
 import type { DailyPlan, DailyPlanKey } from "../ports";
 import {
@@ -11,10 +11,21 @@ import { InMemoryDailyPlanDatabase } from "./in-memory-fakes";
 const NOW = new Date("2026-01-10T00:00:00.000Z");
 const KEY: DailyPlanKey = { userId: "user-1", plannedForDate: "2026-01-10" };
 
+/**
+ * Matches PRODUCTION_TODAY_PLAN_BUDGET_POLICY's accepted defaults
+ * (docs/OPEN_QUESTIONS.md #16) — reused directly rather than a distinct
+ * fixture so existing count-based assertions below (e.g. test C's exact 15)
+ * keep proving the same guardrail the production default actually uses.
+ */
+const DEFAULT_BUDGET_POLICY: TodayPlanBudgetPolicy = {
+  minUsefulItems: 5,
+  typicalRangeMax: 12,
+  hardMaximumItems: 15,
+};
+
 function makeContext(
   overrides: Partial<DailyPlanGenerationContext> = {},
 ): DailyPlanGenerationContext {
-  const policy: TodayPlannerPolicy = { maxItems: 15 };
   return {
     now: NOW,
     engineVersion: "test-engine-v1",
@@ -26,8 +37,19 @@ function makeContext(
         throw new Error("not used");
       },
       estimateRetrievability: () => 0.9,
+      // RUN010-D test-only convention: reads a `phase` marker this file's
+      // own `memoryWithPhase` helper plants in the opaque
+      // `implementationState.state` bag (never a real ts-fsrs shape) —
+      // mirrors how the real adapter derives cardPhase from whatever it can
+      // reconstruct from persisted implementation-specific state, never
+      // from a stored top-level field. Missing/no marker -> "review"
+      // (genuine), matching every other fixture's default assumption.
+      estimateCardPhase: (state) => {
+        const phase = (state.implementationState.state as { phase?: string }).phase;
+        return phase === "learning" ? "learning" : "review";
+      },
     },
-    todayPlannerPolicy: policy,
+    todayPlanBudgetPolicy: DEFAULT_BUDGET_POLICY,
     ...overrides,
   };
 }
@@ -133,7 +155,7 @@ describe("generateDailyPlanForResolvedInputs", () => {
 
     const plan = await generateDailyPlanForResolvedInputs(
       { ...KEY, eligibleCourseIds: ["course-1"] },
-      makeContext({ todayPlannerPolicy: { maxItems: 15 } }),
+      makeContext(),
       db,
     );
 
@@ -147,7 +169,7 @@ describe("generateDailyPlanForResolvedInputs", () => {
 
     const plan = await generateDailyPlanForResolvedInputs(
       { ...KEY, eligibleCourseIds: ["course-1"] },
-      makeContext({ todayPlannerPolicy: { maxItems: 15 } }),
+      makeContext(),
       db,
     );
 
@@ -506,6 +528,146 @@ describe("generateDailyPlanForResolvedInputs", () => {
       );
 
       expect(plan.items).toHaveLength(1);
+    });
+  });
+
+  describe("RUN010-D — Today Plan Budget + exam-urgency amplifier wiring", () => {
+    function memoryWithPhase(
+      cardPhase: "learning" | "review",
+      scheduledReviewAt: Date = new Date("2026-01-09T00:00:00.000Z"),
+    ) {
+      return {
+        stability: 5,
+        difficulty: 5,
+        scheduledReviewAt,
+        lastReviewAt: new Date("2026-01-05T00:00:00.000Z"),
+        reviewCount: 1,
+        lapseCount: 0,
+        // `phase` here is a test-fixture-only marker `makeContext`'s fake
+        // `estimateCardPhase` reads back out — cardPhase is NEVER a stored
+        // field on SchedulerMemoryState (see scheduler.ts's own doc
+        // comment on why: it must be re-derivable from whatever survives a
+        // real persistence round-trip, not attached to the in-memory object).
+        implementationState: { implementation: "fake", schemaVersion: 1, state: { phase: cardPhase } },
+      };
+    }
+
+    it("R. a burst of same-day FSRS learning-step artifacts (cardPhase 'learning') does not inflate the plan toward the hard guardrail the way genuine due-review items would", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedProgress(
+        "course-1",
+        makeProgress({ questionId: "question-genuine", memory: memoryWithPhase("review") }),
+      );
+      db.setCurrentVersion("question-genuine", "qv-genuine");
+      for (let i = 0; i < 20; i++) {
+        const questionId = `question-artifact-${i}`;
+        db.seedProgress(
+          "course-1",
+          makeProgress({ questionId, memory: memoryWithPhase("learning") }),
+        );
+        db.setCurrentVersion(questionId, `qv-artifact-${i}`);
+      }
+
+      const plan = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-1"] },
+        makeContext(),
+        db,
+      );
+
+      // core need = 1 genuine item -> budget floors at minUsefulItems (5),
+      // NOT the 15-item hard guardrail 21 genuinely-ranked DUE_REVIEW
+      // candidates would otherwise justify (see test C above).
+      expect(plan.items.length).toBe(5);
+    });
+
+    it("S. courses.exam_date threaded through as examDatesByCourseId reorders a within-tier tie — an imminent-exam Course's less-overdue item can outrank a more-overdue, exam-free Course's item", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedProgress(
+        "course-a",
+        makeProgress({
+          questionId: "question-a",
+          memory: memoryWithPhase("review", new Date(NOW.getTime() - 2 * 24 * 60 * 60 * 1000)),
+        }),
+      );
+      db.seedProgress(
+        "course-b",
+        makeProgress({
+          questionId: "question-b",
+          memory: memoryWithPhase("review", new Date(NOW.getTime() - 3 * 24 * 60 * 60 * 1000)),
+        }),
+      );
+      db.setCurrentVersion("question-a", "qv-a");
+      db.setCurrentVersion("question-b", "qv-b");
+
+      const withoutExamDates = await generateDailyPlanForResolvedInputs(
+        { ...KEY, eligibleCourseIds: ["course-a", "course-b"] },
+        makeContext(),
+        db,
+      );
+      // Unamplified: course-b's item is more overdue (3 days > 2 days), so
+      // it sorts first by the ordinary tie-break — this is the baseline,
+      // byte-identical-to-pre-Slice ordering (no examDatesByCourseId).
+      expect(withoutExamDates.items.map((i) => i.questionId)).toEqual([
+        "question-b",
+        "question-a",
+      ]);
+
+      const dbForAmplified = new InMemoryDailyPlanDatabase();
+      dbForAmplified.seedProgress(
+        "course-a",
+        makeProgress({
+          questionId: "question-a",
+          memory: memoryWithPhase("review", new Date(NOW.getTime() - 2 * 24 * 60 * 60 * 1000)),
+        }),
+      );
+      dbForAmplified.seedProgress(
+        "course-b",
+        makeProgress({
+          questionId: "question-b",
+          memory: memoryWithPhase("review", new Date(NOW.getTime() - 3 * 24 * 60 * 60 * 1000)),
+        }),
+      );
+      dbForAmplified.setCurrentVersion("question-a", "qv-a");
+      dbForAmplified.setCurrentVersion("question-b", "qv-b");
+
+      const withExamDates = await generateDailyPlanForResolvedInputs(
+        {
+          ...KEY,
+          eligibleCourseIds: ["course-a", "course-b"],
+          // course-a's exam is TODAY (amplifier at its maximum); course-b
+          // has none (stays neutral).
+          examDatesByCourseId: new Map([["course-a", "2026-01-10"]]),
+        },
+        makeContext(),
+        dbForAmplified,
+      );
+      // course-a's amplified overdue-ness (2 days * ~2.0 ≈ 4 days) now
+      // exceeds course-b's unamplified 3 days — course-a sorts first, but
+      // ONLY because it already had genuine overdue-ness of its own to
+      // amplify (never manufactured from nothing).
+      expect(withExamDates.items.map((i) => i.questionId)).toEqual([
+        "question-a",
+        "question-b",
+      ]);
+    });
+
+    it("T. an exam date recorded for a Course with no candidates in the pool is harmless (no crash, no effect)", async () => {
+      const db = new InMemoryDailyPlanDatabase();
+      db.seedProgress("course-1", makeProgress({ questionId: "question-1" }));
+      db.setCurrentVersion("question-1", "qv-1");
+
+      const plan = await generateDailyPlanForResolvedInputs(
+        {
+          ...KEY,
+          eligibleCourseIds: ["course-1"],
+          examDatesByCourseId: new Map([["course-unrelated", "2026-01-10"]]),
+        },
+        makeContext(),
+        db,
+      );
+
+      expect(plan.items).toHaveLength(1);
+      expect(plan.items[0].questionId).toBe("question-1");
     });
   });
 });

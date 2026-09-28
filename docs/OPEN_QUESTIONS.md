@@ -89,6 +89,18 @@ Resolve before:
 
 building a durable exam-date model or learner-facing exam scheduling behavior.
 
+RUN010-D implementation note (2026-09-28): `getOrCreateDailyPlanForToday`/
+`generate-daily-plan-for-resolved-inputs.ts` now read `courses.exam_date`
+alone (the only exam-date field that exists in the schema today) to drive
+`src/domain/learning/exam-urgency.ts`'s multiplicative, within-tier-only
+ranking amplifier. This does not resolve this question — there is still no
+personal/group override to arbitrate, so there is no hierarchy to implement
+yet — it only records that the sole existing source (`courses.exam_date`)
+is now load-bearing for ranking order (never for eligibility/tier, per the
+"amplify, don't gate" constraint above). If a personal/group exam date is
+ever added, this call site is where the eventual hierarchy resolution would
+need to be inserted.
+
 ---
 
 ## OQ-008 — Learner-State Persistence Boundary
@@ -418,6 +430,15 @@ Still unresolved:
 whether those are the correct launch values after real learner/pilot evidence.
 
 The architecture must not depend on these exact numbers being permanent.
+
+RUN010-D implementation note (2026-09-28): the tiered-need-bucket +
+whole-plan-guardrail architecture (`docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`
+§2) is now implemented — `computeTodayPlanBudget`
+(`src/domain/learning/today-plan-budget.ts`), production-wired via
+`PRODUCTION_TODAY_PLAN_BUDGET_POLICY` using exactly this section's working
+range (5/8-12/15) as the initial engineering values. This closes the
+architecture gap; the calibration question above (correct launch values)
+remains open exactly as stated.
 
 ---
 

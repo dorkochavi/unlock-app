@@ -132,6 +132,9 @@ export class InMemoryImportDatabase {
       listStatuses: async () => {
         throw new Error("InMemoryImportDatabase: listStatuses is not used by import");
       },
+      listExamDates: async () => {
+        throw new Error("InMemoryImportDatabase: listExamDates is not used by import");
+      },
       getJoinPolicy: async () => null,
       getJoinEligibility: async () => null,
       setJoinPolicy: async () => null,

@@ -26,7 +26,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DailyPlanGenerationSettings } from "../../../src/application/dailyPlan/get-or-create-daily-plan-for-today";
 import { getOrCreateDailyPlanForToday } from "../../../src/application/dailyPlan/get-or-create-daily-plan-for-today";
 import type { DailyPlan, DailyPlanItem } from "../../../src/application/dailyPlan/ports";
-import type { TodayPlannerPolicy } from "../../../src/domain/learning/today-planner";
+import type { TodayPlanBudgetPolicy } from "../../../src/domain/learning/today-plan-budget";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import type { ConnectionProvider } from "../../../src/infrastructure/postgres/connection-provider";
@@ -58,7 +58,11 @@ afterEach(async () => {
 function makeSettings(
   overrides: Partial<DailyPlanGenerationSettings> = {},
 ): DailyPlanGenerationSettings {
-  const policy: TodayPlannerPolicy = { maxItems: 15 };
+  const policy: TodayPlanBudgetPolicy = {
+    minUsefulItems: 5,
+    typicalRangeMax: 12,
+    hardMaximumItems: 15,
+  };
   return {
     engineVersion: "test-engine-v1",
     memoryScheduler: {
@@ -70,7 +74,7 @@ function makeSettings(
       },
       estimateRetrievability: () => 0.9,
     },
-    todayPlannerPolicy: policy,
+    todayPlanBudgetPolicy: policy,
     ...overrides,
   };
 }

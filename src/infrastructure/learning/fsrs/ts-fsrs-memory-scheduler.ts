@@ -84,4 +84,18 @@ export class TsFsrsMemoryScheduler implements MemoryScheduler {
     const card: CardInput = toFsrsCardInput(state);
     return this.fsrs.get_retrievability(card, at, false);
   }
+
+  /**
+   * RUN010-D / OQ-044. Reconstructs the ts-fsrs card exactly as
+   * `estimateRetrievability` does (via `toFsrsCardInput`, which is what
+   * actually survives a real Postgres persistence round-trip — see that
+   * function's own doc comment) and classifies its `state`: New/Learning/
+   * Relearning are all short-term, pre-/re-consolidation phases (stock
+   * ts-fsrs `learning_steps` behavior); only Review is ordinary long-term
+   * spaced review.
+   */
+  estimateCardPhase(state: SchedulerMemoryState): "learning" | "review" {
+    const card: CardInput = toFsrsCardInput(state);
+    return card.state === "Review" ? "review" : "learning";
+  }
 }

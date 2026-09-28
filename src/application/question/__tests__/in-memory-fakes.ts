@@ -268,6 +268,9 @@ export class InMemoryQuestionDatabase {
       listStatuses: async () => {
         throw new Error("InMemoryQuestionDatabase.publishRepos: listStatuses is not used by publishQuestion");
       },
+      listExamDates: async () => {
+        throw new Error("InMemoryQuestionDatabase.publishRepos: listExamDates is not used by publishQuestion");
+      },
       getJoinPolicy: async () => null,
       getJoinEligibility: async () => null,
       setJoinPolicy: async () => null,

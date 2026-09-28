@@ -1143,11 +1143,18 @@ Run has no authority to invent (`.claude/rules/learning-engine.md`).
    `src/domain/learning/learning-session.ts` (`deriveIsReinforcementAttempt`), and
    `supabase/tests/postgres/practice.test.ts`'s `RUN010-B` describe block for the accepted design/evidence.
    Sub-items 2-4 below remain open.
-2. **Today Daily Plan Budget.** Today's plan currently often contains ~3 Questions; the product owner believes this is
-   too small for the eventual product and floated a **30–50 upper-bound hypothesis to test** — explicitly NOT a
-   proposal to hard-code 30 or 50 as the default. Run 010 must define a real Daily Plan Budget policy: minimum
-   meaningful plan, normal target, adaptive target, upper bound, and how exam proximity / amount of due material /
-   learner state / course load / available evidence / psychological workload each affect it.
+2. **Today Daily Plan Budget — RESOLVED (architecture) by RUN010-D; numeric calibration remains open.** The product
+   owner's 30-50 figure was explicitly rejected as an untested hypothesis (not adopted). RUN010-D instead implemented
+   the already-accepted-direction tiered-need-bucket + whole-plan-guardrail model
+   (`docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md` §2, `docs/OPEN_QUESTIONS.md` #16): `computeTodayPlanBudget`
+   (`src/domain/learning/today-plan-budget.ts`) sizes the plan from genuine REMEDIATION/DUE_REVIEW-tier candidate
+   counts (excluding same-day FSRS learning-step artifacts per OQ-044 — see `MemoryScheduler.estimateCardPhase`,
+   recomputed at read time rather than stored, so it survives real persistence),
+   bounded by minUsefulItems=5 / hardMaximumItems=15 (`PRODUCTION_TODAY_PLAN_BUDGET_POLICY`), with exam proximity
+   feeding in only as an amplifier on ranking order (`docs/GLOBAL_TODAY_PRIORITY_MODEL.md` §3/§7,
+   `src/domain/learning/exam-urgency.ts`), never a separate budget input. These three numbers (5/8-12/15) and the
+   amplifier curve constants remain CONSERVATIVE CALIBRATION CANDIDATES, not locked — see OQ-016 and the module doc
+   comments in `today-plan-budget.ts`/`exam-urgency.ts` for what future tuning would touch.
 3. **PARTIAL grading outcome.** The product owner observed MULTIPLE_CHOICE attempts that "felt partially correct."
    Investigated in UX-03-QA1: confirmed the domain/application layer has NO canonical PARTIAL outcome — grading is
    `isCorrect: boolean` only (`src/domain/learning/answer.ts`'s `evaluateAnswerCorrectness`, `types.ts`'s `Attempt
@@ -1160,6 +1167,18 @@ Run has no authority to invent (`.claude/rules/learning-engine.md`).
    Topic-interleaved (`interleaveByTopic`) instead of raw creation/import order, without touching the canonical NBA
    ranking Today also uses. If Run 010 revisits ranking/tie-break policy more broadly (e.g., for Today itself), start
    from this same "diversify ties, never priorities" principle rather than re-deciding it from scratch.
+5. **ADR-016 §10 tier-crossing requirement — still not implemented (pre-existing gap, surfaced by RUN010-D review).**
+   ADR-016 §10 / `docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §5 already ACCEPT, as a binding product rule, that
+   sufficiently severe Memory Need/overdue duration must eventually be able to promote a candidate across a priority
+   TIER boundary (e.g. a badly-overdue `DUE_REVIEW` candidate must not be permanently capped below every
+   `REMEDIATION` candidate forever, purely because a sibling Course keeps generating REMEDIATION-tier candidates
+   every day) — see also `docs/GLOBAL_TODAY_PRIORITY_MODEL.md` §5a, which states this makes §7/§14's "tier is the
+   primary axis, exam urgency only within-tier" framing "no longer sufficient as stated." `tierOf()`
+   (`src/domain/learning/next-best-action-ranking.ts`) still has zero dependency on `dueAt`/`retrievability` — this
+   gap predates RUN010-D and RUN010-D's own delivered scope (an exam-urgency amplifier, confined to the within-tier
+   tie-break per ADR-016 §11 "amplifier, not gate") does not violate this rule, but RUN010-D substantially rewrote
+   this same file's doc comments without tracking the still-open tier-crossing requirement anywhere outside those two
+   design docs. Exact escalation mechanism/thresholds remain explicitly undecided calibration work, not solved here.
 
 ## Promotion Trigger
 

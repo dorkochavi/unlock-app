@@ -334,3 +334,113 @@ describe("rankNextBestActionCandidates", () => {
     expect(rankNextBestActionCandidates([], makeContext())).toEqual([]);
   });
 });
+
+describe("rankNextBestActionCandidates — exam-urgency amplifier (RUN010-D)", () => {
+  it("1. omitting examUrgencyAmplifierByQuestionId entirely produces byte-identical output to the pre-Slice baseline", () => {
+    const candidates = [
+      makeCandidate({
+        questionId: "q-less-overdue",
+        dueAt: new Date(NOW.getTime() - 1 * DAY_MS),
+      }),
+      makeCandidate({
+        questionId: "q-more-overdue",
+        dueAt: new Date(NOW.getTime() - 5 * DAY_MS),
+      }),
+    ];
+
+    const withoutField = rankNextBestActionCandidates(candidates, { now: NOW });
+    const withUndefinedMap = rankNextBestActionCandidates(candidates, {
+      now: NOW,
+      examUrgencyAmplifierByQuestionId: undefined,
+    });
+
+    expect(questionOrder(withoutField)).toEqual(["q-more-overdue", "q-less-overdue"]);
+    expect(withUndefinedMap).toEqual(withoutField);
+  });
+
+  it("2. a questionId missing from the amplifier map defaults to neutral, unaffected by other entries", () => {
+    const candidates = [
+      makeCandidate({
+        questionId: "q-no-entry",
+        dueAt: new Date(NOW.getTime() - 1 * DAY_MS),
+      }),
+      makeCandidate({
+        questionId: "q-more-overdue",
+        dueAt: new Date(NOW.getTime() - 5 * DAY_MS),
+      }),
+    ];
+
+    const ranked = rankNextBestActionCandidates(candidates, {
+      now: NOW,
+      examUrgencyAmplifierByQuestionId: new Map([["q-more-overdue", 1]]), // explicit neutral
+    });
+
+    expect(questionOrder(ranked)).toEqual(["q-more-overdue", "q-no-entry"]);
+  });
+
+  it("3. a higher amplifier can move a same-tier candidate ahead of an unamplified one from a different Course", () => {
+    const candidates = [
+      makeCandidate({
+        type: "REVIEW_DUE",
+        questionId: "q-imminent-exam",
+        dueAt: new Date(NOW.getTime() - 2 * DAY_MS), // 2 days overdue
+      }),
+      makeCandidate({
+        type: "REVIEW_DUE",
+        questionId: "q-no-exam",
+        dueAt: new Date(NOW.getTime() - 3 * DAY_MS), // 3 days overdue — would win unamplified
+      }),
+    ];
+
+    const withoutAmplifier = rankNextBestActionCandidates(candidates, { now: NOW });
+    expect(questionOrder(withoutAmplifier)).toEqual(["q-no-exam", "q-imminent-exam"]);
+
+    const withAmplifier = rankNextBestActionCandidates(candidates, {
+      now: NOW,
+      // 2 days * 2.0 (amplified) = 4 days > 3 days (unamplified) — the
+      // imminent-exam Course's candidate now sorts first, but ONLY because
+      // it independently already had genuine overdue-ness to amplify (§3:
+      // the amplifier nudges within-tier order, it does not manufacture
+      // urgency from nothing).
+      examUrgencyAmplifierByQuestionId: new Map([["q-imminent-exam", 2]]),
+    });
+    expect(questionOrder(withAmplifier)).toEqual(["q-imminent-exam", "q-no-exam"]);
+  });
+
+  it("4. never crosses tier boundaries — an extreme amplifier on a STRENGTHEN candidate still cannot outrank a DUE_REVIEW/REMEDIATION candidate from a different, exam-free Course", () => {
+    const candidates = [
+      makeCandidate({
+        type: "STRENGTHEN_MEMORY",
+        questionId: "q-strengthen-imminent-exam",
+        reasons: ["STRENGTHENING_NOT_YET_MASTERED"],
+        dueAt: new Date(NOW.getTime() - 1000 * DAY_MS), // absurdly "overdue" tie-break value
+      }),
+      makeCandidate({
+        type: "REVIEW_DUE",
+        questionId: "q-due-review-no-exam",
+        dueAt: new Date(NOW.getTime() - 1 * DAY_MS),
+      }),
+      makeCandidate({
+        type: "RELEARN_LAPSE",
+        questionId: "q-remediation-no-exam",
+        reasons: ["UNRESOLVED_LAPSE"],
+        dueAt: null,
+      }),
+    ];
+
+    const ranked = rankNextBestActionCandidates(candidates, {
+      now: NOW,
+      examUrgencyAmplifierByQuestionId: new Map([
+        ["q-strengthen-imminent-exam", 1_000_000], // extreme, deliberately absurd
+      ]),
+    });
+
+    // REMEDIATION and DUE_REVIEW still sort strictly ahead of STRENGTHEN,
+    // regardless of the amplifier value applied to the STRENGTHEN item.
+    expect(typesInOrder(ranked)).toEqual([
+      "RELEARN_LAPSE",
+      "REVIEW_DUE",
+      "STRENGTHEN_MEMORY",
+    ]);
+  });
+});

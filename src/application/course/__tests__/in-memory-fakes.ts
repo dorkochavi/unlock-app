@@ -155,6 +155,12 @@ export class InMemoryCourseDatabase {
           return status === undefined ? [] : [{ id: courseId, status }];
         });
       },
+      listExamDates: async (courseIds) => {
+        return courseIds.flatMap((courseId) => {
+          if (!this.courseExamDates.has(courseId)) return [];
+          return [{ id: courseId, examDate: this.courseExamDates.get(courseId) ?? null }];
+        });
+      },
       getJoinPolicy: async (courseId) => {
         return this.joinPolicies.get(courseId) ?? null;
       },

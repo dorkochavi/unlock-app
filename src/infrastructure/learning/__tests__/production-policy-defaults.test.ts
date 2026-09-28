@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { validateEvidenceStrengthPolicy } from "../../../domain/learning/evidence-strength";
 import { validateRetrievalQualificationPolicy } from "../../../domain/learning/retrieval-qualification";
-import { validateTodayPlannerPolicy } from "../../../domain/learning/today-planner";
+import { validateTodayPlanBudgetPolicy } from "../../../domain/learning/today-plan-budget";
 import {
   PRODUCTION_ENGINE_VERSION,
   PRODUCTION_EVIDENCE_STRENGTH_POLICY,
   PRODUCTION_MASTERY_POLICY,
   PRODUCTION_MISCONCEPTION_POLICY,
   PRODUCTION_RETRIEVAL_QUALIFICATION_POLICY,
-  PRODUCTION_TODAY_PLANNER_POLICY,
+  PRODUCTION_TODAY_PLAN_BUDGET_POLICY,
 } from "../production-policy-defaults";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -69,10 +69,14 @@ describe("production policy defaults", () => {
     );
   });
 
-  it("match the documented TodayPlannerPolicy default (docs/OPEN_QUESTIONS.md #16, ADR-016 §5 hard maximum)", () => {
-    expect(PRODUCTION_TODAY_PLANNER_POLICY).toEqual({ maxItems: 15 });
+  it("match the documented TodayPlanBudgetPolicy default (docs/OPEN_QUESTIONS.md #16, RUN010-D)", () => {
+    expect(PRODUCTION_TODAY_PLAN_BUDGET_POLICY).toEqual({
+      minUsefulItems: 5,
+      typicalRangeMax: 12,
+      hardMaximumItems: 15,
+    });
     expect(() =>
-      validateTodayPlannerPolicy(PRODUCTION_TODAY_PLANNER_POLICY),
+      validateTodayPlanBudgetPolicy(PRODUCTION_TODAY_PLAN_BUDGET_POLICY),
     ).not.toThrow();
   });
 

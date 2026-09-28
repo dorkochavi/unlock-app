@@ -100,6 +100,25 @@ export class PostgresCourseRepository implements CourseRepository {
     }));
   }
 
+  /**
+   * Batched form mirroring `listStatuses` exactly (`CourseRepository
+   * .listExamDates` doc comment, RUN010-D) — same empty-input short-circuit,
+   * same `= ANY($1::uuid[])` shape, different column list.
+   */
+  async listExamDates(courseIds: string[]): Promise<{ id: string; examDate: string | null }[]> {
+    if (courseIds.length === 0) {
+      return [];
+    }
+    const result = await this.db.query(
+      "select id, exam_date from courses where id = any($1::uuid[])",
+      [courseIds],
+    );
+    return result.rows.map((row) => ({
+      id: readString(row, TABLE, "id"),
+      examDate: row.exam_date === null ? null : readDateOnlyString(row, TABLE, "exam_date"),
+    }));
+  }
+
   async getJoinPolicy(courseId: string) {
     const result = await this.db.query(
       "select join_policy from courses where id = $1",

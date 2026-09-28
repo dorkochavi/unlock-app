@@ -28,7 +28,7 @@ import type { EvidenceStrengthPolicy } from "../../domain/learning/evidence-stre
 import type { MasteryPolicy } from "../../domain/learning/mastery";
 import type { MisconceptionPolicy } from "../../domain/learning/misconception";
 import type { RetrievalQualificationPolicy } from "../../domain/learning/retrieval-qualification";
-import type { TodayPlannerPolicy } from "../../domain/learning/today-planner";
+import type { TodayPlanBudgetPolicy } from "../../domain/learning/today-plan-budget";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -95,22 +95,23 @@ export const PRODUCTION_MISCONCEPTION_POLICY: MisconceptionPolicy = Object.freez
 
 /**
  * `docs/OPEN_QUESTIONS.md` #16 / ADR-016 §5 /
- * `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`: the accepted default DIRECTION is
- * dynamic sizing (minimum useful 5, typical 8-12, hard maximum 15) — NOT a
- * single fixed number. `src/domain/learning/today-planner.ts`'s current
- * architecture only exposes one `maxItems` truncation ceiling; it has no
- * tiered minimum/typical-range behavior. The DailyPlan path is implemented,
- * but the fuller dynamic-sizing model remains calibration/architecture work;
- * this composition root intentionally does not invent that missing behavior.
- * `maxItems` is set to the accepted HARD MAXIMUM (15), the conservative
- * ceiling this single-field shape can express: `generateTodayPlan` already
- * never fabricates filler items when fewer are ranked (its own "no filler"
- * rule), so this does not force a plan up to 15 when fewer are genuinely
- * justified — it only caps the upper bound.
+ * `docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md` §0b/§2 (RUN010-D): the accepted
+ * default DIRECTION is dynamic, tiered-bucket sizing with a whole-plan
+ * guardrail — minimum useful plan 5 items, typical range 8-12 items, hard
+ * maximum 15 items. These three numbers are CONSERVATIVE PRODUCTION DEFAULT
+ * CANDIDATES, not locked product invariants (that doc's own "Status" line) —
+ * `src/domain/learning/today-plan-budget.ts`'s `computeTodayPlanBudget` is
+ * the actual tiered-bucket-plus-guardrail computation this policy feeds;
+ * `today-planner.ts`'s `generateTodayPlan` itself remains an unchanged pure
+ * top-N truncation, never fabricating filler when fewer candidates are
+ * genuinely ranked.
  */
-export const PRODUCTION_TODAY_PLANNER_POLICY: TodayPlannerPolicy = Object.freeze({
-  maxItems: 15,
-});
+export const PRODUCTION_TODAY_PLAN_BUDGET_POLICY: TodayPlanBudgetPolicy =
+  Object.freeze({
+    minUsefulItems: 5,
+    typicalRangeMax: 12,
+    hardMaximumItems: 15,
+  });
 
 /**
  * `docs/OPEN_QUESTIONS.md` #10 (Engine Versioning Granularity, OPEN): a

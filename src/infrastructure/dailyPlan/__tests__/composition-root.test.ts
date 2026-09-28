@@ -10,7 +10,7 @@ import { PostgresUserRepository } from "../../postgres/user-repository";
 import { TsFsrsMemoryScheduler } from "../../learning/fsrs/ts-fsrs-memory-scheduler";
 import {
   PRODUCTION_ENGINE_VERSION,
-  PRODUCTION_TODAY_PLANNER_POLICY,
+  PRODUCTION_TODAY_PLAN_BUDGET_POLICY,
 } from "../../learning/production-policy-defaults";
 import {
   createProductionDailyPlanGenerationSettings,
@@ -25,14 +25,14 @@ describe("createProductionDailyPlanGenerationSettings", () => {
 
     expect(settings.engineVersion).toBe(PRODUCTION_ENGINE_VERSION);
     expect(settings.memoryScheduler).toBeInstanceOf(TsFsrsMemoryScheduler);
-    expect(settings.todayPlannerPolicy).toEqual(PRODUCTION_TODAY_PLANNER_POLICY);
+    expect(settings.todayPlanBudgetPolicy).toEqual(PRODUCTION_TODAY_PLAN_BUDGET_POLICY);
   });
 
-  it("throws when mutating TodayPlannerPolicy — shares the same frozen production default", () => {
+  it("throws when mutating TodayPlanBudgetPolicy — shares the same frozen production default", () => {
     const settings = createProductionDailyPlanGenerationSettings();
 
     expect(() => {
-      (settings.todayPlannerPolicy as unknown as Record<string, unknown>).maxItems = 1;
+      (settings.todayPlanBudgetPolicy as unknown as Record<string, unknown>).hardMaximumItems = 1;
     }).toThrow(TypeError);
   });
 

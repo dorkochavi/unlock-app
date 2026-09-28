@@ -20,7 +20,7 @@
 import { TsFsrsMemoryScheduler } from "../learning/fsrs/ts-fsrs-memory-scheduler";
 import {
   PRODUCTION_ENGINE_VERSION,
-  PRODUCTION_TODAY_PLANNER_POLICY,
+  PRODUCTION_TODAY_PLAN_BUDGET_POLICY,
 } from "../learning/production-policy-defaults";
 import type {
   DailyPlanGenerationSettings,
@@ -45,7 +45,7 @@ export function createProductionDailyPlanGenerationSettings(): DailyPlanGenerati
   return {
     engineVersion: PRODUCTION_ENGINE_VERSION,
     memoryScheduler: new TsFsrsMemoryScheduler(),
-    todayPlannerPolicy: PRODUCTION_TODAY_PLANNER_POLICY,
+    todayPlanBudgetPolicy: PRODUCTION_TODAY_PLAN_BUDGET_POLICY,
   };
 }
 

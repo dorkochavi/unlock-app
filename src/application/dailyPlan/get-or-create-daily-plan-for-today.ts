@@ -173,13 +173,33 @@ export async function getOrCreateDailyPlanForToday(
   // ARCHIVED-Course exclusion (see module doc comment).
   const eligibleCourseIds = await filterToPublishedCourseIds(learnerCourseIds, ports.courses);
 
+  // RUN010-D: resolve each eligible Course's exam date (the sole source —
+  // docs/OPEN_QUESTIONS.md #2's own reasoning, no personal exam date field
+  // exists) so generateDailyPlanForResolvedInputs can build the exam-urgency
+  // amplifier. `examDatesByCourseId` is optional there specifically so this
+  // one extra read never becomes load-bearing for the empty-eligible-set
+  // case below.
+  const examDatesByCourseId = await loadExamDatesByCourseId(eligibleCourseIds, ports.courses);
+
   const plan = await generateDailyPlanForResolvedInputs(
-    { userId: command.userId, plannedForDate, eligibleCourseIds },
+    { userId: command.userId, plannedForDate, eligibleCourseIds, examDatesByCourseId },
     { ...settings, now: command.now },
     ports.dailyPlanUnitOfWork,
   );
 
   return { outcome: "READY", plan };
+}
+
+/** RUN010-D: batches `courses.listExamDates` into a lookup map. */
+async function loadExamDatesByCourseId(
+  courseIds: string[],
+  courses: CourseRepository,
+): Promise<Map<string, string | null>> {
+  if (courseIds.length === 0) {
+    return new Map();
+  }
+  const examDates = await courses.listExamDates(courseIds);
+  return new Map(examDates.map((course) => [course.id, course.examDate]));
 }
 
 /** ARCHIVED-Course exclusion (see this file's own module doc comment). */

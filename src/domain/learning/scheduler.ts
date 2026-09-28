@@ -113,4 +113,35 @@ export interface MemoryScheduler {
     state: SchedulerMemoryState,
     at: Date,
   ): number;
+
+  /**
+   * RUN010-D / docs/OPEN_QUESTIONS.md #44 (OQ-044): classifies whether
+   * `state` is still in a short-term acquisition/relearning phase
+   * ("learning") or has reached ordinary long-term spaced review
+   * ("review") — so domain code (next-best-action.ts /
+   * today-plan-budget.ts) can distinguish a genuine multi-day-due
+   * REVIEW_DUE candidate from a same-day short-learning-step "due again"
+   * artifact (OQ-044: a stock scheduler default can make a once-answered
+   * Question due again within minutes).
+   *
+   * Deliberately a METHOD, not a stored field on `SchedulerMemoryState` —
+   * same "recomputed here, never persisted" treatment as
+   * `estimateRetrievability` above, and for the same reason: a value
+   * attached only to an in-memory `SchedulerMemoryState` object would be
+   * silently lost across a real persistence round-trip (the Postgres
+   * mapper reconstructs `SchedulerMemoryState` from named/JSON columns,
+   * none of which would carry an ad hoc extra field). Deriving it instead,
+   * on demand, from whatever `implementationState` the adapter already
+   * knows how to reconstruct (exactly what `estimateRetrievability`
+   * already does) makes it durable for free, with no new schema/column
+   * needed.
+   *
+   * OPTIONAL: a scheduler adapter/fake with no notion of a learning/review
+   * phase distinction may omit it entirely. Every caller that reads the
+   * resulting value MUST treat a missing implementation (or a missing
+   * `SchedulerMemoryState`) as "review" — no positive evidence it is a
+   * short-term artifact — never as "learning" (see
+   * next-best-action.ts/today-plan-budget.ts's own doc comments).
+   */
+  estimateCardPhase?(state: SchedulerMemoryState): "learning" | "review";
 }

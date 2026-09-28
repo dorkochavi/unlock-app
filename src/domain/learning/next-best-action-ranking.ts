@@ -73,12 +73,18 @@
  *   judgment. This is also why ranking does NOT receive UserQuestionProgress
  *   at all — only candidates — keeping candidate-generation vs. ranking
  *   cleanly separated;
- * - EXAM_PRIORITY: deferred (docs/LEARNING_ENGINE.md §29: exam urgency
- *   changes ranking, not memory truth; the exam-date hierarchy itself is
- *   still open — docs/OPEN_QUESTIONS.md #2). `NextBestActionRankingContext`
- *   is a plain, extensible interface (just `{ now }` today) specifically
- *   so an exam-urgency field/tier can be added later additively, without
- *   redesigning candidate generation or this function's existing contract.
+ * - EXAM_PRIORITY as its own tier/score: still not a thing (docs/
+ *   LEARNING_ENGINE.md §29: exam urgency changes ranking, not memory
+ *   truth). RUN010-D implements the additive extension this file's own
+ *   `NextBestActionRankingContext` was always left open for
+ *   (docs/OPEN_QUESTIONS.md #2's exam-date-hierarchy question does not
+ *   block this — only a Course-level `exam_date` exists in the schema, so
+ *   there is no hierarchy to resolve): an OPTIONAL
+ *   `examUrgencyAmplifierByQuestionId` map, consulted ONLY inside the
+ *   within-tier overdue tie-break (`amplifiedOverdueRankValue` below),
+ *   never as a new tier and never able to move a candidate across an
+ *   existing tier boundary — see that field's own doc comment and
+ *   docs/GLOBAL_TODAY_PRIORITY_MODEL.md §7/§14 ("Option C").
  *
  * Design rules this file follows (matching the rest of src/domain/learning):
  * - pure, deterministic: no Date.now(), no randomness, no DB, no LLM;
@@ -120,6 +126,31 @@ const TYPE_TIE_BREAK_ORDER: readonly NextBestActionType[] = [
 export interface NextBestActionRankingContext {
   /** Injected clock, used for the overdue-ms tie-break. Never Date.now(). */
   now: Date;
+  /**
+   * RUN010-D — optional per-question exam-urgency amplifier lookup.
+   * Extends this context ADDITIVELY (exactly as this file's own doc comment
+   * always intended): every existing caller omits it, and a missing map or
+   * a missing questionId entry both mean NEUTRAL (1.0) — so ranking output
+   * is byte-identical to before this field existed whenever it is absent.
+   *
+   * Keyed by questionId, never courseId or Course-anything: candidates
+   * (and this ranking function) deliberately carry no courseId field
+   * (docs/GLOBAL_TODAY_PRIORITY_MODEL.md §0, "Course-blind at the type
+   * level"), so the application layer (which DOES know each Question's
+   * Course) is the one that resolves `courses.exam_date ->
+   * computeExamUrgencyAmplifier() -> this per-questionId map` before
+   * calling this function — see
+   * src/domain/learning/exam-urgency.ts and
+   * src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts.
+   *
+   * Applied ONLY inside the within-tier tie-break chain below (see
+   * `amplifiedOverdueRankValue`) — it can never change `tierOf()`'s
+   * decision or otherwise move a candidate across a tier boundary,
+   * matching docs/GLOBAL_TODAY_PRIORITY_MODEL.md §7/§14 ("Option C —
+   * hybrid": exam urgency is a within-tier amplifier only, never additive,
+   * never tier-crossing).
+   */
+  examUrgencyAmplifierByQuestionId?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -179,6 +210,47 @@ function overdueRankValue(
  */
 function retrievabilityRankValue(candidate: NextBestActionCandidate): number {
   return candidate.retrievability ?? Number.POSITIVE_INFINITY;
+}
+
+/**
+ * RUN010-D: this candidate's exam-urgency amplifier, or the neutral 1.0
+ * when `context.examUrgencyAmplifierByQuestionId` is absent, or has no
+ * entry for this candidate's questionId (no exam_date set for its Course —
+ * docs/GLOBAL_TODAY_PRIORITY_MODEL.md §3: exam-free must mean neutral,
+ * never a punishing default).
+ */
+function examUrgencyAmplifierFor(
+  candidate: NextBestActionCandidate,
+  context: NextBestActionRankingContext,
+): number {
+  return (
+    context.examUrgencyAmplifierByQuestionId?.get(candidate.questionId) ?? 1
+  );
+}
+
+/**
+ * The `now - dueAt` tie-break value, amplified by exam urgency — but ONLY
+ * when there is genuine elapsed overdue-ness to amplify (a finite, strictly
+ * positive value). A not-yet-due candidate (a negative value — legitimate
+ * here, since RELEARN_LAPSE/REPAIR_MISCONCEPTION/STRENGTHEN_MEMORY attach
+ * `dueAt` uniformly as context, not as an applicability gate) or a
+ * candidate with no `dueAt` at all (`-Infinity`) is left UNAMPLIFIED:
+ * multiplying a not-yet-elapsed or absent "overdue" signal by an
+ * amplifier > 1 would make it MORE negative/unchanged rather than more
+ * urgent, which would be backwards. This guard has no effect whenever the
+ * amplifier is exactly 1 (the default/no-exam case): `raw * 1 === raw` for
+ * every finite value and for `-Infinity`, so ranking stays byte-identical
+ * to before this field existed regardless of sign.
+ */
+function amplifiedOverdueRankValue(
+  candidate: NextBestActionCandidate,
+  context: NextBestActionRankingContext,
+): number {
+  const raw = overdueRankValue(candidate, context.now);
+  if (Number.isFinite(raw) && raw > 0) {
+    return raw * examUrgencyAmplifierFor(candidate, context);
+  }
+  return raw;
 }
 
 /**
@@ -272,8 +344,8 @@ export function rankNextBestActionCandidates(
     }
 
     const overdueComparison = compareDescending(
-      overdueRankValue(a.candidate, context.now),
-      overdueRankValue(b.candidate, context.now),
+      amplifiedOverdueRankValue(a.candidate, context),
+      amplifiedOverdueRankValue(b.candidate, context),
     );
     if (overdueComparison !== 0) {
       return overdueComparison;

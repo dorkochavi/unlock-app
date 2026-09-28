@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CourseMembership, CourseMembershipRepository } from "../../course/ports";
 import { InMemoryCourseDatabase } from "../../course/__tests__/in-memory-fakes";
 import { InMemoryUserDatabase } from "../../user/__tests__/in-memory-fakes";
-import type { TodayPlannerPolicy } from "../../../domain/learning/today-planner";
+import type { TodayPlanBudgetPolicy } from "../../../domain/learning/today-plan-budget";
 import type { UserQuestionProgress } from "../../../domain/learning/types";
 import {
   getOrCreateDailyPlanForToday,
@@ -15,7 +15,11 @@ const USER_ID = "user-1";
 function makeSettings(
   overrides: Partial<DailyPlanGenerationSettings> = {},
 ): DailyPlanGenerationSettings {
-  const policy: TodayPlannerPolicy = { maxItems: 15 };
+  const policy: TodayPlanBudgetPolicy = {
+    minUsefulItems: 5,
+    typicalRangeMax: 12,
+    hardMaximumItems: 15,
+  };
   return {
     engineVersion: "test-engine-v1",
     memoryScheduler: {
@@ -27,7 +31,7 @@ function makeSettings(
       },
       estimateRetrievability: () => 0.9,
     },
-    todayPlannerPolicy: policy,
+    todayPlanBudgetPolicy: policy,
     ...overrides,
   };
 }
@@ -637,6 +641,125 @@ describe("getOrCreateDailyPlanForToday", () => {
       const questionIds = result.plan.items.map((item) => item.questionId);
       expect(questionIds).not.toContain("question-archived-unseen-only");
       expect(questionIds).toContain("question-active-unseen-only");
+    }
+  });
+
+  it("O. fetches courses.exam_date for eligible Courses via listExamDates and threads it through to ranking's exam-urgency amplifier (RUN010-D)", async () => {
+    const users = new InMemoryUserDatabase();
+    users.seedUser(USER_ID, "UTC");
+    const courses = new InMemoryCourseDatabase();
+    courses.seedCourse("course-a"); // required before updateCourseMetadata below can find it
+    courses.seedMembership(makeMembership({ courseId: "course-a", role: "LEARNER" }));
+    courses.seedMembership(makeMembership({ courseId: "course-b", role: "LEARNER" }));
+    // course-a's exam is exactly "now" (2026-01-10) — near-maximal amplifier.
+    await courses.repos().courses.updateCourseMetadata("course-a", { examDate: "2026-01-10" });
+
+    const dailyPlans = new InMemoryDailyPlanDatabase();
+    dailyPlans.seedProgress("course-a", {
+      ...makeProgress({ questionId: "question-a" }),
+      memory: {
+        stability: 5,
+        difficulty: 5,
+        scheduledReviewAt: new Date("2026-01-08T00:00:00.000Z"), // 2 days overdue
+        lastReviewAt: new Date("2026-01-05T00:00:00.000Z"),
+        reviewCount: 1,
+        lapseCount: 0,
+        implementationState: { implementation: "fake", schemaVersion: 1, state: {} },
+      },
+    });
+    dailyPlans.seedProgress("course-b", {
+      ...makeProgress({ questionId: "question-b" }),
+      memory: {
+        stability: 5,
+        difficulty: 5,
+        scheduledReviewAt: new Date("2026-01-07T00:00:00.000Z"), // 3 days overdue — wins unamplified
+        lastReviewAt: new Date("2026-01-05T00:00:00.000Z"),
+        reviewCount: 1,
+        lapseCount: 0,
+        implementationState: { implementation: "fake", schemaVersion: 1, state: {} },
+      },
+    });
+    dailyPlans.setCurrentVersion("question-a", "qv-a");
+    dailyPlans.setCurrentVersion("question-b", "qv-b");
+
+    const result = await getOrCreateDailyPlanForToday(
+      { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
+      makeSettings(),
+      {
+        users: users.repo(),
+        courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome === "READY") {
+      // course-a's amplified 2-day overdue-ness (~4 effective days) beats
+      // course-b's unamplified 3-day overdue-ness — proving the exam date
+      // really was fetched (via listExamDates) and threaded through, not
+      // just accepted as an unused parameter.
+      expect(result.plan.items.map((item) => item.questionId)).toEqual([
+        "question-a",
+        "question-b",
+      ]);
+    }
+  });
+
+  it("P. no Course has an exam_date set — ranking is unaffected (parity with pre-Slice behavior)", async () => {
+    const users = new InMemoryUserDatabase();
+    users.seedUser(USER_ID, "UTC");
+    const courses = new InMemoryCourseDatabase();
+    courses.seedMembership(makeMembership({ courseId: "course-a", role: "LEARNER" }));
+    courses.seedMembership(makeMembership({ courseId: "course-b", role: "LEARNER" }));
+
+    const dailyPlans = new InMemoryDailyPlanDatabase();
+    dailyPlans.seedProgress("course-a", {
+      ...makeProgress({ questionId: "question-a" }),
+      memory: {
+        stability: 5,
+        difficulty: 5,
+        scheduledReviewAt: new Date("2026-01-08T00:00:00.000Z"), // 2 days overdue
+        lastReviewAt: new Date("2026-01-05T00:00:00.000Z"),
+        reviewCount: 1,
+        lapseCount: 0,
+        implementationState: { implementation: "fake", schemaVersion: 1, state: {} },
+      },
+    });
+    dailyPlans.seedProgress("course-b", {
+      ...makeProgress({ questionId: "question-b" }),
+      memory: {
+        stability: 5,
+        difficulty: 5,
+        scheduledReviewAt: new Date("2026-01-07T00:00:00.000Z"), // 3 days overdue
+        lastReviewAt: new Date("2026-01-05T00:00:00.000Z"),
+        reviewCount: 1,
+        lapseCount: 0,
+        implementationState: { implementation: "fake", schemaVersion: 1, state: {} },
+      },
+    });
+    dailyPlans.setCurrentVersion("question-a", "qv-a");
+    dailyPlans.setCurrentVersion("question-b", "qv-b");
+
+    const result = await getOrCreateDailyPlanForToday(
+      { userId: USER_ID, now: new Date("2026-01-10T00:00:00.000Z") },
+      makeSettings(),
+      {
+        users: users.repo(),
+        courseMemberships: courses.repos().memberships,
+        courses: courses.repos().courses,
+        dailyPlanUnitOfWork: dailyPlans,
+      },
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome === "READY") {
+      // No exam dates set anywhere -> ordinary unamplified tie-break: the
+      // MORE overdue item (question-b, 3 days) sorts first.
+      expect(result.plan.items.map((item) => item.questionId)).toEqual([
+        "question-b",
+        "question-a",
+      ]);
     }
   });
 });
