@@ -140,7 +140,7 @@ Current repository capabilities include:
   a pre-merge Preview QA correction pass on the SAME branch;
 - Preview QA corrections — Run UX-03-QA1 (pre-merge correction pass on top of
   Run UX-03, same branch `feature/run-ux-03-product-experience`, final HEAD
-  `0442c91`; **COMPLETE locally**, NOT merged/deployed;
+  `8f45cc3`; **COMPLETE locally**, NOT merged/deployed;
   `docs/RUNS/2026-09-27-UX-03-QA1.md`): the product owner ran hands-on
   Preview QA against a real 30-question course and filed 15 findings. Every
   finding was verified against repository reality first; 11 were implemented
@@ -170,7 +170,7 @@ Current repository capabilities include:
   branch remains the next step before any merge/deploy decision;
 - Preview QA2 corrections — Run UX-03-QA2 (second pre-merge correction pass
   on top of QA1, same branch `feature/run-ux-03-product-experience`, final
-  HEAD `3272582`; **COMPLETE locally**, NOT merged/deployed;
+  HEAD `1c4ae33`; **COMPLETE locally**, NOT merged/deployed;
   `docs/RUNS/2026-09-28-UX-03-QA2.md`): executed as a Long Autonomous Run
   experiment — a thin parent orchestrator dispatching fresh, zero-context
   scoped workers (`Agent` tool, `subagent_type: general-purpose`) one Slice
@@ -612,7 +612,8 @@ Product roadmap:
 - Run UX-01 — Learner UX Foundation (standalone learner-UX Run, not a roadmap Product Run; **COMPLETE**, merged to `main` (`d052e5c`), deployed via the Production branch; real-phone Preview verification PASS and, separately, manual Production verification/acceptance, both by the product owner on 2026-09-26; `docs/RUNS/2026-09-26-UX-01.md`). Open, non-blocking follow-up: hosted Supabase Auth Redirect URL allow-list for the new `next=` values — an observed login return did not preserve the intended `/courses` destination. Early Practice + FSRS semantics (`FUB-030`) decided and promoted to Run UX-02 (`docs/CHATGPT_PLAN.md`).
 - Run UX-02 — Course & Topic Practice (standalone learner Run; **COMPLETE**, merged to `main` (`c85d870`) and deployed via the Production branch; manual Preview QA gate PASSED 2026-09-27 and manual Production smoke verification PASSED 2026-09-27, both by the product owner; `docs/RUNS/2026-09-27-UX-02.md`). Open, non-blocking: hosted Auth Redirect URL allow-list for Practice `next=` values; OQ-044 (FSRS learning-step calibration).
 - Run UX-03 — Product Experience, Visual System & Usability (standalone UX Run; **COMPLETE locally**, `feature/run-ux-03-product-experience` at `e6b91da`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03.md`). Required product-owner checkpoint after UX3-1 returned APPROVED WITH CALIBRATION CORRECTIONS; the resulting Visual Contract is recorded in `docs/UX_SPEC.md` §11-§12. Open, non-blocking: `FUB-033` (archive-action color consistency; possible dual-primary states on the instructor Course-manage page); a `WATCH` observation on a Tailwind class-conflict pattern that recurred three times within this Run (see the Run report §13). Followed by Run UX-03-QA1 (below), a pre-merge Preview QA correction pass on the same branch.
-- Run UX-03-QA1 — Preview QA Corrections (pre-merge correction pass on top of Run UX-03, same branch, **COMPLETE locally** at `0442c91`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03-QA1.md`). 15 product-owner-filed findings from real hosted Preview usage; 11 implemented and verified, 4 explicitly recorded (never invented) as `docs/FOLLOW_UP_BACKLOG.md` FUB-034 (owned by Run 010 — same-day Practice repetition semantics, Daily Plan Budget policy, PARTIAL grading) and FUB-035 (owned by Run 011 — content-quality/position-bias detection). A fresh product-owner Preview QA pass against this branch is the required next step before any merge/deploy decision.
+- Run UX-03-QA1 — Preview QA Corrections (pre-merge correction pass on top of Run UX-03, same branch, **COMPLETE locally** at `8f45cc3`, NOT merged/deployed; `docs/RUNS/2026-09-27-UX-03-QA1.md`). 15 product-owner-filed findings from real hosted Preview usage; 11 implemented and verified, 4 explicitly recorded (never invented) as `docs/FOLLOW_UP_BACKLOG.md` FUB-034 (owned by Run 010 — same-day Practice repetition semantics, Daily Plan Budget policy, PARTIAL grading) and FUB-035 (owned by Run 011 — content-quality/position-bias detection). Followed by Run UX-03-QA2 (below), a second pre-merge correction pass on the same branch.
+- Run UX-03-QA2 — Preview QA2 Corrections, Long Autonomous Run experiment (pre-merge correction pass on top of QA1, same branch, **COMPLETE locally** at `1c4ae33`, NOT merged/deployed; `docs/RUNS/2026-09-28-UX-03-QA2.md`). 3 findings implemented and verified (Learn Mode post-submit feedback layout, Progress/Courses whole-card navigation, authoring row visual polish); 1 Slice (Author-can-learn-own-Course) correctly STOPPED on a hard DB constraint, recorded as `FUB-036`; `FUB-037` records the future Question Management Workspace (Run011). A fresh product-owner Preview QA pass against this branch is the required next step before any merge/deploy decision.
 - Run 010 — Learning Intelligence
 - Run 011 — PDF/AI
 - Run 012 — Production / Scale
@@ -636,7 +637,7 @@ from before this Run, unchanged).
   Vercel/GitHub settings remain human actions (ADR-019; see `git status` for
   the ahead count);
 - decide whether/when to merge and deploy `feature/run-ux-03-product-experience`
-  (Run UX-03 + Run UX-03-QA1 + Run UX-03-QA2, COMPLETE locally at `3272582`,
+  (Run UX-03 + Run UX-03-QA1 + Run UX-03-QA2, COMPLETE locally at `1c4ae33`,
   not pushed) — a human decision, not attempted by any of the three Runs. A
   fresh hosted Preview QA pass against this branch (see
   `docs/RUNS/2026-09-28-UX-03-QA2.md` §"Morning Human Review") is the

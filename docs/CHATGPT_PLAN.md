@@ -3,7 +3,7 @@
 PLAN_VERSION: 003
 RUN_ID: 2026-09-28-UX-03-QA2-AUTONOMOUS-001
 BASE_HEAD: 8f45cc3 (== pushed QA1 HEAD)
-STATUS: **COMPLETE (locally)** — QA2-A/B/C/E done, QA2-D correctly STOPPED (architecture gap, not a failure); see `docs/RUNS/2026-09-28-UX-03-QA2.md` for the full Run report. Final HEAD `3272582`, not merged/pushed/deployed.
+STATUS: **COMPLETE (locally)** — QA2-A/B/C/E done, QA2-D correctly STOPPED (architecture gap, not a failure); see `docs/RUNS/2026-09-28-UX-03-QA2.md` for the full Run report. Final HEAD `1c4ae33` (Run-close docs commit; QA2-E's own integrated-verification commit is `3272582`), not merged/pushed/deployed.
 
 This was a Long Autonomous Run experiment: thin parent orchestrator + fresh scoped workers (`Agent` tool, `subagent_type: general-purpose`, one at a time, zero inherited context) per Slice. See the pasted Run brief (not duplicated here) for full scope/decisions/guardrails/stop conditions; this file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4. Not Run010/Run011. All work stayed local; no push/merge/deploy.
 
@@ -13,13 +13,13 @@ This was a Long Autonomous Run experiment: thin parent orchestrator + fresh scop
 2. **QA2-B — Progress + Courses visual hierarchy (DONE `ca489da`).** Whole-card semantic click/keyboard nav, hover/focus/pressed states, restrained accent, Course-level only on Progress (no Topic expansion regression) confirmed.
 3. **QA2-C — Authoring bounded visual polish (DONE `567b364`).** Question Management row visual consistency (StatusPill) only; no IA/scalability redesign; bulk publish/Draft/Published/import behavior verified unchanged.
 4. **QA2-D — Author can learn own Course (STOPPED `3738975`, docs-only).** `course_memberships` `UNIQUE(user_id, course_id)` + scalar `role` structurally blocks this without a schema decision — recorded `FUB-036`, not implemented ad hoc.
-5. **QA2-E — Integrated focused verification + Run close (DONE `3272582`).** Combined-diff full unit/typecheck/lint/build all clean; `FUB-037` (Question Management Workspace, Run011) recorded.
+5. **QA2-E — Integrated focused verification (DONE `3272582`).** Combined-diff full unit/typecheck/lint/build all clean; `FUB-037` (Question Management Workspace, Run011) recorded. Run-close documentation (Run report, `DEV_STATUS.md`, this Plan's status) followed in a separate parent-authored commit, `1c4ae33` — the Run's actual final local HEAD.
 
 ## 1. Historical — Run UX-03-QA1 (superseded; reference only — see `docs/RUNS/2026-09-27-UX-03-QA1.md`)
 
 RUN_ID: 2026-09-27-UX-03-QA1
 BASE_HEAD: 8b98dcb
-STATUS: **COMPLETE (locally)** — all Slices QA1-A through QA1-H done; see `docs/RUNS/2026-09-27-UX-03-QA1.md` for the full Run report and final QA disposition table. Final HEAD `0442c91`, not merged/pushed/deployed.
+STATUS: **COMPLETE (locally)** — all Slices QA1-A through QA1-H done; see `docs/RUNS/2026-09-27-UX-03-QA1.md` for the full Run report and final QA disposition table. Final HEAD `8f45cc3`, not merged/pushed/deployed.
 
 This is a pre-merge correction Run, NOT Run 010/011. Run UX-03 was completed locally and pushed to Preview; the product owner then performed hands-on QA using a real 30-question course (`מבוא לכלכלה התנהגותית — QA`) and filed 15 findings. See the pasted Run brief (not duplicated here) for full scope, per-finding detail, guardrails and stop conditions; this file owns the ordered Slice queue, classification table and status only, per `CLAUDE.md` §2/§4. All work stays local on `feature/run-ux-03-product-experience`; no push/merge/deploy; Run 010/011 are not started.
 
@@ -51,7 +51,7 @@ This is a pre-merge correction Run, NOT Run 010/011. Run UX-03 was completed loc
 3. **QA1-E — Instructor bulk publish (DONE `ab03784`).** Selection + "Publish selected" / "Select all valid" on the Course-manage Questions list, calling the existing `publishQuestion` use case once per selected id; honest partial-failure reporting.
 4. **QA1-F — Shell/copy (DONE `cea7219`, `0442c91`).** Consistent top-left sign-out via a new shared `LearnerUtilityBar` + the instructor shell; canonical `"היום שלי"` Hebrew copy audit closed (0 remaining non-compliant instances); convention recorded in `docs/UX_SPEC.md` §12 item 58.
 5. **QA1-G — Loading/performance (DONE, audit only — no code change).** Code-level journey audit found no new/fixable client-side fetch waterfall; recorded honestly, no speculative fix applied.
-6. **QA1-H — Integrated verification + Run close (DONE `0442c91`).** Full QA matrix incl. a real mocked-browser Playwright pass (17/17 checks), `docs/RUNS/2026-09-27-UX-03-QA1.md`, `docs/DEV_STATUS.md` update, telemetry summary, final disposition table. STOP — not merged/pushed/deployed; Run 010/011 not started.
+6. **QA1-H — Integrated verification + Run close (DONE `8f45cc3`).** Full QA matrix incl. a real mocked-browser Playwright pass (17/17 checks), `docs/RUNS/2026-09-27-UX-03-QA1.md`, `docs/DEV_STATUS.md` update, telemetry summary, final disposition table. STOP — not merged/pushed/deployed; Run 010/011 not started.
 
 ## 2. Guardrails (unchanged from Run UX-03, still binding)
 
