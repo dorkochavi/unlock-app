@@ -1,12 +1,22 @@
 # UNLOCK — Run UX-03-QA2 — Preview QA2 Corrections (Autonomous Run experiment)
 
+PLAN_VERSION: 004
+RUN_ID: 2026-09-28-DEVOS-MICRO-OPT-001
+START_HEAD: `01a12ac`
+LAST_VERIFIED_HEAD: `9323dbf`
+RUN_STATUS: COMPLETE
+STATUS: **COMPLETE** — DevOS tooling Run only (Slices DEVOS-A through DEVOS-E); see `docs/RUNS/2026-09-28-DEVOS-MICRO-OPT-001.md` for the full Run report. No product/schema/DB/application source code changed; not a product Run, so there is nothing to merge/deploy; no push.
+
+This Run replaced the unstable self-referential "Final HEAD" Run-close pattern with the START_HEAD / LAST_VERIFIED_HEAD / RUN_STATUS identity model, added a deterministic Run-close verifier (`.claude/telemetry/verify-run-close.mjs`), compressed CLAUDE.md's duplicated policy detail into pointers at its canonical owners, added a human-facing `docs/CLAUDE_CODE_OPERATING_GUIDE.md`, and packaged the Long Autonomous Run procedure as an on-demand `.claude/skills/autonomous-run/SKILL.md`. It also executed itself as the second controlled Long Autonomous Run experiment (thin parent + fresh scoped workers, one Slice at a time, `Agent` tool with `subagent_type: general-purpose`). See the Run report for full per-Slice detail, verification evidence, and the Autonomous Control Loop / Second Experiment reviews. This file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4.
+
+---
+
+## Historical — Run UX-03-QA2 (Autonomous) (superseded; reference only — see `docs/RUNS/2026-09-28-UX-03-QA2.md`)
+
 PLAN_VERSION: 003
 RUN_ID: 2026-09-28-UX-03-QA2-AUTONOMOUS-001
 BASE_HEAD: 8f45cc3 (== pushed QA1 HEAD)
-START_HEAD: `8f45cc3`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `1c4ae33`
-STATUS: **COMPLETE (locally)** — QA2-A/B/C/E done, QA2-D correctly STOPPED (architecture gap, not a failure); see `docs/RUNS/2026-09-28-UX-03-QA2.md` for the full Run report. LAST_VERIFIED_HEAD `1c4ae33` (Run-close docs commit; QA2-E's own integrated-verification commit is `3272582`), not merged/pushed/deployed.
+STATUS: **COMPLETE (locally)** — QA2-A/B/C/E done, QA2-D correctly STOPPED (architecture gap, not a failure); see `docs/RUNS/2026-09-28-UX-03-QA2.md` for the full Run report. LAST_VERIFIED_HEAD `1c4ae33` (historical/superseded — reference only; QA2-E's own integrated-verification commit is `3272582`), not merged/pushed/deployed.
 
 This was a Long Autonomous Run experiment: thin parent orchestrator + fresh scoped workers (`Agent` tool, `subagent_type: general-purpose`, one at a time, zero inherited context) per Slice. See the pasted Run brief (not duplicated here) for full scope/decisions/guardrails/stop conditions; this file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4. Not Run010/Run011. All work stayed local; no push/merge/deploy.
 
