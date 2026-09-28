@@ -703,4 +703,55 @@ describe("§39A Practice scheduling (real ts-fsrs, production policies)", () => 
       expect(secondWithoutFlag.progress.memory).not.toStrictEqual(afterFirstReview);
     });
   });
+
+  describe("RUN010-C Part 2 audit — reinforcement freeze vs. 'genuinely due again the same day' (OQ-044 interaction)", () => {
+    it("a brand-new card's first-ever correct Practice Attempt (real short FSRS learning-step interval, OQ-044), followed by a same-session reinforcement Attempt AFTER that new due date has already passed, is STILL frozen — 'genuinely due again' and 'artificial early repeat' are deliberately treated the same (see FUB-039)", () => {
+      // Unlike the RUN010-B tests above (which use `establishedProgress()`
+      // — a graduated, multi-day-interval card — and manually jump the
+      // clock forward to construct an "after the new due date" moment),
+      // this uses the REAL default ts-fsrs short-term learning-step
+      // interval (confirmed by ts-fsrs-memory-scheduler.test.ts's "OQ-044"
+      // suite: a first GOOD answer is due again in exactly 10 minutes, in
+      // "Learning" state) so the "genuinely due again the SAME calendar
+      // day" scenario Part 2 asks about is constructed for real, not
+      // simulated by an artificial multi-day session id reuse.
+      const session = "practice-session-new-card-short-interval";
+      const scheduler = new RecordingScheduler();
+
+      // First-ever Attempt for this Question: never scheduled before ->
+      // initialize(), not a review.
+      const first = apply(null, attemptAt(T0, { learningSessionId: session }), scheduler, false);
+      expect(scheduler.initializeCalls).toBe(1);
+      expect(scheduler.reviewCalls).toBe(0);
+      const afterFirst = first.progress.memory!;
+      expect(afterFirst.implementationState.state.state).toBe("Learning");
+      const dueAgainAt = afterFirst.scheduledReviewAt;
+
+      // Second same-session Attempt happens AFTER that new due date has
+      // already passed — i.e. genuinely due again, not "still early"
+      // relative to scheduledReviewAt at all.
+      const reinforcedAt = new Date(dueAgainAt.getTime() + 5 * MINUTE_MS);
+      expect(reinforcedAt.getTime()).toBeGreaterThan(dueAgainAt.getTime());
+
+      const second = apply(
+        first.progress,
+        attemptAt(reinforcedAt, { learningSessionId: session }),
+        scheduler,
+        true, // isReinforcementAttempt, exactly as the real derivation
+        // (deriveIsReinforcementAttempt) would compute it from the shared
+        // learningSessionId.
+      );
+
+      // Verdict (RUN010-C Part 2, locked in — see FUB-039 for the audited
+      // residual consequence): no real scheduler review fires. The card
+      // stays in "Learning" state, still due at the SAME 10-minute mark,
+      // exactly as if this second Attempt had never happened from the
+      // scheduler's point of view. "At most one real scheduler-moving
+      // event per Question per day" applies regardless of whether the
+      // repeat happens before or after the current due date.
+      expect(scheduler.reviewCalls).toBe(0);
+      expect(second.progress.memory).toStrictEqual(afterFirst);
+      expect(second.progress.attemptCount).toBe(first.progress.attemptCount + 1);
+    });
+  });
 });

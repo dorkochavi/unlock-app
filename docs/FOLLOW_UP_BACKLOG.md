@@ -1268,6 +1268,49 @@ Before or alongside any Slice that ships assisted Practice attempts (hints/secon
 
 ---
 
+# FUB-039 — Same-Day Reinforcement Freeze Can Delay a New Card's FSRS Graduation When Only Touched via Same-Day Practice (RUN010-C audit, NON-BLOCKING)
+
+**Status:** `RECORDED`
+**Area:** Learning Engine — FSRS scheduler freeze x short-term learning steps
+(`src/domain/learning/progress-update.ts`, `learning-session.ts`, OQ-044)
+
+RUN010-C audited whether RUN010-B's unconditional same-day reinforcement scheduler-freeze
+(`isReinforcementAttempt` in `nextSchedulerMemory`) incorrectly conflates (a) a learner voluntarily
+re-practicing a Question before it is due again with (b) a Question that has genuinely become due again the
+same calendar day (a real FSRS-scheduled event, distinct from an artificial repeat) — directly relevant given
+OQ-044's confirmed finding (RUN010-C) that a brand-new card's first correct answer is due again in exactly 10
+minutes under current ts-fsrs defaults.
+
+**Verdict: the unconditional freeze is intentional and correct, not a bug** — see
+`src/infrastructure/learning/__tests__/practice-early-correct-scheduling.test.ts`'s "RUN010-B — same-day
+reinforcement" describe block (including its already-existing "not merely 'still early'" test, predating this
+audit) and the new RUN010-C test proving the identical outcome for a genuinely-due-again NEW card. "At most
+one real scheduler-moving event per Question per day, regardless of why" remains the accepted invariant;
+distinguishing "before due" from "genuinely due again" would reopen exactly the risk RUN010-B closed (a
+same-day repeat being able to retrigger a second real AGAIN/lapse for what is really one day's due event) and
+would additionally require deciding, ahead of OQ-044's own still-open calibration, whether a same-day
+learning-step event should count as a real review at all — a product decision, not a threshold fix.
+
+**Residual, bounded, non-blocking consequence recorded here:** because Today can never re-present the same
+Question twice in one plan, and Practice's Tier 4 (`selectPracticeBatch`) is the ONLY way an
+already-answered-today Question is served again that day, a brand-new card that a learner ONLY ever touches
+via same-day Practice reinforcement (never on a later calendar day) will never actually graduate out of
+ts-fsrs's short-term "Learning" state that day — every same-day reinforcement repeat freezes the transition
+`memoryScheduler.review()` would otherwise perform. This is bounded to a single calendar day (the very next
+day it is touched — via Today or a fresh, non-reinforcement Practice pick — is not "same session," so a real
+review fires and the card progresses normally, just a session later than the raw due timestamp suggests,
+which is already OQ-044's known, accepted drift). Not fixed here because it is an interaction between two
+already-open/deliberate policies (OQ-044 learning-step calibration + RUN010-B's per-day event cap), not an
+independent bug.
+
+## Promotion Trigger
+
+If/when OQ-044 is calibrated (e.g. learning steps disabled, shortened, or a minimum first-interval floor is
+adopted), re-check whether this residual same-day-graduation-delay interaction still applies under the new
+configuration, and whether it is still acceptable.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

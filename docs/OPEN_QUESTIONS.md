@@ -279,6 +279,18 @@ Still unresolved:
   reviews whose retrievability has actually dropped;
 - the interaction with OQ-012 (rating mapping, desired retention).
 
+RUN010-C empirical confirmation (2026-09-28): deterministic simulation against the real installed
+ts-fsrs package (`src/infrastructure/learning/fsrs/__tests__/ts-fsrs-memory-scheduler.test.ts`, "RUN010-C /
+OQ-044" describe block) confirms this is stock ts-fsrs default behavior, not a UNLOCK misconfiguration —
+`generatorParameters()` shows `enable_short_term: true`, `learning_steps: ["1m", "10m"]` by default, and
+`ADAPTER_FSRS_PARAMETERS` overrides neither. A brand-new card's first GOOD answer lands in `Learning` state,
+due exactly 10 minutes later; it only graduates to a real multi-day `Review` interval on a SECOND
+consecutive GOOD review. This is intended Anki/FSRS-style learning-step design (short-term consolidation
+before graduation), not a correctness bug — so per the constraint below, RUN010-C makes no scheduler-adapter
+change. Still open: whether this is the right learner experience for UNLOCK's question-based evidence
+(unchanged unresolved items above), including its interaction with RUN010-B's same-day reinforcement
+scheduler-freeze (see FUB-039).
+
 Constraint:
 
 Not solved in Run UX-02 unless implementation shows a correctness bug rather than a tuning issue.

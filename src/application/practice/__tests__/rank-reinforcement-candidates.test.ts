@@ -176,13 +176,16 @@ describe("rankReinforcementCandidates", () => {
     expect(new Set(ranked)).toEqual(new Set(["a", "b", "c"]));
   });
 
-  it("anti-immediate-repeat: the single most-recently-answered candidate is never returned first when an alternative exists", () => {
+  it("RUN010-C Part 3: does NOT demote the immediately-prior Question when it is materially STRONGER (not tied) than the alternative", () => {
+    // Audits RUN010-B's original anti-immediate-repeat rule ("even a
+    // lower-priority one"): `justAnswered` is both the single incorrect
+    // (materially stronger priority) candidate AND the most-recently-
+    // answered one; `other` is correct and older — a genuinely WEAKER
+    // learning choice, not a comparable/tied alternative. The swap must
+    // never leapfrog a materially stronger candidate out of first place
+    // purely to avoid an immediate repeat.
     const justAnswered = makeQuestion("just-answered");
     const other = makeQuestion("other");
-    // Both incorrect (same bucket), so natural priority alone would rank
-    // whichever is "older" first — construct it so the JUST-answered one
-    // (most recent overall) would otherwise land first by being the only
-    // incorrect one.
     const progressByQuestion = new Map([
       [
         "just-answered",
@@ -208,8 +211,50 @@ describe("rankReinforcementCandidates", () => {
       noShuffle,
     );
 
-    expect(ranked[0]).not.toBe("just-answered");
-    expect(ranked).toEqual(["other", "just-answered"]);
+    expect(ranked).toEqual(["just-answered", "other"]);
+  });
+
+  it("RUN010-C Part 3: DOES swap the immediately-prior Question out of first place when the alternative is an exact (materially equivalent) tie", () => {
+    // Both candidates share the same correctness bucket AND the same
+    // lastAttemptAt — a genuine tie, exactly the equivalence the
+    // controlled-randomness shuffle above already treats as interchangeable
+    // — so the anti-immediate-repeat swap is expected to apply here, unlike
+    // the materially-different-priority case above.
+    const tiedAt = new Date("2026-03-10T09:30:00.000Z");
+    const justAnswered = makeQuestion("just-answered");
+    const tiedAlternative = makeQuestion("tied-alternative");
+    const progressByQuestion = new Map([
+      [
+        "just-answered",
+        makeProgress("just-answered", {
+          lastAttemptAt: tiedAt,
+          lastCorrectAt: null,
+          lastIncorrectAt: tiedAt,
+        }),
+      ],
+      [
+        "tied-alternative",
+        makeProgress("tied-alternative", {
+          lastAttemptAt: tiedAt,
+          lastCorrectAt: null,
+          lastIncorrectAt: tiedAt,
+        }),
+      ],
+    ]);
+
+    // `justAnswered` is listed first, so it (not the exact-tied
+    // `tiedAlternative`) is the one `reduce` picks as
+    // "most-recently-answered" — and a random function biased toward the
+    // top of its range keeps Fisher-Yates a no-op, so entries stay in their
+    // post-sort (questionId-ascending) order: [just-answered, tied-alternative].
+    const keepOrder = () => 0.999999;
+    const ranked = rankReinforcementCandidates(
+      [justAnswered, tiedAlternative],
+      progressByQuestion,
+      keepOrder,
+    );
+
+    expect(ranked).toEqual(["tied-alternative", "just-answered"]);
   });
 
   it("with exactly one candidate, returns it even though it is also the most-recently-answered (no alternative exists)", () => {

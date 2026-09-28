@@ -183,13 +183,26 @@ export function interleaveByTopic<T extends { topicId: string | null }>(
  * "stronger"/newer one, matching `interleaveByTopic`'s own
  * "randomize ties, not priorities" discipline.
  *
- * Anti-immediate-repeat (Part 1 Q1/Q3): after ranking, if the top-ranked
- * candidate is the Question with the single most-recently-answered
- * Attempt among ALL candidates (i.e. the Question the learner most likely
- * just finished), and at least one OTHER candidate exists, it is swapped
- * with the next one — never returned first when any alternative exists,
- * even a lower-priority one. With exactly one candidate, that candidate is
- * unavoidably returned (the only coherent fallback for a tiny scope).
+ * Anti-immediate-repeat (Part 1 Q1/Q3), RUN010-C-corrected: after ranking,
+ * if the top-ranked candidate is the Question with the single
+ * most-recently-answered Attempt among ALL candidates (i.e. the Question
+ * the learner most likely just finished), it is swapped with the next
+ * candidate ONLY when that next candidate is an exact tie with it on (1)
+ * and (2) above — i.e. only among candidates already established as
+ * "materially equivalent" by the same grouping the controlled-randomness
+ * shuffle above uses. This is a correction of RUN010-B's original rule
+ * ("even a lower-priority one"): auditing it (RUN010-C Part 3) found that
+ * wording let the swap leapfrog a materially STRONGER candidate (e.g. the
+ * one confident-wrong/incorrect candidate, which sorts first on priority)
+ * out of first place purely to avoid returning it twice in a row, merely
+ * because it happened to also be the most-recently-answered one — directly
+ * violating "randomness/variation only among materially equivalent
+ * candidates; never override a clearly stronger learning priority merely
+ * for novelty." A materially stronger, uniquely-top candidate is now
+ * always returned first even when it is the immediate repeat — there is no
+ * comparable alternative to swap it for. With exactly one candidate, that
+ * candidate is unavoidably returned (the only coherent fallback for a tiny
+ * scope).
  *
  * Defensive: a candidate missing a progress row (should not happen — every
  * "answered today" Question has one) is silently skipped rather than
@@ -251,7 +264,16 @@ export function rankReinforcementCandidates(
   }
 
   const ranked = entries.map((entry) => entry.questionId);
-  if (ranked.length > 1 && ranked[0] === mostRecentlyAnsweredQuestionId) {
+  // RUN010-C fix: only swap when entries[0]/entries[1] are an exact tie
+  // (same correctness bucket AND same lastAttemptAt) — i.e. the SAME
+  // materially-equivalent group the shuffle above already treats as
+  // interchangeable. A uniquely top-ranked candidate (no tie) is never
+  // demoted just because it is also the immediate repeat.
+  const topIsTiedWithNext =
+    entries.length > 1 &&
+    entries[0].wasLastAttemptIncorrect === entries[1].wasLastAttemptIncorrect &&
+    entries[0].lastAttemptAtMs === entries[1].lastAttemptAtMs;
+  if (topIsTiedWithNext && ranked[0] === mostRecentlyAnsweredQuestionId) {
     [ranked[0], ranked[1]] = [ranked[1], ranked[0]];
   }
   return ranked;

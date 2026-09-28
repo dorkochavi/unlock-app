@@ -191,6 +191,56 @@ describe("TsFsrsMemoryScheduler", () => {
     );
   });
 
+  describe("RUN010-C / OQ-044 — first-correct short-term learning-step interval", () => {
+    it("schedules a brand-new card's first GOOD review exactly 10 minutes later, in 'Learning' state, under the adapter's actual current configuration (defaults, fuzz off)", () => {
+      // Proves OQ-044's claim empirically rather than by intuition: with
+      // NO learning-step override anywhere in ADAPTER_FSRS_PARAMETERS, this
+      // is stock ts-fsrs default behavior (`enable_short_term: true`,
+      // `learning_steps: ["1m", "10m"]` — confirmed directly against the
+      // installed ts-fsrs package via `generatorParameters()`). A first
+      // clean correct answer does NOT graduate the card to a real spaced
+      // "Review" interval; it advances one learning step and is due again
+      // in exactly 10 minutes — genuine short-term learning-step behavior,
+      // not a UNLOCK misconfiguration (nothing here pins/overrides
+      // `learning_steps` or `enable_short_term`; only `enable_fuzz` is set).
+      const scheduler = new TsFsrsMemoryScheduler();
+      const t0 = new Date("2026-01-01T00:00:00.000Z");
+
+      const result = scheduler.initialize({ reviewedAt: t0, rating: "GOOD" });
+
+      expect(result.nextState.implementationState.state.state).toBe(
+        "Learning",
+      );
+      const deltaMs =
+        result.nextState.scheduledReviewAt.getTime() - t0.getTime();
+      expect(deltaMs).toBe(10 * 60 * 1000);
+    });
+
+    it("graduates to a real multi-day 'Review' interval only on the SECOND consecutive GOOD review (end of the learning-step phase), confirming the short first interval is transient learning-step behavior, not a permanently broken due date", () => {
+      const scheduler = new TsFsrsMemoryScheduler();
+      const t0 = new Date("2026-01-01T00:00:00.000Z");
+
+      const afterFirstGood = scheduler.initialize({
+        reviewedAt: t0,
+        rating: "GOOD",
+      }).nextState;
+      expect(afterFirstGood.implementationState.state.state).toBe("Learning");
+
+      const afterSecondGood = scheduler.review(afterFirstGood, {
+        reviewedAt: afterFirstGood.scheduledReviewAt,
+        rating: "GOOD",
+      }).nextState;
+
+      expect(afterSecondGood.implementationState.state.state).toBe("Review");
+      const graduatedIntervalMs =
+        afterSecondGood.scheduledReviewAt.getTime() -
+        afterFirstGood.scheduledReviewAt.getTime();
+      // Comfortably longer than one calendar day — a real spaced interval,
+      // not another short learning step.
+      expect(graduatedIntervalMs).toBeGreaterThan(24 * 60 * 60 * 1000);
+    });
+  });
+
   it("keeps ts-fsrs out of the domain layer", () => {
     const testFileDir = dirname(fileURLToPath(import.meta.url));
     const domainDir = join(testFileDir, "..", "..", "..", "..", "domain");
