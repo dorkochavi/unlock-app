@@ -72,11 +72,9 @@ Coding agents do not autonomously:
 - push Git commits;
 - force-push or rewrite history;
 - perform destructive Git cleanup/reset operations;
-- delete unknown files broadly;
-- link or push hosted Supabase state;
-- apply hosted migrations;
-- expose/request secret values;
-- mutate hosted production/database state unless repository policy explicitly changes.
+- delete unknown files broadly.
+
+Hosted Supabase/migration boundaries → `.claude/rules/postgres.md` (Supabase / Hosted Safety); secret-handling boundaries → `.claude/rules/auth.md` (Secrets). Do not duplicate that detail here.
 
 Machine-enforced Claude restrictions live in `.claude/settings.json`.
 
@@ -97,12 +95,7 @@ Do not duplicate those policies here.
 
 ## 8. Verification Evidence
 
-Use targeted verification during implementation.
-
-Evidence may be reused while fresh. A later relevant change invalidates only the evidence it can materially affect. When relevance cannot be determined safely, treat the evidence as stale.
-
-Do not rerun broad suites merely because a Slice or Run boundary was reached.
-Follow `.claude/rules/testing.md` for exact selection, escalation, environment honesty, and evidence claims.
+Verification evidence must be current and proportional to the actual changed risk before a Slice is treated as complete. Selection, freshness/reuse, escalation, and evidence-claim rules are owned by `.claude/rules/testing.md` — do not duplicate that policy here.
 
 ## 9. Review
 
@@ -119,16 +112,7 @@ Review happens before final relevant verification so reviewer-driven fixes do no
 
 ## 10. Checkpoint
 
-`/checkpoint` is an **evidence and repository-state validator**, not a second test runner.
-
-It should:
-- inspect changed state;
-- inventory required evidence;
-- validate freshness;
-- run only missing/stale required evidence;
-- return readiness.
-
-A green checkpoint is not a stop condition if approved work remains.
+`/checkpoint` is an evidence and repository-state validator, not a second test runner, and a green result is not by itself a stop condition if approved work remains. Its inputs, evidence inventory, and verdict model are owned by `.claude/skills/checkpoint/SKILL.md` — do not duplicate that policy here.
 
 ## 11. Documentation Discipline
 
@@ -150,19 +134,11 @@ Canonical Run close:
 
 `INTEGRATION ACCEPTANCE (only for missing/unproven Run-level behavior) → DEV_STATUS → RUN REPORT → FINAL GIT STATE → STOP`
 
-Do not automatically replay full unit/schema/build/browser suites or all reviewers at Run end. Reuse valid Slice-level evidence unless later changes invalidated it.
+Evidence reuse/replay policy at Run end (do not automatically replay full unit/schema/build/browser suites or all reviewers) is owned by `.claude/rules/testing.md` (Run-End Acceptance) — do not duplicate that policy here.
 
 ## 13. Background Tasks
 
-Do not repeatedly poll long-running background work.
-
-Preferred behavior:
-1. start the task once;
-2. do independent useful work if available;
-3. otherwise wait for completion notification;
-4. consume the result once.
-
-Do not use loops solely to ask whether a test is still running.
+Do not repeatedly poll long-running background work: start it once, do independent useful work if available, then consume the result from its completion notification rather than looping to ask if it's done. The testing-specific form of this rule is in `.claude/rules/testing.md` (Background Tasks).
 
 ## 14. Tool-Specific Rules
 
