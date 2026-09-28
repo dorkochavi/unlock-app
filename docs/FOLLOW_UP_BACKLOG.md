@@ -1330,6 +1330,112 @@ configuration, and whether it is still acceptable.
 
 ---
 
+# FUB-040 — RUN010-E Residual Gaps: Cross-Course Topic Diversity, and Unmapped OQ-018 Reason Categories (NON-BLOCKING)
+
+**Status:** `RECORDED`
+**Area:** New Material fallback Topic diversity (`src/infrastructure/postgres/unseen-question-repository.ts`,
+`src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`); OQ-018 learner-facing reason mapping
+(`src/messages/he.ts`, `src/app/(learner)/today/question-card.tsx`)
+
+RUN010-E investigated whether ADR-017's V1 New Material fallback samples representatively across Topics.
+Evidence (see `supabase/tests/postgres/unseen-question-repository.test.ts`'s new "Topic-diversifying
+round-robin" suite) showed a real, previously-unaddressed clustering bug: pure `created_at asc` ordering let
+one Topic's older unseen Questions monopolize the entire (typically 3-item) fallback for as long as that Topic
+still had unseen material, silently starving every other Topic of early calibration evidence. This was fixed
+**within a single Course's own selection** via a deterministic `row_number() over (partition by topic_id ...)`
+round-robin, still unseen-only, still capped at ADR-017's existing max-3, still deterministic — no ADR-017
+envelope change.
+
+**Two bounded items intentionally left open, not solved by that fix:**
+
+1. **Cross-Course pooling still isn't Topic-aware.** `generate-daily-plan-for-resolved-inputs.ts`'s
+   `discoverNewMaterialItems` pools each eligible Course's own (now Topic-diversified) candidate list and
+   re-sorts the pooled result **globally by `createdAt` only** before taking the final top-3 — this pre-existing
+   step was left untouched (it is a Course-count-correctness concern, documented in that file's own comment,
+   not a Topic concern). Consequence: a learner with unseen material in MULTIPLE simultaneously-eligible
+   Courses on the same day can still have one Course's Topic-diversified order partially overridden by the
+   cross-Course recency re-sort. Bounded (affects only the multi-Course-simultaneous-fallback edge case, never
+   the common single-dominant-Course case) and explicitly NOT a per-Course fairness quota (which ADR-017 still
+   forbids) — a genuine fix would need a deliberate product decision about how Topic diversity and Course
+   pooling should interact, which is out of this Slice's authority to invent.
+
+2. **Not every real internal NBA/tier signal has a clean, honest 1:1 mapping to one of OQ-018's six candidate
+   learner-facing reason strings** (review due / repeated mistake / weak area / exam approaching / not enough
+   evidence / new material). RUN010-E mapped `REVIEW_DUE` → "review due", `RELEARN_LAPSE` → "weak area",
+   `REPAIR_MISCONCEPTION` → "repeated mistake", and the ADR-017 fallback's `NEW_LEARNING` → "new material"
+   (closing the concrete cold-start mislabeling bug: `NEW_LEARNING` previously had no mapped label at all and
+   fell back to leaking the raw internal string). Two things were deliberately left UNMAPPED rather than
+   guessed:
+   - `STRENGTHEN_MEMORY` (a positive-progress, not-yet-mastered state) does not honestly fit any of OQ-018's six
+     strings — they all read as either routine/negative signals or the cold-start case, and reusing "weak area"
+     for it would conflate a positive, non-remediation state with a genuinely weak one. Its pre-existing shipped
+     label ("חיזוק זיכרון" / "memory strengthening", predating OQ-018 and this Slice) was left unchanged, since
+     it is already honest, just not literally one of OQ-018's six candidate strings.
+   - "exam approaching" has no per-item persisted signal to hang an honest label on: RUN010-D's exam-urgency
+     amplifier is a continuous within-tier tie-break multiplier applied uniformly across a Course's items, not a
+     boolean/threshold fact recorded on any one `DailyPlanItem` — labeling a specific item "exam approaching"
+     would require a genuine new product/threshold decision (when is urgency "high enough" to say so out loud?)
+     that OQ-018 does not itself resolve.
+
+3. **`GET /api/daily-plan/today` still serializes raw internal `tier`/`reasons`/`otherApplicableTypes`/
+   `actionType` strings at the wire level** (`src/app/api/daily-plan/today/daily-plan-dto.ts`), even though the
+   UI (`question-card.tsx`) now only ever renders a mapped, honest label and never the raw code. This DTO
+   predates RUN010-E by a wide margin (introduced well before this Run, as an already-reviewed, deliberate "use
+   only real domain fields, no invented score" design) and is unchanged by this Slice's diff — flagged here
+   because RUN010-E's own review process (general-reviewer pass) surfaced it as a gap in this Slice's own
+   "no other leak surface" verification, not as a new defect this Slice introduced. Whether this is actually a
+   problem depends on a reading of OQ-018's "avoid exposing internal scores" constraint: narrowly (only the
+   rendered UI matters) it is already satisfied; broadly (a technical learner opening DevTools/Network can see
+   e.g. `MISCONCEPTION_ACTIVE` or an unmapped raw `actionType`) it is not. Resolving this would mean either
+   tightening the DTO to only carry an already-mapped learner-facing reason (a real, if small, API-contract
+   change) or an explicit product decision that wire-level internal codes are acceptable as long as the UI
+   never renders them raw — not something to infer here.
+
+## Promotion Trigger
+
+Promote item 1 if/when a Run adds genuine multi-Course-simultaneous Today composition depth (beyond today's
+pooled-and-capped fallback). Promote item 2 (either half) only alongside an actual product decision — resolving
+OQ-018's `STRENGTHEN_MEMORY`/"exam approaching" gap, or literally reconciling the pre-existing
+`RELEARN_LAPSE`/`REPAIR_MISCONCEPTION`/`STRENGTHEN_MEMORY` copy to OQ-018's exact six strings — is a copy/product
+call for the human product owner, not something to infer here. Promote item 3 alongside a formal OQ-018
+resolution (the DTO-tightening question is naturally part of "what does explainability mean at the API
+boundary," not a standalone fix to invent mid-Slice).
+
+---
+
+# FUB-041 — Two Pre-Existing Failing Schema/PGlite Tests, Confirmed Unrelated to RUN010-E (NON-BLOCKING, NEEDS TRIAGE)
+
+**Status:** `RECORDED`
+**Area:** `supabase/tests/postgres/practice-vertical.test.ts`, `supabase/tests/postgres/practice.test.ts`
+
+While gathering final verification evidence for RUN010-E, a full `npx vitest run --config supabase/vitest.config.mts`
+pass surfaced 2 failing tests (out of 310) in files RUN010-E's diff does not touch:
+
+1. `practice-vertical.test.ts` > "Practice selects around Today, answers through the normal pipeline, never
+   resolves Today, and Today keeps working" — fails because the Practice wire response now includes an
+   unexpected extra `topicId` field the test's exact-keys assertion does not allow for. Very likely a
+   consequence of `questions.topic_id` (added by `20260928000000_question_authoring_v1.sql`, Run 006 S2) now
+   being included somewhere in the Practice read path's row mapping, with this test never updated for it.
+2. `practice.test.ts` > "RUN010-B — same-day reinforcement (Tier 4, resolves FUB-034) > never returns the
+   just-answered Question first when a genuine alternative exists, even if that alternative is lower ranked by
+   evidence" — an ordering/tie-break assertion failure between two specific Questions.
+
+**Confirmed unrelated to this Slice**: both failures were reproduced identically against the clean pre-Slice
+tree (`git stash` of every RUN010-E change, re-run, same 2 failures; `git stash pop` to restore). RUN010-E's
+diff never touches Practice selection/ranking code or the Practice read path — only
+`unseen-question-repository.ts`, `application/dailyPlan/ports.ts` (doc comment only), `question-card.tsx`,
+`he.ts`, and test/doc files. Per `.claude/rules/testing.md` §14 ("do not silently broaden scope to repair
+unrelated failures... report unrelated pre-existing blockers accurately"), these were left unfixed and are
+recorded here rather than folded into this Slice.
+
+## Promotion Trigger
+
+Triage promptly — a currently-broken schema/PGlite suite reduces confidence in future Slices' "no regression"
+claims for anything touching Practice. Whoever picks this up should first determine how long these have been
+failing (bisect recent RUN010-B/C/D commits) before assuming either is a trivial test-fixture staleness issue.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

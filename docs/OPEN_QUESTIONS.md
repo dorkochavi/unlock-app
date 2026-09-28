@@ -535,6 +535,15 @@ changing important Learning Engine formulas after meaningful real learner data e
 
 Status: DEFERRED
 
+RUN010-E note (not a status change — still the human product owner's call): a partial implementation now
+exists (`src/messages/he.ts`'s `today.actionType` map + `src/app/(learner)/today/question-card.tsx`'s
+`actionLabel`), covering `REVIEW_DUE`, `RELEARN_LAPSE`, `REPAIR_MISCONCEPTION`, and (new in RUN010-E)
+`NEW_LEARNING` (the ADR-017 New Material fallback's cold-start case). `STRENGTHEN_MEMORY` and an "exam
+approaching" category remain unmapped — see `docs/FOLLOW_UP_BACKLOG.md` FUB-040 item 2 for why, and note the
+already-shipped `RELEARN_LAPSE`/`REPAIR_MISCONCEPTION`/`STRENGTHEN_MEMORY` copy predates this Slice and does
+not literally use this question's six candidate strings verbatim, even though the underlying mapping is
+honest.
+
 Decision needed:
 
 What reason, if any, should the learner see for why a Today item was selected?

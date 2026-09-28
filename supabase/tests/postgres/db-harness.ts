@@ -132,6 +132,36 @@ export async function insertQuestion(
   return id;
 }
 
+/** RUN010-E — a real `topics` row (Run 005 S4 flat Topic model), for tests
+ * proving Topic-aware selection (e.g. `unseen-question-repository.test.ts`'s
+ * round-robin coverage). */
+export async function insertTopic(
+  db: SqlExecutor,
+  courseId: string,
+  name = "Test Topic",
+): Promise<string> {
+  const id = randomUUID();
+  await db.query("insert into topics (id, course_id, name) values ($1, $2, $3)", [
+    id,
+    courseId,
+    name,
+  ]);
+  return id;
+}
+
+/** Test-only direct mutation — assigns a Question's (current, unversioned)
+ * Topic association (`questions.topic_id`). */
+export async function setQuestionTopic(
+  db: SqlExecutor,
+  questionId: string,
+  topicId: string,
+): Promise<void> {
+  await db.query("update questions set topic_id = $1 where id = $2", [
+    topicId,
+    questionId,
+  ]);
+}
+
 /**
  * ADR-014 shape by default: `SINGLE_CHOICE`, options `A`/`B` (id === a
  * short display label here, purely a fixture convenience — ids and

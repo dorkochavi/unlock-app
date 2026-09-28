@@ -104,9 +104,19 @@ export interface UnseenQuestionCandidate {
 
 export interface UnseenQuestionRepository {
   /**
-   * Deterministic order (`created_at` asc, `id` asc — ADR-017 §4), limited
-   * to `limit` rows. Excludes any Question the learner has a real Attempt
-   * for (ADR-017 §1) and any Question with no resolvable current
+   * Deterministic order, limited to `limit` rows. RUN010-E: NOT a flat
+   * `created_at asc, id asc` order (that was the original ADR-017 §4
+   * shape, but a pure temporal order let one Topic's older unseen
+   * Questions monopolize the whole fallback — see
+   * `PostgresUnseenQuestionRepository`'s own doc comment for the finding).
+   * The actual contract is a Topic-diversifying round-robin: every
+   * distinct `topic_id` (including the "no Topic assigned" case, treated
+   * as one more bucket, never excluded/prioritized) contributes its own
+   * earliest-created eligible Question before any Topic contributes a
+   * second, with `created_at asc, id asc` used only as the WITHIN-Topic
+   * tie-break, and `topic_id`/`question_id` as the final deterministic
+   * tie-break across Topics. Excludes any Question the learner has a real
+   * Attempt for (ADR-017 §1) and any Question with no resolvable current
    * `QuestionVersion`. Selects only non-grading fields.
    */
   findUnseenQuestions(

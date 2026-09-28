@@ -146,6 +146,56 @@ function renderCard(feedback: AnswerFeedback | null) {
   );
 }
 
+describe("QuestionCard selection-reason label (RUN010-E / OQ-018)", () => {
+  function renderCardWithActionType(actionType: string | undefined) {
+    return renderToStaticMarkup(
+      <QuestionCard
+        item={{ ...item, actionType }}
+        feedback={null}
+        submitError={null}
+        onSubmit={async () => {}}
+        onContinue={() => {}}
+        onSkip={async () => {}}
+        onSelectionChange={() => {}}
+      />,
+    );
+  }
+
+  it("maps each real internal NBA action type to its honest learner-facing label", () => {
+    expect(renderCardWithActionType("REVIEW_DUE")).toContain("חזרה מתוזמנת");
+    expect(renderCardWithActionType("RELEARN_LAPSE")).toContain("למידה מחדש");
+    expect(renderCardWithActionType("REPAIR_MISCONCEPTION")).toContain("תיקון טעות נפוצה");
+    expect(renderCardWithActionType("STRENGTHEN_MEMORY")).toContain("חיזוק זיכרון");
+  });
+
+  it("labels an ADR-017 New Material / cold-start item honestly as new material — never as a review/urgency reason it doesn't have", () => {
+    const html = renderCardWithActionType("NEW_LEARNING");
+    expect(html).toContain("חומר חדש");
+    // Must never be mislabeled with a reason that implies scheduled review,
+    // an unresolved lapse, a misconception, or ongoing strengthening — none
+    // of those are true for a Question the learner has never attempted.
+    expect(html).not.toContain("חזרה מתוזמנת");
+    expect(html).not.toContain("למידה מחדש");
+    expect(html).not.toContain("תיקון טעות נפוצה");
+    expect(html).not.toContain("חיזוק זיכרון");
+  });
+
+  it("never leaks a raw/unmapped internal actionType code to the learner", () => {
+    const html = renderCardWithActionType("SOME_FUTURE_ACTION_TYPE");
+    expect(html).not.toContain("SOME_FUTURE_ACTION_TYPE");
+    // Also re-confirm the historical bug this guards against: the real
+    // internal New Material code must never appear verbatim once it IS
+    // mapped, either — only its honest label should render.
+    expect(renderCardWithActionType("NEW_LEARNING")).not.toContain("NEW_LEARNING");
+  });
+
+  it("renders no reason label at all when actionType is absent (Practice has no such label)", () => {
+    const html = renderCardWithActionType(undefined);
+    expect(html).not.toContain("חומר חדש");
+    expect(html).not.toContain("חזרה מתוזמנת");
+  });
+});
+
 describe("QuestionCard post-submit structure (QA2-A)", () => {
   it("correct submission: feedback in normal flow BEFORE options, sticky Continue only", () => {
     const feedback: AnswerFeedback = {

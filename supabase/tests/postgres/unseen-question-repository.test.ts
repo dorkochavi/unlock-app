@@ -16,8 +16,10 @@ import {
   insertCourse,
   insertQuestion,
   insertQuestionVersion,
+  insertTopic,
   insertUser,
   setCurrentVersion,
+  setQuestionTopic,
 } from "./db-harness";
 
 let db: PGlite;
@@ -140,5 +142,111 @@ describe("PostgresUnseenQuestionRepository", () => {
 
     const results = await repo.findUnseenQuestions(userId, courseId, 10);
     expect(results).toEqual([]);
+  });
+
+  /**
+   * RUN010-E — Topic-diversifying round-robin selection (evidence-backed
+   * fix for a real Topic-clustering gap in the pure `created_at asc`
+   * order this replaces).
+   */
+  describe("Topic-diversifying round-robin (RUN010-E)", () => {
+    async function seedTopicWithQuestions(
+      courseId: string,
+      count: number,
+      createdAtStarting: string,
+    ): Promise<{ topicId: string; questionIds: string[] }> {
+      const topicId = await insertTopic(db, courseId);
+      const questionIds: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const questionId = await insertQuestion(db, courseId);
+        await db.query("update questions set created_at = $2 where id = $1", [
+          questionId,
+          new Date(new Date(createdAtStarting).getTime() + i * 60_000).toISOString(),
+        ]);
+        const versionId = await insertQuestionVersion(db, questionId);
+        await setCurrentVersion(db, questionId, versionId);
+        await setQuestionTopic(db, questionId, topicId);
+        questionIds.push(questionId);
+      }
+      return { topicId, questionIds };
+    }
+
+    it("does not let one Topic's older Questions starve a second Topic out of a small limit", async () => {
+      const userId = await insertUser(db);
+      const courseId = await insertCourse(db, userId);
+
+      // Topic A: 3 Questions, ALL created strictly before every Topic B
+      // Question. Under the old pure `created_at asc` order, Topic B would
+      // never appear at all within a limit-3 fallback while Topic A still
+      // had unseen material left — exactly the clustering bug this Slice's
+      // investigation found.
+      const topicA = await seedTopicWithQuestions(courseId, 3, "2026-01-01T00:00:00Z");
+      const topicB = await seedTopicWithQuestions(courseId, 3, "2026-02-01T00:00:00Z");
+
+      const results = await repo.findUnseenQuestions(userId, courseId, 3);
+
+      expect(results).toHaveLength(3);
+      const resultIds = results.map((r) => r.questionId);
+      // Topic B's earliest Question must be represented despite being
+      // chronologically newer than every Topic A Question.
+      expect(resultIds).toContain(topicB.questionIds[0]);
+      expect(resultIds).toContain(topicA.questionIds[0]);
+    });
+
+    it("picks exactly one (the earliest) Question per Topic when limit equals the Topic count", async () => {
+      const userId = await insertUser(db);
+      const courseId = await insertCourse(db, userId);
+
+      const topicA = await seedTopicWithQuestions(courseId, 3, "2026-01-01T00:00:00Z");
+      const topicB = await seedTopicWithQuestions(courseId, 3, "2026-02-01T00:00:00Z");
+
+      const results = await repo.findUnseenQuestions(userId, courseId, 2);
+
+      expect(results).toHaveLength(2);
+      const resultIds = results.map((r) => r.questionId);
+      expect(resultIds).toEqual(
+        expect.arrayContaining([topicA.questionIds[0], topicB.questionIds[0]]),
+      );
+      // Neither Topic contributes a SECOND Question before the other
+      // Topic's first has been represented.
+      expect(resultIds).not.toContain(topicA.questionIds[1]);
+      expect(resultIds).not.toContain(topicB.questionIds[1]);
+    });
+
+    it("treats Questions with no Topic assigned as their own round-robin bucket, never excluded", async () => {
+      const userId = await insertUser(db);
+      const courseId = await insertCourse(db, userId);
+
+      const topicA = await seedTopicWithQuestions(courseId, 2, "2026-01-01T00:00:00Z");
+
+      // Two more Questions, deliberately left with topic_id = null (legacy /
+      // no-Topic-chosen case).
+      const noTopicQ1 = await insertQuestion(db, courseId);
+      await db.query("update questions set created_at = $2 where id = $1", [
+        noTopicQ1,
+        "2026-03-01T00:00:00Z",
+      ]);
+      const v1 = await insertQuestionVersion(db, noTopicQ1);
+      await setCurrentVersion(db, noTopicQ1, v1);
+
+      const results = await repo.findUnseenQuestions(userId, courseId, 2);
+
+      expect(results).toHaveLength(2);
+      const resultIds = results.map((r) => r.questionId);
+      expect(resultIds).toContain(topicA.questionIds[0]);
+      expect(resultIds).toContain(noTopicQ1);
+    });
+
+    it("is deterministic across repeated calls against the same DB state", async () => {
+      const userId = await insertUser(db);
+      const courseId = await insertCourse(db, userId);
+      await seedTopicWithQuestions(courseId, 3, "2026-01-01T00:00:00Z");
+      await seedTopicWithQuestions(courseId, 3, "2026-02-01T00:00:00Z");
+
+      const first = await repo.findUnseenQuestions(userId, courseId, 3);
+      const second = await repo.findUnseenQuestions(userId, courseId, 3);
+
+      expect(second.map((r) => r.questionId)).toEqual(first.map((r) => r.questionId));
+    });
   });
 });

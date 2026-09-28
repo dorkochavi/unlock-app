@@ -112,11 +112,19 @@ export function QuestionCard({
   const continueRef = useRef<HTMLButtonElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
 
+  // RUN010-E / OQ-018: honest, non-numeric per-item selection reason. Never
+  // falls back to the raw internal `actionType` string (e.g. "NEW_LEARNING")
+  // when no learner-facing label is mapped for it — an unmapped/unknown
+  // actionType renders NO label rather than leaking an internal code,
+  // matching OQ-018's "avoid exposing internal scores"/no-false-certainty
+  // constraints. See messages/he.ts's `today.actionType` map for the
+  // currently-mapped set (all 4 NBA action types + the ADR-017 New Material
+  // fallback's "NEW_LEARNING").
   const actionLabel =
     item.actionType === undefined
       ? null
       : (messages.actionType[item.actionType as keyof typeof messages.actionType] ??
-        item.actionType);
+        null);
 
   useEffect(() => {
     promptRef.current?.focus();

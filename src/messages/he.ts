@@ -384,6 +384,13 @@ export const he = {
       RELEARN_LAPSE: "למידה מחדש",
       REPAIR_MISCONCEPTION: "תיקון טעות נפוצה",
       STRENGTHEN_MEMORY: "חיזוק זיכרון",
+      // RUN010-E / OQ-018: ADR-017 New Material fallback item — the
+      // cold-start / "not enough evidence yet" case from OQ-018's own
+      // candidate reason list. Must stay a real, honest label (never fall
+      // through to the raw "NEW_LEARNING" internal actionType string — see
+      // question-card.tsx's actionLabel computation, which now returns null
+      // instead of leaking any unmapped internal code).
+      NEW_LEARNING: "חומר חדש",
     },
     status: {
       pending: "ממתין",
