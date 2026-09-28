@@ -107,6 +107,8 @@ Slice, uncommitted work, last verification), and dispatches the next Slice. Revi
 fresh agents invoked per `.claude/skills/review-commit/SKILL.md` only when a Slice's risk warrants
 one. Workers run one at a time (single writer), not in parallel.
 
-This is an observed working pattern as of this Run, not yet a packaged skill. If a formal reusable
-skill for it exists, look for it under `.claude/skills/` (e.g. `.claude/skills/autonomous-run/`) and
-prefer that over reconstructing the pattern from scratch.
+The reusable procedure for this pattern is packaged as `.claude/skills/autonomous-run/SKILL.md`. It
+is deliberately not referenced from `CLAUDE.md` — Long Autonomous Runs are an infrequent, explicitly
+invoked mode, not part of ordinary per-Slice lifecycle — so use it by path (or by its slash-name if
+wired up) when a Run's initiating prompt calls for this pattern, rather than reconstructing the
+protocol from scratch.
