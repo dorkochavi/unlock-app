@@ -150,6 +150,7 @@ function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
 function makeContext(
   scheduler: MemoryScheduler = new FakeMemoryScheduler(),
   isSameLearningSession: boolean | null = false,
+  isReinforcementAttempt = false,
 ) {
   return {
     now: new Date("2026-01-01T00:05:00.000Z"),
@@ -157,6 +158,7 @@ function makeContext(
     memoryScheduler: scheduler,
     retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
     isSameLearningSession,
+    isReinforcementAttempt,
     evidenceStrengthPolicy: TEST_EVIDENCE_STRENGTH_POLICY,
     masteryPolicy: TEST_MASTERY_POLICY,
     misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
@@ -1258,6 +1260,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       memoryScheduler: scheduler,
       retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
       isSameLearningSession: false,
+      isReinforcementAttempt: false,
       evidenceStrengthPolicy: spanTestPolicy,
       masteryPolicy: TEST_MASTERY_POLICY,
     misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
@@ -1316,6 +1319,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       memoryScheduler: scheduler,
       retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
       isSameLearningSession: true,
+      isReinforcementAttempt: false,
       evidenceStrengthPolicy: sessionTestPolicy,
       masteryPolicy: TEST_MASTERY_POLICY,
     misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
@@ -1362,6 +1366,7 @@ describe("applyAttemptToProgress — evidence strength integration", () => {
       memoryScheduler: scheduler,
       retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
       isSameLearningSession: null,
+      isReinforcementAttempt: false,
       evidenceStrengthPolicy: sessionTestPolicy,
       masteryPolicy: TEST_MASTERY_POLICY,
     misconceptionPolicy: TEST_MISCONCEPTION_POLICY,

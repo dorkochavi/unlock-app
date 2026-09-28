@@ -37,3 +37,45 @@ export function deriveIsSameLearningSession(
   }
   return currentLearningSessionId === baselineLearningSessionId;
 }
+
+/**
+ * RUN010-B (FUB-034 same-day reinforcement) — "does the current Attempt have
+ * ANY earlier Attempt (for the same userId/questionId pair) in the exact
+ * same learning session?" This is a DIFFERENT question from
+ * `deriveIsSameLearningSession` above: that one compares against the
+ * retrieval-qualification BASELINE (which only moves on qualifying/
+ * first-ever retrievals, so it can lag behind by days), whereas this one
+ * must be true for the Question's 2nd+ Attempt of the day REGARDLESS of
+ * whether any earlier Attempt today was itself correct, assisted, or
+ * otherwise non-qualifying (an incorrect first practice answer must not
+ * make a same-day 2nd attempt look like "a different session" merely
+ * because the baseline never moved).
+ *
+ * Deliberately takes the plain list of every prior Attempt's
+ * `learningSessionId` for the pair (not a single "last session" value):
+ * this is trivially and identically derivable both by the online
+ * `submitAnswer` path (query the persisted Attempts for the pair, before
+ * inserting the new one) and by `rebuildUserQuestionProgress`'s
+ * canonical-order replay (the growing prefix of already-processed
+ * records) — see progress-update.ts's `ProgressUpdateContext
+ * .isReinforcementAttempt` and its two callers for exactly how each
+ * assembles this list. No new persisted field is needed on
+ * UserQuestionProgress: `learningSessionId` already exists on every
+ * Attempt (ADR-020), so this is fully reconstructable from immutable
+ * Attempt history alone (ADR-012 rebuild parity).
+ *
+ * A `null` `currentLearningSessionId` never matches anything — same
+ * conservative "never optimistically claim a match" stance as
+ * `deriveIsSameLearningSession`'s own `null` handling.
+ */
+export function deriveIsReinforcementAttempt(
+  currentLearningSessionId: string | null,
+  priorAttemptLearningSessionIds: readonly (string | null)[],
+): boolean {
+  if (currentLearningSessionId === null) {
+    return false;
+  }
+  return priorAttemptLearningSessionIds.some(
+    (id) => id !== null && id === currentLearningSessionId,
+  );
+}

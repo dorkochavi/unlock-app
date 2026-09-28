@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { deriveIsSameLearningSession } from "../learning-session";
+import {
+  deriveIsReinforcementAttempt,
+  deriveIsSameLearningSession,
+} from "../learning-session";
 import type { EvidenceStrengthPolicy } from "../evidence-strength";
 import type { MasteryPolicy } from "../mastery";
 import type { MisconceptionPolicy } from "../misconception";
@@ -97,6 +100,7 @@ function makeContext(
     memoryScheduler: new FakeMemoryScheduler(),
     retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
     isSameLearningSession: null, // ignored/overwritten by rebuild — see rebuild.ts
+    isReinforcementAttempt: false, // ignored/overwritten by rebuild — see rebuild.ts
     evidenceStrengthPolicy: TEST_EVIDENCE_STRENGTH_POLICY,
     masteryPolicy: TEST_MASTERY_POLICY,
     misconceptionPolicy: TEST_MISCONCEPTION_POLICY,
@@ -183,16 +187,23 @@ function manualCanonicalReplay(
   context: ProgressUpdateContext,
 ): UserQuestionProgress | null {
   let progress: UserQuestionProgress | null = null;
+  const seenLearningSessionIds: Array<string | null> = [];
   for (const attempt of attempts) {
     const isSameLearningSession = deriveIsSameLearningSession(
       attempt.learningSessionId,
       progress?.retrievalBaselineLearningSessionId ?? null,
     );
+    const isReinforcementAttempt = deriveIsReinforcementAttempt(
+      attempt.learningSessionId,
+      seenLearningSessionIds,
+    );
     const result = applyAttemptToProgress(progress, attempt, {
       ...context,
       isSameLearningSession,
+      isReinforcementAttempt,
     });
     progress = result.progress;
+    seenLearningSessionIds.push(attempt.learningSessionId);
   }
   return progress;
 }
@@ -402,6 +413,7 @@ describe("rebuildUserQuestionProgress", () => {
     // every step except the last, where rebuild-time `now` is used.
     let manual: UserQuestionProgress | null = null;
     const ordered = [a1, a2, a3];
+    const seenLearningSessionIds: Array<string | null> = [];
     ordered.forEach((attempt, index) => {
       const isLast = index === ordered.length - 1;
       const now = isLast ? rebuildNow : attempt.answeredAt;
@@ -409,11 +421,17 @@ describe("rebuildUserQuestionProgress", () => {
         attempt.learningSessionId,
         manual?.retrievalBaselineLearningSessionId ?? null,
       );
+      const isReinforcementAttempt = deriveIsReinforcementAttempt(
+        attempt.learningSessionId,
+        seenLearningSessionIds,
+      );
       const result = applyAttemptToProgress(manual, attempt, {
         ...makeContext({ now, memoryScheduler: scheduler }),
         isSameLearningSession,
+        isReinforcementAttempt,
       });
       manual = result.progress;
+      seenLearningSessionIds.push(attempt.learningSessionId);
     });
 
     expect(uniform).toEqual(manual);

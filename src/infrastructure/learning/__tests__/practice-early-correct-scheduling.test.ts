@@ -68,6 +68,12 @@ function contextFor(
   previous: UserQuestionProgress | null,
   attempt: Attempt,
   scheduler: MemoryScheduler = new TsFsrsMemoryScheduler(),
+  // RUN010-B: every pre-existing case in this file uses a fresh, unique
+  // `learningSessionId` per Attempt (see `attemptAt`'s default), so
+  // `isReinforcementAttempt` is truthfully `false` unless a caller
+  // explicitly proves otherwise (see the "RUN010-B same-day reinforcement"
+  // describe block below, which passes the real derivation).
+  isReinforcementAttempt = false,
 ): ProgressUpdateContext {
   return {
     ...createProductionSubmitAnswerContext(now),
@@ -77,6 +83,7 @@ function contextFor(
       attempt.learningSessionId,
       previous?.retrievalBaselineLearningSessionId ?? null,
     ),
+    isReinforcementAttempt,
   };
 }
 
@@ -116,11 +123,12 @@ function apply(
   previous: UserQuestionProgress | null,
   attempt: Attempt,
   scheduler?: MemoryScheduler,
+  isReinforcementAttempt = false,
 ): ProgressUpdateResult {
   return applyAttemptToProgress(
     previous,
     attempt,
-    contextFor(attempt.answeredAt, previous, attempt, scheduler),
+    contextFor(attempt.answeredAt, previous, attempt, scheduler, isReinforcementAttempt),
   );
 }
 
@@ -592,6 +600,107 @@ describe("§39A Practice scheduling (real ts-fsrs, production policies)", () => 
       // compare everything except the processing-time stamp.
       expect({ ...reconciled!, updatedAt: null }).toStrictEqual({ ...canonical!, updatedAt: null });
       expect(reconciled!.memory).toStrictEqual(canonical!.memory);
+    });
+  });
+
+  describe("RUN010-B — same-day reinforcement: a Question's 2nd+ same-session Attempt never re-invokes the scheduler", () => {
+    it("a genuine due review, then a same-day CORRECT reinforcement Attempt (itself overdue relative to the NEW due date) is frozen — not merely 'still early'", () => {
+      const previous = establishedProgress();
+      const dueAt = previous.memory!.scheduledReviewAt;
+      const session = "practice-session-shared-correct";
+      const scheduler = new RecordingScheduler();
+
+      // First same-day Attempt: genuinely due -> a real scheduler review.
+      const first = apply(previous, attemptAt(dueAt, { learningSessionId: session }), scheduler, false);
+      expect(scheduler.reviewCalls).toBe(1);
+      const afterFirstReview = first.progress.memory!;
+
+      // Second same-day Attempt: deliberately AFTER the NEW due date (not
+      // "early" by the pre-existing case-4 rule at all) — only the
+      // reinforcement flag can freeze this one.
+      const reinforcedAt = new Date(afterFirstReview.scheduledReviewAt.getTime() + DAY_MS);
+      const second = apply(
+        first.progress,
+        attemptAt(reinforcedAt, { learningSessionId: session }),
+        scheduler,
+        true,
+      );
+
+      expect(scheduler.reviewCalls).toBe(1); // no second review call
+      expect(second.progress.memory).toStrictEqual(afterFirstReview);
+      // Evidence is still fully recorded.
+      expect(second.progress.attemptCount).toBe(first.progress.attemptCount + 1);
+      expect(second.progress.correctCount).toBe(first.progress.correctCount + 1);
+    });
+
+    it("a genuine due review, then a same-day INCORRECT reinforcement Attempt does not retrigger AGAIN or a second lapse, but still records CONFIDENT_ERROR evidence", () => {
+      const previous = establishedProgress();
+      const dueAt = previous.memory!.scheduledReviewAt;
+      const session = "practice-session-shared-incorrect";
+      const scheduler = new RecordingScheduler();
+
+      const first = apply(previous, attemptAt(dueAt, { learningSessionId: session }), scheduler, false);
+      expect(scheduler.reviewCalls).toBe(1);
+      const afterFirstReview = first.progress.memory!;
+
+      const reinforcedAt = new Date(afterFirstReview.scheduledReviewAt.getTime() + DAY_MS);
+      const second = apply(
+        first.progress,
+        attemptAt(reinforcedAt, {
+          learningSessionId: session,
+          isCorrect: false,
+          confidenceLevel: "high",
+        }),
+        scheduler,
+        true,
+      );
+
+      // No second scheduler review: memory frozen at the post-first-review state.
+      expect(scheduler.reviewCalls).toBe(1);
+      expect(second.progress.memory).toStrictEqual(afterFirstReview);
+      // No second lapse: a same-day reinforcement wrong answer does not
+      // perturb lapseCount/lastLapseAt a second time (Part 1 Q6/Q8).
+      expect(second.progress.lapseCount).toBe(first.progress.lapseCount);
+      expect(second.progress.lastLapseAt).toStrictEqual(first.progress.lastLapseAt);
+      expect(second.reasons).not.toContain("LAPSE");
+      // The wrong answer still "counts" qualitatively (Part 1 Q8): it is a
+      // confident error, an immutable Attempt, and moves the raw evidence
+      // counters — only the scheduler transition/lapse are frozen.
+      expect(second.reasons).toContain("CONFIDENT_ERROR");
+      expect(second.progress.attemptCount).toBe(first.progress.attemptCount + 1);
+      expect(second.progress.lastIncorrectAt).toStrictEqual(reinforcedAt);
+    });
+
+    it("regression control: WITHOUT the reinforcement flag, the identical same-day incorrect Attempt WOULD have retriggered a real AGAIN review and a second lapse", () => {
+      // Proves the two tests above are not vacuous: absent
+      // isReinforcementAttempt, this exact scenario (a due review already
+      // happened today; a later same-day wrong answer on the same
+      // Question) really would corrupt the scheduler a second time in one
+      // day — which is exactly the FUB-034 risk RUN010-B closes.
+      const previous = establishedProgress();
+      const dueAt = previous.memory!.scheduledReviewAt;
+      const session = "practice-session-control";
+      const scheduler = new RecordingScheduler();
+
+      const first = apply(previous, attemptAt(dueAt, { learningSessionId: session }), scheduler, false);
+      const afterFirstReview = first.progress.memory!;
+      const reinforcedAt = new Date(afterFirstReview.scheduledReviewAt.getTime() + DAY_MS);
+
+      const secondWithoutFlag = apply(
+        first.progress,
+        attemptAt(reinforcedAt, {
+          learningSessionId: session,
+          isCorrect: false,
+          confidenceLevel: "high",
+        }),
+        scheduler,
+        false, // deliberately NOT marked as reinforcement
+      );
+
+      expect(scheduler.reviewCalls).toBe(2);
+      expect(secondWithoutFlag.reasons).toContain("LAPSE");
+      expect(secondWithoutFlag.progress.lapseCount).toBe(first.progress.lapseCount + 1);
+      expect(secondWithoutFlag.progress.memory).not.toStrictEqual(afterFirstReview);
     });
   });
 });

@@ -2,14 +2,43 @@
  * selectPracticeBatch — Course/Topic Practice selection (Run UX-02 P2,
  * ADR-020, `docs/LEARNING_ENGINE.md` §39A). NOT a second ranking engine: it
  * calls the SAME pure NBA candidate generation + ranking Today uses, on
- * in-scope progress, then appends the two §39A fallback tiers.
+ * in-scope progress, then appends the §39A fallback tiers.
  *
  * Order: (1) canonical NBA ranking; (2) unseen (ADR-017 order: created_at,
- * id); (3) broader coverage (earliest `scheduledReviewAt`, then id).
+ * id); (3) broader coverage (earliest `scheduledReviewAt`, then id);
+ * (4) RUN010-B same-day reinforcement (FUB-034) — see below.
  *
- * Exclusions: Questions PENDING in today's DailyPlan, Questions already
- * answered in the current learning-day session (Today or Practice), and the
- * client's skip hints — which are untrusted and can only NARROW the pool.
+ * Exclusions from Tiers 1-3: Questions PENDING in today's DailyPlan,
+ * Questions already answered in the current learning-day session (Today or
+ * Practice), and the client's skip hints — which are untrusted and can only
+ * NARROW the pool.
+ *
+ * ## Tier 4 — same-day reinforcement (RUN010-B, resolves FUB-034)
+ *
+ * Tiers 1-3 together always exhaust `eligible` entirely (every eligible
+ * Question ends up somewhere in `ordered` after Tier 3 — Tier 3's "coverage"
+ * sweep has no further filter beyond "not already chosen"). So
+ * `ordered.length === 0` after Tier 3 means every Question in this scope is
+ * either already answered today or excluded (pending-in-Today/skip-hinted)
+ * — Tier 1-3 have nothing left to offer, which is the literal "first-pass
+ * exhaustion" that used to dead-end Practice into `NoMore` for the rest of
+ * the day. Tier 4 activates in EXACTLY that case (never merely "this page
+ * is short" — a scope with, say, 13 never-answered Questions still returns
+ * a genuine, un-padded 10/3 split across two calls; reinforcement never
+ * displaces or delays first-pass content). If nothing in scope has actually
+ * been ANSWERED yet either (e.g. everything is still pending-in-Today),
+ * Tier 4's own candidate pool is correctly empty too — an honest `NoMore`,
+ * not a bug.
+ *
+ * Candidates are every Question in scope that already has an Attempt this
+ * learning-day session (drawn from the SAME exclusion query as above),
+ * minus the client's skip hints (still narrowing-only), ranked by
+ * `rankReinforcementCandidates` (weaker/incorrect evidence first, then
+ * least-recently-answered first, with controlled randomness only among
+ * exact ties and an anti-immediate-repeat swap — see that function's own
+ * doc comment). This is the ONLY tier that ever resurfaces an
+ * already-answered Question; it participates in the SAME `ordered`
+ * array/slice/`hasMore` pipeline as Tiers 1-3, not a bypass.
  *
  * Starting Practice get-or-creates today's DailyPlan first (ADR-020 §2): the
  * plan id IS the learning session; once it exists Practice never mutates it.
@@ -30,7 +59,7 @@ import type {
 } from "../learning/ports";
 import type { TopicRepository } from "../topic/ports";
 import { isPracticeEligible, isUuid } from "./practice-eligibility";
-import type { PracticeReadRepository } from "./ports";
+import type { PracticeReadRepository, PracticeScopeQuestion } from "./ports";
 
 export const PRACTICE_BATCH_SIZE = 10;
 /** Bound on client-supplied hints; extras are ignored (narrowing-only, so this is safe). */
@@ -45,6 +74,17 @@ export interface SelectPracticeBatchCommand {
   skippedQuestionIds: readonly string[];
   /** Explicit request-scoped clock. */
   now: Date;
+  /**
+   * RUN010-B: source of "controlled variability" for Tier 4 reinforcement
+   * ordering — used ONLY to shuffle among candidates that are EXACT ties
+   * on the weak/incorrect-then-least-recently-answered ranking (see
+   * `rankReinforcementCandidates`), never to override that ordering.
+   * Optional and defaults to `Math.random` so no existing caller needs to
+   * change; tests inject a deterministic function instead. Every other
+   * tier stays fully deterministic (see `interleaveByTopic`'s own doc
+   * comment on why Tiers 2/3 deliberately use no randomness at all).
+   */
+  random?: () => number;
 }
 
 export interface SelectPracticeBatchPorts extends GetOrCreateDailyPlanForTodayPorts {
@@ -125,6 +165,98 @@ export function interleaveByTopic<T extends { topicId: string | null }>(
   return result;
 }
 
+/**
+ * RUN010-B Tier 4 — orders same-day reinforcement candidates (Questions
+ * already answered at least once today, in scope) by:
+ *
+ *   1. weaker evidence first — the candidate's most recent Attempt TODAY
+ *      was incorrect (derived from `lastCorrectAt`/`lastIncorrectAt`,
+ *      never from a raw Attempt scan);
+ *   2. then least-recently-answered first (`lastAttemptAt` ascending),
+ *      within the same bucket from (1);
+ *   3. `questionId` as the final deterministic tie-break, before any
+ *      randomness is applied.
+ *
+ * Controlled randomness (the injected `random`) is applied ONLY by
+ * shuffling within a group of candidates that are EXACT ties on (1) and
+ * (2) together — it can never promote a "weaker"/older candidate behind a
+ * "stronger"/newer one, matching `interleaveByTopic`'s own
+ * "randomize ties, not priorities" discipline.
+ *
+ * Anti-immediate-repeat (Part 1 Q1/Q3): after ranking, if the top-ranked
+ * candidate is the Question with the single most-recently-answered
+ * Attempt among ALL candidates (i.e. the Question the learner most likely
+ * just finished), and at least one OTHER candidate exists, it is swapped
+ * with the next one — never returned first when any alternative exists,
+ * even a lower-priority one. With exactly one candidate, that candidate is
+ * unavoidably returned (the only coherent fallback for a tiny scope).
+ *
+ * Defensive: a candidate missing a progress row (should not happen — every
+ * "answered today" Question has one) is silently skipped rather than
+ * crashing.
+ */
+export function rankReinforcementCandidates(
+  candidates: readonly PracticeScopeQuestion[],
+  progressByQuestion: ReadonlyMap<string, UserQuestionProgress>,
+  random: () => number = Math.random,
+): string[] {
+  interface Entry {
+    questionId: string;
+    wasLastAttemptIncorrect: boolean;
+    lastAttemptAtMs: number;
+  }
+
+  const entries: Entry[] = [];
+  for (const candidate of candidates) {
+    const progress = progressByQuestion.get(candidate.questionId);
+    if (progress === undefined) continue;
+    const lastCorrectMs = progress.lastCorrectAt?.getTime() ?? -Infinity;
+    const lastIncorrectMs = progress.lastIncorrectAt?.getTime() ?? -Infinity;
+    entries.push({
+      questionId: candidate.questionId,
+      wasLastAttemptIncorrect: lastIncorrectMs > lastCorrectMs,
+      lastAttemptAtMs: progress.lastAttemptAt?.getTime() ?? -Infinity,
+    });
+  }
+  if (entries.length === 0) return [];
+
+  const mostRecentlyAnsweredQuestionId = entries.reduce((mostRecent, entry) =>
+    entry.lastAttemptAtMs > mostRecent.lastAttemptAtMs ? entry : mostRecent,
+  ).questionId;
+
+  entries.sort((a, b) => {
+    if (a.wasLastAttemptIncorrect !== b.wasLastAttemptIncorrect) {
+      return a.wasLastAttemptIncorrect ? -1 : 1;
+    }
+    if (a.lastAttemptAtMs !== b.lastAttemptAtMs) {
+      return a.lastAttemptAtMs - b.lastAttemptAtMs;
+    }
+    return a.questionId < b.questionId ? -1 : a.questionId > b.questionId ? 1 : 0;
+  });
+
+  // Fisher-Yates shuffle, restricted to each run of exact ties.
+  let groupStart = 0;
+  for (let i = 1; i <= entries.length; i++) {
+    const atBoundary =
+      i === entries.length ||
+      entries[i].wasLastAttemptIncorrect !== entries[groupStart].wasLastAttemptIncorrect ||
+      entries[i].lastAttemptAtMs !== entries[groupStart].lastAttemptAtMs;
+    if (atBoundary) {
+      for (let j = i - 1; j > groupStart; j--) {
+        const k = groupStart + Math.floor(random() * (j - groupStart + 1));
+        [entries[j], entries[k]] = [entries[k], entries[j]];
+      }
+      groupStart = i;
+    }
+  }
+
+  const ranked = entries.map((entry) => entry.questionId);
+  if (ranked.length > 1 && ranked[0] === mostRecentlyAnsweredQuestionId) {
+    [ranked[0], ranked[1]] = [ranked[1], ranked[0]];
+  }
+  return ranked;
+}
+
 export async function selectPracticeBatch(
   command: SelectPracticeBatchCommand,
   settings: DailyPlanGenerationSettings,
@@ -159,19 +291,19 @@ export async function selectPracticeBatch(
   if (planResult.outcome === "USER_NOT_FOUND") return { outcome: "NOT_ELIGIBLE" };
   const plan = planResult.plan;
 
+  const answeredInSessionIds = await ports.practice.listQuestionIdsAnsweredInSession(
+    command.userId,
+    plan.id,
+  );
+  const answeredInSessionSet = new Set(answeredInSessionIds);
+  const skipHints = new Set(command.skippedQuestionIds.slice(0, MAX_SKIP_HINTS));
+
   const excluded = new Set<string>();
   for (const item of plan.items) {
     if (item.status === "pending") excluded.add(item.questionId);
   }
-  for (const questionId of await ports.practice.listQuestionIdsAnsweredInSession(
-    command.userId,
-    plan.id,
-  )) {
-    excluded.add(questionId);
-  }
-  for (const hint of command.skippedQuestionIds.slice(0, MAX_SKIP_HINTS)) {
-    excluded.add(hint);
-  }
+  for (const questionId of answeredInSessionSet) excluded.add(questionId);
+  for (const questionId of skipHints) excluded.add(questionId);
 
   const scopeQuestions = await ports.practice.listScopeQuestions(
     command.userId,
@@ -182,9 +314,14 @@ export async function selectPracticeBatch(
   const eligibleIds = new Set(eligible.map((question) => question.questionId));
 
   // Tier 1 — the canonical NBA policy, unchanged, on in-scope eligible progress.
+  // Also indexes EVERY scope Question's progress (not just eligible), so
+  // Tier 4 reinforcement (below) can rank already-answered-today Questions
+  // without a second `listForUser` call.
   const allProgress = await ports.progress.listForUser(command.userId, command.courseId);
+  const allProgressByQuestion = new Map<string, UserQuestionProgress>();
   const progressByQuestion = new Map<string, UserQuestionProgress>();
   for (const progress of allProgress) {
+    allProgressByQuestion.set(progress.questionId, progress);
     if (eligibleIds.has(progress.questionId)) progressByQuestion.set(progress.questionId, progress);
   }
   const nbaContext = { now: command.now, memoryScheduler: settings.memoryScheduler };
@@ -229,8 +366,26 @@ export async function selectPracticeBatch(
     );
   for (const entry of interleaveByTopic(coverage)) ordered.push(entry.questionId);
 
-  const versionByQuestion = new Map(eligible.map((q) => [q.questionId, q.questionVersionId]));
-  const topicByQuestion = new Map(eligible.map((q) => [q.questionId, q.topicId]));
+  // Tier 4 — RUN010-B same-day reinforcement (FUB-034). Activates only when
+  // Tiers 1-3 produced NOTHING for this scope — see this module's doc
+  // comment for why `ordered.length === 0` here means precisely "every
+  // Question in scope has already been answered today," not merely "this
+  // page is short."
+  if (ordered.length === 0) {
+    const reinforcementCandidates = scopeQuestions.filter(
+      (question) => answeredInSessionSet.has(question.questionId) && !skipHints.has(question.questionId),
+    );
+    for (const questionId of rankReinforcementCandidates(
+      reinforcementCandidates,
+      allProgressByQuestion,
+      command.random,
+    )) {
+      ordered.push(questionId);
+    }
+  }
+
+  const versionByQuestion = new Map(scopeQuestions.map((q) => [q.questionId, q.questionVersionId]));
+  const topicByQuestion = new Map(scopeQuestions.map((q) => [q.questionId, q.topicId]));
   const batchIds = ordered.slice(0, PRACTICE_BATCH_SIZE);
   const contents = await ports.content.findManyByVersionIds(
     batchIds.map((questionId) => versionByQuestion.get(questionId) as string),

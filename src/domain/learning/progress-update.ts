@@ -129,6 +129,21 @@ export interface ProgressUpdateContext {
   isSameLearningSession: boolean | null;
 
   /**
+   * RUN010-B (FUB-034 same-day reinforcement, extends ADR-020 §39A case 4):
+   * true when this Attempt has an earlier Attempt for the SAME
+   * (userId, questionId) pair already recorded in the SAME learning
+   * session (see `deriveIsReinforcementAttempt`, learning-session.ts) —
+   * i.e. this is the Question's 2nd+ real Practice answer today,
+   * regardless of correctness. Consumed only by `nextSchedulerMemory`
+   * below, and only for `dailyPlanItemId === null` (Practice/manual)
+   * Attempts — Today Attempts can never repeat within a day (one
+   * DailyPlanItem per Question per plan), so this is always false for
+   * them and has no effect. Always caller-computed, never inferred from
+   * timestamps here — same discipline as `isSameLearningSession`.
+   */
+  isReinforcementAttempt: boolean;
+
+  /**
    * Threshold policy for evidence-strength.ts. No production default is
    * chosen here — see docs/OPEN_QUESTIONS.md.
    */
@@ -222,6 +237,7 @@ export function applyAttemptToProgress(
     attempt,
     schedulerRatingDecision,
     context.memoryScheduler,
+    context.isReinforcementAttempt,
   );
 
   const retrievalQualification = qualifyRetrieval(
@@ -605,6 +621,7 @@ function nextSchedulerMemory(
   attempt: Attempt,
   ratingDecision: SchedulerRatingDecision,
   memoryScheduler: MemoryScheduler,
+  isReinforcementAttempt: boolean,
 ): { memory: SchedulerMemoryState | null; isLapse: boolean } {
   if (ratingDecision.kind === "NOT_RATABLE") {
     // Assisted, second-attempt, and otherwise non-full evidence must not
@@ -629,11 +646,37 @@ function nextSchedulerMemory(
   // early incorrect is a normal review (AGAIN). Today-attached Attempts
   // are unaffected. Depends only on persisted Attempt data and prior
   // derived state, so rebuild/replay applies it identically (ADR-012).
-  if (
-    attempt.dailyPlanItemId === null &&
+  const isEarlyCorrect =
     ratingDecision.rating === "GOOD" &&
-    attempt.answeredAt.getTime() < previousMemory.scheduledReviewAt.getTime()
-  ) {
+    attempt.answeredAt.getTime() < previousMemory.scheduledReviewAt.getTime();
+
+  // RUN010-B (FUB-034 same-day reinforcement) extends case 4: a Question's
+  // 2nd+ Practice Attempt within the SAME learning-day session
+  // (isReinforcementAttempt) ALSO never re-invokes a real scheduler
+  // transition — regardless of correctness, and regardless of whether it
+  // happens to be early/exactly-due/overdue relative to `scheduledReviewAt`.
+  //
+  // Why: exactly one Attempt per Question per day is allowed to move
+  // `scheduledReviewAt`/`lapseCount` — whichever happens first. Without
+  // this, a Question that was genuinely DUE today (a real review already
+  // fired) could be served again the same day via reinforcement and, if
+  // answered incorrectly, trigger a SECOND real review (AGAIN) that pulls
+  // the just-computed due date earlier and inflates lapseCount for what is
+  // really the same day's single due event — precisely the "correct/
+  // incorrect repetition manufactures extra scheduler evidence" risk this
+  // Slice must close (see RUN010-B design note, Part 1 Q6/Q7). The
+  // Attempt itself is still fully recorded and still contributes to
+  // evidence-summary counters and misconception signals (CONFIDENT_ERROR
+  // is derived independently of scheduler state, from evidence quality and
+  // confidence alone — see classifyAttemptEvidence/deriveStateUpdateReasons
+  // below) — only the FSRS-owned memory transition and lapseCount/
+  // lastLapseAt are frozen for these Attempts. This is an intentional
+  // asymmetry: repeated CORRECT practice can never inflate scheduler
+  // evidence beyond one real review's worth per day, and repeated
+  // INCORRECT practice still "counts" (raw counters, CONFIDENT_ERROR/
+  // misconception where applicable) without destabilizing the due date or
+  // lapseCount a second time in the same day.
+  if (attempt.dailyPlanItemId === null && (isEarlyCorrect || isReinforcementAttempt)) {
     return { memory: previousMemory, isLapse: false };
   }
 

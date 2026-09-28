@@ -162,6 +162,7 @@ function makeContext(
   scheduler: MemoryScheduler,
   isSameLearningSession: boolean | null = false,
   now: Date = BASE_DATE,
+  isReinforcementAttempt = false,
 ) {
   return {
     now,
@@ -169,6 +170,7 @@ function makeContext(
     memoryScheduler: scheduler,
     retrievalQualificationPolicy: TEST_RETRIEVAL_QUALIFICATION_POLICY,
     isSameLearningSession,
+    isReinforcementAttempt,
     evidenceStrengthPolicy: TEST_EVIDENCE_STRENGTH_POLICY,
     masteryPolicy: TEST_MASTERY_POLICY,
     misconceptionPolicy: TEST_MISCONCEPTION_POLICY,

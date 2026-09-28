@@ -1131,16 +1131,18 @@ Product-owner QA (real 30-question course) surfaced four explicit product direct
 authorized to record but NOT implement, because each requires a new Learning Engine evidence/semantics decision this
 Run has no authority to invent (`.claude/rules/learning-engine.md`).
 
-1. **Practice must not dead-end.** Today is finite by design; Practice is learner-initiated and should feel
-   open-ended (a batch of 10 is pacing/UI only, never a hard session limit) — but the CURRENT same-day exclusion
-   rules (a Question already answered in the current learning session is excluded from the Practice pool,
-   `select-practice-batch.ts`) exist for evidence/scheduler integrity. Simply re-enabling already-answered Questions
-   and counting each repetition as fresh independent evidence risks mastery inflation. Run 010 must decide, as an
-   explicit product/domain decision, ALL of: when a same-day Question may reappear in Practice; minimum
-   spacing/interleaving before a repeat; how a same-day repeated CORRECT answer affects evidence (vs. the existing
-   §39A "early correct = evidence-only, no scheduler review" rule, which governs a DIFFERENT case — first-time-that-day
-   correct before the FSRS due date); how a same-day repeated INCORRECT answer affects evidence; scheduler behavior;
-   mastery/progress behavior; explicit mastery-inflation prevention; Course vs. Topic scope; session/day boundaries.
+1. **Practice must not dead-end — RESOLVED by RUN010-B.** Today is finite by design; Practice is learner-initiated
+   and should feel open-ended (a batch of 10 is pacing/UI only, never a hard session limit). RUN010-B added a Tier 4
+   "same-day reinforcement" fallback to `selectPracticeBatch` (activates only once Tiers 1-3 are genuinely exhausted
+   for the requested scope), ranked weaker/incorrect-evidence-first then least-recently-answered-first, with an
+   anti-immediate-repeat rule and controlled randomness only among exact ties — and extended the existing §39A
+   "early correct = evidence-only, no scheduler review" carry-over rule (`progress-update.ts`'s `nextSchedulerMemory`)
+   so a Question's 2nd+ real Attempt in the SAME learning-day session never re-invokes a real FSRS scheduler
+   transition (regardless of correctness), closing the mastery-inflation risk this item flagged. See
+   `src/application/practice/select-practice-batch.ts`, `src/domain/learning/progress-update.ts`,
+   `src/domain/learning/learning-session.ts` (`deriveIsReinforcementAttempt`), and
+   `supabase/tests/postgres/practice.test.ts`'s `RUN010-B` describe block for the accepted design/evidence.
+   Sub-items 2-4 below remain open.
 2. **Today Daily Plan Budget.** Today's plan currently often contains ~3 Questions; the product owner believes this is
    too small for the eventual product and floated a **30–50 upper-bound hypothesis to test** — explicitly NOT a
    proposal to hard-code 30 or 50 as the default. Run 010 must define a real Daily Plan Budget policy: minimum
@@ -1233,6 +1235,36 @@ focused review queue) rather than an implementation Slice inventing this ad hoc.
 ## Promotion Trigger
 
 Inside Run 011, once Question-list scale (or instructor feedback) makes the flat list impractical.
+
+---
+
+# FUB-038 — Reinforcement Scheduler-Freeze Scoped to "Any Earlier Attempt," Not "Any Earlier Rated Attempt" (RUN010-B review finding, NON-BLOCKING)
+
+**Status:** `RECORDED`
+**Area:** Learning Engine — FSRS scheduler freeze (`src/domain/learning/progress-update.ts`, `learning-session.ts`)
+
+RUN010-B's `deriveIsReinforcementAttempt` (and the `nextSchedulerMemory` freeze it feeds) treats a Question's 2nd+
+Attempt in the SAME learning-day session as "reinforcement" (frozen scheduler transition) based on whether ANY
+earlier Attempt exists this session — not specifically an earlier RATABLE (`FULL_EVIDENCE`) one. If a Question's
+first same-day Practice Attempt were `NOT_RATABLE` (assisted, second-attempt, or answer-revealed evidence) and a
+later same-day Attempt were the first genuinely ratable one, this would freeze that later Attempt even though no
+real scheduler review had fired yet that day — not quite matching the intended "whichever happens first" rule
+(the first *scheduler-affecting* event, not literally the first attempt of any quality).
+
+Currently **unreachable in production**: `submitPracticeAnswer` hardcodes `assistanceUsed: "NONE"`,
+`attemptNumberForPresentedItem: 1`, `answerWasRevealedBeforeResponse: false` for every Practice submission, and
+`createProductionSubmitAnswerContext` hardcodes `determineSuspiciousTiming: () => false`
+(`src/infrastructure/learning/composition-root.ts`) — so every Practice Attempt is always `FULL_EVIDENCE`/ratable
+today, and this gap cannot fire. Recorded so it is not rediscovered as a live bug once assisted Practice or real
+suspicious-timing detection ships. Fix (when relevant): tighten `deriveIsReinforcementAttempt`'s derivation to
+"prior RATED (FULL_EVIDENCE, not NOT_RATABLE) same-session Attempt," mirroring the same
+`mapEvidenceToSchedulerRating`/`NOT_RATABLE` distinction `nextSchedulerMemory` already applies to the current
+Attempt.
+
+## Promotion Trigger
+
+Before or alongside any Slice that ships assisted Practice attempts (hints/second-attempt/answer-reveal) or real
+`determineSuspiciousTiming` detection.
 
 ---
 

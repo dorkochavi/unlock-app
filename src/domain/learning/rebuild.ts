@@ -29,7 +29,10 @@
  * `Date.now()`, no randomness, no DB, no LLM.
  */
 
-import { deriveIsSameLearningSession } from "./learning-session";
+import {
+  deriveIsReinforcementAttempt,
+  deriveIsSameLearningSession,
+} from "./learning-session";
 import {
   applyAttemptToProgress,
   type ProgressUpdateContext,
@@ -99,6 +102,13 @@ export function sortReplayRecords(
  * but comparing two stable `learningSessionId`s can be redone truthfully
  * for any pair of Attempts in any order.
  *
+ * `context.isReinforcementAttempt` (RUN010-B) is likewise ignored/
+ * overwritten for each replay step — derived fresh via
+ * `deriveIsReinforcementAttempt` from the growing prefix of already-
+ * processed records' `learningSessionId`s in canonical order, so a
+ * rebuild reproduces exactly which historical Attempts were "same-day
+ * repeats" without needing any new persisted field.
+ *
  * Returns `null` when `records` is empty (no history to rebuild from).
  *
  * Deterministic: given the same records and context, always returns the
@@ -111,16 +121,23 @@ export function rebuildUserQuestionProgress(
   const ordered = sortReplayRecords(records);
 
   let progress: UserQuestionProgress | null = null;
+  const seenLearningSessionIds: Array<string | null> = [];
   for (const record of ordered) {
     const isSameLearningSession = deriveIsSameLearningSession(
       record.attempt.learningSessionId,
       progress?.retrievalBaselineLearningSessionId ?? null,
     );
+    const isReinforcementAttempt = deriveIsReinforcementAttempt(
+      record.attempt.learningSessionId,
+      seenLearningSessionIds,
+    );
     const result = applyAttemptToProgress(progress, record.attempt, {
       ...context,
       isSameLearningSession,
+      isReinforcementAttempt,
     });
     progress = result.progress;
+    seenLearningSessionIds.push(record.attempt.learningSessionId);
   }
 
   return progress;

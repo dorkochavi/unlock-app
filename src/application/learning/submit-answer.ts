@@ -112,7 +112,10 @@ import {
   canonicalizeSelectedAnswer,
   InvalidSelectedAnswerError,
 } from "../../domain/learning/answer";
-import { deriveIsSameLearningSession } from "../../domain/learning/learning-session";
+import {
+  deriveIsReinforcementAttempt,
+  deriveIsSameLearningSession,
+} from "../../domain/learning/learning-session";
 import {
   applyAttemptToProgress,
   type ProgressUpdateContext,
@@ -133,7 +136,7 @@ export type SubmitAnswerCommand = Omit<
 
 export type SubmitAnswerContext = Omit<
   ProgressUpdateContext,
-  "isSameLearningSession"
+  "isSameLearningSession" | "isReinforcementAttempt"
 > & {
   generateId: () => string;
   /**
@@ -529,6 +532,29 @@ async function submitAnswerInTransaction(
     command.selectedAnswer,
   );
 
+  const resolvedLearningSessionId = resolveLearningSessionId(command, dailyPlanItem);
+
+  // RUN010-B (FUB-034 same-day reinforcement): computed BEFORE this
+  // Attempt is inserted, so `priorAttempts` never includes it. Only
+  // meaningful for manual Practice (`dailyPlanItemId === null`) — a
+  // DailyPlan-attached (Today) Attempt is always the plan's single
+  // resolution for that Question, so it can never be a same-day repeat;
+  // skipping the query for that case avoids extra work on Today's path.
+  // See `nextSchedulerMemory` (progress-update.ts) for what this controls
+  // and why, and `deriveIsReinforcementAttempt` (learning-session.ts) for
+  // the pure derivation and its rebuild-parity guarantee.
+  let isReinforcementAttempt = false;
+  if (command.dailyPlanItemId === null && resolvedLearningSessionId !== null) {
+    const priorAttempts = await repos.attempts.listForReplay(
+      command.userId,
+      command.questionId,
+    );
+    isReinforcementAttempt = deriveIsReinforcementAttempt(
+      resolvedLearningSessionId,
+      priorAttempts.map((record) => record.attempt.learningSessionId),
+    );
+  }
+
   const candidateAttempt: Attempt = {
     ...command,
     // ADR-016: APPLICATION-derived from the persisted DailyPlanItem when
@@ -538,7 +564,7 @@ async function submitAnswerInTransaction(
     // uniquely determines its own parent plan.
     dailyPlanId:
       dailyPlanItem !== null ? dailyPlanItem.dailyPlanId : command.dailyPlanId,
-    learningSessionId: resolveLearningSessionId(command, dailyPlanItem),
+    learningSessionId: resolvedLearningSessionId,
     id: context.generateId(),
     isCorrect,
     suspiciousTiming,
@@ -583,6 +609,7 @@ async function submitAnswerInTransaction(
     const fullContext: ProgressUpdateContext = {
       ...context,
       isSameLearningSession,
+      isReinforcementAttempt,
     };
 
     try {
@@ -654,14 +681,15 @@ async function rebuildProgress(
     command.userId,
     command.questionId,
   );
-  // rebuildUserQuestionProgress sorts defensively and derives
-  // isSameLearningSession fresh per record — see rebuild.ts. The
-  // `isSameLearningSession` field on the context passed in is ignored/
-  // overwritten there; `null` is passed only to satisfy the
+  // rebuildUserQuestionProgress sorts defensively and derives both
+  // isSameLearningSession AND isReinforcementAttempt fresh per record —
+  // see rebuild.ts. Both fields on the context passed in are ignored/
+  // overwritten there; the placeholders here only satisfy the
   // ProgressUpdateContext shape.
   const rebuilt = rebuildUserQuestionProgress(records, {
     ...context,
     isSameLearningSession: null,
+    isReinforcementAttempt: false,
   });
   if (rebuilt === null) {
     // Unreachable in practice: the Attempt this call is reconciling was
