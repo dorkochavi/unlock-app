@@ -8,11 +8,24 @@
  * parameter. The body carries only learner-controlled answer data and the
  * Question/version the learner saw: `questionId`, `questionVersionId`,
  * `submissionId` (client idempotency key, ADR-010), `selectedAnswer`, an
- * optional `topicId` (Topic Practice scope) and optional
- * `responseTimeSeconds`. The client NEVER supplies a learner id, a session
- * id, a plan/item id or an answer time — the application derives the
- * learning-day session and `now` is captured at the route boundary.
- * Confidence is not accepted (not captured in Practice).
+ * optional `topicId` (Topic Practice scope), optional
+ * `responseTimeSeconds`, and optional `confidenceLevel`. The client NEVER
+ * supplies a learner id, a session id, a plan/item id or an answer time —
+ * the application derives the learning-day session and `now` is captured at
+ * the route boundary.
+ *
+ * RUN010-G / OQ-014: `confidenceLevel` (`"low" | "medium" | "high"`, or
+ * absent/null) is now accepted here — same trust category as
+ * `responseTimeSeconds`, a learner self-report the server does not
+ * independently re-derive (see `submit-answer.ts`'s module doc comment,
+ * which already documented `confidenceLevel` as exactly this kind of
+ * client-owned evidence field). This closes a real gap: the domain/
+ * misconception pipeline already required `confidenceLevel === "high"` on
+ * an incorrect Attempt to escalate (`misconception.ts`), but this route
+ * previously hardcoded `confidenceLevel: null` on every Practice Attempt,
+ * making that gate structurally unreachable from Practice. Only the input
+ * source changed here — `submitPracticeAnswer`/`submitAnswer`/
+ * `misconception.ts` themselves are untouched.
  *
  * ## HTTP mapping
  *
@@ -36,7 +49,8 @@
  */
 import { isUuid } from "../../../../../../lib/uuid";
 import type { SubmitPracticeAnswerResult } from "../../../../../../application/practice/submit-practice-answer";
-import type { SelectedAnswer } from "../../../../../../domain/learning/types";
+import type { ConfidenceLevel, SelectedAnswer } from "../../../../../../domain/learning/types";
+import { CONFIDENCE_LEVELS } from "../../../../../../domain/learning/types";
 import type { RequireAuthenticatedUserResult } from "../../../../../../infrastructure/supabase/require-authenticated-user";
 
 export interface HandleSubmitPracticeAnswerDependencies {
@@ -53,7 +67,7 @@ export interface HandleSubmitPracticeAnswerDependencies {
     questionVersionId: string;
     submissionId: string;
     selectedAnswer: SelectedAnswer;
-    confidenceLevel: null;
+    confidenceLevel: ConfidenceLevel | null;
     responseTimeSeconds: number | null;
     now: Date;
   }) => Promise<SubmitPracticeAnswerResult>;
@@ -82,6 +96,21 @@ function readSelectedAnswer(value: unknown): SelectedAnswer | undefined {
   if (typeof value === "string") return value;
   if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
     return value as string[];
+  }
+  return undefined;
+}
+
+/**
+ * RUN010-G / OQ-014: absent/null -> no signal (`null`); one of the three
+ * canonical `ConfidenceLevel` strings -> that value; anything else is a
+ * malformed request. Mirrors `handle-submit-daily-plan-item-answer.ts`'s
+ * `readConfidenceLevel`.
+ */
+function readConfidenceLevel(body: Record<string, unknown>): ConfidenceLevel | null | undefined {
+  const value = body.confidenceLevel;
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" && (CONFIDENCE_LEVELS as readonly string[]).includes(value)) {
+    return value as ConfidenceLevel;
   }
   return undefined;
 }
@@ -138,6 +167,9 @@ export async function handleSubmitPracticeAnswer(
   const selectedAnswer = readSelectedAnswer(body.selectedAnswer);
   if (selectedAnswer === undefined) return error(400, "INVALID_REQUEST");
 
+  const confidenceLevel = readConfidenceLevel(body);
+  if (confidenceLevel === undefined) return error(400, "INVALID_REQUEST");
+
   let result: SubmitPracticeAnswerResult;
   try {
     result = await deps.submit({
@@ -148,7 +180,7 @@ export async function handleSubmitPracticeAnswer(
       questionVersionId,
       submissionId,
       selectedAnswer,
-      confidenceLevel: null,
+      confidenceLevel,
       responseTimeSeconds: responseTime,
       now: deps.now,
     });

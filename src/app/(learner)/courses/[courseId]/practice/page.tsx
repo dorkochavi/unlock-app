@@ -23,6 +23,8 @@ import { interpolate } from "@/lib/interpolate";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 
+import type { ConfidenceLevel } from "@/domain/learning/types";
+
 import { useLearnMode } from "../../../learn-mode";
 import { persistDetectedTimezone } from "../../../today/fetch-today-plan";
 import { QuestionCard } from "../../../today/question-card";
@@ -234,7 +236,10 @@ function PracticeScreen() {
     });
   }
 
-  async function handleAnswer(selectedAnswer: string | string[] | null) {
+  async function handleAnswer(
+    selectedAnswer: string | string[] | null,
+    confidenceLevel: ConfidenceLevel | null,
+  ) {
     setSubmitError(null);
     setNotice(false);
     const result = await submitPracticeAnswer(courseId, {
@@ -243,6 +248,7 @@ function PracticeScreen() {
       submissionId: crypto.randomUUID(),
       selectedAnswer,
       topicId,
+      confidenceLevel,
     });
     switch (result.outcome) {
       case "ACCEPTED":

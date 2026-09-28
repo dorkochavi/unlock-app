@@ -138,6 +138,7 @@ describe("submitPracticeAnswer", () => {
     submissionId: "s1",
     selectedAnswer: "a",
     topicId: null,
+    confidenceLevel: null,
   };
 
   it("ACCEPTED carries isCorrect + correctOptionIds/explanation (UX-03-QA1 Finding 2/3), defaulting to [] / null when the server omits them", async () => {
@@ -190,5 +191,14 @@ describe("submitPracticeAnswer", () => {
     await expect(submitPracticeAnswer(COURSE, body)).resolves.toEqual({ outcome: "ERROR" });
     stubFetch(respond(200, { isCorrect: "yes" }));
     await expect(submitPracticeAnswer(COURSE, body)).resolves.toEqual({ outcome: "ERROR" });
+  });
+
+  it("RUN010-G / OQ-014: forwards a real confidenceLevel in the request body verbatim", async () => {
+    const fn = stubFetch(respond(200, { isCorrect: true }));
+    await submitPracticeAnswer(COURSE, { ...body, confidenceLevel: "high" });
+    const [, init] = fn.mock.calls[0];
+    expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({
+      confidenceLevel: "high",
+    });
   });
 });

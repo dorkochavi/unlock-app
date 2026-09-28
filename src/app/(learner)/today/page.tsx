@@ -14,6 +14,7 @@ import { QuestionCard } from "./question-card";
 import { selectDisplayedItem, type AnswerFeedback } from "./select-displayed-item";
 import { fetchTodayPlan, persistDetectedTimezone } from "./fetch-today-plan";
 import type { DailyPlanDto, DailyPlanItemDto } from "@/app/api/daily-plan/today/daily-plan-dto";
+import type { ConfidenceLevel } from "@/domain/learning/types";
 
 type ViewState =
   | { kind: "loading" }
@@ -38,7 +39,11 @@ type SubmitAnswerOutcome =
 
 async function submitDailyPlanItemAnswer(
   itemId: string,
-  body: { submissionId: string; selectedAnswer: string | string[] | null },
+  body: {
+    submissionId: string;
+    selectedAnswer: string | string[] | null;
+    confidenceLevel: ConfidenceLevel | null;
+  },
 ): Promise<SubmitAnswerOutcome> {
   let response: Response;
   try {
@@ -437,11 +442,16 @@ function TodayPlanView({
     setStarted(false);
   }
 
-  async function handleAnswer(itemId: string, selectedAnswer: string | string[] | null) {
+  async function handleAnswer(
+    itemId: string,
+    selectedAnswer: string | string[] | null,
+    confidenceLevel: ConfidenceLevel | null,
+  ) {
     setSubmitError(null);
     const result = await submitDailyPlanItemAnswer(itemId, {
       submissionId: generateSubmissionId(),
       selectedAnswer,
+      confidenceLevel,
     });
 
     if (result.outcome === "UNAUTHENTICATED") {
@@ -557,7 +567,9 @@ function TodayPlanView({
         item={current}
         feedback={activeFeedback}
         submitError={submitError}
-        onSubmit={(selectedAnswer) => whilePending(handleAnswer(current.id, selectedAnswer))}
+        onSubmit={(selectedAnswer, confidenceLevel) =>
+          whilePending(handleAnswer(current.id, selectedAnswer, confidenceLevel))
+        }
         onContinue={() => setFeedback(null)}
         onSkip={() => whilePending(handleSkip(current.id))}
         onSelectionChange={() => setSubmitError(null)}

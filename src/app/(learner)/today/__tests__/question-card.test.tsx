@@ -31,6 +31,8 @@ import {
   optionFeedbackState,
   QuestionCard,
   QuestionOption,
+  SURE_CONFIDENCE_LEVEL,
+  UNSURE_CONFIDENCE_LEVEL,
   type QuestionCardItem,
 } from "../question-card";
 import type { AnswerFeedback } from "../select-displayed-item";
@@ -193,6 +195,44 @@ describe("QuestionCard selection-reason label (RUN010-E / OQ-018)", () => {
     const html = renderCardWithActionType(undefined);
     expect(html).not.toContain("חומר חדש");
     expect(html).not.toContain("חזרה מתוזמנת");
+  });
+});
+
+describe("QuestionCard confidence chip-to-domain-value mapping (RUN010-G / OQ-014)", () => {
+  it("pins the binary chip mapping against a silent swap — 'sure' MUST be 'high' (the exact value misconception.ts's CONFIDENT_ERROR gate requires) and 'not sure' MUST be 'low', never the reverse", () => {
+    // This repo's Vitest env has no jsdom/click-interaction harness (see this
+    // file's header), so the actual click wiring cannot be exercised
+    // end-to-end here — this test instead pins the single named source of
+    // truth both chips' onClick/selected logic reads from (question-card.tsx),
+    // so a swap can only happen by editing this one exported pair.
+    expect(SURE_CONFIDENCE_LEVEL).toBe("high");
+    expect(UNSURE_CONFIDENCE_LEVEL).toBe("low");
+    expect(SURE_CONFIDENCE_LEVEL).not.toBe(UNSURE_CONFIDENCE_LEVEL);
+  });
+});
+
+describe("QuestionCard confidence toggle (RUN010-G / OQ-014)", () => {
+  it("renders the optional confidence label + both chips, unselected, pre-submit", () => {
+    const html = renderCard(null);
+    expect(html).toContain("כמה בטוחים הייתם?");
+    expect(html).toContain("בטוח/ה");
+    expect(html).toContain("לא בטוח/ה");
+    // Neither chip is pre-selected — an unexpressed confidence must never be
+    // guessed on the learner's behalf.
+    expect(html).toMatch(/aria-pressed="false"[^>]*>\s*בטוח\/ה/);
+    expect(html).toMatch(/aria-pressed="false"[^>]*>\s*לא בטוח\/ה/);
+  });
+
+  it("does not render the confidence toggle once feedback exists (post-submit)", () => {
+    const feedback: AnswerFeedback = {
+      itemId: "item-1",
+      isCorrect: true,
+      correctOptionIds: ["opt-4"],
+      explanation: null,
+    };
+    const html = renderCard(feedback);
+    expect(html).not.toContain("כמה בטוחים הייתם?");
+    expect(html).not.toContain("בטוח/ה");
   });
 });
 

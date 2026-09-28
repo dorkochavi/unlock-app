@@ -7,6 +7,7 @@
  * maps to `ERROR`, so the screen always reaches a recoverable state.
  */
 import { isUuid } from "@/lib/uuid";
+import type { ConfidenceLevel } from "@/domain/learning/types";
 
 export type PracticeFrom = "course" | "progress";
 
@@ -149,6 +150,7 @@ export async function submitPracticeAnswer(
     submissionId: string;
     selectedAnswer: string | string[] | null;
     topicId: string | null;
+    confidenceLevel: ConfidenceLevel | null;
   },
 ): Promise<SubmitPracticeAnswerOutcome> {
   try {

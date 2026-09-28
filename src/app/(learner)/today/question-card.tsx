@@ -34,11 +34,32 @@
  * independently via the sticky action bar below. Every state pairs color with
  * text/an icon (never color alone): selectedIncorrect uses the calm
  * `state-reinforce` (amber) tokens, not `danger`.
+ *
+ * RUN010-G / OQ-014: confidence capture. UNLOCK_V1_SCOPE.md's "Confidence
+ * Gap" section requires V1 to capture confidence with answers and derive a
+ * basic mismatch signal (high confidence + incorrect; low confidence +
+ * correct) — "confidence is evidence, not truth". OQ-014 itself is still
+ * OPEN on the full interaction model, but lists three candidate
+ * representations and a constraint against false precision. This card uses
+ * the smallest of the three: a binary "sure / not sure" toggle, shown only
+ * pre-submit, never blocking Submit (optional-feeling, not a gate) — a
+ * learner who does not tap either sends no confidence signal at all
+ * (`confidenceLevel: null`), which is more honest than guessing a default on
+ * their behalf ("confidence is evidence, not truth" cuts both ways: absence
+ * of a signal must not be manufactured into one). The binary choice maps
+ * onto the existing ternary `ConfidenceLevel` domain type (already wired
+ * through persistence/misconception.ts) at its two extremes only — "בטוח"
+ * (sure) -> "high", "לא בטוח" (not sure) -> "low" — which is exactly the
+ * pair UNLOCK_V1_SCOPE.md's two named mismatch signals need; "medium"
+ * remains a valid domain value simply not reachable from this input surface
+ * yet. The exact learner-facing wording/placement is PROVISIONAL pending
+ * product-owner confirmation (same flag pattern as OQ-018's labels).
  */
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { getMessages } from "@/messages";
+import type { ConfidenceLevel } from "@/domain/learning/types";
 import type { AnswerFeedback } from "./select-displayed-item";
 
 /**
@@ -64,6 +85,20 @@ function shuffleOptions<T>(options: readonly T[]): T[] {
 }
 
 export type OptionFeedbackState = "selectedCorrect" | "selectedIncorrect" | "missedCorrect" | null;
+
+/**
+ * RUN010-G / OQ-014: the binary chip-to-domain-value mapping, named and
+ * exported as the single source of truth so it is directly unit-testable
+ * (this repo's Vitest env has no jsdom/click-interaction harness, so the
+ * wiring itself cannot be exercised by firing a real click — see
+ * `question-card.test.tsx`'s header). Both the "which value does this chip
+ * toggle" and "is this chip currently selected" logic below read from these
+ * same two constants, so a silent swap (which would silently invert
+ * misconception.ts's escalation gate) can only happen by editing this one
+ * clearly-named pair, not by two literals drifting independently.
+ */
+export const SURE_CONFIDENCE_LEVEL: ConfidenceLevel = "high";
+export const UNSURE_CONFIDENCE_LEVEL: ConfidenceLevel = "low";
 
 /** Exported for direct unit coverage (QA2-A) — pure, no component state involved. */
 export function optionFeedbackState(
@@ -91,7 +126,10 @@ export function QuestionCard({
   item: QuestionCardItem;
   feedback: AnswerFeedback | null;
   submitError: string | null;
-  onSubmit: (selectedAnswer: string | string[] | null) => Promise<void>;
+  onSubmit: (
+    selectedAnswer: string | string[] | null,
+    confidenceLevel: ConfidenceLevel | null,
+  ) => Promise<void>;
   onContinue: () => void;
   onSkip: () => Promise<void>;
   onSelectionChange: () => void;
@@ -104,6 +142,10 @@ export function QuestionCard({
   // per presentation without reshuffling mid-question.
   const [shuffledOptions] = useState(() => shuffleOptions(item.answerOptions));
   const [selected, setSelected] = useState<string[]>([]);
+  // RUN010-G / OQ-014: null until the learner explicitly taps a chip — never
+  // defaulted, since an unexpressed confidence is not the same evidence as
+  // an explicit low one.
+  const [confidence, setConfidence] = useState<ConfidenceLevel | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const busy = submitting || skipping;
@@ -153,10 +195,15 @@ export function QuestionCard({
     }
   }
 
+  function toggleConfidence(level: ConfidenceLevel) {
+    if (locked) return;
+    setConfidence((previous) => (previous === level ? null : level));
+  }
+
   async function handleSubmit() {
     if (selected.length === 0 || busy) return;
     setSubmitting(true);
-    await onSubmit(isMultiple ? selected : (selected[0] ?? null));
+    await onSubmit(isMultiple ? selected : (selected[0] ?? null), confidence);
     setSubmitting(false);
   }
 
@@ -211,6 +258,26 @@ export function QuestionCard({
           );
         })}
       </ul>
+
+      {feedback === null ? (
+        <div className="mt-4">
+          <p className="mb-2 text-sm text-muted">{messages.confidenceLabel}</p>
+          <div className="flex gap-2">
+            <ConfidenceChip
+              label={messages.confidenceSure}
+              selected={confidence === SURE_CONFIDENCE_LEVEL}
+              disabled={locked}
+              onClick={() => toggleConfidence(SURE_CONFIDENCE_LEVEL)}
+            />
+            <ConfidenceChip
+              label={messages.confidenceUnsure}
+              selected={confidence === UNSURE_CONFIDENCE_LEVEL}
+              disabled={locked}
+              onClick={() => toggleConfidence(UNSURE_CONFIDENCE_LEVEL)}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {submitError ? (
         <p role="alert" className="mt-4 text-sm font-medium text-danger">
@@ -351,6 +418,39 @@ export function QuestionOption({
           </span>
         ) : null}
       </span>
+    </button>
+  );
+}
+
+/**
+ * RUN010-G / OQ-014: pre-submit, optional confidence toggle. Presentational
+ * only — a plain aria-pressed toggle button, not a radio group, since either
+ * chip (or neither) is a valid, honest state (no forced choice).
+ */
+function ConfidenceChip({
+  label,
+  selected,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={selected}
+      className={`rounded-full border px-4 py-1.5 text-sm font-medium transition disabled:cursor-default disabled:opacity-60 ${
+        selected
+          ? "border-primary bg-primary-soft text-primary"
+          : "border-border bg-surface text-muted enabled:hover:border-border-strong"
+      }`}
+    >
+      {label}
     </button>
   );
 }

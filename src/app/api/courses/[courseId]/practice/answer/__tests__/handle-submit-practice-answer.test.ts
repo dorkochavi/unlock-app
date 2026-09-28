@@ -62,7 +62,7 @@ describe("handleSubmitPracticeAnswer", () => {
     }
   });
 
-  it("client-supplied identity/session/time/confidence fields are ignored, never forwarded", async () => {
+  it("client-supplied identity/session/time fields are ignored, never forwarded", async () => {
     const d = deps({
       body: {
         ...good,
@@ -73,7 +73,6 @@ describe("handleSubmitPracticeAnswer", () => {
         dailyPlanId: "p",
         dailyPlanItemId: "i",
         answeredAt: "1999-01-01T00:00:00Z",
-        confidenceLevel: "high",
       },
     });
     d.submit.mockResolvedValue({ kind: "ACCEPTED", isCorrect: true, wasIdempotentRetry: false });
@@ -90,6 +89,33 @@ describe("handleSubmitPracticeAnswer", () => {
       responseTimeSeconds: 7,
       now: NOW,
     });
+  });
+
+  it("RUN010-G / OQ-014: absent confidenceLevel forwards null (no signal, never a guessed default)", async () => {
+    const d = deps({ body: good });
+    d.submit.mockResolvedValue({ kind: "ACCEPTED", isCorrect: true, wasIdempotentRetry: false });
+    await handleSubmitPracticeAnswer(d);
+    expect(d.submit).toHaveBeenCalledWith(expect.objectContaining({ confidenceLevel: null }));
+  });
+
+  it("RUN010-G / OQ-014: a real confidenceLevel value is validated and forwarded verbatim — the input Practice previously structurally could never supply to misconception.ts's escalation gate", async () => {
+    for (const level of ["low", "medium", "high"] as const) {
+      const d = deps({ body: { ...good, confidenceLevel: level } });
+      d.submit.mockResolvedValue({ kind: "ACCEPTED", isCorrect: false, wasIdempotentRetry: false });
+      await handleSubmitPracticeAnswer(d);
+      expect(d.submit).toHaveBeenCalledWith(expect.objectContaining({ confidenceLevel: level }));
+    }
+  });
+
+  it("RUN010-G / OQ-014: a malformed confidenceLevel is rejected as 400 INVALID_REQUEST before submit is called", async () => {
+    for (const bad of ["urgent", 1, true, []]) {
+      const d = deps({ body: { ...good, confidenceLevel: bad } });
+      expect(await handleSubmitPracticeAnswer(d)).toEqual({
+        status: 400,
+        body: { error: { code: "INVALID_REQUEST" } },
+      });
+      expect(d.submit).not.toHaveBeenCalled();
+    }
   });
 
   it("maps non-ACCEPTED outcomes to stable 403/404/409/422/400, and never calls getFeedbackContent for any of them (SECURITY)", async () => {

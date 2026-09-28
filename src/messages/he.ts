@@ -414,6 +414,13 @@ export const he = {
     exitLearn: "יציאה",
     questionPosition: "שאלה {current} מתוך {total}",
     multipleHint: "אפשר לבחור יותר מתשובה אחת",
+    // RUN010-G / OQ-014: PROVISIONAL wording pending product-owner
+    // confirmation — same flag pattern as OQ-018's actionType labels. The
+    // binary sure/not-sure choice itself (vs. OQ-014's other two candidates)
+    // is reasoned about in question-card.tsx's module doc comment.
+    confidenceLabel: "כמה בטוחים הייתם? (לא חובה)",
+    confidenceSure: "בטוח/ה",
+    confidenceUnsure: "לא בטוח/ה",
     incorrectBody: "טעויות הן חלק מהלמידה. UNLOCK תתחשב בתשובה הזו בתוכניות הלמידה הבאות.",
     explanationHeading: "הסבר",
     optionState: {
