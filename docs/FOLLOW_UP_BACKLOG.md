@@ -1162,6 +1162,12 @@ Run has no authority to invent (`.claude/rules/learning-engine.md`).
    missed-option feedback (Finding 3) so the learner still understands what happened, without a new grading category.
    Whether MULTIPLE_CHOICE should ever have a real PARTIAL/partial-credit outcome (and what it would mean for
    `isCorrect`, mastery, scheduler review) is an open Run-010 product/domain decision.
+   **Human decision (2026-09-29, resolving RUN010-G Half B's ESCALATE):** Option A (status quo) — no PARTIAL
+   grading in V1. `isCorrect: boolean` stays the sole grading outcome; no change to mastery, scheduler review,
+   or misconception interaction. Item 3 stays explicitly **OPEN** (declined, not resolved) — the decision
+   packet's Option B (learner-facing "almost" acknowledgment) and Option C (real partial-credit grading via a
+   future dedicated ADR) remain available if the product owner revisits this post-V1; nothing here should be
+   read as ruling them out permanently.
 4. **Practice ranking diversification (partially resolved this Run).** UX-03-QA1 already fixed the reported
    symptom safely: Tier 2 (unseen)/Tier 3 (broader coverage) candidates within `selectPracticeBatch` are now
    Topic-interleaved (`interleaveByTopic`) instead of raw creation/import order, without touching the canonical NBA
@@ -1236,6 +1242,29 @@ decision (e.g. multi-row membership per user/Course, or a role-set column), not 
 
 Before Run 010 or inside Run 011 — product owner to decide the membership-plurality model; do not let an
 implementation Slice invent it ad hoc.
+
+**RUN010-H re-confirmation (2026-09-29, ESCALATE, no code change):** Re-verified against current repository
+state — finding holds exactly as recorded. `course_memberships` (`supabase/migrations/20260919000000_course_
+membership_v1.sql`) still has `UNIQUE(user_id, course_id)` + scalar `role`; `CourseMembershipRepository
+.findMembership(userId, courseId): Promise<CourseMembership | null>` (`src/application/course/ports.ts`) —
+the single-row assumption is baked into the port CONTRACT, not just the DB constraint, so every caller
+(`join-course.ts`, `live-learner-membership.ts`, `practice-eligibility.ts`, and any future authoring-side
+check) inherits it. No already-authorized plurality model exists: ADR-015 (`docs/DECISIONS/015-user-course-
+membership-and-join-authorization-model.md`) documents `role` as a single conceptual field and its Addendum's
+"genuinely undecided edge cases" (OQ-043) cover revoke/rejoin only, not plurality; `docs/OPEN_QUESTIONS.md`
+has no open item on membership plurality; `docs/CHATGPT_PLAN.md` only records QA2-D's STOP. No "author preview
+as learner" or self-enrollment side-mechanism exists anywhere in `src/` (checked). Decision packet delivered
+(see `scratch/development_checkpoint.md` RUN010-H entry for full detail) — five things a real decision needs
+to resolve (schema shape; the `findMembership`-family port/call-site ripple; what "revoke this user" means
+when they hold multiple roles; whether an Author's own attempts on their own Course should count toward
+instructor-facing aggregate Insights, given they already know the answers; and the self-enrollment UX/backfill
+question), and three schema-shape options with tradeoffs (1: composite-key multi-row membership — most
+general, most invasive to the port layer; 2: role-set/array column — keeps one row per user/Course pair,
+smaller port-signature change, but forces an enum-to-array migration touched pervasively; 3: a separate,
+additive self-enrollment concept that does not touch `course_memberships` at all — smallest migration, but
+is a second access path that directly revises ADR-015 §1's "the single explicit User↔Course relationship"
+claim and needs its own explicit product sign-off). No recommendation is made among the three; that choice
+is the product owner's, not an implementation Slice's, per this item's own Promotion Trigger.
 
 ---
 
