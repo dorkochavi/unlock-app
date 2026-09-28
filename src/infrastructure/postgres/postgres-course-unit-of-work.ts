@@ -7,9 +7,18 @@
  * exactly (same BEGIN/COMMIT/ROLLBACK shape, same rollback-failure-does-
  * not-mask-the-original-error handling), narrowed to this module's own
  * `CourseRepositories`.
+ *
+ * RUN010-H.1: also constructs a `PostgresCourseAuthorRepository` and attaches
+ * it as `repos.authors`. `CourseRepositories.authors` is optional
+ * specifically so this stays additive: nothing currently reads `repos.authors`
+ * anywhere (this Slice only wires availability); a later Slice (H.2) is
+ * expected to start using it, e.g. for `createCourse`'s eventual switch to
+ * granting a `course_authors` row instead of an OWNER `course_memberships`
+ * row.
  */
 import type { CourseRepositories, CourseUnitOfWork } from "../../application/course/ports";
 import type { ConnectionProvider } from "./connection-provider";
+import { PostgresCourseAuthorRepository } from "./course-author-repository";
 import { PostgresCourseMembershipRepository } from "./course-membership-repository";
 import { PostgresCourseRepository } from "./course-repository";
 
@@ -25,6 +34,7 @@ export class PostgresCourseUnitOfWork implements CourseUnitOfWork {
         const repos: CourseRepositories = {
           memberships: new PostgresCourseMembershipRepository(db),
           courses: new PostgresCourseRepository(db),
+          authors: new PostgresCourseAuthorRepository(db),
         };
         const result = await fn(repos);
         await db.query("commit");

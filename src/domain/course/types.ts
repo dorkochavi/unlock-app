@@ -124,3 +124,45 @@ export function canAuthorCourse(membership: CourseMembership): boolean {
     isManagementRole(membership.role)
   );
 }
+
+/**
+ * The two management-capability values a `course_authors` grant may carry —
+ * deliberately narrower than `CourseRole` (which also includes `LEARNER`):
+ * this table only ever models management capability, never learning
+ * participation.
+ */
+export const COURSE_AUTHOR_CAPABILITIES = ["OWNER", "INSTRUCTOR"] as const;
+export type CourseAuthorCapability = (typeof COURSE_AUTHOR_CAPABILITIES)[number];
+
+/**
+ * RUN010-H.1 (FUB-036, Option 4 architecture) — Phase A only. `course_authors`
+ * is a management-capability grant, deliberately modeled separately from
+ * `CourseMembership` (which this Run's approved architecture will eventually
+ * narrow to learner participation only — see
+ * `supabase/migrations/20260929010000_course_authors_v1.sql`'s header for the
+ * full 3-phase plan). Unlike `CourseMembership`, there is no `archivedAt`
+ * here: archival is a per-learner "excluded from automatic Today" concept
+ * with no equivalent meaning for a management capability grant.
+ *
+ * This type and `isActiveAuthorGrant` are intentionally unused by any
+ * application code as of this Slice — `canAuthorCourse`/`isManagementRole`
+ * above still operate on `CourseMembership` today and are not repointed
+ * until RUN010-H.2. Do not wire this into any authorization call site before
+ * then.
+ */
+export interface CourseAuthorGrant {
+  id: string;
+  userId: string;
+  courseId: string;
+  capability: CourseAuthorCapability;
+  grantedAt: Date;
+  revokedAt: Date | null;
+}
+
+/**
+ * A grant currently confers its capability. Mirrors `hasAccess` above —
+ * revocation (never deletion) is the only fact that removes it.
+ */
+export function isActiveAuthorGrant(grant: CourseAuthorGrant): boolean {
+  return grant.revokedAt === null;
+}

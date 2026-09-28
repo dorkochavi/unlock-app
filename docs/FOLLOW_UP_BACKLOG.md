@@ -1266,6 +1266,56 @@ is a second access path that directly revises ADR-015 §1's "the single explicit
 claim and needs its own explicit product sign-off). No recommendation is made among the three; that choice
 is the product owner's, not an implementation Slice's, per this item's own Promotion Trigger.
 
+**Human decisions (APPROVED 2026-09-29) — Option 4 architecture selected.** The product owner chose a
+fourth option beyond the three the RUN010-H decision packet offered: a separate, additive
+`course_authors` table modeling management capability (OWNER/INSTRUCTOR) independently of
+`course_memberships`, which will eventually narrow to learner-participation-only. Three specific
+decisions were approved, refining/superseding the open questions above:
+
+1. **Author self-enrollment exception.** An active Course Author may self-enroll as an ordinary LEARNER
+   in their own Course even when it is DRAFT/AUTHORIZED_ONLY/otherwise not publicly self-joinable — a
+   narrow bypass of `canSelfJoinCourse` scoped only to the Course's own author. The resulting
+   `course_memberships` LEARNER row gets NO special treatment downstream (same Today/Practice/Attempts/
+   Evidence/Progress/FSRS paths as any other learner). Authoring capability itself never grants learner
+   eligibility — only this one narrow self-join bypass is authorized. (Answers this item's "self-enrollment
+   UX/backfill" open question; implementation deferred to RUN010-H.3.)
+2. **Last-author protection.** `revokeCourseAuthor` must fail closed (a new, explicit outcome) if the
+   operation would leave a non-deleted Course with zero active `course_authors` rows. Future
+   ownership-transfer/deletion workflows may refine this later. (Answers this item's "what does revoke mean"
+   open question for the single-capability-per-row case; implementation deferred to RUN010-H.3.)
+3. **Phased pacing with a hard human gate.** Implementation proceeds as H.1 (additive schema + backfill,
+   zero application change) → H.2 (application-layer authorization cutover + required DTO/API surface
+   changes) → **hard human-review gate** → H.3 (destructive legacy-row deletion + the two decisions above)
+   → optional H.4 (Insights CTE cleanup / polish). Full detail in
+   `scratch/development_checkpoint.md`'s "RUN010-H human decisions" section.
+
+Still explicitly deferred (not part of this approved plan): the staff-vs-self-study cohort/analytics-
+inclusion distinction — no exclusion of any kind is added to Insights by this work; a dual-role
+Author-learner's Attempts count exactly like any other learner's (authoring capability carries zero
+mastery/evidence signal). New co-author-management UI likely remains a future FUB item, not part of H.1-H.4.
+
+**RUN010-H.1 outcome (2026-09-29, STATUS KEEP):** Implemented Phase A only — additive migration
+`supabase/migrations/20260929010000_course_authors_v1.sql` creates `course_authors` (`unique(user_id,
+course_id, capability)`, RLS enabled with zero policies, matching `course_membership_v1.sql`'s own
+convention) and backfills existing OWNER/INSTRUCTOR `course_memberships` rows into it in the same
+migration (LEARNER rows excluded; revoked rows keep their `revoked_at`; `course_memberships` itself
+untouched). New domain type `CourseAuthorGrant` + `isActiveAuthorGrant` predicate
+(`src/domain/course/types.ts`), new `CourseAuthorRepository` port (`src/application/course/ports.ts`,
+mirroring `CourseMembershipRepository`'s shape) with `findActiveCapabilities`/`grant`/`revoke`, and its
+`PostgresCourseAuthorRepository` implementation + row mapper
+(`src/infrastructure/postgres/course-author-{repository,mapper}.ts`). Wired into
+`PostgresCourseUnitOfWork` as an optional `CourseRepositories.authors` field (optional specifically so
+none of the ~18 existing route/UnitOfWork call sites needed to change) — available for RUN010-H.2 to use,
+not called by any application code yet. Zero authorization call sites, zero DTOs/routes, and zero
+`course_memberships` rows/columns touched — confirmed via diff inspection (only 2 lines removed across all
+modified files, both immediately expanded re-additions, not behavioral deletions). New tests: 8 PGlite
+repository tests (`course-author-repository.test.ts`) + 5 migration-ordering-sensitive backfill-parity
+tests (`course-authors-backfill.test.ts`, applying only prior migrations, seeding `course_memberships`,
+then applying just the new migration to prove row-count parity, field-level parity, revoked-row
+preservation, LEARNER exclusion, and `course_memberships` non-mutation). Full unit suite 1612/1612 PASS
+(no regression from the pre-Slice count), typecheck/lint clean on all changed files. See this Slice's own
+compact handoff for full verification detail and reviewer outcome.
+
 ---
 
 # FUB-037 — Question Management Workspace (Search/Filter/Pagination/Review Queue)

@@ -24,9 +24,16 @@
  * the only operation routed through `CourseUnitOfWork` below rather than
  * `CourseRepositories` directly (Run 005 S2 DB review finding).
  */
-import type { CourseJoinPolicy, CourseMembership, CourseRole, CourseStatus } from "../../domain/course/types";
+import type {
+  CourseAuthorCapability,
+  CourseAuthorGrant,
+  CourseJoinPolicy,
+  CourseMembership,
+  CourseRole,
+  CourseStatus,
+} from "../../domain/course/types";
 
-export type { CourseMembership };
+export type { CourseMembership, CourseAuthorGrant, CourseAuthorCapability };
 
 export interface CourseMembershipRepository {
   /** Any membership for this (userId, courseId) pair, in any state. */
@@ -78,6 +85,59 @@ export interface CourseMembershipRepository {
     courseId: string,
     revokedAt: Date,
   ): Promise<CourseMembership | null>;
+}
+
+/**
+ * RUN010-H.1 (FUB-036, Option 4 architecture) — persistence port for
+ * `course_authors`, Phase A of the 3-phase migration described in
+ * `supabase/migrations/20260929010000_course_authors_v1.sql`'s header.
+ * Mirrors `CourseMembershipRepository`'s own shape/doc-comment style
+ * deliberately closely, so a later Slice (H.2) can repoint
+ * `canAuthorCourse`/`isManagementRole` call sites onto this port with a
+ * familiar contract. NOT called from any application code as of this Slice
+ * — it exists only so H.2 has a repository to use.
+ */
+export interface CourseAuthorRepository {
+  /**
+   * Every currently-active (non-revoked) capability this user holds on this
+   * Course. Empty array if none. A list, not a single nullable value like
+   * `findMembership`, because `course_authors` allows more than one row per
+   * (user, course) pair (`unique (user_id, course_id, capability)`) — a user
+   * may someday hold both OWNER and INSTRUCTOR, though no V1 code path
+   * creates that combination.
+   */
+  findActiveCapabilities(
+    userId: string,
+    courseId: string,
+  ): Promise<CourseAuthorGrant[]>;
+
+  /**
+   * Race-free by construction (the same `INSERT ... ON CONFLICT DO NOTHING
+   * RETURNING` pattern `CourseMembershipRepository.createMembership` already
+   * uses), keyed on the full `(user_id, course_id, capability)` unique
+   * constraint. `wasNew: false` means an identical grant already existed —
+   * the returned `grant` is that pre-existing row (revoked or not), not
+   * necessarily the one requested.
+   */
+  grant(
+    grant: Omit<CourseAuthorGrant, "id">,
+  ): Promise<{ grant: CourseAuthorGrant; wasNew: boolean }>;
+
+  /**
+   * Sets `revokedAt` for one specific `(user, course, capability)` row.
+   * Returns the updated grant, or `null` if no matching row exists. Never
+   * deletes the row. The approved last-author-protection rule (fail closed
+   * if this would leave a Course with zero active `course_authors` rows) is
+   * a future caller's (H.3's) responsibility — this port performs the write
+   * unconditionally, mirroring `CourseMembershipRepository.revoke`'s own
+   * unconditional-UPDATE shape.
+   */
+  revoke(
+    userId: string,
+    courseId: string,
+    capability: CourseAuthorCapability,
+    revokedAt: Date,
+  ): Promise<CourseAuthorGrant | null>;
 }
 
 /**
@@ -222,6 +282,15 @@ export type { CourseJoinPolicy, CourseRole, CourseStatus };
 export interface CourseRepositories {
   memberships: CourseMembershipRepository;
   courses: CourseRepository;
+  /**
+   * RUN010-H.1 — optional so every existing `CourseRepositories` object
+   * literal built by today's ~18 route/UnitOfWork call sites keeps
+   * typechecking unchanged without touching any of them. `PostgresCourseUnitOfWork`
+   * populates it; a future Slice (H.2) is expected to start relying on its
+   * presence there and to add it to other construction sites as it repoints
+   * them, rather than this field becoming required in this Slice.
+   */
+  authors?: CourseAuthorRepository;
 }
 
 /**

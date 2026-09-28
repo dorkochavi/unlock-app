@@ -267,6 +267,38 @@ export async function insertCourseMembership(
 }
 
 /**
+ * A real `course_authors` row via raw SQL (RUN010-H.1) — not through
+ * `PostgresCourseAuthorRepository`, so callers exercising that repository
+ * itself don't create a circular test dependency on it, mirroring
+ * `insertCourseMembership`'s own convention above.
+ */
+export async function insertCourseAuthor(
+  db: SqlExecutor,
+  args: {
+    userId: string;
+    courseId: string;
+    capability?: "OWNER" | "INSTRUCTOR";
+    grantedAt?: Date;
+    revokedAt?: Date | null;
+  },
+): Promise<string> {
+  const id = randomUUID();
+  await db.query(
+    `insert into course_authors (id, user_id, course_id, capability, granted_at, revoked_at)
+     values ($1, $2, $3, $4, $5, $6)`,
+    [
+      id,
+      args.userId,
+      args.courseId,
+      args.capability ?? "OWNER",
+      args.grantedAt ?? new Date(),
+      args.revokedAt ?? null,
+    ],
+  );
+  return id;
+}
+
+/**
  * A real DailyPlan with one real item, via raw SQL (not through
  * `PostgresDailyPlanRepository`, so callers exercising that repository
  * itself — via the `dailyPlanItems` port in `submitAnswer` — don't create a
