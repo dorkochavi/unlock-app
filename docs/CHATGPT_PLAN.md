@@ -33,7 +33,7 @@ Every Slice declares one gate: AUTO, REVIEW_GATE, HUMAN_DECISION_GATE, or FINAL_
 | Step | Scope | Gate | Status |
 |---|---|---|---|
 | 1 | Plan identity + mechanical lifecycle/status normalization + stale framing cleanup | AUTO | DONE |
-| 2 | Semantic reconciliation: FUB↔OQ moves, OQ narrowing/new OQs, archive moves, DEV_STATUS Pre-push pointer-only updates (independent review before commit) | REVIEW_GATE | PENDING |
+| 2 | Semantic reconciliation: FUB↔OQ moves, OQ narrowing/new OQs, archive moves, DEV_STATUS Pre-push pointer-only updates (independent review before commit) | REVIEW_GATE | IN PROGRESS |
 | 3 | Run close: minimal Run report, RUN_STATUS COMPLETE, LAST_VERIFIED_HEAD, verifier | FINAL_GATE | PENDING |
 
 ## 5. Run Invariants
@@ -50,7 +50,7 @@ requiring another file to change; any need for a product decision.
 
 ## 7. Current Status
 
-- Step 1 in progress. Branch `feature/run-010-learning-intelligence`; no push.
+- Step 1 DONE (`aee98d9`); Step 2 IN PROGRESS; Step 3 PENDING. Branch `feature/run-010-learning-intelligence`; no push.
 
 ## History
 

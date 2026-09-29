@@ -182,8 +182,8 @@ Pointers and one-liners only; nothing below is resolved by this file. These gate
 `feature/run-010-learning-intelligence`, which is NOT yet approved for push.
 
 - A. `exam_date` interpretation — FIX CANDIDATE BEFORE PUSH. It is parsed as a UTC-midnight instant, so exam-day
-  urgency disappears; it should follow calendar-day / learner-day semantics. Product-interpretation sub-question of
-  OQ-002 (never invent a date); see OQ-002.
+  urgency disappears; it should follow calendar-day / learner-day semantics. Decision owned by OQ-046
+  (never invent a date); the source hierarchy stays OQ-002.
 - B. HALF_LIFE naming (exam-urgency constants) — clarity issue, low severity; tracked in Backlog (FUB-043).
 - C. Author self-enroll bypass, including for an ARCHIVED Course — human decision NOT yet made; fails closed until
   decided (`.claude/rules/auth.md`). Tracked as OQ-045. Related: FUB-042, OQ-043 (revoke/rejoin).
@@ -192,10 +192,10 @@ Pointers and one-liners only; nothing below is resolved by this file. These gate
   narrowing) -> verify. NEVER apply H.3 before the cutover is deployed. Re-check `npx supabase migration list` first.
 - E. `revokeCourseAuthor` last-author race: must be hardened (SELECT ... FOR UPDATE) before ANY route wires it —
   FUB-042 item 1. Currently unwired.
-- F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); tied to OQ-043 (revoke/rejoin, LEARNER) — tracked in Backlog
-  (FUB-042 item 4); must be resolved before any co-author-management UI.
+- F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); decision owned by OQ-047 (distinct from learner OQ-043);
+  FUB-042 item 4 is a pointer; must be resolved before any co-author-management UI.
 - G. Unseen-question repository / Topic-diversifying cold-start SQL (`unseen-question-repository.ts` round-robin) has
-  NOT been human-reviewed — pre-push review item on real Postgres (PGlite limits apply). Related: FUB-040.
+  NOT been human-reviewed — pre-push review item on real Postgres (PGlite limits apply). Related: OQ-017 (Topic diversity vs cross-Course pooling; archived FUB-040).
 - Also before promotion: hosted Supabase Auth Redirect URL allow-list for `next=` values (open, non-blocking since
   UX-01/02/03).
 

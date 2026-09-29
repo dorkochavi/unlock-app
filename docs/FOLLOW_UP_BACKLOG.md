@@ -627,7 +627,7 @@ from a dirty tree and the mismatch actually causes confusion.
 **Priority:** `MEDIUM`
 **Area:** Product / Learner Progress
 
-Status qualifier (moved from the Status line, verbatim): PARTIALLY PROMOTED TO RUN 009 — only the simple, read-only Topic-state learner Progress (qualitative states, coverage context, path back to Today; `docs/CHATGPT_PLAN.md` S1/S2). Everything else below stays `DEFERRED`: Landscape, Pulse/movement, historical trends, readiness score, percentages, forecasting, learner-selected study workflow, gamification, advanced Progress. Pilot evidence has NOT validated the advanced directions.
+Simple read-only Topic-state Progress is already delivered (Run 009: `docs/RUNS/2026-09-25-009.md`; current capability in `docs/DEV_STATUS.md`) and is not reopened here. Still deferred: Landscape, Pulse/movement, historical trends, richer history, readiness score, percentages, forecasting, learner-selected study workflow, gamification, advanced Progress. Pilot evidence has NOT validated the advanced directions.
 
 ## Observation
 
@@ -909,64 +909,6 @@ post-re-publish counts.
 
 ---
 
-# FUB-025 — Answer Submission Idempotency vs. Server-Generated `answeredAt`
-
-**Status:** `DEFERRED`
-**Priority:** `LOW`
-**Area:** Learning Engine / Answer Submission / API
-
-## Observation
-
-Found by the hosted Pre-Pilot S3 smoke test (2026-09-24) and reproduced by the
-local burst harness. `answeredAt` is part of the canonical command identity
-compared for idempotent retries (`CANONICAL_COMMAND_IDENTITY_FIELDS` in
-`src/application/learning/submit-answer.ts`), but the HTTP route
-(`POST /api/daily-plan/items/:itemId/answer`) sets it to the server's own
-`new Date()` per request. Consequences for two requests carrying the SAME
-`submissionId`:
-
-- a later, sequential retry finds the existing Attempt and its `answeredAt`
-  differs, so it returns `409 SUBMISSION_ID_REUSED` instead of the idempotent
-  `200`;
-- a truly concurrent duplicate loses the race, sees the already-resolved item
-  (the pending check runs before the insert), and returns
-  `409 ITEM_ALREADY_RESOLVED`.
-
-No data is corrupted: exactly one Attempt and one completed DailyPlanItem
-result either way. The current UI is unaffected — it generates a fresh
-`submissionId` per click and treats 409 as "already resolved"
-(`src/app/(learner)/today/page.tsx`).
-
-## Important Constraint
-
-The unresolved question is semantic, not a bug fix: should a server-generated
-`answeredAt` participate in idempotency identity at all, and should a
-concurrent same-key duplicate return the original result? Any change touches
-the Attempt/idempotency contract (ADR-010) and needs DB and general review.
-Attempts are immutable evidence; do not rewrite history.
-
-## Follow-Up Investigation
-
-Decide (ADR-010 amendment if accepted) whether to exclude a server-derived
-`answeredAt` from the identity comparison, and/or re-check the submission id
-after acquiring the per-learner lock so a concurrent duplicate returns the
-existing result. Keep the strongest invariant: one Attempt and one resolved
-item per logical submission.
-
-## Do Not Do Yet
-
-No change to answer-submission semantics during the Pre-Pilot Run. The
-S3 harness accepts `200+200` or `200+409` (`ITEM_ALREADY_RESOLVED` /
-`SUBMISSION_ID_REUSED`) for a same-submissionId duplicate pair.
-
-## Promotion Trigger
-
-A real client needs same-`submissionId` retry (flaky-network resubmit, mobile
-offline queue), or pilot evidence shows duplicate-submit 409s confusing
-learners.
-
----
-
 # FUB-026 — Today / Answer Round-Trip Reduction
 
 **Status:** `DEFERRED`
@@ -1062,9 +1004,10 @@ Recorded during Run UX-02 review; none blocks V1 and none is needed for the acce
   but does not reject a Question already answered in the current learning session (ADR-020 lists no such rule). A stale
   client can submit a second same-day Practice answer; it is a normal Attempt and the same-session logic in retrieval
   qualification applies. Decide whether to reject it (409) if it ever shows up in real usage.
-- **Retry idempotency.** Practice inherits FUB-025: `answeredAt` is server-captured, so a sequential retry with the same
-  `submissionId` can return `SUBMISSION_ID_REUSED` (the Practice UI treats it as a generic retryable error and never
-  reuses a submission id). Fix once with FUB-025 for both Today and Practice.
+- **Retry idempotency.** Practice inherits the Today answer-idempotency question (`docs/OPEN_QUESTIONS.md` OQ-048; archived
+  FUB-025): `answeredAt` is server-captured, so a sequential retry with the same `submissionId` can return
+  `SUBMISSION_ID_REUSED` (the Practice UI treats it as a generic retryable error and never reuses a submission id). Resolve
+  once with OQ-048 for both Today and Practice.
 - **Batch content gap.** If a batch Question's version content row were missing, the batch would hold fewer than 10 items
   while `hasMore` still counts it. Unreachable under FK integrity; harden only if a content read path changes.
 - **Progress entry link.** Progress lists a Course from `/api/courses/mine` (active, not archived LEARNER) and shows
@@ -1072,7 +1015,7 @@ Recorded during Run UX-02 review; none blocks V1 and none is needed for the acce
 
 ## Promotion Trigger
 
-Real pilot usage showing any of the above, or the FUB-025 idempotency fix.
+Real pilot usage showing any of the above, or the OQ-048 idempotency resolution.
 
 ---
 
@@ -1106,48 +1049,45 @@ explicit product-owner decision on either color hierarchy or the "one primary pe
 
 ---
 
-# FUB-034 — Open-Ended Practice, Same-Day Repetition, Daily Plan Budget, PARTIAL Grading (Run UX-03-QA1 Findings 8/9, PARTIAL)
+# FUB-034 — ADR-016 §10 Severe-Overdue Tier-Crossing Not Implemented (Residual of Open-Ended Practice / Plan Budget / PARTIAL Grading Item)
 
-**Status:** `RECORDED` — promoted to Run 010, which is COMPLETE (`docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`
-owns the delivered scope and evidence). Only the residual open items below remain here. The full pre-prune text
-(including the resolved narrative) is in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`.
-**Area:** Learning Engine — evidence/scheduler semantics, Today plan sizing, grading vocabulary
+**Status:** `DEFERRED`
+**Area:** Learning Engine — NBA ranking (`src/domain/learning/next-best-action-ranking.ts`)
 
-Resolved by Run 010 (pointer only): item 1 (Practice dead-end; Tier 4 same-day reinforcement, RUN010-B) and the
-architecture half of item 2 (Today plan budget, RUN010-D; `computeTodayPlanBudget`). Item 4 (Practice ranking
-diversification) is partially resolved (Tier 2/3 Topic-interleaved via `interleaveByTopic`; principle: diversify
-ties, never priorities).
+The original item (Run UX-03-QA1 Findings 8/9, PARTIAL) was promoted to Run 010, which is COMPLETE
+(`docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md` owns delivered scope and evidence). Its full pre-prune text,
+including every resolved narrative and the PARTIAL Option A/B/C wording, is in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`
+(FUB-034). Former residuals and where they now live:
 
-Still open:
+- Numeric calibration of the Today plan budget (5 / 8-12 / 15) and exam-urgency amplifier constants: `docs/OPEN_QUESTIONS.md`
+  OQ-016 (CALIBRATION).
+- PARTIAL grading: declined for V1 by the product owner (Option A, status quo; Run 010 report §4). `isCorrect: boolean` stays
+  the sole grading outcome (`docs/DECISIONS/014-question-answer-model-v1.md` "Deferred"). Options B (learner-facing "almost")
+  and C (real partial credit via a future dedicated ADR) are revisitable only if the product owner reopens it post-V1.
+- Practice ranking diversification: Tier 2/3 Topic-interleaved (`interleaveByTopic`); principle "diversify ties, never
+  priorities" (archived FUB-034 item 4).
 
-1. **Numeric calibration of the Today plan budget** — the launch values (min 5 / target 8-12 / hard max 15,
-   `PRODUCTION_TODAY_PLAN_BUDGET_POLICY`) and the exam-urgency amplifier constants are conservative calibration
-   candidates, not locked; tune only from pilot evidence (`docs/OPEN_QUESTIONS.md` OQ-016).
-2. **PARTIAL grading outcome — declined, not resolved.** Human decision 2026-09-29: Option A (status quo) — no
-   PARTIAL grading in V1; `isCorrect: boolean` stays the sole outcome. Option B (learner-facing "almost"
-   acknowledgment) and Option C (real partial-credit grading via a future dedicated ADR) remain revisitable
-   post-V1; nothing here rules them out permanently.
-3. **ADR-016 §10 tier-crossing requirement — not implemented (pre-existing gap, surfaced by RUN010-D review).**
-   ADR-016 §10 / `docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §5 accept that sufficiently severe Memory Need/overdue
-   duration must eventually be able to promote a candidate across a priority TIER boundary (a badly-overdue
-   `DUE_REVIEW` must not be permanently capped below every `REMEDIATION` candidate); see
-   `docs/GLOBAL_TODAY_PRIORITY_MODEL.md` §5a. `tierOf()` (`src/domain/learning/next-best-action-ranking.ts`) still
-   has no dependency on `dueAt`/`retrievability`. RUN010-D's exam-urgency amplifier (within-tier tie-break only,
-   ADR-016 §11) does not violate the rule. Escalation mechanism/thresholds remain undecided calibration work.
+Still open here (implementation gap, pre-existing, surfaced by the RUN010-D review):
+
+ADR-016 §10 / `docs/GLOBAL_TODAY_REMAINING_DECISIONS.md` §5 accept that sufficiently severe Memory Need/overdue duration must
+be able to promote a candidate across a priority TIER boundary (a badly-overdue `DUE_REVIEW` must not be permanently capped
+below every `REMEDIATION` candidate); see `docs/GLOBAL_TODAY_PRIORITY_MODEL.md` §5a. `tierOf()` has no dependency on
+`dueAt`/`retrievability` yet. RUN010-D's exam-urgency amplifier (within-tier tie-break only, ADR-016 §11) does not violate
+the rule. The escalation mechanism/thresholds are undecided calibration work owned by `docs/OPEN_QUESTIONS.md` OQ-017.
 
 ## Promotion Trigger
 
-Item 1: pilot evidence. Item 2: only if the product owner revisits PARTIAL post-V1. Item 3: a future
-ranking-policy Run (explicit, testable, versioned per `.claude/rules/learning-engine.md`).
+A future ranking-policy Run (explicit, testable, versioned per `.claude/rules/learning-engine.md`) after the
+mechanism/thresholds are decided (OQ-017).
 
 ---
 
-# FUB-035 — Assessment/Content-Quality Critic Signals (Run UX-03-QA1 Finding 6, owned by Run 011)
+# FUB-035 — Assessment/Content-Quality Critic Signals (Run UX-03-QA1 Finding 6)
 
 **Status:** `DEFERRED`
 **Area:** Content Intelligence (future) — authoring-time / import-time quality signals
 
-Status qualifier (moved from the Status line, verbatim): PROMOTED — owned by Run 011 (content-generation / AI critic / assessment-quality intelligence; explicitly out of scope for any Run before 011, including UX-03-QA1 which found it). Run 011 is not active; this item is not promoted until Run 011 actually starts and its Plan names it.
+Status qualifier (moved from the Status line, verbatim): PROMOTED — owned by Run 011 (content-generation / AI critic / assessment-quality intelligence; explicitly out of scope for any Run before 011, including UX-03-QA1 which found it). That label is historical: Run 011 has not started and does not own this item. It stays DEFERRED until a started Run's Plan names it.
 
 Product-owner QA (real 30-question course) found the CONTENT itself, not runtime code, leaked assessment patterns a
 learner could exploit instead of learning the material: correct answers noticeably longer/more specific/more polished
@@ -1175,7 +1115,7 @@ Run 011 start — promote when Run 011 actually starts and its Plan names this i
 **Status:** `DEFERRED`
 **Area:** Instructor Question Management (`src/app/instructor/courses/[courseId]/page.tsx`, `question-row.tsx`)
 
-Status qualifier (moved from the Status line, verbatim): RECORDED — owned by Run 011. Run 011 is not active; promote when Run 011 actually starts and its Plan names this item.
+Status qualifier (moved from the Status line, verbatim): RECORDED — owned by Run 011. That label is historical: Run 011 has not started and does not own this item; promote when a started Run's Plan names it.
 
 QA2-C (bounded visual polish of the per-row Question Management markup — `StatusPill`, divider rows) left
 the underlying list itself unchanged: it still renders every Question in one flat, unpaginated list with no
@@ -1220,154 +1160,39 @@ Before or alongside any Slice that ships assisted Practice attempts (hints/secon
 
 ---
 
-# FUB-039 — Same-Day Reinforcement Freeze Can Delay a New Card's FSRS Graduation When Only Touched via Same-Day Practice (RUN010-C audit, NON-BLOCKING)
-
-**Status:** `RECORDED`
-**Area:** Learning Engine — FSRS scheduler freeze x short-term learning steps
-(`src/domain/learning/progress-update.ts`, `learning-session.ts`, OQ-044)
-
-RUN010-C audited whether RUN010-B's unconditional same-day reinforcement scheduler-freeze
-(`isReinforcementAttempt` in `nextSchedulerMemory`) incorrectly conflates (a) a learner voluntarily
-re-practicing a Question before it is due again with (b) a Question that has genuinely become due again the
-same calendar day (a real FSRS-scheduled event, distinct from an artificial repeat) — directly relevant given
-OQ-044's confirmed finding (RUN010-C) that a brand-new card's first correct answer is due again in exactly 10
-minutes under current ts-fsrs defaults.
-
-**Verdict: the unconditional freeze is intentional and correct, not a bug** — see
-`src/infrastructure/learning/__tests__/practice-early-correct-scheduling.test.ts`'s "RUN010-B — same-day
-reinforcement" describe block (including its already-existing "not merely 'still early'" test, predating this
-audit) and the new RUN010-C test proving the identical outcome for a genuinely-due-again NEW card. "At most
-one real scheduler-moving event per Question per day, regardless of why" remains the accepted invariant;
-distinguishing "before due" from "genuinely due again" would reopen exactly the risk RUN010-B closed (a
-same-day repeat being able to retrigger a second real AGAIN/lapse for what is really one day's due event) and
-would additionally require deciding, ahead of OQ-044's own still-open calibration, whether a same-day
-learning-step event should count as a real review at all — a product decision, not a threshold fix.
-
-**Residual, bounded, non-blocking consequence recorded here:** because Today can never re-present the same
-Question twice in one plan, and Practice's Tier 4 (`selectPracticeBatch`) is the ONLY way an
-already-answered-today Question is served again that day, a brand-new card that a learner ONLY ever touches
-via same-day Practice reinforcement (never on a later calendar day) will never actually graduate out of
-ts-fsrs's short-term "Learning" state that day — every same-day reinforcement repeat freezes the transition
-`memoryScheduler.review()` would otherwise perform. This is bounded to a single calendar day (the very next
-day it is touched — via Today or a fresh, non-reinforcement Practice pick — is not "same session," so a real
-review fires and the card progresses normally, just a session later than the raw due timestamp suggests,
-which is already OQ-044's known, accepted drift). Not fixed here because it is an interaction between two
-already-open/deliberate policies (OQ-044 learning-step calibration + RUN010-B's per-day event cap), not an
-independent bug.
-
-## Promotion Trigger
-
-If/when OQ-044 is calibrated (e.g. learning steps disabled, shortened, or a minimum first-interval floor is
-adopted), re-check whether this residual same-day-graduation-delay interaction still applies under the new
-configuration, and whether it is still acceptable.
-
----
-
-# FUB-040 — RUN010-E Residual Gaps: Cross-Course Topic Diversity, and Unmapped OQ-018 Reason Categories (NON-BLOCKING)
-
-**Status:** `RECORDED`
-**Area:** New Material fallback Topic diversity (`src/infrastructure/postgres/unseen-question-repository.ts`,
-`src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`); OQ-018 learner-facing reason mapping
-(`src/messages/he.ts`, `src/app/(learner)/today/question-card.tsx`)
-
-RUN010-E investigated whether ADR-017's V1 New Material fallback samples representatively across Topics.
-Evidence (see `supabase/tests/postgres/unseen-question-repository.test.ts`'s new "Topic-diversifying
-round-robin" suite) showed a real, previously-unaddressed clustering bug: pure `created_at asc` ordering let
-one Topic's older unseen Questions monopolize the entire (typically 3-item) fallback for as long as that Topic
-still had unseen material, silently starving every other Topic of early calibration evidence. This was fixed
-**within a single Course's own selection** via a deterministic `row_number() over (partition by topic_id ...)`
-round-robin, still unseen-only, still capped at ADR-017's existing max-3, still deterministic — no ADR-017
-envelope change.
-
-**Three bounded items intentionally left open, not solved by that fix:**
-
-1. **Cross-Course pooling still isn't Topic-aware.** `generate-daily-plan-for-resolved-inputs.ts`'s
-   `discoverNewMaterialItems` pools each eligible Course's own (now Topic-diversified) candidate list and
-   re-sorts the pooled result **globally by `createdAt` only** before taking the final top-3 — this pre-existing
-   step was left untouched (it is a Course-count-correctness concern, documented in that file's own comment,
-   not a Topic concern). Consequence: a learner with unseen material in MULTIPLE simultaneously-eligible
-   Courses on the same day can still have one Course's Topic-diversified order partially overridden by the
-   cross-Course recency re-sort. Bounded (affects only the multi-Course-simultaneous-fallback edge case, never
-   the common single-dominant-Course case) and explicitly NOT a per-Course fairness quota (which ADR-017 still
-   forbids) — a genuine fix would need a deliberate product decision about how Topic diversity and Course
-   pooling should interact, which is out of this Slice's authority to invent.
-
-2. **Not every real internal NBA/tier signal has a clean, honest 1:1 mapping to one of OQ-018's six candidate
-   learner-facing reason strings** (review due / repeated mistake / weak area / exam approaching / not enough
-   evidence / new material). RUN010-E mapped `REVIEW_DUE` → "review due", `RELEARN_LAPSE` → "weak area",
-   `REPAIR_MISCONCEPTION` → "repeated mistake", and the ADR-017 fallback's `NEW_LEARNING` → "new material"
-   (closing the concrete cold-start mislabeling bug: `NEW_LEARNING` previously had no mapped label at all and
-   fell back to leaking the raw internal string). Two things were deliberately left UNMAPPED rather than
-   guessed:
-   - `STRENGTHEN_MEMORY` (a positive-progress, not-yet-mastered state) does not honestly fit any of OQ-018's six
-     strings — they all read as either routine/negative signals or the cold-start case, and reusing "weak area"
-     for it would conflate a positive, non-remediation state with a genuinely weak one. Its pre-existing shipped
-     label ("חיזוק זיכרון" / "memory strengthening", predating OQ-018 and this Slice) was left unchanged, since
-     it is already honest, just not literally one of OQ-018's six candidate strings.
-   - "exam approaching" has no per-item persisted signal to hang an honest label on: RUN010-D's exam-urgency
-     amplifier is a continuous within-tier tie-break multiplier applied uniformly across a Course's items, not a
-     boolean/threshold fact recorded on any one `DailyPlanItem` — labeling a specific item "exam approaching"
-     would require a genuine new product/threshold decision (when is urgency "high enough" to say so out loud?)
-     that OQ-018 does not itself resolve.
-
-3. **`GET /api/daily-plan/today` still serializes raw internal `tier`/`reasons`/`otherApplicableTypes`/
-   `actionType` strings at the wire level** (`src/app/api/daily-plan/today/daily-plan-dto.ts`), even though the
-   UI (`question-card.tsx`) now only ever renders a mapped, honest label and never the raw code. This DTO
-   predates RUN010-E by a wide margin (introduced well before this Run, as an already-reviewed, deliberate "use
-   only real domain fields, no invented score" design) and is unchanged by this Slice's diff — flagged here
-   because RUN010-E's own review process (general-reviewer pass) surfaced it as a gap in this Slice's own
-   "no other leak surface" verification, not as a new defect this Slice introduced. Whether this is actually a
-   problem depends on a reading of OQ-018's "avoid exposing internal scores" constraint: narrowly (only the
-   rendered UI matters) it is already satisfied; broadly (a technical learner opening DevTools/Network can see
-   e.g. `MISCONCEPTION_ACTIVE` or an unmapped raw `actionType`) it is not. Resolving this would mean either
-   tightening the DTO to only carry an already-mapped learner-facing reason (a real, if small, API-contract
-   change) or an explicit product decision that wire-level internal codes are acceptable as long as the UI
-   never renders them raw — not something to infer here.
-
-## Promotion Trigger
-
-Promote item 1 if/when a Run adds genuine multi-Course-simultaneous Today composition depth (beyond today's
-pooled-and-capped fallback). Promote item 2 (either half) only alongside an actual product decision — resolving
-OQ-018's `STRENGTHEN_MEMORY`/"exam approaching" gap, or literally reconciling the pre-existing
-`RELEARN_LAPSE`/`REPAIR_MISCONCEPTION`/`STRENGTHEN_MEMORY` copy to OQ-018's exact six strings — is a copy/product
-call for the human product owner, not something to infer here. Promote item 3 alongside a formal OQ-018
-resolution (the DTO-tightening question is naturally part of "what does explainability mean at the API
-boundary," not a standalone fix to invent mid-Slice).
-
----
-
 # FUB-041 — Pre-Run010 `practice-vertical.test.ts` `topicId` Schema/PGlite Failure (Open Residual)
 
-**Status:** `RECORDED` — the other half of the original item (a RUN010-C stale reinforcement-order test) is
-RESOLVED; its full original text is in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`.
+**Status:** `DEFERRED`
 **Area:** `supabase/tests/postgres/practice-vertical.test.ts`
 
-The schema/PGlite test "Practice selects around Today, answers through the normal pipeline, never resolves Today,
-and Today keeps working" fails: the Practice wire response includes an extra `topicId` field the test's
-exact-keys assertion does not allow. **Genuinely pre-Run010** — reproduced identically at Run 010's START_HEAD
-`d39c882`. Hypothesis (unverified): `questions.topic_id` (`20260928000000_question_authoring_v1.sql`, Run 006 S2)
-now flows into the Practice read-path row mapping while the test was never updated. Either the test or the
-mapping needs to change; not investigated further. Does not reduce confidence in any Run 010 Slice's evidence.
+The other half of the original item (a RUN010-C stale reinforcement-order test) is RESOLVED; its full original text is in
+`docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`.
+
+The schema/PGlite test "Practice selects around Today, answers through the normal pipeline, never resolves Today, and Today
+keeps working" fails: the Practice wire response includes an extra `topicId` field the test's exact-keys assertion does not
+allow. **Genuinely pre-Run010** — reproduced identically at Run 010's START_HEAD `d39c882` (Run 010 report §3/§4). Hypothesis
+(unverified): `questions.topic_id` (`20260928000000_question_authoring_v1.sql`, Run 006 S2) now flows into the Practice
+read-path row mapping while the test was never updated. Whether the test or the mapping is wrong has not been determined and
+must not be assumed. Does not reduce confidence in any Run 010 Slice's evidence. It is the standing known-red in the full
+schema/PGlite suite (`docs/DEV_STATUS.md` Verification Baseline).
 
 ## Promotion Trigger
 
-Own future triage: bisect Run 006-era commits, confirm the hypothesis, fix the test (or mapping). Not urgent, but
-do not leave it indefinitely; it is the standing known-red in the full schema/PGlite suite.
+Ready for promotion into the next Product Fix run: bisect Run 006-era commits, confirm the hypothesis, then fix the test
+(or the mapping). Not urgent, but do not leave it indefinitely.
 
 ---
 
 # FUB-042 — FUB-036 Option 4 Remaining Cleanup (Optional H.4 Scope, Declined For Now)
 
-**Status:** `RECORDED — deliberately not part of Run 010`
+**Status:** `DEFERRED`
 **Area:** Course Membership / Authorization (ADR-015), Instructor Insights
 
-FUB-036 (Author-Can-Learn-Own-Course, Option 4 architecture; full text archived) is functionally complete and RESOLVED through
-RUN010-H.3 (`12d5c51`) — Migration B, the author self-enrollment bypass, and `revokeCourseAuthor` with
-last-author protection are all implemented, tested, and reviewed with no blocking findings. RUN010-H.4 was
-optional by the Run's own original plan (`scratch/development_checkpoint.md`'s "RUN010-H human decisions"),
-and the human explicitly declined it for now (2026-09-29) — "preserve its remaining cleanup items ... as
-explicit follow-up work rather than expanding Run010-H further" — rather than let it silently continue
-absorbing scope. Items 1-3 (H.3/H.4) plus residue carried from FUB-036 (archived, items 4-6), none blocking, none affecting current correctness:
+Deliberately not part of Run 010. FUB-036 (Author-Can-Learn-Own-Course, Option 4 architecture; full text archived) is
+functionally complete and RESOLVED through RUN010-H.3 (`12d5c51`) — Migration B, the author self-enrollment bypass, and
+`revokeCourseAuthor` with last-author protection are implemented, tested, and reviewed with no blocking findings. RUN010-H.4
+was optional by the Run's own plan, and the human explicitly declined it for now (2026-09-29) so the remaining cleanup is
+preserved here rather than expanding Run010-H further. None of these items blocks or affects current correctness.
 
 1. **`revokeCourseAuthor` concurrency hardening (the one substantive H.3 review finding).**
    `src/application/course/revoke-course-author.ts`'s last-author-protection check reads every active
@@ -1384,16 +1209,16 @@ absorbing scope. Items 1-3 (H.3/H.4) plus residue carried from FUB-036 (archived
    warranted).
 3. **New co-author-management UI** — explicitly out of scope for every H.1-H.4 phase by FUB-036's own
    recorded decision; `revokeCourseAuthor` currently has no caller anywhere in `src/app`. A future Slice
-   would need to design this UI AND close item 1 above before wiring `revokeCourseAuthor` to a route.
-4. **Author re-grant after revoke may not reactivate (post-Run010 review).** `course_authors` has
-   `unique(user_id, course_id, capability)`; the grant path uses `ON CONFLICT DO NOTHING`, so re-granting a
-   previously revoked author may return/keep the revoked row rather than reactivating it. No co-author UI exists
-   yet, so nothing is exposed today; decide the intended behavior (reactivate vs new row; ties to OQ-043
-   revoke/rejoin semantics) and harden before any co-author-management UI or grant endpoint.
-5. **`course_authors` has no `archivedAt` (accepted narrowing, from FUB-036 H.2).** An archived-but-not-revoked
-   management row is now authorized (the old `canAuthorCourse` blocked it); no known V1 path archives an
-   OWNER/INSTRUCTOR row. Related: `archive-course-membership.ts` has no role restriction and is unwired; if it
-   is ever exposed to a route it would bypass this, so an explicit decision is needed before wiring it.
+   would need to design this UI, close item 1 above, and have the re-grant semantics of `docs/OPEN_QUESTIONS.md`
+   OQ-047 decided before wiring `revokeCourseAuthor` or any grant path to a route.
+4. **MOVED to `docs/OPEN_QUESTIONS.md` OQ-047** (author re-grant after revoke; a lifecycle decision, not technical debt). The
+   number is kept so existing references stay valid. It is NOT the same problem as learner revoke/rejoin (OQ-043).
+5. **`course_authors` has no `archivedAt` (accepted narrowing, from FUB-036 H.2; recorded in the archived FUB-036 text).**
+   An archived-but-not-revoked management row is now authorized (the old `canAuthorCourse` blocked it); no known V1 path
+   archives an OWNER/INSTRUCTOR row. Related: `archive-course-membership.ts` has no role restriction and is unwired
+   (self-service on the actor's own membership; `course_memberships` is LEARNER-only after H.3, so it cannot address
+   `course_authors` grants). The original review note asked for an explicit decision before that use case is ever wired to a
+   route; whether that note still applies after H.3 has not been re-determined here.
 6. **Stale post-cutover doc/dead-parameter cleanup (from FUB-036 H.2 notes 2-6, cosmetic):** `CourseAuthorRepository`
    module comment ("not called from any application code"); doc comments in `domain/topic/types.ts`,
    `domain/insights/analysis-entry.ts`, `handle-set-course-join-policy.ts` still naming `canAuthorCourse` or a
@@ -1404,9 +1229,8 @@ absorbing scope. Items 1-3 (H.3/H.4) plus residue carried from FUB-036 (archived
 ## Promotion Trigger
 
 Item 1 becomes a hard blocker the moment any future Slice wires `revokeCourseAuthor` to a route — do not skip
-it under time pressure. Item 4 must be settled before any co-author UI/grant endpoint. Items 2-3 and 5-6 have no forcing trigger; pick up opportunistically or when co-author
-management becomes a real product need (likely Run011+).
-
+it under time pressure. Item 3 requires item 1 and OQ-047 to be settled first. Items 2 and 5-6 have no forcing trigger;
+pick up opportunistically or when co-author management becomes a real product need (likely Run011+).
 
 ---
 
@@ -1462,7 +1286,10 @@ These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSE
 | FUB-028 | Item Analysis Discoverability | closed — `RESOLVED`, see archive |
 | FUB-030 | Course/Topic Practice (UX-3) | closed — `DONE` in Run UX-02 (ADR-020, `LEARNING_ENGINE` §39A), see archive |
 | FUB-036 | Author-Can-Learn-Own-Course (Single-Role Membership) | closed — `RESOLVED` (Option 4, RUN010-H.1-H.3; `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`); residue carried in FUB-042, see archive |
-| FUB-034 / FUB-041 | resolved parts only | pre-prune FUB-034 text and original FUB-041 text archived; open residuals remain active |
+| FUB-025 | Answer Submission Idempotency vs. Server-Generated `answeredAt` | closed — `RESOLVED` AS A BACKLOG ITEM; canonical ownership moved. The underlying decision is NOT resolved and now lives in OQ-048; see archive |
+| FUB-039 | Same-Day Reinforcement Freeze Can Delay a New Card's FSRS Graduation | closed — `RESOLVED`: the original audit question is resolved (the freeze is intentional); the residual FSRS-calibration interaction remains open in OQ-044; see archive |
+| FUB-040 | RUN010-E Residual Gaps: Cross-Course Topic Diversity, Unmapped OQ-018 Reason Categories | closed — `RESOLVED` AS A BACKLOG ITEM; canonical ownership moved. The underlying decisions are NOT resolved and now live in OQ-017 (item 1) and OQ-018 (items 2-3); see archive |
+| FUB-034 / FUB-041 | resolved parts only | pre-prune FUB-034 text and original FUB-041 text archived; open residuals remain active (FUB-034 narrowed to the tier-crossing gap) |
 
 ---
 

@@ -93,12 +93,41 @@ Current state (implementation history: `docs/RUNS/2026-09-28-RUN-010-LEARNING-IN
 source and already feeds the within-tier ranking amplifier (never eligibility/tier). No personal/group
 override exists, so only the source hierarchy above remains open.
 
-Open sub-question (Product finding A; date interpretation, not resolved here):
+Date interpretation of the date-only `exam_date` (Product finding A) is a distinct decision, owned by OQ-046. This
+question stays focused on the exam-date SOURCE hierarchy.
 
-`exam_date` is a date-only value but is currently parsed as a UTC-midnight instant, so "exam today" urgency
-disappears during the exam calendar day. Fix candidate BEFORE PUSH, tracked in `docs/DEV_STATUS.md`
-"Pre-push / Release Requirements" A. A future fix should treat `exam_date` as calendar-day /
-learner-learning-day semantics. Not resolved here; the system must never invent an exam date.
+---
+
+## OQ-046 — Date-Only Exam-Date Interpretation (Exam-Day Urgency)
+
+Status: OPEN
+
+Current behavior (`src/domain/learning/exam-urgency.ts` module comment): `courses.exam_date` is a date-only value but is
+parsed as a UTC-midnight instant and compared to `now` as a raw instant. "Exam today" urgency therefore disappears during
+part of the exam calendar day (the module comment records a shift of up to ~10-14 hours relative to a distant learner's
+own local exam day). Split from OQ-002 (which owns
+the source hierarchy) on 2026-09-29; originally recorded as OQ-002's date-interpretation sub-question (Product finding A).
+
+Decision needed:
+
+What day semantics should a date-only `exam_date` have when computing exam urgency?
+
+- the learner's local calendar day;
+- the learner's learning-day boundary (as distinct from calendar midnight);
+- another explicit rule.
+
+Constraints:
+
+- the system must never invent an exam date
+- exam urgency remains a ranking amplifier within tier, not an eligibility gate or tier replacement, unless another
+  accepted policy says otherwise (ADR-016 §11)
+- the DailyPlan local day is defined by the learner's timezone (`.claude/rules/learning-engine.md`); do not introduce a
+  hidden timezone assumption (`.claude/rules/api.md`)
+
+Resolve before:
+
+the Product Fix that repairs exam-day urgency. It also gates any push of the Run 010 branch
+(`docs/DEV_STATUS.md` "Pre-push / Release Requirements" A). No code fix is authorized by this question.
 
 ---
 
@@ -293,11 +322,14 @@ Still unresolved:
 - the interaction with OQ-012 (rating mapping, desired retention).
 
 Characterized, not a defect (RUN010-C; details in `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`): the 1m/10m short-term
-learning-step behavior is confirmed as stock ts-fsrs default behavior (`enable_short_term: true`,
-`learning_steps: ["1m", "10m"]`, not overridden by `ADAPTER_FSRS_PARAMETERS`), not a UNLOCK misconfiguration
-or bug; no scheduler-adapter change was made. Still open: whether it is the right learner experience for
-UNLOCK's question-based evidence (unresolved items above), including its interaction with the same-day
-reinforcement scheduler-freeze (see FUB-039).
+learning-step behavior is stock ts-fsrs default behavior (`enable_short_term: true`, `learning_steps: ["1m", "10m"]`, not
+overridden by `ADAPTER_FSRS_PARAMETERS`), not a UNLOCK misconfiguration or bug; no scheduler-adapter change was made. Still
+open: whether it is the right learner experience for UNLOCK's question-based evidence (unresolved items above).
+
+Related residual (from archived FUB-039, RUN010-C audit; the freeze itself is an accepted, intentional invariant — at most
+one scheduler-moving event per Question per day): a brand-new card touched only via same-day Practice reinforcement does not
+leave the FSRS Learning state that day (bounded to one day). Re-check whether that interaction still applies, and is still
+acceptable, when this question is calibrated.
 
 Constraint:
 
@@ -437,6 +469,14 @@ Still potentially unresolved for future iterations:
 - how exam urgency should affect cross-category balance
 - whether diagnostic sampling becomes an explicit category
 - whether course diversity should ever affect composition
+- how Topic diversity should interact with cross-Course pooling in the New Material fallback (added from archived FUB-040
+  item 1): `discoverNewMaterialItems` (`src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`) pools each
+  eligible Course's Topic-diversified candidates and re-sorts globally by `createdAt` only before taking the final top-3, so
+  a Course's Topic-diversified order can be partially overridden when several Courses are simultaneously eligible; bounded
+  edge case, and ADR-017 still forbids a per-Course fairness quota
+- the escalation mechanism/thresholds by which severe Memory Need/overdue duration crosses a priority tier boundary
+  (ADR-016 §10 accepts the requirement; numbers undecided; `docs/GLOBAL_TODAY_PRIORITY_MODEL.md` §5a; the unimplemented
+  requirement itself is tracked in `docs/FOLLOW_UP_BACKLOG.md` FUB-034)
 
 Do not introduce quota/fairness machinery without an explicit future decision.
 
@@ -507,6 +547,49 @@ changing important Learning Engine formulas after meaningful real learner data e
 
 ---
 
+## OQ-048 — Answer-Submission Idempotency Identity vs. Server-Generated `answeredAt`
+
+Status: OPEN
+
+Moved from archived FUB-025 (found by the hosted Pre-Pilot S3 smoke test, 2026-09-24, and reproduced by the local burst
+harness). Low urgency (originally Priority LOW); no data is at risk.
+
+Current behavior: `answeredAt` is part of the canonical command identity compared for idempotent retries
+(`CANONICAL_COMMAND_IDENTITY_FIELDS` in `src/application/learning/submit-answer.ts`; `docs/DECISIONS/010-answer-submission-transaction-model.md` "Idempotency"
+states it is client-captured and that a retry must preserve it). The HTTP route `POST /api/daily-plan/items/:itemId/answer`
+instead sets it to the server's own `new Date()` per request. For two requests carrying the SAME `submissionId`:
+
+- a later, sequential retry finds the existing Attempt with a different `answeredAt` and returns
+  `409 SUBMISSION_ID_REUSED` instead of the idempotent `200`;
+- a truly concurrent duplicate loses the race, sees the already-resolved item (the pending check runs before the insert),
+  and returns `409 ITEM_ALREADY_RESOLVED`.
+
+Exactly one Attempt and one completed DailyPlanItem result either way. The current UI is unaffected (fresh
+`submissionId` per click; 409 treated as "already resolved": `src/app/(learner)/today/page.tsx`). Practice inherits this
+(`docs/FOLLOW_UP_BACKLOG.md` FUB-032; the Practice UI never reuses a submission id). The S3 burst harness accepts `200+200`
+or `200+409` for a same-`submissionId` duplicate pair.
+
+Decision needed:
+
+- Should a server-generated `answeredAt` participate in the canonical idempotency identity at all (versus a client-captured
+  `answeredAt` bound to the `submissionId`, as ADR-010 states)?
+- Should a same-`submissionId` retry, sequential or concurrent, return the original result rather than a conflict?
+
+Constraints:
+
+- one logical submission -> at most one Attempt -> at most one DailyPlanItem resolution (strongest invariant)
+- Attempts are immutable evidence; do not rewrite history
+- any change touches the Attempt/idempotency contract (ADR-010 amendment if accepted) and needs DB and general review
+- implementation candidates, not decisions: exclude a server-derived `answeredAt` from the identity comparison, and/or
+  re-check the submission id after acquiring the per-learner lock so a concurrent duplicate returns the existing result
+
+Resolve before:
+
+a real client needs same-`submissionId` retry (flaky-network resubmit, mobile offline queue), pilot evidence shows
+duplicate-submit 409s confusing learners, or any change to answer-submission semantics.
+
+---
+
 # Today UX / Product Analytics
 
 ## OQ-018 — Learner-Facing Selection Explainability
@@ -515,11 +598,19 @@ Status: DEFERRED
 
 Current state (history: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`): partially implemented. Honest labels exist for
 `REVIEW_DUE`, `RELEARN_LAPSE`, `REPAIR_MISCONCEPTION`, and `NEW_LEARNING`. Still the human product
-owner's call; narrowed to what is not yet decided (see `docs/FOLLOW_UP_BACKLOG.md` FUB-040):
+owner's call; narrowed to what is not yet decided (source: archived FUB-040 items 2-3, RUN010-E):
 
-- `STRENGTHEN_MEMORY` learner-facing wording;
-- whether and how "exam approaching" becomes a learner-facing reason (no per-item persisted signal today);
-- whether internal reason/action codes belong at the API boundary;
+- `STRENGTHEN_MEMORY` learner-facing wording: it is a positive-progress, not-yet-mastered state that honestly fits none of
+  the six candidate strings below (reusing "weak area" would conflate it with a genuinely weak state); its pre-existing
+  shipped label ("חיזוק זיכרון") was left unchanged (`src/messages/he.ts`);
+- whether and how "exam approaching" becomes a learner-facing reason: there is no per-item persisted signal today (the
+  exam-urgency amplifier is a continuous within-tier multiplier, not a fact recorded on a `DailyPlanItem`), so labeling an
+  item would need a threshold decision on when urgency is "high enough" to say so;
+- whether internal reason/action codes belong at the API boundary: `GET /api/daily-plan/today` still serializes raw
+  `tier`/`reasons`/`otherApplicableTypes`/`actionType` strings (`src/app/api/daily-plan/today/daily-plan-dto.ts`), a
+  pre-existing deliberate "real domain fields only" design, although the UI renders only mapped honest labels. Whether that is
+  acceptable depends on reading "avoid exposing internal scores" narrowly (UI only) or broadly (visible in DevTools);
+  tightening the DTO would be an API-contract change;
 - how much explanation to show, and when.
 
 Decision needed:
@@ -659,16 +750,13 @@ formal KPI interpretation.
 
 Status: DEFERRED
 
-Promoted in part (2026-09-25): a simple, read-only Topic-state Progress view
-(four qualitative states, coverage context, path back to Today) is decided and
-scheduled in Run 009 (`docs/CHATGPT_PLAN.md`, S1/S2) and delivered there
-(COMPLETE and Preview-verified, 2026-09-26; `docs/RUNS/2026-09-25-009.md`). The
-question below is narrowed to what remains deferred beyond that.
+Simple read-only Topic-state Progress (qualitative states, coverage context, path back to Today) is already delivered
+(current capability: `docs/DEV_STATUS.md`; ADR-018; history: `docs/RUNS/2026-09-25-009.md`) and is not reopened here.
 
 Decision needed:
 
-Beyond the simple Topic-state Progress in Run 009, what further learner-facing
-progress elements are useful once real pilot behavior is observed?
+Beyond the delivered simple Topic-state Progress, what further learner-facing
+progress elements, if any, are useful once real pilot behavior is observed?
 
 Potential elements:
 
@@ -742,17 +830,22 @@ building a durable content-ingestion/material-management feature.
 
 Status: OPEN
 
+Already available (`docs/DEV_STATUS.md` Current Product Capabilities; not a candidate any more): instructor-authored
+Questions (draft save, explicit publish) and Structured Import V1 (JSON/CSV preview/confirm into DRAFT_ONLY Questions; no
+XLSX/PDF). `docs/UNLOCK_CAPABILITY_MAP.md` still lists the exact entry route for real Ruppin material as open under this
+question.
+
 Decision needed:
 
-How should Questions and Materials enter UNLOCK for the first real class/pilot?
+What route should real source material take into UNLOCK for the first real class/pilot, given the instructor-authoring
+and Structured Import paths that already exist?
 
-Candidate approaches:
+Candidate directions (none is required or ruled out):
 
-- manually seeded content
-- CSV/JSON import
-- minimal admin form
-- instructor-authored content
-- AI-assisted generation with review
+- use the existing instructor authoring and Structured Import paths only
+- introduce a future Material / file-PDF ingestion path (related: OQ-023 Material model)
+- AI-assisted generation with review (related: OQ-038; assessment questions and AI-resolved correct answers already require
+  human approval per `docs/MASTER_SPEC.md` §47)
 
 Decision should optimize for:
 
@@ -770,13 +863,9 @@ Do not build a broad CMS merely to seed the pilot.
 
 Status: DEFERRED
 
-Superseded in part (2026-09-25): the original question — whether V1 needs formal
-Topic entities — is resolved. Flat, Course-scoped Topics are implemented
-(`topics`, `questions.topic_id`, Runs 005/006) and Run 009 builds read models on
-them. Topic assignment is current (non-versioned); the current V1 Topic
-semantics are owned by `docs/DECISIONS/018-topic-model-v1.md` (ADR-018; Run 009
-D6 in `docs/CHATGPT_PLAN.md` is the origin). What remains deferred here is only
-hierarchy/Unit structure and immutable historical Topic attribution.
+Flat, Course-scoped Topics are implemented and their V1 semantics (including current, non-versioned Topic assignment) are
+owned by `docs/DECISIONS/018-topic-model-v1.md` (ADR-018). What remains deferred here is only hierarchy/Unit structure and
+immutable historical Topic attribution.
 
 Decision still needed (not required by current V1 work):
 
@@ -808,8 +897,9 @@ Decision needed:
 
 Which AI-generated content requires human approval before learner use?
 
-Partly decided 2026-09-26 (`docs/MASTER_SPEC.md` §47): AI-generated assessment questions and AI-resolved correct
-answers always require instructor/human approval before publish. Still open: the remaining content kinds below.
+Accepted constraint (`docs/MASTER_SPEC.md` §47, decided 2026-09-26): AI-generated assessment questions and AI-resolved
+correct answers always require instructor/human approval before publish. Active decision: only the remaining content
+kinds below, whose approval rules are unresolved.
 
 Potential distinctions:
 
@@ -967,9 +1057,11 @@ building question deletion/retirement UI or APIs.
 
 Status: OPEN
 
-ADR-015 defines the main membership/authorization model.
+ADR-015 defines the main membership/authorization model. This question owns learner `course_memberships` lifecycle only:
+after Run 010 H.3, `course_memberships` is LEARNER-only and management capability lives in `course_authors` (OWNER /
+INSTRUCTOR; `docs/DEV_STATUS.md` Current Product Capabilities). CourseAuthor grant lifecycle is a separate question (OQ-047).
 
-Three edge cases remain intentionally unresolved.
+Two edge cases remain intentionally unresolved here (B moved, see below).
 
 ### A. Rejoin after revoke
 
@@ -985,18 +1077,12 @@ Decision needed:
 - new membership lifecycle vs reactivating the existing row?
 - what response/outcome should the UI receive?
 
-### B. Last management member
+### B. Last management member — moved to OQ-047
 
-Decision needed:
-
-Should the last active OWNER/INSTRUCTOR be allowed to revoke their own management
-membership and leave a Course with zero management members?
-
-If prevented, define:
-
-- what counts as an active manager
-- whether OWNER and INSTRUCTOR are equivalent for this rule
-- ownership-transfer expectations
+The core question (may the last active author revoke themselves and leave zero?) was answered by the product owner in
+Run 010 (2026-09-29: `revokeCourseAuthor` fails closed with `LAST_AUTHOR`; Run 010 report §4) and concerns `course_authors`,
+not learner memberships. The unresolved residue (what counts as an active manager, OWNER/INSTRUCTOR equivalence,
+ownership-transfer expectations) is carried in OQ-047. Letters are kept stable for existing references.
 
 ### C. Repeated revoke/archive timestamps
 
@@ -1033,6 +1119,43 @@ lifecycle stop that applies to authors as well?
 
 Tracked as `docs/DEV_STATUS.md` "Pre-push / Release Requirements" C. Related: OQ-043 (membership
 revoke/rejoin), FUB-042.
+
+---
+
+## OQ-047 — CourseAuthor Grant Lifecycle (Re-grant / Reactivation)
+
+Status: OPEN
+
+Distinct from OQ-043 (learner `course_memberships` revoke/rejoin): `course_authors` is the management-capability table
+added in Run 010 H.1 (`docs/DEV_STATUS.md`), with its own revoke semantics. Source: post-Run010 review finding, formerly
+`docs/FOLLOW_UP_BACKLOG.md` FUB-042 item 4 (that item number is kept as a pointer).
+
+Current behavior: `course_authors` has `unique(user_id, course_id, capability)`, and the grant path is
+`INSERT ... ON CONFLICT DO NOTHING` (`src/infrastructure/postgres/course-author-repository.ts`), so re-granting a previously
+revoked author may return or keep the revoked row rather than reactivating it. No co-author-management UI or grant endpoint
+exists, so nothing is exposed today.
+
+Decision needed:
+
+- Should re-granting a revoked author reactivate the existing grant (clearing its revocation), create a new lifecycle
+  record, or be rejected?
+- How is revoke history preserved under the chosen model?
+- What should `grant()` return when a revoked tuple exists (the existing revoked row, a new active grant, or an explicit
+  outcome)?
+
+Also carried from OQ-043 B (not decided here): what counts as an active manager for last-author protection (the current
+implementation treats every active OWNER or INSTRUCTOR `course_authors` row on the Course as an active author grant for
+last-author protection), whether OWNER and
+INSTRUCTOR are equivalent for that rule, and ownership-transfer expectations. The technical check-then-write race in that
+protection is a separate hardening item: `docs/FOLLOW_UP_BACKLOG.md` FUB-042 item 1.
+
+Constraints:
+
+- unresolved authorization semantics fail closed and must not be invented by implementation (`.claude/rules/auth.md`)
+
+Resolve before:
+
+any co-author-management UI or grant endpoint (FUB-042 item 3; `docs/DEV_STATUS.md` "Pre-push / Release Requirements" F).
 
 ---
 

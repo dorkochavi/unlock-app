@@ -582,3 +582,177 @@ The remaining genuine pre-Run010 `practice-vertical.test.ts` `topicId` failure s
 bisect Run 006-era commits, confirm the `topics.topic_id`-in-row-mapping hypothesis, and fix the test (or the
 row mapping) once picked up. Not urgent (does not reduce confidence in any Run 010 Slice's own evidence,
 confirmed by this item's own bisection), but should not be left indefinitely.
+
+---
+
+# FUB-025 — Answer Submission Idempotency vs. Server-Generated `answeredAt`
+
+**Status:** `RESOLVED` AS A BACKLOG ITEM / CANONICAL OWNERSHIP MOVED — closed 2026-09-29 (Run GOVERNANCE-RECONCILE-001). The underlying unresolved decision is NOT resolved: it moved unchanged in substance to `docs/OPEN_QUESTIONS.md` OQ-048; no separate implementation task remained. Original status was `DEFERRED`.
+**Priority:** `LOW`
+**Area:** Learning Engine / Answer Submission / API
+
+## Observation
+
+Found by the hosted Pre-Pilot S3 smoke test (2026-09-24) and reproduced by the
+local burst harness. `answeredAt` is part of the canonical command identity
+compared for idempotent retries (`CANONICAL_COMMAND_IDENTITY_FIELDS` in
+`src/application/learning/submit-answer.ts`), but the HTTP route
+(`POST /api/daily-plan/items/:itemId/answer`) sets it to the server's own
+`new Date()` per request. Consequences for two requests carrying the SAME
+`submissionId`:
+
+- a later, sequential retry finds the existing Attempt and its `answeredAt`
+  differs, so it returns `409 SUBMISSION_ID_REUSED` instead of the idempotent
+  `200`;
+- a truly concurrent duplicate loses the race, sees the already-resolved item
+  (the pending check runs before the insert), and returns
+  `409 ITEM_ALREADY_RESOLVED`.
+
+No data is corrupted: exactly one Attempt and one completed DailyPlanItem
+result either way. The current UI is unaffected — it generates a fresh
+`submissionId` per click and treats 409 as "already resolved"
+(`src/app/(learner)/today/page.tsx`).
+
+## Important Constraint
+
+The unresolved question is semantic, not a bug fix: should a server-generated
+`answeredAt` participate in idempotency identity at all, and should a
+concurrent same-key duplicate return the original result? Any change touches
+the Attempt/idempotency contract (ADR-010) and needs DB and general review.
+Attempts are immutable evidence; do not rewrite history.
+
+## Follow-Up Investigation
+
+Decide (ADR-010 amendment if accepted) whether to exclude a server-derived
+`answeredAt` from the identity comparison, and/or re-check the submission id
+after acquiring the per-learner lock so a concurrent duplicate returns the
+existing result. Keep the strongest invariant: one Attempt and one resolved
+item per logical submission.
+
+## Do Not Do Yet
+
+No change to answer-submission semantics during the Pre-Pilot Run. The
+S3 harness accepts `200+200` or `200+409` (`ITEM_ALREADY_RESOLVED` /
+`SUBMISSION_ID_REUSED`) for a same-submissionId duplicate pair.
+
+## Promotion Trigger
+
+A real client needs same-`submissionId` retry (flaky-network resubmit, mobile
+offline queue), or pilot evidence shows duplicate-submit 409s confusing
+learners.
+
+---
+
+# FUB-039 — Same-Day Reinforcement Freeze Can Delay a New Card's FSRS Graduation When Only Touched via Same-Day Practice (RUN010-C audit, NON-BLOCKING)
+
+**Status:** `RESOLVED` — closed 2026-09-29 (Run GOVERNANCE-RECONCILE-001). The original audit question is resolved (the freeze is intentional and final). The residual same-day-graduation / FSRS-calibration interaction is NOT resolved: it remains open as a relation in `docs/OPEN_QUESTIONS.md` OQ-044 (no independent executable follow-up). Original status was `RECORDED`.
+**Area:** Learning Engine — FSRS scheduler freeze x short-term learning steps
+(`src/domain/learning/progress-update.ts`, `learning-session.ts`, OQ-044)
+
+RUN010-C audited whether RUN010-B's unconditional same-day reinforcement scheduler-freeze
+(`isReinforcementAttempt` in `nextSchedulerMemory`) incorrectly conflates (a) a learner voluntarily
+re-practicing a Question before it is due again with (b) a Question that has genuinely become due again the
+same calendar day (a real FSRS-scheduled event, distinct from an artificial repeat) — directly relevant given
+OQ-044's confirmed finding (RUN010-C) that a brand-new card's first correct answer is due again in exactly 10
+minutes under current ts-fsrs defaults.
+
+**Verdict: the unconditional freeze is intentional and correct, not a bug** — see
+`src/infrastructure/learning/__tests__/practice-early-correct-scheduling.test.ts`'s "RUN010-B — same-day
+reinforcement" describe block (including its already-existing "not merely 'still early'" test, predating this
+audit) and the new RUN010-C test proving the identical outcome for a genuinely-due-again NEW card. "At most
+one real scheduler-moving event per Question per day, regardless of why" remains the accepted invariant;
+distinguishing "before due" from "genuinely due again" would reopen exactly the risk RUN010-B closed (a
+same-day repeat being able to retrigger a second real AGAIN/lapse for what is really one day's due event) and
+would additionally require deciding, ahead of OQ-044's own still-open calibration, whether a same-day
+learning-step event should count as a real review at all — a product decision, not a threshold fix.
+
+**Residual, bounded, non-blocking consequence recorded here:** because Today can never re-present the same
+Question twice in one plan, and Practice's Tier 4 (`selectPracticeBatch`) is the ONLY way an
+already-answered-today Question is served again that day, a brand-new card that a learner ONLY ever touches
+via same-day Practice reinforcement (never on a later calendar day) will never actually graduate out of
+ts-fsrs's short-term "Learning" state that day — every same-day reinforcement repeat freezes the transition
+`memoryScheduler.review()` would otherwise perform. This is bounded to a single calendar day (the very next
+day it is touched — via Today or a fresh, non-reinforcement Practice pick — is not "same session," so a real
+review fires and the card progresses normally, just a session later than the raw due timestamp suggests,
+which is already OQ-044's known, accepted drift). Not fixed here because it is an interaction between two
+already-open/deliberate policies (OQ-044 learning-step calibration + RUN010-B's per-day event cap), not an
+independent bug.
+
+## Promotion Trigger
+
+If/when OQ-044 is calibrated (e.g. learning steps disabled, shortened, or a minimum first-interval floor is
+adopted), re-check whether this residual same-day-graduation-delay interaction still applies under the new
+configuration, and whether it is still acceptable.
+
+---
+
+# FUB-040 — RUN010-E Residual Gaps: Cross-Course Topic Diversity, and Unmapped OQ-018 Reason Categories (NON-BLOCKING)
+
+**Status:** `RESOLVED` AS A BACKLOG ITEM / CANONICAL OWNERSHIP MOVED — closed 2026-09-29 (Run GOVERNANCE-RECONCILE-001). Items 1-3 are unresolved product/contract decisions that are NOT resolved; they now live in `docs/OPEN_QUESTIONS.md` OQ-017 (item 1) and OQ-018 (items 2 and 3); no independent implementation task remained. Original status was `RECORDED`.
+**Area:** New Material fallback Topic diversity (`src/infrastructure/postgres/unseen-question-repository.ts`,
+`src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`); OQ-018 learner-facing reason mapping
+(`src/messages/he.ts`, `src/app/(learner)/today/question-card.tsx`)
+
+RUN010-E investigated whether ADR-017's V1 New Material fallback samples representatively across Topics.
+Evidence (see `supabase/tests/postgres/unseen-question-repository.test.ts`'s new "Topic-diversifying
+round-robin" suite) showed a real, previously-unaddressed clustering bug: pure `created_at asc` ordering let
+one Topic's older unseen Questions monopolize the entire (typically 3-item) fallback for as long as that Topic
+still had unseen material, silently starving every other Topic of early calibration evidence. This was fixed
+**within a single Course's own selection** via a deterministic `row_number() over (partition by topic_id ...)`
+round-robin, still unseen-only, still capped at ADR-017's existing max-3, still deterministic — no ADR-017
+envelope change.
+
+**Three bounded items intentionally left open, not solved by that fix:**
+
+1. **Cross-Course pooling still isn't Topic-aware.** `generate-daily-plan-for-resolved-inputs.ts`'s
+   `discoverNewMaterialItems` pools each eligible Course's own (now Topic-diversified) candidate list and
+   re-sorts the pooled result **globally by `createdAt` only** before taking the final top-3 — this pre-existing
+   step was left untouched (it is a Course-count-correctness concern, documented in that file's own comment,
+   not a Topic concern). Consequence: a learner with unseen material in MULTIPLE simultaneously-eligible
+   Courses on the same day can still have one Course's Topic-diversified order partially overridden by the
+   cross-Course recency re-sort. Bounded (affects only the multi-Course-simultaneous-fallback edge case, never
+   the common single-dominant-Course case) and explicitly NOT a per-Course fairness quota (which ADR-017 still
+   forbids) — a genuine fix would need a deliberate product decision about how Topic diversity and Course
+   pooling should interact, which is out of this Slice's authority to invent.
+
+2. **Not every real internal NBA/tier signal has a clean, honest 1:1 mapping to one of OQ-018's six candidate
+   learner-facing reason strings** (review due / repeated mistake / weak area / exam approaching / not enough
+   evidence / new material). RUN010-E mapped `REVIEW_DUE` → "review due", `RELEARN_LAPSE` → "weak area",
+   `REPAIR_MISCONCEPTION` → "repeated mistake", and the ADR-017 fallback's `NEW_LEARNING` → "new material"
+   (closing the concrete cold-start mislabeling bug: `NEW_LEARNING` previously had no mapped label at all and
+   fell back to leaking the raw internal string). Two things were deliberately left UNMAPPED rather than
+   guessed:
+   - `STRENGTHEN_MEMORY` (a positive-progress, not-yet-mastered state) does not honestly fit any of OQ-018's six
+     strings — they all read as either routine/negative signals or the cold-start case, and reusing "weak area"
+     for it would conflate a positive, non-remediation state with a genuinely weak one. Its pre-existing shipped
+     label ("חיזוק זיכרון" / "memory strengthening", predating OQ-018 and this Slice) was left unchanged, since
+     it is already honest, just not literally one of OQ-018's six candidate strings.
+   - "exam approaching" has no per-item persisted signal to hang an honest label on: RUN010-D's exam-urgency
+     amplifier is a continuous within-tier tie-break multiplier applied uniformly across a Course's items, not a
+     boolean/threshold fact recorded on any one `DailyPlanItem` — labeling a specific item "exam approaching"
+     would require a genuine new product/threshold decision (when is urgency "high enough" to say so out loud?)
+     that OQ-018 does not itself resolve.
+
+3. **`GET /api/daily-plan/today` still serializes raw internal `tier`/`reasons`/`otherApplicableTypes`/
+   `actionType` strings at the wire level** (`src/app/api/daily-plan/today/daily-plan-dto.ts`), even though the
+   UI (`question-card.tsx`) now only ever renders a mapped, honest label and never the raw code. This DTO
+   predates RUN010-E by a wide margin (introduced well before this Run, as an already-reviewed, deliberate "use
+   only real domain fields, no invented score" design) and is unchanged by this Slice's diff — flagged here
+   because RUN010-E's own review process (general-reviewer pass) surfaced it as a gap in this Slice's own
+   "no other leak surface" verification, not as a new defect this Slice introduced. Whether this is actually a
+   problem depends on a reading of OQ-018's "avoid exposing internal scores" constraint: narrowly (only the
+   rendered UI matters) it is already satisfied; broadly (a technical learner opening DevTools/Network can see
+   e.g. `MISCONCEPTION_ACTIVE` or an unmapped raw `actionType`) it is not. Resolving this would mean either
+   tightening the DTO to only carry an already-mapped learner-facing reason (a real, if small, API-contract
+   change) or an explicit product decision that wire-level internal codes are acceptable as long as the UI
+   never renders them raw — not something to infer here.
+
+## Promotion Trigger
+
+Promote item 1 if/when a Run adds genuine multi-Course-simultaneous Today composition depth (beyond today's
+pooled-and-capped fallback). Promote item 2 (either half) only alongside an actual product decision — resolving
+OQ-018's `STRENGTHEN_MEMORY`/"exam approaching" gap, or literally reconciling the pre-existing
+`RELEARN_LAPSE`/`REPAIR_MISCONCEPTION`/`STRENGTHEN_MEMORY` copy to OQ-018's exact six strings — is a copy/product
+call for the human product owner, not something to infer here. Promote item 3 alongside a formal OQ-018
+resolution (the DTO-tightening question is naturally part of "what does explainability mean at the API
+boundary," not a standalone fix to invent mid-Slice).
