@@ -89,17 +89,16 @@ Resolve before:
 
 building a durable exam-date model or learner-facing exam scheduling behavior.
 
-RUN010-D implementation note (2026-09-28): `getOrCreateDailyPlanForToday`/
-`generate-daily-plan-for-resolved-inputs.ts` now read `courses.exam_date`
-alone (the only exam-date field that exists in the schema today) to drive
-`src/domain/learning/exam-urgency.ts`'s multiplicative, within-tier-only
-ranking amplifier. This does not resolve this question — there is still no
-personal/group override to arbitrate, so there is no hierarchy to implement
-yet — it only records that the sole existing source (`courses.exam_date`)
-is now load-bearing for ranking order (never for eligibility/tier, per the
-"amplify, don't gate" constraint above). If a personal/group exam date is
-ever added, this call site is where the eventual hierarchy resolution would
-need to be inserted.
+Current state (implementation history: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`): `courses.exam_date` is the only exam-date
+source and already feeds the within-tier ranking amplifier (never eligibility/tier). No personal/group
+override exists, so only the source hierarchy above remains open.
+
+Open sub-question (Product finding A; date interpretation, not resolved here):
+
+`exam_date` is a date-only value but is currently parsed as a UTC-midnight instant, so "exam today" urgency
+disappears during the exam calendar day. Fix candidate BEFORE PUSH, tracked in `docs/DEV_STATUS.md`
+"Pre-push / Release Requirements" A. A future fix should treat `exam_date` as calendar-day /
+learner-learning-day semantics. Not resolved here; the system must never invent an exam date.
 
 ---
 
@@ -291,17 +290,12 @@ Still unresolved:
   reviews whose retrievability has actually dropped;
 - the interaction with OQ-012 (rating mapping, desired retention).
 
-RUN010-C empirical confirmation (2026-09-28): deterministic simulation against the real installed
-ts-fsrs package (`src/infrastructure/learning/fsrs/__tests__/ts-fsrs-memory-scheduler.test.ts`, "RUN010-C /
-OQ-044" describe block) confirms this is stock ts-fsrs default behavior, not a UNLOCK misconfiguration —
-`generatorParameters()` shows `enable_short_term: true`, `learning_steps: ["1m", "10m"]` by default, and
-`ADAPTER_FSRS_PARAMETERS` overrides neither. A brand-new card's first GOOD answer lands in `Learning` state,
-due exactly 10 minutes later; it only graduates to a real multi-day `Review` interval on a SECOND
-consecutive GOOD review. This is intended Anki/FSRS-style learning-step design (short-term consolidation
-before graduation), not a correctness bug — so per the constraint below, RUN010-C makes no scheduler-adapter
-change. Still open: whether this is the right learner experience for UNLOCK's question-based evidence
-(unchanged unresolved items above), including its interaction with RUN010-B's same-day reinforcement
-scheduler-freeze (see FUB-039).
+Characterized, not a defect (RUN010-C; details in `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`): the 1m/10m short-term
+learning-step behavior is confirmed as stock ts-fsrs default behavior (`enable_short_term: true`,
+`learning_steps: ["1m", "10m"]`, not overridden by `ADAPTER_FSRS_PARAMETERS`), not a UNLOCK misconfiguration
+or bug; no scheduler-adapter change was made. Still open: whether it is the right learner experience for
+UNLOCK's question-based evidence (unresolved items above), including its interaction with the same-day
+reinforcement scheduler-freeze (see FUB-039).
 
 Constraint:
 
@@ -352,27 +346,18 @@ pilot evidence.
 
 Status: OPEN
 
-Decision needed:
+Current state (implementation history: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`): a basic production confidence capture
+exists on Today and Practice: "sure" / "not sure" maps to `high` / `low`, and confidence stays `null` when the
+learner does not touch it. The misconception high-confidence gate consumes it. This question does not expand
+that influence.
 
-What confidence interaction should the learner experience in V1?
+Decision still needed:
 
-Need to define:
-
-- scale
-- labels
-- whether confidence is requested on every answer
-- whether it is optional
-- when it is collected
-- whether collection differs by question type
-- how it affects evidence
-- how it affects misconception interpretation
-- whether it affects scheduling
-
-Possible representations include:
-
-- low / medium / high
-- sure / unsure
-- numeric scale
+- should confidence be requested on every answer, or only selectively (and when)?
+- is the binary sure / not-sure interaction final, or should a richer scale exist?
+- how should confidence affect evidence, misconception interpretation, and scheduling beyond the currently
+  approved behavior?
+- should collection or interpretation differ by future question type?
 
 Constraint:
 
@@ -425,20 +410,11 @@ Current conservative working range has been discussed around:
 - typical range near 8–12
 - hard maximum near 15
 
-Still unresolved:
-
-whether those are the correct launch values after real learner/pilot evidence.
+Architecture is implemented (`computeTodayPlanBudget`, initial policy 5 / 8-12 / 15; history in
+`docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`). Still open (CALIBRATION): the correct launch numeric values and exam-urgency
+amplifier constants, after real learner/pilot evidence.
 
 The architecture must not depend on these exact numbers being permanent.
-
-RUN010-D implementation note (2026-09-28): the tiered-need-bucket +
-whole-plan-guardrail architecture (`docs/GLOBAL_TODAY_PLAN_SIZE_MODEL.md`
-§2) is now implemented — `computeTodayPlanBudget`
-(`src/domain/learning/today-plan-budget.ts`), production-wired via
-`PRODUCTION_TODAY_PLAN_BUDGET_POLICY` using exactly this section's working
-range (5/8-12/15) as the initial engineering values. This closes the
-architecture gap; the calibration question above (correct launch values)
-remains open exactly as stated.
 
 ---
 
@@ -535,14 +511,14 @@ changing important Learning Engine formulas after meaningful real learner data e
 
 Status: DEFERRED
 
-RUN010-E note (not a status change — still the human product owner's call): a partial implementation now
-exists (`src/messages/he.ts`'s `today.actionType` map + `src/app/(learner)/today/question-card.tsx`'s
-`actionLabel`), covering `REVIEW_DUE`, `RELEARN_LAPSE`, `REPAIR_MISCONCEPTION`, and (new in RUN010-E)
-`NEW_LEARNING` (the ADR-017 New Material fallback's cold-start case). `STRENGTHEN_MEMORY` and an "exam
-approaching" category remain unmapped — see `docs/FOLLOW_UP_BACKLOG.md` FUB-040 item 2 for why, and note the
-already-shipped `RELEARN_LAPSE`/`REPAIR_MISCONCEPTION`/`STRENGTHEN_MEMORY` copy predates this Slice and does
-not literally use this question's six candidate strings verbatim, even though the underlying mapping is
-honest.
+Current state (history: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`): partially implemented. Honest labels exist for
+`REVIEW_DUE`, `RELEARN_LAPSE`, `REPAIR_MISCONCEPTION`, and `NEW_LEARNING`. Still the human product
+owner's call; narrowed to what is not yet decided (see `docs/FOLLOW_UP_BACKLOG.md` FUB-040):
+
+- `STRENGTHEN_MEMORY` learner-facing wording;
+- whether and how "exam approaching" becomes a learner-facing reason (no per-item persisted signal today);
+- whether internal reason/action codes belong at the API boundary;
+- how much explanation to show, and when.
 
 Decision needed:
 
@@ -1035,6 +1011,26 @@ Should repeated revoke/archive operations:
 
 Current code should continue failing closed and must not invent new access-
 granting behavior until this question is resolved.
+
+---
+
+## OQ-045 — Author Self-Enrollment vs Course Lifecycle (ARCHIVED)
+
+Status: OPEN
+
+Current behavior (as implemented in RUN010-H.3; see `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md` and `docs/FOLLOW_UP_BACKLOG.md` FUB-042):
+when `canSelfJoinCourse` denies self-join (DRAFT / AUTHORIZED_ONLY / ARCHIVED / etc.), an active Course Author
+may still self-enroll as an ordinary LEARNER in their own Course; the bypass is Course-scoped and a non-author
+still gets `NOT_AUTHORIZED`. A human decision on the ARCHIVED case has NOT been made. Per
+`.claude/rules/auth.md`, unresolved semantics fail closed and must not be widened by implementation.
+
+Decision needed:
+
+Should ARCHIVED be a join-policy restriction an author may bypass (as with DRAFT / AUTHORIZED_ONLY), or a
+lifecycle stop that applies to authors as well?
+
+Tracked as `docs/DEV_STATUS.md` "Pre-push / Release Requirements" C. Related: OQ-043 (membership
+revoke/rejoin), FUB-042.
 
 ---
 

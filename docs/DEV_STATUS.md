@@ -184,10 +184,10 @@ Pointers and one-liners only; nothing below is resolved by this file. These gate
 
 - A. `exam_date` interpretation — FIX CANDIDATE BEFORE PUSH. It is parsed as a UTC-midnight instant, so exam-day
   urgency disappears; it should follow calendar-day / learner-day semantics. Product-interpretation sub-question of
-  OQ-002 (never invent a date).
+  OQ-002 (never invent a date); see OQ-002.
 - B. HALF_LIFE naming (exam-urgency constants) — clarity issue, low severity; tracked in Backlog (FUB-043).
 - C. Author self-enroll bypass, including for an ARCHIVED Course — human decision NOT yet made; fails closed until
-  decided (`.claude/rules/auth.md`). Related: FUB-042, OQ-043 (revoke/rejoin).
+  decided (`.claude/rules/auth.md`). Tracked as OQ-045. Related: FUB-042, OQ-043 (revoke/rejoin).
 - D. Migration rollout order (human actions, never before their prerequisite): apply H.1 (additive `course_authors`)
   -> deploy the app authorization cutover (reads `course_authors`) -> verify -> apply H.3 (destructive membership
   narrowing) -> verify. NEVER apply H.3 before the cutover is deployed. Re-check `npx supabase migration list` first.
