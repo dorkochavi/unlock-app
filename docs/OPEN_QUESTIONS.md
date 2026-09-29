@@ -273,7 +273,9 @@ Learning Engine prototype/pilot calibration.
 
 ## OQ-044 — FSRS Short-Term Learning Steps Make a Once-Answered Question "Due" Within Minutes
 
-Status: CALIBRATION (open, non-blocking; recorded 2026-09-26, Run UX-02 P0.7)
+Status: CALIBRATION
+
+Status qualifier (moved from the Status line, verbatim): open, non-blocking; recorded 2026-09-26, Run UX-02 P0.7.
 
 Observed with the real engine and production policies
 (`docs/FEATURES/COURSE_TOPIC_PRACTICE_DESIGN.md` §3, finding F-B): with the current ts-fsrs adapter

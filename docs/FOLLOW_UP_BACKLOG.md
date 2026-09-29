@@ -269,7 +269,7 @@ Do not replace scoped Unit-of-Work contracts with one global Unit of Work unless
 
 ## Context
 
-The current priority is Development OS V1.2 reconciliation.
+This item was recorded during Development OS V1.2 reconciliation (since completed).
 
 A separate repository review identified possible maintainability opportunities inside runtime/test code that should not interrupt the Development OS work.
 
@@ -297,7 +297,7 @@ Only introduce abstractions when they:
 
 ## Suggested Timing
 
-After Development OS V1.2 is implemented and verified, and before or during a future product Run when the work becomes relevant.
+Development OS V1.2 is implemented and verified; run this audit before or during a future product Run when the work becomes relevant.
 
 ---
 
@@ -623,9 +623,11 @@ from a dirty tree and the mismatch actually causes confusion.
 
 # FUB-018 — Learner Learning Visibility (Landscape / Pulse / Advanced Progress)
 
-**Status:** `PARTIALLY PROMOTED TO RUN 009` — only the simple, read-only Topic-state learner Progress (qualitative states, coverage context, path back to Today; `docs/CHATGPT_PLAN.md` S1/S2). Everything else below stays `DEFERRED`: Landscape, Pulse/movement, historical trends, readiness score, percentages, forecasting, learner-selected study workflow, gamification, advanced Progress. Pilot evidence has NOT validated the advanced directions.
+**Status:** `DEFERRED`
 **Priority:** `MEDIUM`
 **Area:** Product / Learner Progress
+
+Status qualifier (moved from the Status line, verbatim): PARTIALLY PROMOTED TO RUN 009 — only the simple, read-only Topic-state learner Progress (qualitative states, coverage context, path back to Today; `docs/CHATGPT_PLAN.md` S1/S2). Everything else below stays `DEFERRED`: Landscape, Pulse/movement, historical trends, readiness score, percentages, forecasting, learner-selected study workflow, gamification, advanced Progress. Pilot evidence has NOT validated the advanced directions.
 
 ## Observation
 
@@ -1015,8 +1017,10 @@ guidance (about 5 s) at the target class size.
 
 # FUB-029 — Publish Validates Persisted State (Save Draft Before Publish)
 
-**Status:** `UX WATCH` (not a persistence bug, not a blocker)
+**Status:** `DEFERRED`
 **Area:** Question authoring UI
+
+Status qualifier (moved from the Status line, verbatim): UX WATCH (not a persistence bug, not a blocker).
 
 Observed 2026-09-25: a correct answer selected in the form but not saved makes Publish fail
 with "correct answer must be selected"; Save Draft then Publish succeeds. Publish validates the
@@ -1027,8 +1031,10 @@ save-on-publish.
 
 # FUB-031 — DailyPlan Deletion vs. Practice Classification on Replay
 
-**Status:** `LATENT` (no live defect; no production path deletes plans)
+**Status:** `DEFERRED`
 **Area:** Learning Engine / persistence
+
+Status qualifier (moved from the Status line, verbatim): LATENT (no live defect; no production path deletes plans).
 
 Since `learning-engine-v2` (Run UX-02 P1, `LEARNING_ENGINE.md` §39A case 4) scheduler outcomes depend on whether
 `attempts.daily_plan_item_id` is null. That FK is `ON DELETE SET NULL`
@@ -1045,8 +1051,10 @@ Attempts reference it, or persist an explicit Practice marker on the Attempt.
 
 # FUB-032 — Practice Hardening Leftovers (Run UX-02)
 
-**Status:** `LATENT` (no observed defect)
+**Status:** `DEFERRED`
 **Area:** Practice / application
+
+Status qualifier (moved from the Status line, verbatim): LATENT (no observed defect).
 
 Recorded during Run UX-02 review; none blocks V1 and none is needed for the accepted behavior.
 
@@ -1070,8 +1078,10 @@ Real pilot usage showing any of the above, or the FUB-025 idempotency fix.
 
 # FUB-033 — UX3-1 Visual System Polish Leftovers (Run UX-03)
 
-**Status:** `LATENT` (cosmetic only, no defect)
+**Status:** `DEFERRED`
 **Area:** Instructor Course-manage page / visual system
+
+Status qualifier (moved from the Status line, verbatim): LATENT (cosmetic only, no defect).
 
 Recorded during Run UX-03 UX3-1 general review; both are pre-existing choices carried through the token migration
 unchanged, not new decisions, and neither blocks the Slice or the Run.
@@ -1134,9 +1144,10 @@ ranking-policy Run (explicit, testable, versioned per `.claude/rules/learning-en
 
 # FUB-035 — Assessment/Content-Quality Critic Signals (Run UX-03-QA1 Finding 6, owned by Run 011)
 
-**Status:** `PROMOTED — owned by Run 011` (content-generation / AI critic / assessment-quality intelligence; explicitly
-out of scope for any Run before 011, including UX-03-QA1 which found it)
+**Status:** `DEFERRED`
 **Area:** Content Intelligence (future) — authoring-time / import-time quality signals
+
+Status qualifier (moved from the Status line, verbatim): PROMOTED — owned by Run 011 (content-generation / AI critic / assessment-quality intelligence; explicitly out of scope for any Run before 011, including UX-03-QA1 which found it). Run 011 is not active; this item is not promoted until Run 011 actually starts and its Plan names it.
 
 Product-owner QA (real 30-question course) found the CONTENT itself, not runtime code, leaked assessment patterns a
 learner could exploit instead of learning the material: correct answers noticeably longer/more specific/more polished
@@ -1155,14 +1166,16 @@ future Run-011 signals, none designed or scoped yet:
 
 ## Promotion Trigger
 
-Run 011 start.
+Run 011 start — promote when Run 011 actually starts and its Plan names this item.
 
 ---
 
 # FUB-037 — Question Management Workspace (Search/Filter/Pagination/Review Queue)
 
-**Status:** `RECORDED — owned by Run 011`
+**Status:** `DEFERRED`
 **Area:** Instructor Question Management (`src/app/instructor/courses/[courseId]/page.tsx`, `question-row.tsx`)
+
+Status qualifier (moved from the Status line, verbatim): RECORDED — owned by Run 011. Run 011 is not active; promote when Run 011 actually starts and its Plan names this item.
 
 QA2-C (bounded visual polish of the per-row Question Management markup — `StatusPill`, divider rows) left
 the underlying list itself unchanged: it still renders every Question in one flat, unpaginated list with no
@@ -1179,7 +1192,7 @@ Inside Run 011, once Question-list scale (or instructor feedback) makes the flat
 
 # FUB-038 — Reinforcement Scheduler-Freeze Scoped to "Any Earlier Attempt," Not "Any Earlier Rated Attempt" (RUN010-B review finding, NON-BLOCKING)
 
-**Status:** `RECORDED`
+**Status:** `DEFERRED`
 **Area:** Learning Engine — FSRS scheduler freeze (`src/domain/learning/progress-update.ts`, `learning-session.ts`)
 
 RUN010-B's `deriveIsReinforcementAttempt` (and the `nextSchedulerMemory` freeze it feeds) treats a Question's 2nd+
