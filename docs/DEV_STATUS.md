@@ -185,7 +185,7 @@ Pointers and one-liners only; nothing below is resolved by this file. These gate
 - A. `exam_date` interpretation — FIX CANDIDATE BEFORE PUSH. It is parsed as a UTC-midnight instant, so exam-day
   urgency disappears; it should follow calendar-day / learner-day semantics. Product-interpretation sub-question of
   OQ-002 (never invent a date).
-- B. HALF_LIFE naming (exam-urgency constants) — clarity issue, low severity; tracked in Backlog.
+- B. HALF_LIFE naming (exam-urgency constants) — clarity issue, low severity; tracked in Backlog (FUB-043).
 - C. Author self-enroll bypass, including for an ARCHIVED Course — human decision NOT yet made; fails closed until
   decided (`.claude/rules/auth.md`). Related: FUB-042, OQ-043 (revoke/rejoin).
 - D. Migration rollout order (human actions, never before their prerequisite): apply H.1 (additive `course_authors`)
@@ -193,8 +193,8 @@ Pointers and one-liners only; nothing below is resolved by this file. These gate
   narrowing) -> verify. NEVER apply H.3 before the cutover is deployed. Re-check `npx supabase migration list` first.
 - E. `revokeCourseAuthor` last-author race: must be hardened (SELECT ... FOR UPDATE) before ANY route wires it —
   FUB-042 item 1. Currently unwired.
-- F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); tied to OQ-043 — tracked in Backlog
-  (see FUB-042); must be resolved before any co-author-management UI.
+- F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); tied to OQ-043 — tracked in Backlog (FUB-042 item 4)
+  must be resolved before any co-author-management UI.
 - G. Unseen-question repository / Topic-diversifying cold-start SQL (`unseen-question-repository.ts` round-robin) has
   NOT been human-reviewed — pre-push review item on real Postgres (PGlite limits apply). Related: FUB-040.
 - Also before promotion: hosted Supabase Auth Redirect URL allow-list for `next=` values (open, non-blocking since

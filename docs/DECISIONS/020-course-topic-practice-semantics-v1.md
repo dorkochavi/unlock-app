@@ -82,5 +82,5 @@ The FSRS consequences of practising early (scheduling policy) are learning-engin
 - ADR-012 (Attempt replayability; §5 amended here for Practice), ADR-016 (§3, §6, §8, §16, §19, §21), ADR-017,
   ADR-018, ADR-015 (membership).
 - `docs/LEARNING_ENGINE.md` §39A (Manual Practice policy: scheduling and selection).
-- `docs/UX_SPEC.md` (Practice UX), `docs/FOLLOW_UP_BACKLOG.md` `FUB-030`.
+- `docs/UX_SPEC.md` (Practice UX), `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md` `FUB-030` (archived).
 - `docs/FEATURES/COURSE_TOPIC_PRACTICE_DESIGN.md` (design evidence: affordance map, research, selector simulation).
