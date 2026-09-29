@@ -34,7 +34,10 @@ describe("CourseRow markup (QA2-B whole-card navigation)", () => {
     const html = renderToStaticMarkup(
       <CourseRow course={{ id: "course-1", title: "Algebra", role: "LEARNER", isAuthor: false }} roleLabel="" />,
     );
-    expect(html).toMatch(/hover:bg-surface-muted/);
+    // RUN010-I: hover/active use the brand lavender/indigo tint, not the
+    // neutral bg-surface-muted (that treatment remains elsewhere, e.g. the
+    // Progress page's own Course card).
+    expect(html).toMatch(/hover:bg-primary-soft/);
     expect(html).toMatch(/focus-visible:outline-2/);
     expect(html).toMatch(/active:scale-\[0\.99\]/);
   });

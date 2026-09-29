@@ -26,15 +26,17 @@ import { summarizeCourseActivity, type CourseProgress, type TopicProgressDto } f
  * The only per-Course visual state this page infers — reusing the exact
  * boolean the text summary already branches on (`summarizeCourseActivity` /
  * `courseNotStartedYet`), never a new aggregate mastery label. `unavailable`
- * / `error` / no-Topics cases get no accent: there is no real evidence to
- * color-code for them.
+ * / `error` / no-Topics cases get a transparent accent (RUN010-I: same
+ * reserved 4px width, no color) — there is no real evidence to color-code
+ * for them, but every card still aligns its content at an identical
+ * x-offset (consistent card status-placement).
  */
 export function courseCardAccentClass(progress: CourseProgress): string {
   if (progress.kind === "ready" && progress.topics.length > 0) {
     const hasActivity = progress.topics.some((topic) => topic.attemptedCount > 0);
     return hasActivity ? "border-l-4 border-l-state-progress" : "border-l-4 border-l-state-not-started";
   }
-  return "";
+  return "border-l-4 border-l-transparent";
 }
 
 /**
@@ -43,6 +45,12 @@ export function courseCardAccentClass(progress: CourseProgress): string {
  * `bg-surface-muted` treatment as the Course page's Topic rows (visually
  * related, not copied) instead of a border-color hover, so it never fights
  * the left accent border above.
+ *
+ * RUN010-I: a shared `min-h-36` floor plus `flex flex-col` keeps every
+ * card's padding and status-block starting position consistent regardless
+ * of how much body text a given state renders (a one-line "not started"
+ * card no longer looks visually orphaned next to a multi-line activity
+ * summary card) — no new color/state, purely a layout floor.
  */
 export function CourseSection({
   id,
@@ -58,7 +66,7 @@ export function CourseSection({
     <li>
       <Link
         href={`/courses/${id}`}
-        className={`block rounded-xl border border-border bg-surface p-5 transition hover:bg-surface-muted active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${courseCardAccentClass(progress)}`}
+        className={`flex min-h-36 flex-col rounded-xl border border-border bg-surface p-5 transition hover:bg-surface-muted active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${courseCardAccentClass(progress)}`}
       >
         <h2 className="mb-1 break-words text-lg font-semibold">{title}</h2>
 

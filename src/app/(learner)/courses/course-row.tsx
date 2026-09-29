@@ -11,10 +11,23 @@
  * (OWNER/INSTRUCTOR) row gets a subtle primary-tinted left border plus a
  * colored role label; a LEARNER row (no role label to begin with) stays
  * neutral. No new badge/pill is added (this screen should not become a
- * dashboard); hover uses the same `bg-surface-muted` treatment the Course
- * page's Topic rows use (visually related, not copied) so it never fights
- * the left accent. The whole card is one real `Link` (no nested interactive
+ * dashboard). The whole card is one real `Link` (no nested interactive
  * controls) — the entire card is the navigation target.
+ *
+ * RUN010-I (hosted-QA polish): hover/active now use `bg-primary-soft` (the
+ * same lavender/indigo tint already used elsewhere, e.g. a selected
+ * `ConfidenceChip`) instead of the neutral `bg-surface-muted`, extending this
+ * product's one approved brand accent to the card's own interaction states;
+ * focus already used `outline-primary`, unchanged. Only the background
+ * changes — the existing per-side `border-l-primary` management accent (an
+ * explicit `border-left-color`) is left alone so the two never contend for
+ * the same CSS property. The author-management entry point itself stays
+ * page-level (`page.tsx`'s `PageHeader` trailing `ButtonLink
+ * variant="secondary"`, gated on `hasManagementRole` = some Course's
+ * `isAuthor`), structurally separate from this card's own whole-card
+ * learning-navigation Link, so it cannot compete with it — no per-card
+ * management affordance is added here (a new co-author-management UI stays
+ * explicitly out of scope, FUB-036).
  */
 import Link from "next/link";
 
@@ -43,7 +56,7 @@ export function CourseRow({
     <li>
       <Link
         href={`/courses/${course.id}`}
-        className={`flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:bg-surface-muted active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isManaged ? "border-l-4 border-l-primary" : ""}`}
+        className={`flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:bg-primary-soft active:bg-primary-soft active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isManaged ? "border-l-4 border-l-primary" : ""}`}
       >
         <span className="min-w-0 break-words font-medium">{course.title}</span>
         <span className="flex shrink-0 items-center gap-2 text-sm text-muted">

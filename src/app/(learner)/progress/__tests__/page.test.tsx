@@ -10,8 +10,9 @@
  *   (no `<a>`/`<button>` inside the card's own `<a>`);
  * - the card shows a visible hover/focus/pressed treatment;
  * - the one visual accent (`courseCardAccentClass`) reflects only the
- *   already-computed attempted/not-attempted signal, and stays neutral for
- *   states with no real evidence (unavailable/error/no Topics).
+ *   already-computed attempted/not-attempted signal, and stays colorless
+ *   (RUN010-I: a transparent border, same reserved width) for states with no
+ *   real evidence (unavailable/error/no Topics).
  */
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -45,10 +46,12 @@ describe("courseCardAccentClass (QA2-B)", () => {
     expect(courseCardAccentClass(readyNotStarted)).toContain("state-not-started");
   });
 
-  it("stays neutral (no accent) when there is no real evidence to color-code", () => {
-    expect(courseCardAccentClass(readyNoTopics)).toBe("");
-    expect(courseCardAccentClass(unavailable)).toBe("");
-    expect(courseCardAccentClass(errored)).toBe("");
+  it("stays neutral (no color) when there is no real evidence to color-code, but still reserves the accent width (RUN010-I: consistent status-placement)", () => {
+    expect(courseCardAccentClass(readyNoTopics)).toBe("border-l-4 border-l-transparent");
+    expect(courseCardAccentClass(unavailable)).toBe("border-l-4 border-l-transparent");
+    expect(courseCardAccentClass(errored)).toBe("border-l-4 border-l-transparent");
+    // None of these fall back to a real semantic status color.
+    expect(courseCardAccentClass(readyNoTopics)).not.toMatch(/state-(solid|reinforce|progress|not-started)/);
   });
 });
 

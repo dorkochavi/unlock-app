@@ -35,6 +35,18 @@
  * text/an icon (never color alone): selectedIncorrect uses the calm
  * `state-reinforce` (amber) tokens, not `danger`.
  *
+ * RUN010-I (hosted-QA polish): both correct-answer option states
+ * (selectedCorrect and missedCorrect) now share the same light
+ * `state-solid-soft` green background plus a check icon, in addition to
+ * their existing distinct text labels ("בחרת נכון" vs. "התשובה הנכונה") — a
+ * missed-correct answer previously carried only a colored border with no
+ * background tint or icon. The top-level correct `FeedbackBlock` banner
+ * already had a light green background + check icon + "נכון!" label before
+ * this Slice; unchanged here. Skip is now a locally-sized, self-centered
+ * secondary touch target (not full-width), so Submit stays the one visually
+ * dominant primary action on this screen (docs/UX_SPEC.md §1 item 8 / §11
+ * item 3).
+ *
  * RUN010-G / OQ-014: confidence capture. UNLOCK_V1_SCOPE.md's "Confidence
  * Gap" section requires V1 to capture confidence with answers and derive a
  * basic mismatch signal (high confidence + incorrect; low confidence +
@@ -287,14 +299,23 @@ export function QuestionCard({
 
       {/* Mobile: the action bar sticks to the viewport bottom (the nav is hidden
           in Learn Mode), keeping the primary action in a stable place. */}
-      <div className="sticky bottom-0 -mx-4 mt-6 flex flex-col gap-1 border-t border-border bg-background/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <div className="sticky bottom-0 -mx-4 mt-6 flex flex-col gap-2 border-t border-border bg-background/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         {feedback === null ? (
           <>
             <Button fullWidth onClick={handleSubmit} disabled={selected.length === 0 || busy}>
               {submitting ? messages.submitting : messages.submit}
             </Button>
-            {/* Skip is not an answer and must not compete with Submit. */}
-            <Button variant="tertiary" fullWidth onClick={handleSkipClick} disabled={busy}>
+            {/* RUN010-I: Skip is not an answer and must not compete with
+                Submit — a locally-sized, self-centered secondary target
+                (Button's own min-h-11/px-5 base already meets a WCAG-reasonable
+                touch-target size), deliberately NOT full-width so it never
+                reads as an alternative primary action. */}
+            <Button
+              variant="tertiary"
+              className="self-center"
+              onClick={handleSkipClick}
+              disabled={busy}
+            >
               {skipping ? messages.skipping : messages.skip}
             </Button>
           </>
@@ -322,8 +343,12 @@ const OPTION_STATE_STYLES: Record<
     indicator: "border-state-reinforce bg-state-reinforce text-primary-contrast",
   },
   missedCorrect: {
-    border: "border-state-solid bg-surface",
-    indicator: "border-state-solid",
+    // RUN010-I: correctness is never color-only, and a missed-correct answer
+    // gets the same light positive-green treatment as selectedCorrect (a
+    // colored border alone was not a sufficiently explicit positive signal),
+    // plus a check icon below alongside its existing text label.
+    border: "border-state-solid bg-state-solid-soft",
+    indicator: "border-state-solid text-state-solid",
   },
 };
 
@@ -407,7 +432,9 @@ export function QuestionOption({
               : "border-border-strong"
         }`}
       >
-        {state === "selectedCorrect" || (state === null && selected) ? <CheckIcon /> : null}
+        {state === "selectedCorrect" || state === "missedCorrect" || (state === null && selected) ? (
+          <CheckIcon />
+        ) : null}
         {state === "selectedIncorrect" ? <XIcon /> : null}
       </span>
       <span className="min-w-0 break-words">
