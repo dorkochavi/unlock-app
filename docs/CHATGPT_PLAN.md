@@ -1,4 +1,17 @@
-# UNLOCK — Run UX-03-QA2 — Preview QA2 Corrections (Autonomous Run experiment)
+# UNLOCK — Run 010 — Learning Intelligence (Autonomous Run)
+
+PLAN_VERSION: 005
+RUN_ID: 2026-09-28-RUN-010-LEARNING-INTELLIGENCE
+START_HEAD: `d39c882`
+LAST_VERIFIED_HEAD: `b82d194`
+RUN_STATUS: COMPLETE
+STATUS: **COMPLETE** — not merged, not pushed, no hosted mutation. See `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md` for the full Run report.
+
+Executed as a Long Autonomous Run (thin parent + fresh, sequential, scoped workers, `Agent` tool with `subagent_type: general-purpose`, zero inherited context per worker), the third such execution in this repository. Delivered: FUB-034 same-day Practice repetition resolution (Tier 4 reinforcement); OQ-044 FSRS calibration investigation (confirmed stock behavior, plus a real anti-immediate-repeat bug found and fixed); a real Today Plan Budget policy replacing a hardcoded constant, plus exam-urgency as a bounded NBA tie-break amplifier; honest learner-facing selection reasons (OQ-018) and a cold-start Topic-diversification fix; a readiness/progress honesty audit (no defect found, preserved unchanged); confidence capture closing the gap that left misconception escalation permanently inert; a PARTIAL-grading decision packet (product owner declined — status quo); and FUB-036 (Author-Can-Learn-Own-Course) — the Run's largest item — resolved via a product-owner-approved "Option 4" architecture (a separate, additive `course_authors` management-capability table) implemented across 3 gated phases with a hard human review gate before the destructive migration phase. Closed with a bounded 4-item hosted-QA UI-polish carryover. This file owns the ordered Slice queue and status only, per `CLAUDE.md` §2/§4; per-Slice detail lives in the Run report and `docs/FOLLOW_UP_BACKLOG.md`.
+
+---
+
+## Historical — Run UX-03-QA2 / DevOS Micro-Optimization Pass (superseded; reference only — see `docs/RUNS/2026-09-28-DEVOS-MICRO-OPT-001.md` and `docs/RUNS/2026-09-28-UX-03-QA2.md`)
 
 PLAN_VERSION: 004
 RUN_ID: 2026-09-28-DEVOS-MICRO-OPT-001
