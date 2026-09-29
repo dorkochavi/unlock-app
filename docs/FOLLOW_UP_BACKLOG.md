@@ -1221,7 +1221,11 @@ Run 011 start.
 
 # FUB-036 — Author-Can-Learn-Own-Course Blocked by Single-Role Membership Schema (QA2-D, STOPPED)
 
-**Status:** `IN PROGRESS — Option 4 architecture, H.1 + H.2 + H.3 all KEEP; optional H.4 (Insights CTE cleanup / polish) remains`
+**Status:** `RESOLVED — Option 4 architecture, H.1 + H.2 + H.3 all KEEP. Author-can-learn-own-Course is fully
+implemented and working. Optional H.4 (Insights CTE cleanup / polish) explicitly declined for now by the
+human (2026-09-29) rather than expanding this item further; its remaining scope, plus
+revokeCourseAuthor's concurrency-hardening requirement and new co-author-management UI, are carried forward
+as FUB-042.`
 **Area:** Course Membership / Authorization (ADR-015)
 
 QA2-D ("Author can learn their own Course") was investigated and STOPPED per its own gate — see
@@ -1705,6 +1709,44 @@ The remaining genuine pre-Run010 `practice-vertical.test.ts` `topicId` failure s
 bisect Run 006-era commits, confirm the `topics.topic_id`-in-row-mapping hypothesis, and fix the test (or the
 row mapping) once picked up. Not urgent (does not reduce confidence in any Run 010 Slice's own evidence,
 confirmed by this item's own bisection), but should not be left indefinitely.
+
+---
+
+# FUB-042 — FUB-036 Option 4 Remaining Cleanup (Optional H.4 Scope, Declined For Now)
+
+**Status:** `RECORDED — deliberately not part of Run 010`
+**Area:** Course Membership / Authorization (ADR-015), Instructor Insights
+
+FUB-036 (Author-Can-Learn-Own-Course, Option 4 architecture) is functionally complete and RESOLVED through
+RUN010-H.3 (`12d5c51`) — Migration B, the author self-enrollment bypass, and `revokeCourseAuthor` with
+last-author protection are all implemented, tested, and reviewed with no blocking findings. RUN010-H.4 was
+optional by the Run's own original plan (`scratch/development_checkpoint.md`'s "RUN010-H human decisions"),
+and the human explicitly declined it for now (2026-09-29) — "preserve its remaining cleanup items ... as
+explicit follow-up work rather than expanding Run010-H further" — rather than let it silently continue
+absorbing scope. Three items carried forward here, none blocking, none affecting current correctness:
+
+1. **`revokeCourseAuthor` concurrency hardening (the one substantive H.3 review finding).**
+   `src/application/course/revoke-course-author.ts`'s last-author-protection check reads every active
+   `course_authors` grant on a Course, then writes — a genuine check-then-write race with no DB-constraint
+   backing the "≥1 active author" invariant (unlike this module's other accepted check-then-write races,
+   which sit on top of an otherwise DB-constraint-backed single UPDATE). Two concurrent revokes against a
+   Course with exactly 2 active grants could both pass the pre-check and both write, leaving zero active
+   authors. **Not exploitable today** — `revokeCourseAuthor` is not wired to any API route. Must be hardened
+   (e.g. a transaction with `SELECT ... FOR UPDATE` locking the Course's `course_authors` rows before the
+   count check) before any future Slice exposes it via an endpoint — do not wire it to a route without first
+   closing this gap.
+2. **Insights CTE cleanup / polish** — the original H.4 scope item (no new exclusion logic implied or
+   required; purely a code-quality/readability pass over the Insights aggregation queries, if one is ever
+   warranted).
+3. **New co-author-management UI** — explicitly out of scope for every H.1-H.4 phase by FUB-036's own
+   recorded decision; `revokeCourseAuthor` currently has no caller anywhere in `src/app`. A future Slice
+   would need to design this UI AND close item 1 above before wiring `revokeCourseAuthor` to a route.
+
+## Promotion Trigger
+
+Item 1 becomes a hard blocker the moment any future Slice wires `revokeCourseAuthor` to a route — do not skip
+it under time pressure. Items 2-3 have no forcing trigger; pick up opportunistically or when co-author
+management becomes a real product need (likely Run011+).
 
 ---
 
