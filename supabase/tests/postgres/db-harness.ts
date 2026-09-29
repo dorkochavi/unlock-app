@@ -239,6 +239,18 @@ export async function seedQuestionChain(
  * A real `course_memberships` row via raw SQL (not through
  * `PostgresCourseMembershipRepository`, so callers exercising that
  * repository itself don't create a circular test dependency on it).
+ *
+ * RUN010-H.2: also inserts a matching `course_authors` row for an
+ * OWNER/INSTRUCTOR role, mirroring RUN010-H.1's real migration backfill
+ * exactly (preserves `revokedAt`; `archivedAt` is never consulted — no
+ * equivalent column exists on `course_authors`). This keeps every existing
+ * caller of this harness helper (written before RUN010-H.2's authorization
+ * cutover to `course_authors`) authorized exactly as before, without each
+ * call site needing its own separate `insertCourseAuthor` call. A caller
+ * that specifically wants to test a `course_memberships`-only fixture with
+ * NO matching `course_authors` grant should insert the membership directly
+ * via SQL instead of this helper, or use `insertCourseAuthor`'s `revokedAt`
+ * to immediately revoke the auto-created grant.
  */
 export async function insertCourseMembership(
   db: SqlExecutor,
@@ -251,18 +263,20 @@ export async function insertCourseMembership(
   },
 ): Promise<string> {
   const id = randomUUID();
+  const role = args.role ?? "LEARNER";
   await db.query(
     `insert into course_memberships (id, user_id, course_id, role, revoked_at, archived_at)
      values ($1, $2, $3, $4, $5, $6)`,
-    [
-      id,
-      args.userId,
-      args.courseId,
-      args.role ?? "LEARNER",
-      args.revokedAt ?? null,
-      args.archivedAt ?? null,
-    ],
+    [id, args.userId, args.courseId, role, args.revokedAt ?? null, args.archivedAt ?? null],
   );
+  if (role === "OWNER" || role === "INSTRUCTOR") {
+    await insertCourseAuthor(db, {
+      userId: args.userId,
+      courseId: args.courseId,
+      capability: role,
+      revokedAt: args.revokedAt ?? null,
+    });
+  }
   return id;
 }
 

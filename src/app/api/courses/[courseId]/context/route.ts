@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 
 import { getCourseContextForLearner } from "@/application/course/get-course-context-for-learner";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -37,6 +38,7 @@ export async function GET(
         const pool = getPool();
         return getCourseContextForLearner(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });
       },

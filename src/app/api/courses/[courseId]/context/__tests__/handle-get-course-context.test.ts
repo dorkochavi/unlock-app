@@ -77,6 +77,7 @@ describe("handleGetCourseContext", () => {
           revokedAt: null,
           archivedAt: null,
         },
+        isAuthor: false,
         practiceAvailable: true,
       }),
     });
@@ -86,7 +87,35 @@ describe("handleGetCourseContext", () => {
       body: {
         course: { id: VALID_UUID, title: "Intro to Economics" },
         membership: { role: "LEARNER", joinedAt: "2026-01-01T00:00:00.000Z" },
+        isAuthor: false,
         practiceAvailable: true,
+      },
+    });
+  });
+
+  // RUN010-H.2 (FUB-036, Option 4 architecture): a Part-B-created Course's
+  // creator has no course_memberships row at all — `membership: null` with
+  // `isAuthor: true` must serialize cleanly, never crash/omit the field.
+  it("returns 200 with membership: null and isAuthor: true for an author with no course_memberships row", async () => {
+    const result = await handleGetCourseContext({
+      authenticate: async () => ({ outcome: "AUTHENTICATED", userId: "user-1" }),
+      courseId: VALID_UUID,
+      getContext: async () => ({
+        outcome: "READY",
+        course: { id: VALID_UUID, title: "New Course" },
+        membership: null,
+        isAuthor: true,
+        practiceAvailable: false,
+      }),
+    });
+
+    expect(result).toEqual({
+      status: 200,
+      body: {
+        course: { id: VALID_UUID, title: "New Course" },
+        membership: null,
+        isAuthor: true,
+        practiceAvailable: false,
       },
     });
   });
@@ -107,6 +136,7 @@ describe("handleGetCourseContext", () => {
           revokedAt: null,
           archivedAt: null,
         },
+        isAuthor: true,
         practiceAvailable: true,
       }),
     });

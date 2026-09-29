@@ -92,10 +92,11 @@ export interface CourseMembershipRepository {
  * `course_authors`, Phase A of the 3-phase migration described in
  * `supabase/migrations/20260929010000_course_authors_v1.sql`'s header.
  * Mirrors `CourseMembershipRepository`'s own shape/doc-comment style
- * deliberately closely, so a later Slice (H.2) can repoint
- * `canAuthorCourse`/`isManagementRole` call sites onto this port with a
- * familiar contract. NOT called from any application code as of this Slice
- * — it exists only so H.2 has a repository to use.
+ * deliberately closely. As of RUN010-H.2, every former
+ * `canAuthorCourse`/`isManagementRole` call site now authorizes through
+ * `findActiveCapabilities` (via the domain predicate `hasActiveAuthorGrant`),
+ * `create-course.ts` uses `grant`, and `listMyCourses` uses
+ * `listActiveForUser`.
  */
 export interface CourseAuthorRepository {
   /**
@@ -110,6 +111,17 @@ export interface CourseAuthorRepository {
     userId: string,
     courseId: string,
   ): Promise<CourseAuthorGrant[]>;
+
+  /**
+   * RUN010-H.2 — every currently-active (non-revoked) capability grant this
+   * user holds, across every Course. Mirrors
+   * `CourseMembershipRepository.listActiveForUser`'s shape/purpose exactly:
+   * used by `listMyCourses` so a Course the actor authors but does NOT
+   * (yet, or ever) hold a `course_memberships` row for — e.g. a Course
+   * created after this Slice, before H.3's self-enrollment bypass exists —
+   * still appears in "My Courses" instead of silently disappearing.
+   */
+  listActiveForUser(userId: string): Promise<CourseAuthorGrant[]>;
 
   /**
    * Race-free by construction (the same `INSERT ... ON CONFLICT DO NOTHING
@@ -283,14 +295,17 @@ export interface CourseRepositories {
   memberships: CourseMembershipRepository;
   courses: CourseRepository;
   /**
-   * RUN010-H.1 — optional so every existing `CourseRepositories` object
-   * literal built by today's ~18 route/UnitOfWork call sites keeps
-   * typechecking unchanged without touching any of them. `PostgresCourseUnitOfWork`
-   * populates it; a future Slice (H.2) is expected to start relying on its
-   * presence there and to add it to other construction sites as it repoints
-   * them, rather than this field becoming required in this Slice.
+   * RUN010-H.2 — now REQUIRED: every authorization call site in this module
+   * (`publishCourse`/`archiveCourse`/`getCourseForAuthoring`/
+   * `updateCourseMetadata`/`setCourseJoinPolicy`/`revokeCourseMembership`)
+   * authorizes via `hasActiveAuthorGrant(await repos.authors
+   * .findActiveCapabilities(...))` instead of `canAuthorCourse`/
+   * `isManagementRole` over `course_memberships`. RUN010-H.1 added this
+   * field as optional specifically so H.1 itself could stay purely additive;
+   * this Slice is the "future Slice" that field's own doc comment named as
+   * expected to make it required.
    */
-  authors?: CourseAuthorRepository;
+  authors: CourseAuthorRepository;
 }
 
 /**

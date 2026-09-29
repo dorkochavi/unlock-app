@@ -23,6 +23,7 @@ import { updateQuestionDraft } from "../../../src/application/question/update-qu
 import { publishQuestion } from "../../../src/application/question/publish-question";
 import { validateQuestionPublishReadiness } from "../../../src/application/question/validate-question-publish-readiness";
 import { PostgresAnswerCorrectnessChecker } from "../../../src/infrastructure/postgres/answer-correctness-checker";
+import { PostgresCourseAuthorRepository } from "../../../src/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresLearnerQuestionContentRepository } from "../../../src/infrastructure/postgres/learner-question-content-repository";
 import { PostgresQuestionRepository } from "../../../src/infrastructure/postgres/question-authoring-repository";
@@ -51,6 +52,7 @@ afterEach(async () => {
 function questionRepositories() {
   return {
     memberships: new PostgresCourseMembershipRepository(db),
+    authors: new PostgresCourseAuthorRepository(db),
     topics: new PostgresTopicRepository(db),
     questions: new PostgresQuestionRepository(db),
   };

@@ -3,7 +3,7 @@
  * (Pre-Pilot S2). Aggregate-only by construction: no method returns any
  * learner identifier, selected answer, or per-learner row.
  */
-import type { CourseMembershipRepository, CourseRepository } from "../course/ports";
+import type { CourseAuthorRepository, CourseMembershipRepository, CourseRepository } from "../course/ports";
 
 export interface CurrentVersionItemStats {
   questionId: string;
@@ -66,6 +66,8 @@ export interface ItemAnalysisRepository {
 
 export interface ItemAnalysisRepositories {
   memberships: CourseMembershipRepository;
+  /** RUN010-H.2 — required; `checkAnalysisAccess`'s authoring-access gate now authorizes via this repository, never `item-analysis-repository.ts`'s own aggregate-counting query (`countActiveLearners`), which is unchanged. */
+  authors: CourseAuthorRepository;
   courses: CourseRepository;
   itemAnalysis: ItemAnalysisRepository;
 }

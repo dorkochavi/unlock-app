@@ -30,6 +30,7 @@ import { NextResponse } from "next/server";
 import { handlePreviewImport } from "./handle-preview-import";
 
 import { previewImport } from "@/application/import/preview-import";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -76,6 +77,7 @@ export async function POST(
         const pool = getPool();
         return previewImport(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
           topics: new PostgresTopicRepository(pool),
         });

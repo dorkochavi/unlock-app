@@ -142,6 +142,26 @@ describe("listQuestionsForCourse", () => {
     });
   });
 
+  // RUN010-H.2 required proof (a): active course_authors grant, no
+  // course_memberships row at all.
+  it("allows an actor with an active course_authors grant but no course_memberships row", async () => {
+    const db = new InMemoryQuestionDatabase();
+    db.seedAuthorGrant({
+      userId: "actor-1",
+      courseId: "course-1",
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+
+    const result = await listQuestionsForCourse(
+      { actorUserId: "actor-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("LISTED");
+  });
+
   it("does not allow a LEARNER to list authoring state", async () => {
     const db = new InMemoryQuestionDatabase();
     seedActor(db, { role: "LEARNER" });

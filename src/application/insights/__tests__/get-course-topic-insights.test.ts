@@ -1,20 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CourseMembership, CourseStatus } from "../../../domain/course/types";
+import type { CourseAuthorGrant, CourseStatus } from "../../../domain/course/types";
 import { getCourseTopicInsights } from "../get-course-topic-insights";
 import type { ItemAnalysisRepositories, TopicFirstAttemptStats } from "../ports";
 
 const NOW = new Date("2026-09-25T09:00:00Z");
 
-function membership(overrides: Partial<CourseMembership> = {}): CourseMembership {
+/** RUN010-H.2 — authorization is now sourced from `course_authors`, not `course_memberships`. */
+function grant(overrides: Partial<CourseAuthorGrant> = {}): CourseAuthorGrant {
   return {
-    id: "m-1",
+    id: "grant-1",
     userId: "actor-1",
     courseId: "course-1",
-    role: "INSTRUCTOR",
-    joinedAt: new Date("2026-01-01T00:00:00Z"),
+    capability: "INSTRUCTOR",
+    grantedAt: new Date("2026-01-01T00:00:00Z"),
     revokedAt: null,
-    archivedAt: null,
     ...overrides,
   };
 }
@@ -32,14 +32,12 @@ function row(overrides: Partial<TopicFirstAttemptStats> = {}): TopicFirstAttempt
 }
 
 function repos(opts: {
-  membership?: CourseMembership | null;
+  grants?: CourseAuthorGrant[];
   status?: CourseStatus | null;
   activeLearners?: number;
   rows?: TopicFirstAttemptStats[];
 }) {
-  const findMembership = vi.fn(async () =>
-    opts.membership === undefined ? membership() : opts.membership,
-  );
+  const findActiveCapabilities = vi.fn(async () => opts.grants ?? [grant()]);
   const listStatuses = vi.fn(async () =>
     opts.status === null
       ? []
@@ -48,7 +46,8 @@ function repos(opts: {
   const countActiveLearners = vi.fn(async () => opts.activeLearners ?? 30);
   const listTopicFirstAttemptStats = vi.fn(async () => opts.rows ?? [row()]);
   const value = {
-    memberships: { findMembership },
+    memberships: { findMembership: vi.fn(async () => null) },
+    authors: { findActiveCapabilities },
     courses: { listStatuses },
     itemAnalysis: { countActiveLearners, listTopicFirstAttemptStats },
   } as unknown as ItemAnalysisRepositories;
@@ -59,21 +58,27 @@ const COMMAND = { actorUserId: "actor-1", courseId: "course-1", now: NOW };
 
 describe("getCourseTopicInsights — authorization (fail closed)", () => {
   it.each([
-    ["no membership", null],
-    ["LEARNER", membership({ role: "LEARNER" })],
-    ["archived LEARNER", membership({ role: "LEARNER", archivedAt: new Date("2026-02-01T00:00:00Z") })],
-    ["revoked INSTRUCTOR", membership({ revokedAt: new Date("2026-02-01T00:00:00Z") })],
-    ["revoked OWNER", membership({ role: "OWNER", revokedAt: new Date("2026-02-01T00:00:00Z") })],
-  ])("%s -> NOT_AUTHORIZED, no Course/aggregate reads", async (_label, m) => {
-    const r = repos({ membership: m });
+    ["no active grant at all", []],
+    ["only a revoked INSTRUCTOR grant", [grant({ revokedAt: new Date("2026-02-01T00:00:00Z") })]],
+    ["only a revoked OWNER grant", [grant({ capability: "OWNER", revokedAt: new Date("2026-02-01T00:00:00Z") })]],
+  ])("%s -> NOT_AUTHORIZED, no Course/aggregate reads", async (_label, grants) => {
+    const r = repos({ grants: grants as CourseAuthorGrant[] });
     expect(await getCourseTopicInsights(COMMAND, r.value)).toEqual({ outcome: "NOT_AUTHORIZED" });
     expect(r.listStatuses).not.toHaveBeenCalled();
     expect(r.countActiveLearners).not.toHaveBeenCalled();
     expect(r.listTopicFirstAttemptStats).not.toHaveBeenCalled();
   });
 
-  it.each(["OWNER", "INSTRUCTOR"] as const)("%s is authorized", async (role) => {
-    const result = await getCourseTopicInsights(COMMAND, repos({ membership: membership({ role }) }).value);
+  it.each(["OWNER", "INSTRUCTOR"] as const)("active %s grant is authorized", async (capability) => {
+    const result = await getCourseTopicInsights(COMMAND, repos({ grants: [grant({ capability })] }).value);
+    expect(result.outcome).toBe("READY");
+  });
+
+  // RUN010-H.2 required proof (a): `memberships.findMembership` always
+  // resolves `null` in this file's fake — proving authorization never
+  // depends on a `course_memberships` row, only `authors.findActiveCapabilities`.
+  it("authorizes purely via course_authors — no course_memberships row is ever consulted", async () => {
+    const result = await getCourseTopicInsights(COMMAND, repos({ grants: [grant()] }).value);
     expect(result.outcome).toBe("READY");
   });
 

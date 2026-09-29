@@ -69,7 +69,11 @@ describe("createTopic", () => {
     expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
   });
 
-  it("does not allow an archived-but-not-revoked OWNER to create a Topic (canAuthorCourse fails closed on archived)", async () => {
+  // RUN010-H.2 — intentional, documented behavior change: see
+  // `rename-topic.test.ts`'s equivalent test for the full explanation.
+  // `course_authors` has no `archivedAt` concept; this actor's backfilled
+  // grant is active, so they are authorized.
+  it("allows an archived-but-not-revoked OWNER to create a Topic (course_authors has no archived concept)", async () => {
     const db = new InMemoryTopicDatabase();
     seedActor(db, { role: "OWNER", archivedAt: new Date("2026-02-01T00:00:00Z") });
 
@@ -78,7 +82,28 @@ describe("createTopic", () => {
       db.repos(),
     );
 
-    expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+    expect(result.outcome).toBe("CREATED");
+  });
+
+  // RUN010-H.2 required proof (a): a freshly-created-post-H.2 Course's
+  // creator has an active course_authors grant but NO course_memberships
+  // row at all — must still be authorized.
+  it("allows an actor with an active course_authors grant but no course_memberships row", async () => {
+    const db = new InMemoryTopicDatabase();
+    db.seedAuthorGrant({
+      userId: "actor-1",
+      courseId: "course-1",
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+
+    const result = await createTopic(
+      { actorUserId: "actor-1", courseId: "course-1", name: "Algebra" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("CREATED");
   });
 
   it("does not allow a non-member to create a Topic", async () => {

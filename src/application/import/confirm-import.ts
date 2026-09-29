@@ -39,7 +39,7 @@
  * `actorUserId` is trusted as-is at this boundary — see
  * `src/application/course/join-course.ts`'s module doc comment for why.
  */
-import { canAuthorCourse } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import { previewImport, type ImportSourceFormat, type PreviewRowResult } from "./preview-import";
 import type { ImportRepositories, ImportUnitOfWork, PreviewImportRepositories } from "./ports";
 
@@ -118,8 +118,8 @@ async function confirmImportInTransaction(
   validRows: ValidPreviewRow[],
   repos: ImportRepositories,
 ): Promise<ConfirmImportResult> {
-  const actorMembership = await repos.memberships.findMembership(command.actorUserId, command.courseId);
-  if (actorMembership === null || !canAuthorCourse(actorMembership)) {
+  const authorGrants = await repos.authors.findActiveCapabilities(command.actorUserId, command.courseId);
+  if (!hasActiveAuthorGrant(authorGrants)) {
     throw new ConfirmOutcomeSignal({ outcome: "NOT_AUTHORIZED" });
   }
 

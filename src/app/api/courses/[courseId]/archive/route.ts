@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import { handleArchiveCourse } from "./handle-archive-course";
 
 import { archiveCourse } from "@/application/course/archive-course";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -38,6 +39,7 @@ export async function POST(
         const pool = getPool();
         return archiveCourse(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });
       },

@@ -23,6 +23,7 @@ import { handleUpdateCourseMetadata } from "./handle-update-course-metadata";
 
 import { getCourseForAuthoring } from "@/application/course/get-course-for-authoring";
 import { updateCourseMetadata } from "@/application/course/update-course-metadata";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -46,6 +47,7 @@ export async function GET(
         const pool = getPool();
         return getCourseForAuthoring(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });
       },
@@ -96,6 +98,7 @@ export async function PATCH(
         const pool = getPool();
         return updateCourseMetadata(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });
       },

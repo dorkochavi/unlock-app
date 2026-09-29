@@ -1221,7 +1221,7 @@ Run 011 start.
 
 # FUB-036 — Author-Can-Learn-Own-Course Blocked by Single-Role Membership Schema (QA2-D, STOPPED)
 
-**Status:** `RECORDED — decision needed before Run 010/011 pick this up`
+**Status:** `IN PROGRESS — Option 4 architecture, H.1 + H.2 KEEP; H.3 gated on explicit human go-ahead`
 **Area:** Course Membership / Authorization (ADR-015)
 
 QA2-D ("Author can learn their own Course") was investigated and STOPPED per its own gate — see
@@ -1315,6 +1315,91 @@ then applying just the new migration to prove row-count parity, field-level pari
 preservation, LEARNER exclusion, and `course_memberships` non-mutation). Full unit suite 1612/1612 PASS
 (no regression from the pre-Slice count), typecheck/lint clean on all changed files. See this Slice's own
 compact handoff for full verification detail and reviewer outcome.
+
+**RUN010-H.2 outcome (2026-09-29, STATUS KEEP):** Application-layer authorization cutover. Part A: all 19
+confirmed `canAuthorCourse`/`isManagementRole` call sites (`create-topic.ts`, `list-topics-for-course.ts`,
+`archive-topic.ts`, `rename-topic.ts`, `validate-question-publish-readiness.ts`, `update-question-draft.ts`,
+`publish-question.ts`, `list-questions-for-course.ts`, `get-question-for-authoring.ts`,
+`create-question-draft.ts`, `analysis-access.ts`, `preview-import.ts`, `confirm-import.ts`,
+`update-course-metadata.ts`, `set-course-join-policy.ts`, `revoke-course-membership.ts`'s actor check,
+`publish-course.ts`, `get-course-for-authoring.ts`, `archive-course.ts`) now authorize via a new domain
+predicate `hasActiveAuthorGrant(grants)` (`src/domain/course/types.ts`) over `course_authors`
+(`repos.authors.findActiveCapabilities(actorUserId, courseId)`, H.1's repository), replacing
+`canAuthorCourse`/`isManagementRole` over `course_memberships` — a source-of-truth swap, byte-identical
+outcome shapes from the caller's perspective. `CourseRepositories.authors` (and the equivalent field on
+`TopicRepositories`/`QuestionRepositories`/`PublishQuestionRepositories`/`PreviewImportRepositories`/
+`ImportRepositories`/`ItemAnalysisRepositories`) is now REQUIRED, not optional — every route/UnitOfWork
+construction site updated accordingly (~19 route files + 2 PostgreSQL UnitOfWork classes).
+`CourseAuthorRepository` gained one new method, `listActiveForUser(userId)` (mirroring
+`CourseMembershipRepository.listActiveForUser`), needed for Part C's "My Courses" union query.
+
+Part B: `create-course.ts` now grants a `course_authors` OWNER capability (inside the same
+`CourseUnitOfWork` transaction) INSTEAD OF a `course_memberships` OWNER row — a newly created Course's
+creator has NO `course_memberships` row at all. `courses.owner_user_id` is unaffected (still
+creator/legacy metadata only, ADR-015 §1).
+
+Part C (the human's own explicit correction, required in H.2 not deferred to H.4):
+`get-course-context-for-learner.ts` and `list-my-courses.ts` (and their route DTOs,
+`handle-get-course-context.ts`/`handle-get-my-courses.ts`) now carry an independent `isAuthor: boolean`
+signal sourced from `course_authors`, never derived from `membership.role`. `getCourseContextForLearner`
+no longer short-circuits to `NOT_A_MEMBER` when there is no `course_memberships` row AND the actor holds
+an active author grant — it now returns `READY` with `membership: null`, `isAuthor: true`,
+`practiceAvailable: false`. `listMyCourses`/`MyCourseEntry` now unions membership-based and
+author-grant-based Course ids (`role: CourseRole | null`, `isAuthor: boolean`), so a Part-B-created
+Course still appears in "My Courses" and the instructor Courses list for its own creator. Frontend
+consumers fixed: `(learner)/courses/course-row.tsx` (`isManaged` now reads `course.isAuthor`, not
+`MANAGEMENT_ROLES.includes(role)`), `(learner)/courses/page.tsx` (`hasManagementRole` likewise),
+`instructor/courses/page.tsx` (filter likewise), `(learner)/courses/[courseId]/page.tsx` (guards
+`membership === null` before reading `.role`, uses the `isAuthor`-covering `!isLearner` else-branch).
+`progress/load-progress.ts`'s `course.role === "LEARNER"` filter was investigated and found to need NO
+change — `course_memberships` still legitimately returns `LEARNER` for real learners at this point in the
+migration (H.3 hasn't touched it), and `role: null` (author-only) never equals `"LEARNER"`.
+
+One documented, intentional divergence surfaced by the equivalence check: `course_authors` has no
+`archivedAt` concept at all (H.1's own design), so an archived-but-not-revoked management
+`course_memberships` row — which the OLD `canAuthorCourse` blocked — is authorized under the NEW check
+(its backfilled `course_authors` grant is simply active). No known V1 code path archives an
+OWNER/INSTRUCTOR row today; recorded as an accepted architectural narrowing, not a regression, with
+dedicated equivalence-check test coverage (`src/domain/course/__tests__/types.test.ts`) proving this is
+the *only* shape of divergence between the two checks.
+
+Verified: full unit suite 1653/1653 PASS; full schema/PGlite suite 321/323 PASS (the same 2 FUB-041
+pre-existing failures, reconfirmed unrelated); typecheck/lint clean; a dedicated
+authorization-equivalence test suite (old `canAuthorCourse` vs. new `hasActiveAuthorGrant`, post-backfill,
+10 scenarios including the one accepted divergence); every one of the 19 touched call sites got 2 new
+cases each (active `course_authors` grant with no `course_memberships` row → authorized; LEARNER-only
+membership with no grant → NOT_AUTHORIZED, already covered by pre-existing tests); a new PGlite
+integration test proving a real Postgres-wired `createCourse` yields a real `course_authors` OWNER row,
+zero `course_memberships` rows, and a full authoring round trip (create Topic, set join policy, publish)
+succeeding for that creator. `join-course.ts`, `revoke-course-membership.ts`'s TARGET action, and all
+Today/Practice/FSRS/Insights-counting code confirmed untouched. No new author-based Insights exclusion
+added (per the Run's own corrected principle).
+
+Review: `unlock-security-reviewer` and `unlock-reviewer` both independently returned **NO BLOCKING
+FINDINGS**. Six non-blocking notes recorded, none actioned (documentation/cleanup only, no correctness or
+scope impact): (1) `archive-course-membership.ts` has no role restriction and is not wired to any route
+today, but would silently bypass `course_authors`' lack of an `archivedAt` concept if ever exposed —
+flagged for a future explicit decision before that use case is ever wired to an endpoint, not solved here;
+(2) `CourseAuthorRepository`'s module doc comment ("not called from any application code") is stale post-
+cutover; (3)/(4) two doc comments (`domain/topic/types.ts`, `domain/insights/analysis-entry.ts`,
+`handle-set-course-join-policy.ts`) still reference `canAuthorCourse` by name or describe an authorization
+asymmetry that no longer exists post-cutover; (5) `checkAnalysisAccess`'s `memberships` parameter is now
+unused dead-parameter surface; (6) `CourseUnitOfWork`'s port-level doc comment still describes
+`createCourse`'s transaction as writing a `course_memberships` row (the function's own doc comment was
+correctly updated; the port-level one was missed). None require action before RUN010-H.3.
+
+**Process note:** the implementing worker for this Slice was terminated mid-verification by a session rate
+limit before delivering its own compact handoff or committing. The parent session independently
+re-confirmed the diff was complete and coherent, re-ran typecheck (clean)/lint (clean)/full unit suite
+(1653/1653, matching the pre-interruption count) directly, and retrieved both reviewers' full findings
+(each had also been cut off mid-response by the same rate limit, then resumed and asked to redeliver their
+already-completed verdicts). The full schema/PGlite suite could not be independently re-run at commit time
+(the background process was stopped by the harness for system memory pressure, not a test failure) — the
+321/323 figure (matching H.1's own known 2 pre-existing FUB-041 failures) is corroborated by both
+reviewers, who independently read the actual new/modified test files' content (not merely a reported
+number) and confirmed they assert the right things. This Slice's evidence is treated as sufficient on that
+basis; a fresh schema/PGlite run before RUN010-H.3 begins is reasonable due diligence, not a requirement
+this Slice failed to meet.
 
 ---
 

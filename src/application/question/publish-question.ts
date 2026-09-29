@@ -14,7 +14,7 @@
  *
  * ## Core transaction (CHATGPT_PLAN.md S5 "Core transaction")
  *
- * 1. authorize actor/Course (`canAuthorCourse`);
+ * 1. authorize actor/Course (RUN010-H.2: `hasActiveAuthorGrant` over `course_authors`);
  * 2. reject a terminal ARCHIVED Course (Run 006 S4 security-reviewer
  *    carried-forward finding, `scratch/development_checkpoint.md`'s S4
  *    section: archived-Course authoring was enforced only in the UI through
@@ -61,7 +61,7 @@
  * `actorUserId` is trusted as-is at this boundary — see
  * `src/application/course/join-course.ts`'s module doc comment for why.
  */
-import { canAuthorCourse } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import {
   assertQuestionPublishReady,
   computeQuestionAuthoringState,
@@ -112,11 +112,11 @@ async function publishQuestionInTransaction(
   command: PublishQuestionCommand,
   repos: PublishQuestionRepositories,
 ): Promise<PublishQuestionResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-  if (actorMembership === null || !canAuthorCourse(actorMembership)) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     throw new PublishOutcomeSignal({ outcome: "NOT_AUTHORIZED" });
   }
 

@@ -12,6 +12,7 @@ import type { PGlite } from "@electric-sql/pglite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { joinCourse } from "../../../src/application/course/join-course";
+import { PostgresCourseAuthorRepository } from "../../../src/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import {
@@ -24,11 +25,13 @@ import {
 let db: PGlite;
 let courses: PostgresCourseRepository;
 let memberships: PostgresCourseMembershipRepository;
+let authors: PostgresCourseAuthorRepository;
 
 beforeEach(async () => {
   db = await createTestDb();
   courses = new PostgresCourseRepository(db);
   memberships = new PostgresCourseMembershipRepository(db);
+  authors = new PostgresCourseAuthorRepository(db);
 });
 
 afterEach(async () => {
@@ -44,7 +47,7 @@ describe("joinCourse against real Postgres infrastructure", () => {
 
     const result = await joinCourse(
       { actorUserId: learnerId, courseId },
-      { courses, memberships },
+      { courses, memberships, authors },
     );
 
     expect(result.outcome).toBe("JOINED");
@@ -66,7 +69,7 @@ describe("joinCourse against real Postgres infrastructure", () => {
 
     const result = await joinCourse(
       { actorUserId: learnerId, courseId },
-      { courses, memberships },
+      { courses, memberships, authors },
     );
 
     expect(result.outcome).toBe("NOT_AUTHORIZED");
@@ -85,11 +88,11 @@ describe("joinCourse against real Postgres infrastructure", () => {
 
     const first = await joinCourse(
       { actorUserId: learnerId, courseId },
-      { courses, memberships },
+      { courses, memberships, authors },
     );
     const second = await joinCourse(
       { actorUserId: learnerId, courseId },
-      { courses, memberships },
+      { courses, memberships, authors },
     );
 
     expect(first.outcome).toBe("JOINED");
@@ -115,7 +118,7 @@ describe("joinCourse against real Postgres infrastructure", () => {
 
     const result = await joinCourse(
       { actorUserId: learnerId, courseId },
-      { courses, memberships },
+      { courses, memberships, authors },
     );
 
     expect(result.outcome).toBe("ALREADY_MEMBER");
@@ -141,7 +144,7 @@ describe("joinCourse against real Postgres infrastructure", () => {
 
     const result = await joinCourse(
       { actorUserId: ownerUserId, courseId },
-      { courses, memberships },
+      { courses, memberships, authors },
     );
 
     expect(result.outcome).toBe("ALREADY_MEMBER");
@@ -160,7 +163,7 @@ describe("joinCourse against real Postgres infrastructure", () => {
 
     const result = await joinCourse(
       { actorUserId: learnerId, courseId: "00000000-0000-0000-0000-000000000000" },
-      { courses, memberships },
+      { courses, memberships, authors },
     );
 
     expect(result.outcome).toBe("COURSE_NOT_FOUND");

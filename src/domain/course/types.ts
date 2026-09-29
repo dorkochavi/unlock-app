@@ -166,3 +166,29 @@ export interface CourseAuthorGrant {
 export function isActiveAuthorGrant(grant: CourseAuthorGrant): boolean {
   return grant.revokedAt === null;
 }
+
+/**
+ * RUN010-H.2 — the `course_authors`-sourced replacement for `canAuthorCourse`
+ * at every authorization call site (`CLAUDE.md`'s "smallest correct
+ * adaptation" — a source-of-truth swap, not a behavior redesign). `grants` is
+ * whatever `CourseAuthorRepository.findActiveCapabilities` returns for the
+ * (actor, Course) pair; this predicate does not itself assume the repository
+ * already filtered by `revokedAt` (it re-checks via `isActiveAuthorGrant`),
+ * so it stays correct even against a hand-built array in a test. Fails
+ * closed on an empty array, same as `canAuthorCourse` on a `null`
+ * membership.
+ *
+ * Deliberately narrower than `canAuthorCourse`'s old contract in one
+ * documented way: `course_authors` has no `archivedAt` concept at all (see
+ * `CourseAuthorGrant`'s own doc comment above) — an author capability is
+ * either currently held or revoked, never "archived but still accessible."
+ * `canAuthorCourse` additionally required `membership.archivedAt === null`;
+ * this predicate has no equivalent check because there is nothing to check.
+ * This is an intentional, accepted architectural narrowing (RUN010-H.1's own
+ * migration backfill only ever preserves `revoked_at`, never `archived_at`),
+ * not an authorization regression — no known V1 code path archives an
+ * OWNER/INSTRUCTOR `course_memberships` row in the first place.
+ */
+export function hasActiveAuthorGrant(grants: readonly CourseAuthorGrant[]): boolean {
+  return grants.some(isActiveAuthorGrant);
+}

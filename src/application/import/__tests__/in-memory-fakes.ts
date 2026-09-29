@@ -8,8 +8,10 @@
  * established convention — deliberately not a shared cross-feature harness.
  */
 import { EMPTY_QUESTION_DRAFT, type QuestionAuthoringRecord } from "../../../domain/question/types";
-import type { CourseStatus } from "../../../domain/course/types";
+import { isActiveAuthorGrant, isManagementRole, type CourseAuthorCapability, type CourseStatus } from "../../../domain/course/types";
 import type {
+  CourseAuthorGrant,
+  CourseAuthorRepository,
   CourseMembership,
   CourseMembershipRepository,
   CourseRepository,
@@ -25,13 +27,24 @@ function membershipKey(userId: string, courseId: string): string {
   return `${userId}:${courseId}`;
 }
 
+function authorKey(userId: string, courseId: string, capability: CourseAuthorCapability): string {
+  return `${userId}:${courseId}:${capability}`;
+}
+
 let nextQuestionId = 1;
 function nextQuestionIdValue(): string {
   return `question-${nextQuestionId++}`;
 }
 
+let nextAuthorGrantSeq = 1;
+function nextAuthorGrantId(): string {
+  return `author-grant-${nextAuthorGrantSeq++}`;
+}
+
 export class InMemoryImportDatabase {
   private memberships = new Map<string, CourseMembership>();
+  /** RUN010-H.2 — mirrors `course_authors`; see `course/__tests__/in-memory-fakes.ts`'s own doc comment for the auto-derivation-from-`seedMembership` convention this repeats. */
+  private authorGrants = new Map<string, CourseAuthorGrant>();
   private topics = new Map<string, Topic>();
   private courseStatuses = new Map<string, CourseStatus>();
   private questions = new Map<string, QuestionAuthoringRecord>();
@@ -40,6 +53,26 @@ export class InMemoryImportDatabase {
   /** Test setup helper — not part of any port. */
   seedMembership(membership: CourseMembership): void {
     this.memberships.set(membershipKey(membership.userId, membership.courseId), membership);
+    if (isManagementRole(membership.role)) {
+      const capability = membership.role as CourseAuthorCapability;
+      const k = authorKey(membership.userId, membership.courseId, capability);
+      this.authorGrants.set(k, {
+        id: this.authorGrants.get(k)?.id ?? nextAuthorGrantId(),
+        userId: membership.userId,
+        courseId: membership.courseId,
+        capability,
+        grantedAt: membership.joinedAt,
+        revokedAt: membership.revokedAt,
+      });
+    }
+  }
+
+  /** Test setup helper — not part of any port. Author-only fixture (no `course_memberships` row). */
+  seedAuthorGrant(grant: Omit<CourseAuthorGrant, "id">): CourseAuthorGrant {
+    const k = authorKey(grant.userId, grant.courseId, grant.capability);
+    const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+    this.authorGrants.set(k, full);
+    return full;
   }
 
   /** Test setup helper — not part of any port. */
@@ -78,6 +111,35 @@ export class InMemoryImportDatabase {
   /** Test assertion helper — not part of any port. */
   listQuestionsForCourse(courseId: string): QuestionAuthoringRecord[] {
     return [...this.questions.values()].filter((q) => q.courseId === courseId);
+  }
+
+  private buildAuthors(): CourseAuthorRepository {
+    return {
+      findActiveCapabilities: async (userId, courseId) => {
+        return [...this.authorGrants.values()].filter(
+          (g) => g.userId === userId && g.courseId === courseId && isActiveAuthorGrant(g),
+        );
+      },
+      listActiveForUser: async (userId) => {
+        return [...this.authorGrants.values()].filter((g) => g.userId === userId && isActiveAuthorGrant(g));
+      },
+      grant: async (grant) => {
+        const k = authorKey(grant.userId, grant.courseId, grant.capability);
+        const existing = this.authorGrants.get(k);
+        if (existing) return { grant: existing, wasNew: false };
+        const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+        this.authorGrants.set(k, full);
+        return { grant: full, wasNew: true };
+      },
+      revoke: async (userId, courseId, capability, revokedAt) => {
+        const k = authorKey(userId, courseId, capability);
+        const existing = this.authorGrants.get(k);
+        if (!existing) return null;
+        const updated = { ...existing, revokedAt };
+        this.authorGrants.set(k, updated);
+        return updated;
+      },
+    };
   }
 
   private buildMemberships(): CourseMembershipRepository {
@@ -220,13 +282,19 @@ export class InMemoryImportDatabase {
   }
 
   repos(): PreviewImportRepositories {
-    return { memberships: this.buildMemberships(), courses: this.buildCourses(), topics: this.buildTopics() };
+    return {
+      memberships: this.buildMemberships(),
+      authors: this.buildAuthors(),
+      courses: this.buildCourses(),
+      topics: this.buildTopics(),
+    };
   }
 
   /** Run 007 S4 — the write-capable repository set `confirmImport`'s transaction phase needs. */
   importRepos(): ImportRepositories {
     return {
       memberships: this.buildMemberships(),
+      authors: this.buildAuthors(),
       courses: this.buildCourses(),
       topics: this.buildTopics(),
       questions: this.buildQuestions(),

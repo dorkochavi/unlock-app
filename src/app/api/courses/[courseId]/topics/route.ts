@@ -22,6 +22,7 @@ import { handleListTopicsForCourse } from "./handle-list-topics-for-course";
 
 import { createTopic } from "@/application/topic/create-topic";
 import { listTopicsForCourse } from "@/application/topic/list-topics-for-course";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { PostgresTopicRepository } from "@/infrastructure/postgres/topic-repository";
@@ -45,6 +46,7 @@ export async function GET(
         const pool = getPool();
         return listTopicsForCourse(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           topics: new PostgresTopicRepository(pool),
         });
       },
@@ -95,6 +97,7 @@ export async function POST(
         const pool = getPool();
         return createTopic(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           topics: new PostgresTopicRepository(pool),
         });
       },

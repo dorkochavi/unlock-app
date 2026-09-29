@@ -131,6 +131,27 @@ describe("publishQuestion", () => {
     expect(secondVersion?.content.prompt).toBe("What is 3+3?");
   });
 
+  // RUN010-H.2 required proof (a): active course_authors grant, no
+  // course_memberships row at all.
+  it("allows an actor with an active course_authors grant but no course_memberships row", async () => {
+    const db = new InMemoryQuestionDatabase();
+    db.seedAuthorGrant({
+      userId: "user-1",
+      courseId: "course-1",
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+    seedPublishableDraftQuestion(db, "course-1");
+
+    const result = await publishQuestion(
+      { actorUserId: "user-1", courseId: "course-1", questionId: "question-1" },
+      db.uow(),
+    );
+
+    expect(result.outcome).toBe("PUBLISHED");
+  });
+
   it("NOT_AUTHORIZED for a caller with no Course membership", async () => {
     const db = new InMemoryQuestionDatabase();
     seedPublishableDraftQuestion(db, "course-1");

@@ -21,7 +21,7 @@ import { CourseRow } from "../course-row";
 describe("CourseRow markup (QA2-B whole-card navigation)", () => {
   it("wraps the entire card in one real link with no nested interactive controls", () => {
     const html = renderToStaticMarkup(
-      <CourseRow course={{ id: "course-1", title: "Algebra", role: "LEARNER" }} roleLabel="" />,
+      <CourseRow course={{ id: "course-1", title: "Algebra", role: "LEARNER", isAuthor: false }} roleLabel="" />,
     );
 
     const anchorMatches = html.match(/<a\b/g) ?? [];
@@ -32,32 +32,39 @@ describe("CourseRow markup (QA2-B whole-card navigation)", () => {
 
   it("carries visible hover/focus/pressed treatment on the card link itself", () => {
     const html = renderToStaticMarkup(
-      <CourseRow course={{ id: "course-1", title: "Algebra", role: "LEARNER" }} roleLabel="" />,
+      <CourseRow course={{ id: "course-1", title: "Algebra", role: "LEARNER", isAuthor: false }} roleLabel="" />,
     );
     expect(html).toMatch(/hover:bg-surface-muted/);
     expect(html).toMatch(/focus-visible:outline-2/);
     expect(html).toMatch(/active:scale-\[0\.99\]/);
   });
 
-  it("adds the subtle management accent only for OWNER/INSTRUCTOR, never for LEARNER", () => {
+  // RUN010-H.2: the accent is now driven by the independent `isAuthor`
+  // course_authors signal, not `MANAGEMENT_ROLES.includes(role)` — proven
+  // here with an author-only fixture (role: null) getting the accent too.
+  it("adds the subtle management accent only when isAuthor is true, never for a plain LEARNER", () => {
     const owner = renderToStaticMarkup(
-      <CourseRow course={{ id: "c1", title: "Algebra", role: "OWNER" }} roleLabel="בעלים" />,
+      <CourseRow course={{ id: "c1", title: "Algebra", role: "OWNER", isAuthor: true }} roleLabel="בעלים" />,
     );
     const instructor = renderToStaticMarkup(
-      <CourseRow course={{ id: "c2", title: "Algebra", role: "INSTRUCTOR" }} roleLabel="מרצה" />,
+      <CourseRow course={{ id: "c2", title: "Algebra", role: "INSTRUCTOR", isAuthor: true }} roleLabel="מרצה" />,
     );
     const learner = renderToStaticMarkup(
-      <CourseRow course={{ id: "c3", title: "Algebra", role: "LEARNER" }} roleLabel="" />,
+      <CourseRow course={{ id: "c3", title: "Algebra", role: "LEARNER", isAuthor: false }} roleLabel="" />,
+    );
+    const authorOnly = renderToStaticMarkup(
+      <CourseRow course={{ id: "c4", title: "Algebra", role: null, isAuthor: true }} roleLabel="" />,
     );
 
     expect(owner).toContain("border-l-primary");
     expect(instructor).toContain("border-l-primary");
     expect(learner).not.toContain("border-l-primary");
+    expect(authorOnly).toContain("border-l-primary");
   });
 
   it("does not add a new badge/pill element — the role label stays a plain span", () => {
     const html = renderToStaticMarkup(
-      <CourseRow course={{ id: "c1", title: "Algebra", role: "OWNER" }} roleLabel="בעלים" />,
+      <CourseRow course={{ id: "c1", title: "Algebra", role: "OWNER", isAuthor: true }} roleLabel="בעלים" />,
     );
     expect(html).toContain("בעלים");
     expect(html).not.toMatch(/rounded-full/);

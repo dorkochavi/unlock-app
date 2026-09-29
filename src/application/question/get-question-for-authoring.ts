@@ -28,7 +28,7 @@
  * archived must not force reassociation). `null` whenever `topicId` is
  * `null`.
  */
-import { canAuthorCourse } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import type { QuestionAuthoringRecord, QuestionDraftContent, QuestionRepositories, Topic } from "./ports";
 
 export interface GetQuestionForAuthoringCommand {
@@ -51,11 +51,11 @@ export async function getQuestionForAuthoring(
   command: GetQuestionForAuthoringCommand,
   repos: QuestionRepositories,
 ): Promise<GetQuestionForAuthoringResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-  if (actorMembership === null || !canAuthorCourse(actorMembership)) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     return { outcome: "NOT_AUTHORIZED" };
   }
 

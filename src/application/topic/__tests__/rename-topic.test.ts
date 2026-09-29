@@ -59,7 +59,35 @@ describe("renameTopic", () => {
     expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
   });
 
-  it("does not allow an archived-but-not-revoked OWNER to rename a Topic", async () => {
+  // RUN010-H.2 required proof (a): active course_authors grant, no
+  // course_memberships row at all.
+  it("allows an actor with an active course_authors grant but no course_memberships row", async () => {
+    const db = new InMemoryTopicDatabase();
+    db.seedAuthorGrant({
+      userId: "actor-1",
+      courseId: "course-1",
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+    seedTopic(db);
+
+    const result = await renameTopic(
+      { actorUserId: "actor-1", courseId: "course-1", topicId: "topic-1", name: "Renamed" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("RENAMED");
+  });
+
+  // RUN010-H.2 — intentional, documented behavior change: authorization now
+  // sources from `course_authors`, which has no `archivedAt` concept at all
+  // (`hasActiveAuthorGrant`'s own doc comment). An archived-but-not-revoked
+  // management `course_memberships` row still backfills an ACTIVE
+  // `course_authors` grant, so this actor IS authorized — archival is a
+  // per-learner Today-exclusion fact, never an authoring-capability gate,
+  // under the new model.
+  it("allows an archived-but-not-revoked OWNER to rename a Topic (course_authors has no archived concept)", async () => {
     const db = new InMemoryTopicDatabase();
     seedActor(db, { role: "OWNER", archivedAt: new Date("2026-02-01T00:00:00Z") });
     seedTopic(db);
@@ -69,7 +97,7 @@ describe("renameTopic", () => {
       db.repos(),
     );
 
-    expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+    expect(result.outcome).toBe("RENAMED");
   });
 
   it("rejects a nonexistent topicId", async () => {

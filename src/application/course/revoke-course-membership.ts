@@ -9,7 +9,7 @@
  * `actorUserId` is trusted as-is at this boundary — see `join-course.ts`'s
  * module doc comment for why.
  */
-import { isManagementRole } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import type { CourseMembership, CourseRepositories } from "./ports";
 
 export interface RevokeCourseMembershipCommand {
@@ -27,16 +27,11 @@ export async function revokeCourseMembership(
   command: RevokeCourseMembershipCommand,
   repos: CourseRepositories,
 ): Promise<RevokeCourseMembershipResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-
-  if (
-    actorMembership === null ||
-    actorMembership.revokedAt !== null ||
-    !isManagementRole(actorMembership.role)
-  ) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     return { outcome: "NOT_AUTHORIZED" };
   }
 

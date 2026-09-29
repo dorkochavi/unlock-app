@@ -81,4 +81,21 @@ describe("listTopicsForCourse", () => {
 
     expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
   });
+
+  // RUN010-H.2 required proof (a): active course_authors grant, no
+  // course_memberships row at all.
+  it("allows an actor with an active course_authors grant but no course_memberships row", async () => {
+    const db = new InMemoryTopicDatabase();
+    db.seedAuthorGrant({
+      userId: "actor-1",
+      courseId: "course-1",
+      capability: "INSTRUCTOR",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+
+    const result = await listTopicsForCourse({ actorUserId: "actor-1", courseId: "course-1" }, db.repos());
+
+    expect(result.outcome).toBe("READY");
+  });
 });

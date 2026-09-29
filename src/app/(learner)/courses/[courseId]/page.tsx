@@ -17,7 +17,10 @@ import { loadCourseProgress, type TopicProgressDto } from "../../progress/load-p
 
 interface CourseContextDto {
   course: { id: string; title: string };
-  membership: { role: CourseRole; joinedAt: string };
+  /** `null` only when the actor has no `course_memberships` row (author-only, RUN010-H.2). */
+  membership: { role: CourseRole; joinedAt: string } | null;
+  /** RUN010-H.2 — independent `course_authors` signal, never derived from `membership.role`. */
+  isAuthor?: boolean;
   /** Server-computed (ADR-020): LEARNER + active membership + PUBLISHED Course. */
   practiceAvailable?: boolean;
 }
@@ -221,11 +224,14 @@ function CourseReady({
   topics: TopicsState;
 }) {
   const messages = getMessages().courseView;
-  const isLearner = data.membership.role === "LEARNER";
+  const isLearner = data.membership !== null && data.membership.role === "LEARNER";
 
   return (
     <>
-      <PageHeader title={data.course.title} subtitle={messages.roleLabel[data.membership.role]} />
+      <PageHeader
+        title={data.course.title}
+        subtitle={data.membership !== null ? messages.roleLabel[data.membership.role] : undefined}
+      />
 
       {isLearner ? (
         <>

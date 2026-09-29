@@ -18,6 +18,7 @@ import { NextResponse } from "next/server";
 import { handleRenameTopic } from "./handle-rename-topic";
 
 import { renameTopic } from "@/application/topic/rename-topic";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { PostgresTopicRepository } from "@/infrastructure/postgres/topic-repository";
@@ -65,6 +66,7 @@ export async function PATCH(
         const pool = getPool();
         return renameTopic(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           topics: new PostgresTopicRepository(pool),
         });
       },

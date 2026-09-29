@@ -23,7 +23,10 @@ import type { CourseRole } from "@/domain/course/types";
 interface MyCourseDto {
   id: string;
   title: string;
-  role: CourseRole;
+  /** `null` for a Course the actor only authors, with no `course_memberships` row (RUN010-H.2). */
+  role: CourseRole | null;
+  /** RUN010-H.2 — independent `course_authors` signal; this list's own filtering criterion. */
+  isAuthor: boolean;
 }
 
 type ViewState =
@@ -31,8 +34,6 @@ type ViewState =
   | { kind: "signed-out" }
   | { kind: "error" }
   | { kind: "ready"; courses: MyCourseDto[] };
-
-const MANAGEMENT_ROLES: readonly CourseRole[] = ["OWNER", "INSTRUCTOR"];
 
 async function fetchMyCourses(): Promise<
   { outcome: "READY"; courses: MyCourseDto[] } | { outcome: "UNAUTHENTICATED" } | { outcome: "ERROR" }
@@ -75,7 +76,7 @@ export default function InstructorCoursesPage() {
       } else {
         setState({
           kind: "ready",
-          courses: result.courses.filter((course) => MANAGEMENT_ROLES.includes(course.role)),
+          courses: result.courses.filter((course) => course.isAuthor),
         });
       }
     }

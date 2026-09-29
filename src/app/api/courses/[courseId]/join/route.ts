@@ -22,6 +22,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 
 import { joinCourse } from "@/application/course/join-course";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -47,6 +48,10 @@ export async function POST(
         const pool = getPool();
         return joinCourse(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          // `joinCourse` itself never reads `authors` (join-course.ts is
+          // untouched by RUN010-H.2) — required only to satisfy
+          // `CourseRepositories`'s now-mandatory field.
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });
       },

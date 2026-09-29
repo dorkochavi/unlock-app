@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 
 import { listMyCourses } from "@/application/course/list-my-courses";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -34,6 +35,7 @@ export async function GET(): Promise<Response> {
           { actorUserId },
           {
             memberships: new PostgresCourseMembershipRepository(pool),
+            authors: new PostgresCourseAuthorRepository(pool),
             courses: new PostgresCourseRepository(pool),
           },
         );

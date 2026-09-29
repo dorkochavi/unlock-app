@@ -43,6 +43,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { confirmImport } from "../../../src/application/import/confirm-import";
 import { previewImport } from "../../../src/application/import/preview-import";
 import { publishQuestion } from "../../../src/application/question/publish-question";
+import { PostgresCourseAuthorRepository } from "../../../src/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import { PostgresImportUnitOfWork } from "../../../src/infrastructure/postgres/postgres-import-unit-of-work";
@@ -70,6 +71,7 @@ afterEach(async () => {
 function previewRepos() {
   return {
     memberships: new PostgresCourseMembershipRepository(db),
+    authors: new PostgresCourseAuthorRepository(db),
     courses: new PostgresCourseRepository(db),
     topics: new PostgresTopicRepository(db),
   };

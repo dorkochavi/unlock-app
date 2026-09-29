@@ -21,6 +21,7 @@ import { NextResponse } from "next/server";
 import { handleGetCourseItemAnalysis } from "./handle-get-course-item-analysis";
 
 import { getCourseItemAnalysis } from "@/application/insights/get-course-item-analysis";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { PostgresItemAnalysisRepository } from "@/infrastructure/postgres/item-analysis-repository";
@@ -46,6 +47,7 @@ export async function GET(
         const pool = getPool();
         return getCourseItemAnalysis(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
           itemAnalysis: new PostgresItemAnalysisRepository(pool),
         });

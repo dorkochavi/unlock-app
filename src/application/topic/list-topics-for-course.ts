@@ -7,7 +7,7 @@
  * `actorUserId` is trusted as-is at this boundary — see
  * `src/application/course/join-course.ts`'s module doc comment for why.
  */
-import { canAuthorCourse } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import type { Topic, TopicRepositories } from "./ports";
 
 export interface ListTopicsForCourseCommand {
@@ -23,11 +23,11 @@ export async function listTopicsForCourse(
   command: ListTopicsForCourseCommand,
   repos: TopicRepositories,
 ): Promise<ListTopicsForCourseResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-  if (actorMembership === null || !canAuthorCourse(actorMembership)) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     return { outcome: "NOT_AUTHORIZED" };
   }
 

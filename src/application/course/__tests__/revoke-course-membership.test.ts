@@ -49,6 +49,35 @@ describe("revokeCourseMembership", () => {
     expect(active).toHaveLength(0);
   });
 
+  // RUN010-H.2 required proof (a): active course_authors grant, no
+  // course_memberships row at all — the ACTOR authorization check only.
+  it("allows an actor with an active course_authors grant but no course_memberships row to revoke another member", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedAuthorGrant({
+      userId: "owner-1",
+      courseId: "course-1",
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+    db.seedMembership({
+      id: "learner-membership",
+      userId: "learner-1",
+      courseId: "course-1",
+      role: "LEARNER",
+      joinedAt: new Date("2026-01-02T00:00:00Z"),
+      revokedAt: null,
+      archivedAt: null,
+    });
+
+    const result = await revokeCourseMembership(
+      { actorUserId: "owner-1", courseId: "course-1", targetUserId: "learner-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("REVOKED");
+  });
+
   it("does not allow a LEARNER to revoke another member", async () => {
     const db = new InMemoryCourseDatabase();
     db.seedMembership({

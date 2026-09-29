@@ -49,6 +49,27 @@ describe("confirmImport — authorization / Course state (Phase 1 reparse)", () 
     expect(db.listQuestionsForCourse(COURSE_ID)).toHaveLength(0);
   });
 
+  // RUN010-H.2 required proof (a): active course_authors grant, no
+  // course_memberships row at all — proven through BOTH the Phase 1
+  // reparse (via `previewImport`) and the Phase 2 in-transaction re-check.
+  it("allows an actor with an active course_authors grant but no course_memberships row", async () => {
+    const db = new InMemoryImportDatabase();
+    db.seedAuthorGrant({
+      userId: ACTOR_ID,
+      courseId: COURSE_ID,
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+    db.seedActiveTopic(COURSE_ID, "Introduction");
+    const result = await confirmImport(
+      { actorUserId: ACTOR_ID, courseId: COURSE_ID, format: "JSON", sourceText: WELL_FORMED_JSON },
+      deps(db),
+    );
+    expect(result.outcome).toBe("CONFIRMED");
+    expect(db.listQuestionsForCourse(COURSE_ID)).toHaveLength(1);
+  });
+
   it("rejects a LEARNER membership, creates no Question", async () => {
     const db = new InMemoryImportDatabase();
     seedActor(db, { role: "LEARNER" });
@@ -277,7 +298,14 @@ describe("confirmImport — Phase 2 TOCTOU re-check", () => {
     expect(db.listQuestionsForCourse(COURSE_ID)).toHaveLength(0);
   });
 
-  it("rejects with NOT_AUTHORIZED and creates no Question when the actor's membership was revoked after Phase 1's reparse", async () => {
+  // RUN010-H.2: authorization now sources from `course_authors`, not
+  // `course_memberships` — the concurrent revoke this test simulates must
+  // target the actor's `course_authors` grant to actually change Phase 2's
+  // authorization re-check outcome. Revoking only the (now
+  // authorization-independent) `course_memberships` row would no longer
+  // affect this at all, which is itself the intended, accepted behavior
+  // change this Slice implements.
+  it("rejects with NOT_AUTHORIZED and creates no Question when the actor's course_authors grant was revoked after Phase 1's reparse", async () => {
     const db = new InMemoryImportDatabase();
     seedActor(db, { role: "OWNER" });
     db.seedActiveTopic(COURSE_ID, "Introduction");
@@ -285,8 +313,8 @@ describe("confirmImport — Phase 2 TOCTOU re-check", () => {
     const staleAwareUow = {
       async runInTransaction<T>(fn: (repos: import("../ports").ImportRepositories) => Promise<T>): Promise<T> {
         // Simulate a concurrent revoke between Phase 1's (already-completed)
-        // reparse and Phase 2's own membership re-check.
-        await db.repos().memberships.revoke(ACTOR_ID, COURSE_ID, new Date());
+        // reparse and Phase 2's own authorization re-check.
+        await db.repos().authors.revoke(ACTOR_ID, COURSE_ID, "OWNER", new Date());
         return fn(db.importRepos());
       },
     };

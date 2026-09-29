@@ -27,6 +27,7 @@ import { handleUpdateQuestionDraft } from "./handle-update-question-draft";
 
 import { getQuestionForAuthoring } from "@/application/question/get-question-for-authoring";
 import { updateQuestionDraft } from "@/application/question/update-question-draft";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { PostgresQuestionRepository } from "@/infrastructure/postgres/question-authoring-repository";
@@ -52,6 +53,7 @@ export async function GET(
         const pool = getPool();
         return getQuestionForAuthoring(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           topics: new PostgresTopicRepository(pool),
           questions: new PostgresQuestionRepository(pool),
         });
@@ -103,6 +105,7 @@ export async function PATCH(
         const pool = getPool();
         return updateQuestionDraft(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           topics: new PostgresTopicRepository(pool),
           questions: new PostgresQuestionRepository(pool),
         });

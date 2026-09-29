@@ -69,7 +69,8 @@ describe("getCourseContextForLearner", () => {
     expect(result.outcome).toBe("READY");
     if (result.outcome !== "READY") throw new Error("unreachable");
     expect(result.course).toEqual({ id: "course-1", title: "Intro to Economics" });
-    expect(result.membership.role).toBe("LEARNER");
+    expect(result.membership?.role).toBe("LEARNER");
+    expect(result.isAuthor).toBe(false);
   });
 
   it("returns READY for an active OWNER membership without downgrading it", async () => {
@@ -92,7 +93,37 @@ describe("getCourseContextForLearner", () => {
 
     expect(result.outcome).toBe("READY");
     if (result.outcome !== "READY") throw new Error("unreachable");
-    expect(result.membership.role).toBe("OWNER");
+    expect(result.membership?.role).toBe("OWNER");
+    // RUN010-H.1's backfill gives an OWNER membership a matching active
+    // course_authors grant, so `isAuthor` is also true here.
+    expect(result.isAuthor).toBe(true);
+  });
+
+  // RUN010-H.2 (FUB-036, Option 4 architecture, required DTO/API surface
+  // change): a Part-B-created Course's creator has NO course_memberships row
+  // at all — must get READY with membership: null and isAuthor: true, not
+  // NOT_A_MEMBER.
+  it("returns READY with membership: null and isAuthor: true for an author with no course_memberships row", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "AUTHORIZED_ONLY", "New Course", "DRAFT");
+    db.seedAuthorGrant({
+      userId: "user-1",
+      courseId: "course-1",
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+
+    const result = await getCourseContextForLearner(
+      { actorUserId: "user-1", courseId: "course-1" },
+      db.repos(),
+    );
+
+    expect(result.outcome).toBe("READY");
+    if (result.outcome !== "READY") throw new Error("unreachable");
+    expect(result.membership).toBeNull();
+    expect(result.isAuthor).toBe(true);
+    expect(result.practiceAvailable).toBe(false);
   });
 
   it("does not leak another user's membership as this user's context", async () => {

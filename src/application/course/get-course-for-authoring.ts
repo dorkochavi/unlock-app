@@ -8,7 +8,7 @@
  * `actorUserId` is trusted as-is at this boundary — see `join-course.ts`'s
  * module doc comment for why.
  */
-import { canAuthorCourse } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import type { CourseAuthoringRecord, CourseRepositories } from "./ports";
 
 export interface GetCourseForAuthoringCommand {
@@ -25,15 +25,14 @@ export async function getCourseForAuthoring(
   command: GetCourseForAuthoringCommand,
   repos: CourseRepositories,
 ): Promise<GetCourseForAuthoringResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  // Checking authorization before the Course's existence means a caller
+  // with no legitimate relationship to this Course never learns whether the
+  // courseId is valid — same principle as `setCourseJoinPolicy`.
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-  // Checking the actor's membership before the Course's existence means a
-  // caller with no legitimate relationship to this Course never learns
-  // whether the courseId is valid — same principle as
-  // `setCourseJoinPolicy`.
-  if (actorMembership === null || !canAuthorCourse(actorMembership)) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     return { outcome: "NOT_AUTHORIZED" };
   }
 

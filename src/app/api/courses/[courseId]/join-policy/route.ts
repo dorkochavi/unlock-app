@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 import { handleSetCourseJoinPolicy } from "./handle-set-course-join-policy";
 
 import { setCourseJoinPolicy } from "@/application/course/set-course-join-policy";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -66,6 +67,7 @@ export async function PATCH(
         const pool = getPool();
         return setCourseJoinPolicy(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });
       },

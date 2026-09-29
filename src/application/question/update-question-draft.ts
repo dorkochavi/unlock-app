@@ -27,7 +27,7 @@
  * `actorUserId` is trusted as-is at this boundary — see
  * `src/application/course/join-course.ts`'s module doc comment for why.
  */
-import { canAuthorCourse } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import {
   assertSaveableQuestionDraftContent,
   InvalidQuestionDraftContentError,
@@ -57,11 +57,11 @@ export async function updateQuestionDraft(
   command: UpdateQuestionDraftCommand,
   repos: QuestionRepositories,
 ): Promise<UpdateQuestionDraftResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-  if (actorMembership === null || !canAuthorCourse(actorMembership)) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     return { outcome: "NOT_AUTHORIZED" };
   }
 

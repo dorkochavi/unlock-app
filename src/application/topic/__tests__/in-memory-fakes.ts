@@ -7,10 +7,23 @@
  * and membership-map shape exactly, since Topic authorization reuses
  * `CourseMembershipRepository` unchanged.
  */
-import type { CourseMembership, CourseMembershipRepository, Topic, TopicRepositories, TopicRepository } from "../ports";
+import type {
+  CourseAuthorGrant,
+  CourseAuthorRepository,
+  CourseMembership,
+  CourseMembershipRepository,
+  Topic,
+  TopicRepositories,
+  TopicRepository,
+} from "../ports";
+import { isActiveAuthorGrant, isManagementRole, type CourseAuthorCapability } from "../../../domain/course/types";
 
 function key(userId: string, courseId: string): string {
   return `${userId}:${courseId}`;
+}
+
+function authorKey(userId: string, courseId: string, capability: CourseAuthorCapability): string {
+  return `${userId}:${courseId}:${capability}`;
 }
 
 let nextTopicId = 1;
@@ -18,13 +31,41 @@ function nextTopicIdValue(): string {
   return `topic-${nextTopicId++}`;
 }
 
+let nextAuthorGrantSeq = 1;
+function nextAuthorGrantId(): string {
+  return `author-grant-${nextAuthorGrantSeq++}`;
+}
+
 export class InMemoryTopicDatabase {
   private memberships = new Map<string, CourseMembership>();
+  /** RUN010-H.2 — mirrors `course_authors`; see `course/__tests__/in-memory-fakes.ts`'s own doc comment for the auto-derivation-from-`seedMembership` convention this repeats. */
+  private authorGrants = new Map<string, CourseAuthorGrant>();
+
   private topics = new Map<string, Topic>();
 
   /** Test setup helper — not part of any port. */
   seedMembership(membership: CourseMembership): void {
     this.memberships.set(key(membership.userId, membership.courseId), membership);
+    if (isManagementRole(membership.role)) {
+      const capability = membership.role as CourseAuthorCapability;
+      const k = authorKey(membership.userId, membership.courseId, capability);
+      this.authorGrants.set(k, {
+        id: this.authorGrants.get(k)?.id ?? nextAuthorGrantId(),
+        userId: membership.userId,
+        courseId: membership.courseId,
+        capability,
+        grantedAt: membership.joinedAt,
+        revokedAt: membership.revokedAt,
+      });
+    }
+  }
+
+  /** Test setup helper — not part of any port. Author-only fixture (no `course_memberships` row). */
+  seedAuthorGrant(grant: Omit<CourseAuthorGrant, "id">): CourseAuthorGrant {
+    const k = authorKey(grant.userId, grant.courseId, grant.capability);
+    const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+    this.authorGrants.set(k, full);
+    return full;
   }
 
   /** Test setup helper — not part of any port. */
@@ -33,6 +74,33 @@ export class InMemoryTopicDatabase {
   }
 
   repos(): TopicRepositories {
+    const authors: CourseAuthorRepository = {
+      findActiveCapabilities: async (userId, courseId) => {
+        return [...this.authorGrants.values()].filter(
+          (g) => g.userId === userId && g.courseId === courseId && isActiveAuthorGrant(g),
+        );
+      },
+      listActiveForUser: async (userId) => {
+        return [...this.authorGrants.values()].filter((g) => g.userId === userId && isActiveAuthorGrant(g));
+      },
+      grant: async (grant) => {
+        const k = authorKey(grant.userId, grant.courseId, grant.capability);
+        const existing = this.authorGrants.get(k);
+        if (existing) return { grant: existing, wasNew: false };
+        const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+        this.authorGrants.set(k, full);
+        return { grant: full, wasNew: true };
+      },
+      revoke: async (userId, courseId, capability, revokedAt) => {
+        const k = authorKey(userId, courseId, capability);
+        const existing = this.authorGrants.get(k);
+        if (!existing) return null;
+        const updated = { ...existing, revokedAt };
+        this.authorGrants.set(k, updated);
+        return updated;
+      },
+    };
+
     const memberships: CourseMembershipRepository = {
       findMembership: async (userId, courseId) => {
         return this.memberships.get(key(userId, courseId)) ?? null;
@@ -108,6 +176,6 @@ export class InMemoryTopicDatabase {
       },
     };
 
-    return { memberships, topics };
+    return { memberships, authors, topics };
   }
 }

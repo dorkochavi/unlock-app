@@ -8,7 +8,7 @@
  * (same-Course Topic association guard) unchanged from their existing
  * modules — this module owns no copy of either.
  */
-import type { CourseMembership, CourseMembershipRepository, CourseRepository } from "../course/ports";
+import type { CourseAuthorGrant, CourseAuthorRepository, CourseMembership, CourseMembershipRepository, CourseRepository } from "../course/ports";
 import type { Topic, TopicRepository } from "../topic/ports";
 
 import type {
@@ -21,6 +21,8 @@ import type {
 
 export type {
   AnswerOption,
+  CourseAuthorGrant,
+  CourseAuthorRepository,
   CourseMembership,
   CourseMembershipRepository,
   CourseRepository,
@@ -158,6 +160,8 @@ export interface QuestionRepository {
 
 export interface QuestionRepositories {
   memberships: CourseMembershipRepository;
+  /** RUN010-H.2 — required; see `CourseRepositories.authors`'s doc comment (`../course/ports`). */
+  authors: CourseAuthorRepository;
   topics: TopicRepository;
   questions: QuestionRepository;
 }
@@ -176,6 +180,8 @@ export interface QuestionRepositories {
  */
 export interface PublishQuestionRepositories {
   memberships: CourseMembershipRepository;
+  /** RUN010-H.2 — required; see `CourseRepositories.authors`'s doc comment (`../course/ports`). */
+  authors: CourseAuthorRepository;
   courses: CourseRepository;
   questions: QuestionRepository;
 }

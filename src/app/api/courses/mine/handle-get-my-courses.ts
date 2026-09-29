@@ -7,7 +7,8 @@
  * ## HTTP mapping
  *
  * - `UNAUTHENTICATED` -> 401, `{error: {code: "UNAUTHENTICATED"}}`.
- * - authenticated -> 200, `{courses: [{id, title, role}]}` (possibly empty).
+ * - authenticated -> 200, `{courses: [{id, title, role, isAuthor}]}` (possibly empty;
+ *   `role` is `null` for a Course the actor only authors, with no `course_memberships` row).
  * - unexpected thrown error -> 500, `{error: {code: "INTERNAL_ERROR"}}`.
  */
 import type { MyCourseEntry } from "../../../../application/course/list-my-courses";
@@ -57,6 +58,7 @@ export async function handleGetMyCourses(
         id: entry.courseId,
         title: entry.title,
         role: entry.role,
+        isAuthor: entry.isAuthor,
       })),
     },
   };

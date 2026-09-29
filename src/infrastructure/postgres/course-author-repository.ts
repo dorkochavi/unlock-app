@@ -2,10 +2,13 @@
  * PostgreSQL implementation of `CourseAuthorRepository`
  * (`src/application/course/ports.ts`), backed by `course_authors`
  * (RUN010-H.1, FUB-036 Option 4 architecture). Mirrors
- * `PostgresCourseMembershipRepository`'s exact patterns. NOT called from any
- * application code as of this Slice — see this table's migration
- * (`supabase/migrations/20260929010000_course_authors_v1.sql`) and the
- * `CourseAuthorRepository` port doc comment for the phased plan.
+ * `PostgresCourseMembershipRepository`'s exact patterns. As of RUN010-H.2,
+ * this is the authorization source of truth for every Course/Topic/
+ * Question/Import/Insights management call site (`findActiveCapabilities`,
+ * via the domain predicate `hasActiveAuthorGrant`), `create-course.ts`
+ * (`grant`), and "My Courses" (`listActiveForUser`) — see this table's
+ * migration (`supabase/migrations/20260929010000_course_authors_v1.sql`)
+ * for the phased plan this Slice continues.
  */
 import type {
   CourseAuthorCapability,
@@ -22,6 +25,15 @@ export class PostgresCourseAuthorRepository implements CourseAuthorRepository {
       `select * from course_authors
         where user_id = $1 and course_id = $2 and revoked_at is null`,
       [userId, courseId],
+    );
+    return result.rows.map(mapCourseAuthorRow);
+  }
+
+  async listActiveForUser(userId: string) {
+    const result = await this.db.query(
+      `select * from course_authors
+        where user_id = $1 and revoked_at is null`,
+      [userId],
     );
     return result.rows.map(mapCourseAuthorRow);
   }

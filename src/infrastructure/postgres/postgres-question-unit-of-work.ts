@@ -8,6 +8,7 @@
  */
 import type { PublishQuestionRepositories, QuestionUnitOfWork } from "../../application/question/ports";
 import type { ConnectionProvider } from "./connection-provider";
+import { PostgresCourseAuthorRepository } from "./course-author-repository";
 import { PostgresCourseMembershipRepository } from "./course-membership-repository";
 import { PostgresCourseRepository } from "./course-repository";
 import { PostgresQuestionRepository } from "./question-authoring-repository";
@@ -23,6 +24,7 @@ export class PostgresQuestionUnitOfWork implements QuestionUnitOfWork {
       try {
         const repos: PublishQuestionRepositories = {
           memberships: new PostgresCourseMembershipRepository(db),
+          authors: new PostgresCourseAuthorRepository(db),
           courses: new PostgresCourseRepository(db),
           questions: new PostgresQuestionRepository(db),
         };

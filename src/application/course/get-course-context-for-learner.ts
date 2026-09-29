@@ -13,7 +13,20 @@
  *
  * Does not create an independent per-course Today/plan — this function only
  * reads a Course summary and the caller's own membership row.
+ *
+ * RUN010-H.2 (FUB-036, Option 4 architecture, required DTO/API surface
+ * change): a Course created after this Slice has NO `course_memberships`
+ * row at all for its creator (`create-course.ts` now grants `course_authors`
+ * only — RUN010-H.3's self-enrollment bypass does not exist yet). Without a
+ * change here, that creator would get `NOT_A_MEMBER` calling this endpoint
+ * for their own brand-new Course. `isAuthor` is therefore threaded through
+ * as a genuinely independent signal (sourced from `course_authors`, never
+ * derived from `membership.role`): when no membership row exists AND the
+ * actor holds an active author grant, this now returns `READY` with
+ * `membership: null` instead of `NOT_A_MEMBER`. When a membership row DOES
+ * exist, behavior is unchanged (`isAuthor` is simply added alongside it).
  */
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import { isPracticeEligible } from "../practice/practice-eligibility";
 import type { CourseMembership, CourseRepositories, CourseSummary } from "./ports";
 
@@ -29,10 +42,21 @@ export type GetCourseContextForLearnerResult =
   | {
       outcome: "READY";
       course: CourseSummary;
-      membership: CourseMembership;
+      /**
+       * `null` only when the actor has no `course_memberships` row at all —
+       * reachable only via `isAuthor: true` (a Part-B-created Course's
+       * creator, pre-H.3 self-enrollment). A real learner/author WITH a
+       * membership row always gets it populated, exactly as before this
+       * Slice.
+       */
+      membership: CourseMembership | null;
+      /** RUN010-H.2 — independent `course_authors` signal, never derived from `membership.role`. */
+      isAuthor: boolean;
       /**
        * Server-computed (Run UX-02, ADR-020 §6): LEARNER + active non-archived
        * membership + PUBLISHED Course. The client never derives this itself.
+       * Always `false` when `membership` is `null` — an author with no
+       * learner enrollment has nothing to practice as a learner.
        */
       practiceAvailable: boolean;
     };
@@ -50,12 +74,21 @@ export async function getCourseContextForLearner(
     command.actorUserId,
     command.courseId,
   );
+  const authorGrants = await repos.authors.findActiveCapabilities(
+    command.actorUserId,
+    command.courseId,
+  );
+  const isAuthor = hasActiveAuthorGrant(authorGrants);
+
   if (membership === null) {
-    // Possession of a valid Course id is never itself authorization
-    // (ADR-015 §6, same principle `joinCourse` already applies) — an
-    // authenticated user with no membership row at all gets the same
-    // fail-closed outcome as an AUTHORIZED_ONLY non-member.
-    return { outcome: "NOT_A_MEMBER" };
+    if (!isAuthor) {
+      // Possession of a valid Course id is never itself authorization
+      // (ADR-015 §6, same principle `joinCourse` already applies) — an
+      // authenticated user with no membership row and no author grant
+      // gets the same fail-closed outcome as an AUTHORIZED_ONLY non-member.
+      return { outcome: "NOT_A_MEMBER" };
+    }
+    return { outcome: "READY", course, membership: null, isAuthor: true, practiceAvailable: false };
   }
   if (membership.revokedAt !== null) {
     return { outcome: "ACCESS_REVOKED" };
@@ -67,5 +100,5 @@ export async function getCourseContextForLearner(
     command.courseId,
   );
 
-  return { outcome: "READY", course, membership, practiceAvailable };
+  return { outcome: "READY", course, membership, isAuthor, practiceAvailable };
 }

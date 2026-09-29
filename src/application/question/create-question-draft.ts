@@ -3,13 +3,14 @@
  * OWNER/active-INSTRUCTOR starting a new, never-published Question draft in
  * their Course (Run 006 S2). Deliberately minimal: creates an empty draft
  * (no Topic, no content) — `updateQuestionDraft` fills it in. Mirrors
- * `createTopic`'s own authorization shape exactly (`canAuthorCourse`, same
- * content-authoring policy as every other Run-005/006 authoring surface).
+ * `createTopic`'s own authorization shape exactly (RUN010-H.2:
+ * `hasActiveAuthorGrant` over `course_authors`, same content-authoring
+ * policy as every other Run-005/006 authoring surface).
  *
  * `actorUserId` is trusted as-is at this boundary — see
  * `src/application/course/join-course.ts`'s module doc comment for why.
  */
-import { canAuthorCourse } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import type { QuestionAuthoringRecord, QuestionRepositories } from "./ports";
 
 export interface CreateQuestionDraftCommand {
@@ -25,11 +26,11 @@ export async function createQuestionDraft(
   command: CreateQuestionDraftCommand,
   repos: QuestionRepositories,
 ): Promise<CreateQuestionDraftResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-  if (actorMembership === null || !canAuthorCourse(actorMembership)) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     return { outcome: "NOT_AUTHORIZED" };
   }
 

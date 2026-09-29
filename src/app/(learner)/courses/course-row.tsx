@@ -23,7 +23,10 @@ import type { CourseRole } from "@/domain/course/types";
 export interface MyCourseDto {
   id: string;
   title: string;
-  role: CourseRole;
+  /** `null` for a Course the actor only authors, with no `course_memberships` row (RUN010-H.2). */
+  role: CourseRole | null;
+  /** RUN010-H.2 — independent `course_authors` signal, never derived from `role`. Use this for management/authoring UI, not `MANAGEMENT_ROLES.includes(role)`. */
+  isAuthor: boolean;
 }
 
 export const MANAGEMENT_ROLES: readonly CourseRole[] = ["OWNER", "INSTRUCTOR"];
@@ -35,7 +38,7 @@ export function CourseRow({
   course: MyCourseDto;
   roleLabel: string;
 }) {
-  const isManaged = MANAGEMENT_ROLES.includes(course.role);
+  const isManaged = course.isAuthor;
   return (
     <li>
       <Link

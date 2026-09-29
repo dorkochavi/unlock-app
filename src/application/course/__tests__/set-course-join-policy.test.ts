@@ -47,6 +47,27 @@ describe("setCourseJoinPolicy", () => {
     expect(result).toEqual({ outcome: "UPDATED", joinPolicy: "OPEN" });
   });
 
+  // RUN010-H.2 required proof (a): active course_authors grant, no
+  // course_memberships row at all.
+  it("allows an actor with an active course_authors grant but no course_memberships row", async () => {
+    const db = new InMemoryCourseDatabase();
+    db.seedCourse("course-1", "AUTHORIZED_ONLY");
+    db.seedAuthorGrant({
+      userId: "actor-1",
+      courseId: "course-1",
+      capability: "INSTRUCTOR",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+
+    const result = await setCourseJoinPolicy(
+      { actorUserId: "actor-1", courseId: "course-1", joinPolicy: "OPEN" },
+      db.repos(),
+    );
+
+    expect(result).toEqual({ outcome: "UPDATED", joinPolicy: "OPEN" });
+  });
+
   it("does not allow a LEARNER to change joinPolicy", async () => {
     const db = new InMemoryCourseDatabase();
     db.seedCourse("course-1", "AUTHORIZED_ONLY");

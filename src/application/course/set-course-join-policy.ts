@@ -6,7 +6,7 @@
  * `actorUserId` is trusted as-is at this boundary — see `join-course.ts`'s
  * module doc comment for why.
  */
-import { isManagementRole } from "../../domain/course/types";
+import { hasActiveAuthorGrant } from "../../domain/course/types";
 import type { CourseJoinPolicy, CourseRepositories } from "./ports";
 
 export interface SetCourseJoinPolicyCommand {
@@ -24,22 +24,17 @@ export async function setCourseJoinPolicy(
   command: SetCourseJoinPolicyCommand,
   repos: CourseRepositories,
 ): Promise<SetCourseJoinPolicyResult> {
-  const actorMembership = await repos.memberships.findMembership(
+  // No active `course_authors` grant at all (never granted, or granted then
+  // revoked) is NOT_AUTHORIZED — a learner (or a non-member, or someone
+  // whose authoring capability was revoked) may never change join policy,
+  // regardless of whether the Course itself exists. Checking authorization
+  // before the Course's existence also means a caller with no legitimate
+  // relationship to this Course never learns whether the courseId is valid.
+  const authorGrants = await repos.authors.findActiveCapabilities(
     command.actorUserId,
     command.courseId,
   );
-
-  // No membership at all, a revoked membership, or a non-management role
-  // are all NOT_AUTHORIZED — a learner (or a non-member, or a revoked
-  // former member) may never change join policy, regardless of whether the
-  // Course itself exists. Checking the actor's membership before the
-  // Course's existence also means a caller with no legitimate relationship
-  // to this Course never learns whether the courseId is valid.
-  if (
-    actorMembership === null ||
-    actorMembership.revokedAt !== null ||
-    !isManagementRole(actorMembership.role)
-  ) {
+  if (!hasActiveAuthorGrant(authorGrants)) {
     return { outcome: "NOT_AUTHORIZED" };
   }
 

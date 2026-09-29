@@ -1,21 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CourseMembership } from "../../../domain/course/types";
-import type { CourseStatus } from "../../../domain/course/types";
+import type { CourseAuthorGrant, CourseStatus } from "../../../domain/course/types";
 import { getCourseItemAnalysis } from "../get-course-item-analysis";
 import type { CurrentVersionItemStats, ItemAnalysisRepositories } from "../ports";
 
 const NOW = new Date("2026-09-24T09:00:00Z");
 
-function membership(overrides: Partial<CourseMembership> = {}): CourseMembership {
+/**
+ * RUN010-H.2 — authorization is now sourced from `course_authors`
+ * (`findActiveCapabilities`), not `course_memberships`. `grant(...)`
+ * defaults to one active INSTRUCTOR grant, matching this file's pre-H.2
+ * default membership fixture.
+ */
+function grant(overrides: Partial<CourseAuthorGrant> = {}): CourseAuthorGrant {
   return {
-    id: "m-1",
+    id: "grant-1",
     userId: "actor-1",
     courseId: "course-1",
-    role: "INSTRUCTOR",
-    joinedAt: new Date("2026-01-01T00:00:00Z"),
+    capability: "INSTRUCTOR",
+    grantedAt: new Date("2026-01-01T00:00:00Z"),
     revokedAt: null,
-    archivedAt: null,
     ...overrides,
   };
 }
@@ -32,37 +36,34 @@ function row(overrides: Partial<CurrentVersionItemStats> = {}): CurrentVersionIt
 }
 
 function repos(opts: {
-  membership?: CourseMembership | null;
+  grants?: CourseAuthorGrant[];
   status?: CourseStatus | null;
   activeLearners?: number;
   rows?: CurrentVersionItemStats[];
 }) {
-  const findMembership = vi.fn(async () =>
-    opts.membership === undefined ? membership() : opts.membership,
-  );
+  const findActiveCapabilities = vi.fn(async () => opts.grants ?? [grant()]);
   const listStatuses = vi.fn(async () =>
     opts.status === null ? [] : [{ id: "course-1", status: opts.status ?? ("PUBLISHED" as CourseStatus) }],
   );
   const countActiveLearners = vi.fn(async () => opts.activeLearners ?? 30);
   const listCurrentVersionItemStats = vi.fn(async () => opts.rows ?? [row()]);
   const value = {
-    memberships: { findMembership },
+    memberships: { findMembership: vi.fn(async () => null) },
+    authors: { findActiveCapabilities },
     courses: { listStatuses },
     itemAnalysis: { countActiveLearners, listCurrentVersionItemStats },
   } as unknown as ItemAnalysisRepositories;
-  return { value, findMembership, listStatuses, countActiveLearners, listCurrentVersionItemStats };
+  return { value, findActiveCapabilities, listStatuses, countActiveLearners, listCurrentVersionItemStats };
 }
 
 const COMMAND = { actorUserId: "actor-1", courseId: "course-1", now: NOW };
 
 describe("getCourseItemAnalysis — authorization (fail closed)", () => {
   it.each([
-    ["no membership", null],
-    ["LEARNER", membership({ role: "LEARNER" })],
-    ["revoked INSTRUCTOR", membership({ revokedAt: new Date("2026-02-01T00:00:00Z") })],
-    ["archived OWNER", membership({ role: "OWNER", archivedAt: new Date("2026-02-01T00:00:00Z") })],
-  ])("%s -> NOT_AUTHORIZED, no Course/aggregate reads", async (_label, m) => {
-    const r = repos({ membership: m });
+    ["no active grant at all", []],
+    ["only a revoked INSTRUCTOR grant", [grant({ revokedAt: new Date("2026-02-01T00:00:00Z") })]],
+  ])("%s -> NOT_AUTHORIZED, no Course/aggregate reads", async (_label, grants) => {
+    const r = repos({ grants: grants as CourseAuthorGrant[] });
     const result = await getCourseItemAnalysis(COMMAND, r.value);
     expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
     expect(r.listStatuses).not.toHaveBeenCalled();
@@ -70,8 +71,34 @@ describe("getCourseItemAnalysis — authorization (fail closed)", () => {
     expect(r.listCurrentVersionItemStats).not.toHaveBeenCalled();
   });
 
-  it.each(["OWNER", "INSTRUCTOR"] as const)("%s is authorized", async (role) => {
-    const result = await getCourseItemAnalysis(COMMAND, repos({ membership: membership({ role }) }).value);
+  it.each(["OWNER", "INSTRUCTOR"] as const)("active %s grant is authorized", async (capability) => {
+    const result = await getCourseItemAnalysis(COMMAND, repos({ grants: [grant({ capability })] }).value);
+    expect(result.outcome).toBe("READY");
+  });
+
+  // RUN010-H.2 required proof (a): `memberships.findMembership` always
+  // resolves `null` in this file's fake (see `repos()` above) — proving
+  // authorization here never depends on a `course_memberships` row at all,
+  // only on `authors.findActiveCapabilities`.
+  it("authorizes purely via course_authors — no course_memberships row is ever consulted", async () => {
+    const result = await getCourseItemAnalysis(COMMAND, repos({ grants: [grant()] }).value);
+    expect(result.outcome).toBe("READY");
+  });
+
+  /**
+   * RUN010-H.2 — documented, intentional narrowing vs. the old
+   * `canAuthorCourse`/`course_memberships` check (`hasActiveAuthorGrant`'s
+   * own doc comment, `src/domain/course/types.ts`): `course_authors` has no
+   * `archivedAt` concept at all, so a capability that would have been
+   * blocked by an "archived management membership" under the old check is
+   * simply AUTHORIZED under the new one — archival is a per-learner
+   * Today-exclusion fact with no equivalent meaning for authoring capability.
+   */
+  it("an active grant authorizes even in a scenario that would have been an archived membership pre-H.2", async () => {
+    const result = await getCourseItemAnalysis(
+      COMMAND,
+      repos({ grants: [grant({ capability: "OWNER" })] }).value,
+    );
     expect(result.outcome).toBe("READY");
   });
 });

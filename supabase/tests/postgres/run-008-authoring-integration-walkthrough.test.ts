@@ -48,6 +48,7 @@ import { createQuestionDraft } from "../../../src/application/question/create-qu
 import { publishQuestion } from "../../../src/application/question/publish-question";
 import { updateQuestionDraft } from "../../../src/application/question/update-question-draft";
 import { createTopic } from "../../../src/application/topic/create-topic";
+import { PostgresCourseAuthorRepository } from "../../../src/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import { PostgresCourseUnitOfWork } from "../../../src/infrastructure/postgres/postgres-course-unit-of-work";
@@ -74,6 +75,7 @@ afterEach(async () => {
 function courseRepos() {
   return {
     memberships: new PostgresCourseMembershipRepository(db),
+    authors: new PostgresCourseAuthorRepository(db),
     courses: new PostgresCourseRepository(db),
   };
 }
@@ -81,6 +83,7 @@ function courseRepos() {
 function questionRepos() {
   return {
     memberships: new PostgresCourseMembershipRepository(db),
+    authors: new PostgresCourseAuthorRepository(db),
     topics: new PostgresTopicRepository(db),
     questions: new PostgresQuestionRepository(db),
   };
@@ -89,6 +92,7 @@ function questionRepos() {
 function importPreviewRepos() {
   return {
     memberships: new PostgresCourseMembershipRepository(db),
+    authors: new PostgresCourseAuthorRepository(db),
     courses: new PostgresCourseRepository(db),
     topics: new PostgresTopicRepository(db),
   };

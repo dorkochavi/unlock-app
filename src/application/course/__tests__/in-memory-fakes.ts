@@ -7,6 +7,8 @@
  */
 import type {
   CourseAuthoringRecord,
+  CourseAuthorGrant,
+  CourseAuthorRepository,
   CourseJoinPolicy,
   CourseMembership,
   CourseMembershipRepository,
@@ -14,10 +16,19 @@ import type {
   CourseRepository,
   CourseUnitOfWork,
 } from "../ports";
-import type { CourseStatus } from "../../../domain/course/types";
+import {
+  isActiveAuthorGrant,
+  isManagementRole,
+  type CourseAuthorCapability,
+  type CourseStatus,
+} from "../../../domain/course/types";
 
 function key(userId: string, courseId: string): string {
   return `${userId}:${courseId}`;
+}
+
+function authorKey(userId: string, courseId: string, capability: CourseAuthorCapability): string {
+  return `${userId}:${courseId}:${capability}`;
 }
 
 let nextId = 1;
@@ -30,8 +41,15 @@ function nextCourseIdValue(): string {
   return `course-${nextCourseId++}`;
 }
 
+let nextAuthorGrantSeq = 1;
+function nextAuthorGrantId(): string {
+  return `author-grant-${nextAuthorGrantSeq++}`;
+}
+
 export class InMemoryCourseDatabase {
   private memberships = new Map<string, CourseMembership>();
+  /** RUN010-H.2 — mirrors `course_authors`; auto-populated from `seedMembership` (see its own doc comment) plus the explicit `seedAuthorGrant`/`revokeAuthorGrant` helpers for author-only (no-membership) fixtures. */
+  private authorGrants = new Map<string, CourseAuthorGrant>();
   private joinPolicies = new Map<string, CourseJoinPolicy>();
   private courseTitles = new Map<string, string>();
   /** Defaults to PUBLISHED for `seedCourse` — matches Run 005 S2's real
@@ -94,9 +112,80 @@ export class InMemoryCourseDatabase {
     if (!this.courseStatuses.has(membership.courseId)) {
       this.courseStatuses.set(membership.courseId, "PUBLISHED");
     }
+    // RUN010-H.2 — mirrors RUN010-H.1's real migration backfill exactly:
+    // every OWNER/INSTRUCTOR membership also gets an active `course_authors`
+    // grant, preserving `revokedAt` (a revoked management membership backfills
+    // as a revoked grant, never silently reactivated). LEARNER rows never
+    // produce a grant. `archivedAt` has no equivalent on `course_authors` at
+    // all (`hasActiveAuthorGrant`'s own doc comment) — deliberately NOT
+    // consulted here, matching the real backfill/migration exactly.
+    if (isManagementRole(membership.role)) {
+      const capability = membership.role as CourseAuthorCapability;
+      const k = authorKey(membership.userId, membership.courseId, capability);
+      this.authorGrants.set(k, {
+        id: this.authorGrants.get(k)?.id ?? nextAuthorGrantId(),
+        userId: membership.userId,
+        courseId: membership.courseId,
+        capability,
+        grantedAt: membership.joinedAt,
+        revokedAt: membership.revokedAt,
+      });
+    }
+  }
+
+  /**
+   * Test setup helper — not part of any port. For an author-only fixture (no
+   * `course_memberships` row at all), e.g. proving a Part-B-created Course's
+   * creator is authorized purely via `course_authors`.
+   */
+  seedAuthorGrant(grant: Omit<CourseAuthorGrant, "id">): CourseAuthorGrant {
+    const k = authorKey(grant.userId, grant.courseId, grant.capability);
+    const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+    this.authorGrants.set(k, full);
+    return full;
+  }
+
+  /** Test setup helper — not part of any port. */
+  revokeAuthorGrant(userId: string, courseId: string, capability: CourseAuthorCapability, revokedAt: Date): void {
+    const k = authorKey(userId, courseId, capability);
+    const existing = this.authorGrants.get(k);
+    if (existing) {
+      this.authorGrants.set(k, { ...existing, revokedAt });
+    }
   }
 
   repos(): CourseRepositories {
+    const authors: CourseAuthorRepository = {
+      findActiveCapabilities: async (userId, courseId) => {
+        return [...this.authorGrants.values()].filter(
+          (g) => g.userId === userId && g.courseId === courseId && isActiveAuthorGrant(g),
+        );
+      },
+      listActiveForUser: async (userId) => {
+        return [...this.authorGrants.values()].filter(
+          (g) => g.userId === userId && isActiveAuthorGrant(g),
+        );
+      },
+      grant: async (grant) => {
+        const k = authorKey(grant.userId, grant.courseId, grant.capability);
+        const existing = this.authorGrants.get(k);
+        if (existing) {
+          return { grant: existing, wasNew: false };
+        }
+        const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+        this.authorGrants.set(k, full);
+        return { grant: full, wasNew: true };
+      },
+      revoke: async (userId, courseId, capability, revokedAt) => {
+        const k = authorKey(userId, courseId, capability);
+        const existing = this.authorGrants.get(k);
+        if (!existing) return null;
+        const updated = { ...existing, revokedAt };
+        this.authorGrants.set(k, updated);
+        return updated;
+      },
+    };
+
     const memberships: CourseMembershipRepository = {
       findMembership: async (userId, courseId) => {
         return this.memberships.get(key(userId, courseId)) ?? null;
@@ -214,7 +303,7 @@ export class InMemoryCourseDatabase {
       },
     };
 
-    return { memberships, courses };
+    return { memberships, authors, courses };
   }
 
   /**

@@ -39,7 +39,8 @@ export interface TopicProgressDto {
 interface MyCourseDto {
   id: string;
   title: string;
-  role: string;
+  /** RUN010-H.2 — `null` for a Course the actor only authors, no `course_memberships` row. Never equals `"LEARNER"`, so the filter below is unaffected. */
+  role: string | null;
 }
 
 export type CourseProgress =

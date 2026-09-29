@@ -10,6 +10,7 @@
  */
 import type { ImportRepositories, ImportUnitOfWork } from "../../application/import/ports";
 import type { ConnectionProvider } from "./connection-provider";
+import { PostgresCourseAuthorRepository } from "./course-author-repository";
 import { PostgresCourseMembershipRepository } from "./course-membership-repository";
 import { PostgresCourseRepository } from "./course-repository";
 import { PostgresQuestionRepository } from "./question-authoring-repository";
@@ -24,6 +25,7 @@ export class PostgresImportUnitOfWork implements ImportUnitOfWork {
       try {
         const repos: ImportRepositories = {
           memberships: new PostgresCourseMembershipRepository(db),
+          authors: new PostgresCourseAuthorRepository(db),
           courses: new PostgresCourseRepository(db),
           questions: new PostgresQuestionRepository(db),
           topics: new PostgresTopicRepository(db),

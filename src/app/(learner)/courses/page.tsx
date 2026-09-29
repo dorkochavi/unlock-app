@@ -9,7 +9,7 @@ import { LoadingState, StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 
-import { CourseRow, MANAGEMENT_ROLES, type MyCourseDto } from "./course-row";
+import { CourseRow, type MyCourseDto } from "./course-row";
 
 type ViewState =
   | { kind: "loading" }
@@ -67,7 +67,7 @@ export default function MyCoursesPage() {
   }, [retryCount]);
 
   const hasManagementRole =
-    state.kind === "ready" && state.courses.some((course) => MANAGEMENT_ROLES.includes(course.role));
+    state.kind === "ready" && state.courses.some((course) => course.isAuthor);
 
   return (
     <>
@@ -121,7 +121,11 @@ export default function MyCoursesPage() {
       {state.kind === "ready" && state.courses.length > 0 ? (
         <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {state.courses.map((course) => (
-            <CourseRow key={course.id} course={course} roleLabel={messages.myCourses.roleLabel[course.role]} />
+            <CourseRow
+              key={course.id}
+              course={course}
+              roleLabel={course.role ? messages.myCourses.roleLabel[course.role] : ""}
+            />
           ))}
         </ul>
       ) : null}

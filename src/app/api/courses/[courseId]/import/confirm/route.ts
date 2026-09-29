@@ -33,6 +33,7 @@ import { NextResponse } from "next/server";
 import { handleConfirmImport } from "./handle-confirm-import";
 
 import { confirmImport } from "@/application/import/confirm-import";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { PgConnectionProvider } from "@/infrastructure/postgres/pg-connection-provider";
@@ -82,6 +83,7 @@ export async function POST(
         return confirmImport(command, {
           previewRepos: {
             memberships: new PostgresCourseMembershipRepository(pool),
+            authors: new PostgresCourseAuthorRepository(pool),
             courses: new PostgresCourseRepository(pool),
             topics: new PostgresTopicRepository(pool),
           },

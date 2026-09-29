@@ -22,6 +22,7 @@ import { handleListQuestionsForCourse } from "./handle-list-questions-for-course
 
 import { createQuestionDraft } from "@/application/question/create-question-draft";
 import { listQuestionsForCourse } from "@/application/question/list-questions-for-course";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { PostgresQuestionRepository } from "@/infrastructure/postgres/question-authoring-repository";
@@ -44,6 +45,7 @@ export async function GET(
         const pool = getPool();
         return listQuestionsForCourse(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           topics: new PostgresTopicRepository(pool),
           questions: new PostgresQuestionRepository(pool),
         });
@@ -72,6 +74,7 @@ export async function POST(
         const pool = getPool();
         return createQuestionDraft(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           topics: new PostgresTopicRepository(pool),
           questions: new PostgresQuestionRepository(pool),
         });

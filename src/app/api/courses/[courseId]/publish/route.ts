@@ -18,6 +18,7 @@ import { NextResponse } from "next/server";
 import { handlePublishCourse } from "./handle-publish-course";
 
 import { publishCourse } from "@/application/course/publish-course";
+import { PostgresCourseAuthorRepository } from "@/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "@/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repository";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
@@ -39,6 +40,7 @@ export async function POST(
         const pool = getPool();
         return publishCourse(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
+          authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });
       },

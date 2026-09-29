@@ -12,8 +12,10 @@ import {
   type QuestionAuthoringRecord,
   type QuestionDraftContent,
 } from "../../../domain/question/types";
-import type { CourseStatus } from "../../../domain/course/types";
+import { isActiveAuthorGrant, isManagementRole, type CourseAuthorCapability, type CourseStatus } from "../../../domain/course/types";
 import type {
+  CourseAuthorGrant,
+  CourseAuthorRepository,
   CourseMembership,
   CourseMembershipRepository,
   CourseRepository,
@@ -29,13 +31,24 @@ function membershipKey(userId: string, courseId: string): string {
   return `${userId}:${courseId}`;
 }
 
+function authorKey(userId: string, courseId: string, capability: CourseAuthorCapability): string {
+  return `${userId}:${courseId}:${capability}`;
+}
+
 let nextQuestionId = 1;
 function nextQuestionIdValue(): string {
   return `question-${nextQuestionId++}`;
 }
 
+let nextAuthorGrantSeq = 1;
+function nextAuthorGrantId(): string {
+  return `author-grant-${nextAuthorGrantSeq++}`;
+}
+
 export class InMemoryQuestionDatabase {
   private memberships = new Map<string, CourseMembership>();
+  /** RUN010-H.2 — mirrors `course_authors`; see `course/__tests__/in-memory-fakes.ts`'s own doc comment for the auto-derivation-from-`seedMembership` convention this repeats. */
+  private authorGrants = new Map<string, CourseAuthorGrant>();
   private topics = new Map<string, Topic>();
   private questions = new Map<string, QuestionAuthoringRecord>();
   private versionContents = new Map<string, QuestionDraftContent>();
@@ -51,6 +64,26 @@ export class InMemoryQuestionDatabase {
   /** Test setup helper — not part of any port. */
   seedMembership(membership: CourseMembership): void {
     this.memberships.set(membershipKey(membership.userId, membership.courseId), membership);
+    if (isManagementRole(membership.role)) {
+      const capability = membership.role as CourseAuthorCapability;
+      const k = authorKey(membership.userId, membership.courseId, capability);
+      this.authorGrants.set(k, {
+        id: this.authorGrants.get(k)?.id ?? nextAuthorGrantId(),
+        userId: membership.userId,
+        courseId: membership.courseId,
+        capability,
+        grantedAt: membership.joinedAt,
+        revokedAt: membership.revokedAt,
+      });
+    }
+  }
+
+  /** Test setup helper — not part of any port. Author-only fixture (no `course_memberships` row). */
+  seedAuthorGrant(grant: Omit<CourseAuthorGrant, "id">): CourseAuthorGrant {
+    const k = authorKey(grant.userId, grant.courseId, grant.capability);
+    const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+    this.authorGrants.set(k, full);
+    return full;
   }
 
   /** Test setup helper — not part of any port. */
@@ -81,6 +114,35 @@ export class InMemoryQuestionDatabase {
       .filter(([, v]) => v.questionId === questionId)
       .map(([id, v]) => ({ id, versionNumber: v.versionNumber, content: v.content }))
       .sort((a, b) => a.versionNumber - b.versionNumber);
+  }
+
+  private buildAuthors(): CourseAuthorRepository {
+    return {
+      findActiveCapabilities: async (userId, courseId) => {
+        return [...this.authorGrants.values()].filter(
+          (g) => g.userId === userId && g.courseId === courseId && isActiveAuthorGrant(g),
+        );
+      },
+      listActiveForUser: async (userId) => {
+        return [...this.authorGrants.values()].filter((g) => g.userId === userId && isActiveAuthorGrant(g));
+      },
+      grant: async (grant) => {
+        const k = authorKey(grant.userId, grant.courseId, grant.capability);
+        const existing = this.authorGrants.get(k);
+        if (existing) return { grant: existing, wasNew: false };
+        const full: CourseAuthorGrant = { ...grant, id: nextAuthorGrantId() };
+        this.authorGrants.set(k, full);
+        return { grant: full, wasNew: true };
+      },
+      revoke: async (userId, courseId, capability, revokedAt) => {
+        const k = authorKey(userId, courseId, capability);
+        const existing = this.authorGrants.get(k);
+        if (!existing) return null;
+        const updated = { ...existing, revokedAt };
+        this.authorGrants.set(k, updated);
+        return updated;
+      },
+    };
   }
 
   repos(): QuestionRepositories {
@@ -249,7 +311,7 @@ export class InMemoryQuestionDatabase {
       },
     };
 
-    return { memberships, topics, questions };
+    return { memberships, authors: this.buildAuthors(), topics, questions };
   }
 
   /**
@@ -259,7 +321,7 @@ export class InMemoryQuestionDatabase {
    * (status only — the only field `publishQuestion` reads).
    */
   private publishRepos(): PublishQuestionRepositories {
-    const { memberships, questions } = this.repos();
+    const { memberships, authors, questions } = this.repos();
     const courses: CourseRepository = {
       getCourseSummary: async () => {
         throw new Error("InMemoryQuestionDatabase.publishRepos: getCourseSummary is not used by publishQuestion");
@@ -292,7 +354,7 @@ export class InMemoryQuestionDatabase {
       updateCourseMetadata: async () => null,
       setCourseStatus: async () => null,
     };
-    return { memberships, courses, questions };
+    return { memberships, authors, courses, questions };
   }
 
   /**

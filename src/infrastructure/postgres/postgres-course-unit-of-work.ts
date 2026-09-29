@@ -1,20 +1,18 @@
 /**
  * PostgreSQL implementation of `CourseUnitOfWork`
  * (`src/application/course/ports.ts`) — Run 005 S2 DB review finding:
- * `createCourse`'s `courses` insert + creator's OWNER `course_memberships`
- * insert must commit or roll back together. Mirrors
+ * `createCourse`'s two writes must commit or roll back together. Mirrors
  * `postgres-unit-of-work.ts`'s `PostgresUnitOfWork.runInTransaction`
  * exactly (same BEGIN/COMMIT/ROLLBACK shape, same rollback-failure-does-
  * not-mask-the-original-error handling), narrowed to this module's own
  * `CourseRepositories`.
  *
- * RUN010-H.1: also constructs a `PostgresCourseAuthorRepository` and attaches
- * it as `repos.authors`. `CourseRepositories.authors` is optional
- * specifically so this stays additive: nothing currently reads `repos.authors`
- * anywhere (this Slice only wires availability); a later Slice (H.2) is
- * expected to start using it, e.g. for `createCourse`'s eventual switch to
- * granting a `course_authors` row instead of an OWNER `course_memberships`
- * row.
+ * RUN010-H.1 constructed a `PostgresCourseAuthorRepository` and attached it
+ * as `repos.authors`, at the time unused by any application code. As of
+ * RUN010-H.2, `createCourse` (`src/application/course/create-course.ts`)
+ * uses it: the two writes this UnitOfWork wraps are now the `courses`
+ * insert + the creator's `course_authors` OWNER grant (`repos.authors
+ * .grant(...)`) — no longer a `course_memberships` insert.
  */
 import type { CourseRepositories, CourseUnitOfWork } from "../../application/course/ports";
 import type { ConnectionProvider } from "./connection-provider";

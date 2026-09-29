@@ -55,6 +55,7 @@ import {
   createProductionDailyPlanPorts,
 } from "../../../src/infrastructure/dailyPlan/composition-root";
 import { createProductionSubmitAnswerContext } from "../../../src/infrastructure/learning/composition-root";
+import { PostgresCourseAuthorRepository } from "../../../src/infrastructure/postgres/course-author-repository";
 import { PostgresCourseMembershipRepository } from "../../../src/infrastructure/postgres/course-membership-repository";
 import { PostgresCourseRepository } from "../../../src/infrastructure/postgres/course-repository";
 import { PostgresDailyPlanRepository } from "../../../src/infrastructure/postgres/daily-plan-repository";
@@ -199,6 +200,7 @@ async function learnerFlow(args: {
       { actorUserId: userId, courseId },
       {
         memberships: new PostgresCourseMembershipRepository(pool),
+        authors: new PostgresCourseAuthorRepository(pool),
         courses: new PostgresCourseRepository(pool),
       },
     );

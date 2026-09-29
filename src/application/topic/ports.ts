@@ -8,11 +8,11 @@
  * course module already owns; this module does not need its own copy of
  * that port.
  */
-import type { CourseMembership, CourseMembershipRepository } from "../course/ports";
+import type { CourseAuthorGrant, CourseAuthorRepository, CourseMembership, CourseMembershipRepository } from "../course/ports";
 
 import type { Topic } from "../../domain/topic/types";
 
-export type { CourseMembership, CourseMembershipRepository, Topic };
+export type { CourseAuthorGrant, CourseAuthorRepository, CourseMembership, CourseMembershipRepository, Topic };
 
 export interface CreateTopicInput {
   courseId: string;
@@ -41,5 +41,7 @@ export interface TopicRepository {
 
 export interface TopicRepositories {
   memberships: CourseMembershipRepository;
+  /** RUN010-H.2 — required; every use case in this module authorizes via `hasActiveAuthorGrant` over this repository instead of `canAuthorCourse` over `memberships`. */
+  authors: CourseAuthorRepository;
   topics: TopicRepository;
 }
