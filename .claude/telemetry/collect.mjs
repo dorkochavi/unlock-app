@@ -117,23 +117,40 @@ function resolveRunId(projectRoot) {
   return "UNASSIGNED";
 }
 
-function persistRunIdForSession(runId) {
-  const envFile = process.env.CLAUDE_ENV_FILE;
-
-  if (!envFile) {
-    return;
-  }
-
+/**
+ * Optional Slice marker: the first token of a `CURRENT_SLICE:` line in the
+ * untracked temp file scratch/development_checkpoint.md (e.g.
+ * `CURRENT_SLICE: E (telemetry hardening)` -> "E"). Read per event, like the
+ * Plan RUN_ID, so a Slice change needs no commit and no restart. Absent file,
+ * absent line, or a non-identifier value (e.g. "(none)") -> null.
+ */
+function readSliceId(projectRoot) {
   try {
-    fs.appendFileSync(
-      envFile,
-      `UNLOCK_RUN_ID=${runId}\n`,
+    const contents = fs.readFileSync(
+      path.join(projectRoot, "scratch", "development_checkpoint.md"),
       "utf8",
     );
-  } catch (error) {
-    debug("Could not persist UNLOCK_RUN_ID:", error);
+
+    const match = contents.match(
+      /^CURRENT_SLICE:[ \t]*(\S+)/m,
+    );
+
+    const token = match?.[1]?.trim();
+
+    return token && /^[A-Za-z0-9._-]{1,40}$/.test(token)
+      ? token
+      : null;
+  } catch {
+    return null;
   }
 }
+
+// NOTE: this collector deliberately does NOT persist UNLOCK_RUN_ID into
+// CLAUDE_ENV_FILE. A session-pinned value would leak into that session's
+// Bash tool env and, because UNLOCK_RUN_ID outranks the Plan in
+// summarize.mjs/statusline.mjs, make them read a stale RUN_ID after the Plan
+// RUN_ID changed mid-session. UNLOCK_RUN_ID remains only as an explicit,
+// user-set override.
 
 function redactPath(rawPath, projectRoot) {
   if (typeof rawPath !== "string" || rawPath.trim() === "") {
@@ -471,11 +488,12 @@ function extractToolFilePath(toolName, toolInput, projectRoot) {
   return null;
 }
 
-function buildBaseEvent(input, runId) {
+function buildBaseEvent(input, runId, sliceId) {
   return {
     schema_version: 1,
     timestamp: new Date().toISOString(),
     run_id: runId,
+    slice_id: sliceId ?? null,
     session_id: input.session_id ?? null,
     prompt_id: input.prompt_id ?? null,
     event: input.hook_event_name ?? "UNKNOWN",
@@ -490,7 +508,11 @@ function buildBaseEvent(input, runId) {
 }
 
 function buildEvent(input, projectRoot, runId) {
-  const base = buildBaseEvent(input, runId);
+  const base = buildBaseEvent(
+    input,
+    runId,
+    readSliceId(projectRoot),
+  );
   const eventName = input.hook_event_name;
 
   if (eventName === "SessionStart") {
@@ -682,10 +704,6 @@ async function main() {
 
   const projectRoot = findProjectRoot(input);
   const runId = resolveRunId(projectRoot);
-
-  if (input.hook_event_name === "SessionStart") {
-    persistRunIdForSession(runId);
-  }
 
   const event = buildEvent(
     input,

@@ -35,6 +35,9 @@
  *   point at disposable temp-directory fixtures -- it never touches the
  *   real repository's git state.
  *
+ * Telemetry attribution sanity (WARN-only, deterministic, reads only
+ * scratch/telemetry/**): see checkTelemetryAttribution below.
+ *
  * Exit code: 0 on PASS (including WARN-only), 1 if any FAIL is found.
  */
 
@@ -121,6 +124,108 @@ function isAncestor(root, ancestor, descendant) {
   }
 }
 
+// Attribution-sanity thresholds (named so they are easy to tune/audit).
+export const MIN_RUN_EVENTS = 20; // fewer events than this is "near zero"
+export const MIN_RUN_COMMITS = 5; // ...only suspicious for a Run this long
+export const RECENT_SESSION_HOURS = 48; // "recently active" other-folder session
+
+function normalizeName(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+// "2026-09-29-DEVOS-V1.3-CONSOLIDATION" -> "devos v1 3 consolidation"
+export function runShortName(runId) {
+  return normalizeName(runId.replace(/^\d{4}-\d{2}-\d{2}-/, ''));
+}
+
+function countRawEvents(runDir) {
+  const rawDir = path.join(runDir, 'raw');
+  let count = 0;
+  let files;
+  try {
+    files = fs.readdirSync(rawDir).filter((f) => f.endsWith('.jsonl'));
+  } catch {
+    return 0;
+  }
+  for (const f of files) {
+    const text = readFileSafe(path.join(rawDir, f));
+    if (text) count += text.split(/\r?\n/).filter((l) => l.trim()).length;
+  }
+  return count;
+}
+
+/**
+ * Deterministic, zero-AI telemetry attribution sanity checks. WARN-only:
+ * scratch/telemetry is gitignored local data, so absence or thinness is
+ * suspicious but never proof of a broken Run. Motivation: hooks attribute
+ * events to the Plan's RUN_ID at event time; a stale Plan RUN_ID silently
+ * files a whole Run under the previous Run's folder.
+ *  (c) current Run folder missing;
+ *  (a) folder has < MIN_RUN_EVENTS events although START_HEAD..HEAD spans
+ *      >= MIN_RUN_COMMITS commits;
+ *  (b) another Run folder has a recently-updated session snapshot whose
+ *      session_name mentions this Run's short name (session filed elsewhere).
+ */
+export function checkTelemetryAttribution({ root, runId, startHead, now = Date.now() }) {
+  const warns = [];
+  const telemetryRoot = path.join(root, 'scratch', 'telemetry');
+  const runDir = path.join(telemetryRoot, runId);
+
+  if (!fs.existsSync(runDir)) {
+    warns.push(
+      `Telemetry folder scratch/telemetry/${runId} is missing -- events for this Run may have been attributed to another RUN_ID (stale Plan RUN_ID?) or telemetry is not collected on this machine.`
+    );
+  } else if (startHead) {
+    let commits = null;
+    try {
+      commits = Number(gitOutput(root, ['rev-list', '--count', `${startHead}..HEAD`]));
+    } catch {
+      commits = null;
+    }
+    const events = countRawEvents(runDir);
+    if (Number.isFinite(commits) && commits >= MIN_RUN_COMMITS && events < MIN_RUN_EVENTS) {
+      warns.push(
+        `Telemetry folder for ${runId} has only ${events} event(s) (< ${MIN_RUN_EVENTS}) although the Run spans ${commits} commit(s) since START_HEAD (>= ${MIN_RUN_COMMITS}) -- likely mis-attributed to another RUN_ID.`
+      );
+    }
+  }
+
+  const short = runShortName(runId);
+  if (short && fs.existsSync(telemetryRoot)) {
+    const cutoff = now - RECENT_SESSION_HOURS * 3600 * 1000;
+    for (const other of fs.readdirSync(telemetryRoot).sort()) {
+      if (other === runId) continue;
+      const sessionsDir = path.join(telemetryRoot, other, 'sessions');
+      let files;
+      try {
+        files = fs.readdirSync(sessionsDir).filter((f) => f.endsWith('.json'));
+      } catch {
+        continue;
+      }
+      for (const f of files) {
+        let snap;
+        try {
+          snap = JSON.parse(readFileSafe(path.join(sessionsDir, f)));
+        } catch {
+          continue;
+        }
+        const ts = Date.parse(snap?.timestamp ?? '');
+        if (!Number.isFinite(ts) || ts < cutoff) continue;
+        if (normalizeName(snap?.session_name).includes(short)) {
+          warns.push(
+            `Recently active session "${snap.session_name}" is filed under telemetry folder "${other}" but its name references this Run (${runId}) -- RUN_ID attribution drift.`
+          );
+        }
+      }
+    }
+  }
+
+  return warns;
+}
+
 function gitOutput(root, args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 }
@@ -172,6 +277,8 @@ export function runVerification({ root, preClose }) {
   } else if (!gitRefExists(root, startHead)) {
     fails.push(`START_HEAD "${startHead}" does not resolve via git rev-parse --verify.`);
   }
+
+  warns.push(...checkTelemetryAttribution({ root, runId, startHead }));
 
   if (runStatus === 'COMPLETE') {
     if (!lastVerifiedHead) {

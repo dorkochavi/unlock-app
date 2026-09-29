@@ -323,6 +323,84 @@ test('WARN: LAST_VERIFIED_HEAD equals current HEAD while RUN_STATUS: COMPLETE', 
 });
 
 // ---------------------------------------------------------------------
+// Telemetry attribution sanity (WARN-only)
+// ---------------------------------------------------------------------
+function attributionFixture(commitCount, runId) {
+  const dir = mkTempDir();
+  const hashes = initFixtureRepo(dir, commitCount);
+  writeDocs(dir, {
+    devStatus: `# DEV_STATUS\n\nRUN_ID: ${runId}\n`,
+    plan: planFixture({ runId, startHead: hashes[0], runStatus: 'IN_PROGRESS' }),
+  });
+  return dir;
+}
+
+function writeTelemetryEvents(dir, runId, count) {
+  const rawDir = path.join(dir, 'scratch', 'telemetry', runId, 'raw');
+  fs.mkdirSync(rawDir, { recursive: true });
+  const lines = Array.from({ length: count }, (_, i) => JSON.stringify({ n: i }));
+  fs.writeFileSync(path.join(rawDir, 's1.jsonl'), lines.join('\n') + '\n');
+}
+
+function writeSessionSnapshot(dir, folder, sessionName, timestamp) {
+  const sessionsDir = path.join(dir, 'scratch', 'telemetry', folder, 'sessions');
+  fs.mkdirSync(sessionsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(sessionsDir, 's1.json'),
+    JSON.stringify({ session_id: 's1', session_name: sessionName, timestamp })
+  );
+}
+
+test('WARN (c): current Run telemetry folder missing, still PASS/exit 0', () => {
+  const runId = '2026-02-01-ATTR-MISSING';
+  const dir = attributionFixture(2, runId);
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.match(stdout, /WARN: Telemetry folder scratch\/telemetry\/2026-02-01-ATTR-MISSING is missing/);
+});
+
+test('WARN (a): near-zero events despite many commits since START_HEAD', () => {
+  const runId = '2026-02-01-ATTR-THIN';
+  const dir = attributionFixture(7, runId); // 6 commits above START_HEAD >= 5
+  writeTelemetryEvents(dir, runId, 3);
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.match(stdout, /only 3 event\(s\)/);
+});
+
+test('No WARN (a): thin telemetry on a short Run, or ample events on a long Run', () => {
+  const runId = '2026-02-01-ATTR-OK';
+  const short = attributionFixture(3, runId); // 2 commits < threshold
+  writeTelemetryEvents(short, runId, 1);
+  assert.doesNotMatch(runVerifier(short).stdout, /event\(s\)/);
+  const long = attributionFixture(7, runId);
+  writeTelemetryEvents(long, runId, 25);
+  const out = runVerifier(long).stdout;
+  assert.doesNotMatch(out, /WARN/);
+  assert.match(out, /no findings/);
+});
+
+test('WARN (b): recent session in another folder names the current Run', () => {
+  const runId = '2026-02-01-DEVOS-V9.9-CONSOLIDATION';
+  const dir = attributionFixture(2, runId);
+  writeTelemetryEvents(dir, runId, 30);
+  writeSessionSnapshot(dir, '2026-01-01-OLD-RUN', 'UNLOCK DEVOS V9.9 consolidation', new Date().toISOString());
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.match(stdout, /filed under telemetry folder "2026-01-01-OLD-RUN"/);
+});
+
+test('No WARN (b): stale snapshot, or unrelated session name', () => {
+  const runId = '2026-02-01-DEVOS-V9.9-CONSOLIDATION';
+  const dir = attributionFixture(2, runId);
+  writeTelemetryEvents(dir, runId, 30);
+  const old = new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString();
+  writeSessionSnapshot(dir, '2026-01-01-OLD-RUN', 'UNLOCK DEVOS V9.9 consolidation', old);
+  writeSessionSnapshot(dir, '2026-01-02-OTHER', 'Something unrelated', new Date().toISOString());
+  assert.doesNotMatch(runVerifier(dir).stdout, /attribution drift/);
+});
+
+// ---------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------
 console.log('');

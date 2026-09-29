@@ -41,6 +41,14 @@ prior conversation):
 HARD STOP if the tree contains unexpected local work that the Run did not itself produce. Never
 discard, reset, stash, or otherwise silently resolve unknown changes — surface them and stop.
 
+Then establish the Run identity, still BEFORE any worker dispatch: set `RUN_ID` / `START_HEAD` /
+`RUN_STATUS` / title in the header of `docs/CHATGPT_PLAN.md` (a deliberate Plan-only edit or commit;
+`CLAUDE.md` §5), and verify telemetry now attributes to the new RUN_ID (a hook event after the edit
+appears under `scratch/telemetry/<new RUN_ID>/`). Telemetry files events under whatever Plan RUN_ID is
+current at event time; a Plan identity left stale until Run close misfiles the whole Run under the
+previous one (`docs/DEVOS_OBSERVABILITY.md` §11). Run identity fields and their owners:
+`CLAUDE.md` §2 / `docs/CONTEXT_MAP.md` — not restated here.
+
 Also confirm at Phase 0:
 - RUN_ID/RUN_GOAL/invariants/Slice queue are all present per §1;
 - a materially equivalent worker-isolation mechanism is actually available (see §4). If not, do not
@@ -125,6 +133,11 @@ by path instead.
 
 ## 7. Pre-Slice / Post-Slice Control Loop
 
+**Grounding first.** A Slice that might create or rewrite policy first searches the narrowest canonical
+owners — `docs/CONTEXT_MAP.md`, accepted ADR/design docs, `docs/OPEN_QUESTIONS.md` if decision-related,
+`docs/FOLLOW_UP_BACKLOG.md` if deferred-work-related, current Plan/`DEV_STATUS` — narrowly, without
+preloading, so policy is not invented or duplicated.
+
 **Before dispatching each Slice**, the parent records:
 - Goal — what this Slice is actually for;
 - Expected change — the concrete change anticipated;
@@ -149,6 +162,22 @@ by path instead.
 
 A "no" on justification, or a "yes" on unjustified drift, is a STOP/ESCALATE trigger, not something
 to note and continue past.
+
+**Scope mutation.** If scope changes mid-Slice, revalidate the whole control record together — Goal,
+Expected change, Smallest useful change, Must remain unchanged, Proof, Risks — then update the
+checkpoint and the worker instruction consistently. Never patch one field and leave the rest stale.
+
+### Gate Policy (canonical definitions)
+
+The Plan's Slice queue declares one gate per Slice; this skill owns what each gate means:
+- **AUTO** — after KEEP, continue if the Slice's invariants and proof pass.
+- **REVIEW_GATE** — risk-based review runs per §11; continue automatically unless review or the
+  worker reports material divergence or an unexpected product/architecture decision.
+- **HUMAN_DECISION_GATE** — always stop for an explicit human decision.
+- **FINAL_GATE** — stop after integrated verification and Run close for human review.
+
+Do not pause after a Slice merely because it ended; pause only as its gate, a STOP/ESCALATE, or the
+Drift Check requires.
 
 ## 8. Goal Lock / Goal vs. Proxy
 
@@ -183,7 +212,7 @@ classes or selection logic — it only requires that the step not be skipped.
 1. Confirm implementation for the Run's approved scope is complete.
 2. Confirm verification is complete per `.claude/rules/testing.md` (only missing/unproven Run-level
    behavior, not a blanket suite replay — see `CLAUDE.md` §12).
-3. Record the Run's closing identity using the START_HEAD / LAST_VERIFIED_HEAD / RUN_STATUS model
+3. Update the closing identity (the Run identity itself was established at Phase 0, §2) using the START_HEAD / LAST_VERIFIED_HEAD / RUN_STATUS model
    (see `docs/DEV_STATUS.md` and `docs/CHATGPT_PLAN.md` for the live shape of these fields, and
    `.claude/telemetry/verify-run-close.mjs` for the deterministic, zero-AI gate that checks them).
 4. Write Run-close docs (`docs/DEV_STATUS.md`, `docs/RUNS/<RUN_ID>.md`) per `CLAUDE.md` §11/§12.
@@ -198,6 +227,14 @@ classes or selection logic — it only requires that the step not be skipped.
 
 ## 13. Experiment/Telemetry Hooks
 
+Run close: generate the summary (`node .claude/telemetry/summarize.mjs [RUN_ID]`); verify attribution
+sanity with the deterministic `.claude/telemetry/verify-run-close.mjs` (its attribution WARNs); report
+the mechanism evidence compactly. Never dump raw telemetry into durable docs. Telemetry figures are
+runtime session/context measurements, not billed tokens; event semantics (subagent metrics, `slice_id`)
+are owned by `docs/DEVOS_OBSERVABILITY.md` §11. Slices are attributed via the `CURRENT_SLICE:` line of
+the §6 checkpoint (first token, e.g. `CURRENT_SLICE: C`) — keep it current when dispatching each Slice.
+
+
 At Run close, a Run using this skill should report available evidence about the *mechanism itself*
 (not the product change), for example: how the parent's context behaved over the Run, worker count
 and whether isolation actually held, how many times context needed compaction, how many
@@ -208,3 +245,22 @@ MEASURE → INTERPRET → COMPARE → ACT model this repository already uses for
 invent a single productivity/efficiency score to stand in for this evidence, and do not promote the
 mechanism to universal/default policy from a small number of Runs — a KEEP/WATCH call is provisional
 until it has been observed enough times to justify wider adoption.
+
+## 14. Interruption Recovery
+
+Interruptions (rate limit, classifier failure, worker crash, session restart, `/clear`) must not lose
+or discard work:
+- do not discard uncommitted interrupted worker work; inspect the tree and HEAD first;
+- a fresh recovery worker evaluates the inherited diff against the original Slice contract, then
+  completes/fixes/tests it; commit only after coherent proof;
+- refresh the §6 checkpoint before and after.
+
+`/clear` protects context health but does not by itself reduce total Run cost; prefer fewer, cheaper
+resumptions and better handoffs.
+
+## 15. Failure Classification
+
+Verification findings state whether a failure is: pre-existing at Slice START; pre-existing at Run
+START; introduced in the current Slice; or introduced earlier in the current Run. At Run close, compare
+against Run START (`START_HEAD`), not only the prior Slice. Handling of unrelated pre-existing
+failures stays with `.claude/rules/testing.md` §14.

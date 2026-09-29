@@ -76,7 +76,7 @@ working context — don't load it or narrate it during normal implementation (`C
 When you do interpret telemetry, every efficiency signal is read beside its paired quality signal,
 and an observation moves through `MEASURE → INTERPRET → COMPARE → ACT`, landing on `KEEP` (no
 change), `WATCH` (noted, not yet acted on), or `CHANGE` (promoted to an actual policy/process
-change) — never `measure → immediately optimize`. Full model: `docs/DEVOS_OBSERVABILITY.md`.
+change) — never `measure → immediately optimize`. Full model and event/metric semantics: `docs/DEVOS_OBSERVABILITY.md`.
 
 ## 7. `/clear` vs `/compact` vs `/rename` + `/clear` + `/resume`
 
@@ -94,6 +94,9 @@ Practical, not prescriptive:
   Use this instead of a bare `/clear` when the session itself (not just its written artifacts) is
   worth being able to come back to.
 
+`/clear` protects context health but does not itself reduce total Run cost; prefer fewer, cheaper
+resumptions and good handoffs (interruption recovery: `.claude/skills/autonomous-run/SKILL.md`).
+
 When in doubt, prefer writing durable state to the repository (Git, `DEV_STATUS`, scratch checkpoint)
 over relying on session memory at all — see `CLAUDE.md` §16, Handoff Model.
 
@@ -105,7 +108,9 @@ compact handoff), consumes that worker's short structured report, updates a Run-
 `scratch/development_checkpoint.md` (Run goal, Slice queue, completed Slices, blockers, current
 Slice, uncommitted work, last verification), and dispatches the next Slice. Reviewers are likewise
 fresh agents invoked per `.claude/skills/review-commit/SKILL.md` only when a Slice's risk warrants
-one. Workers run one at a time (single writer), not in parallel.
+one. Workers run one at a time (single writer), not in parallel. Before the first worker, Phase 0 sets
+the Plan's `RUN_ID` / `START_HEAD` / `RUN_STATUS` so telemetry attributes to the new Run; gate meanings
+(AUTO / REVIEW_GATE / HUMAN_DECISION_GATE / FINAL_GATE) and interruption recovery live in the skill, not here.
 
 The reusable procedure for this pattern is packaged as `.claude/skills/autonomous-run/SKILL.md`. It
 is deliberately not referenced from `CLAUDE.md` — Long Autonomous Runs are an infrequent, explicitly

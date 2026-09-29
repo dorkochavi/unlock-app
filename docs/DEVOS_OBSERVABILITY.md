@@ -128,3 +128,26 @@ This file defines **how** observations are interpreted and promoted (§§3, 6-8)
 - Detailed supporting evidence for any of those items belongs in the relevant `docs/RUNS/<run>.md`, never here.
 - Current conclusions must not accumulate in this methodology file — if a specific finding needs stating, it goes in `docs/DEV_STATUS.md` or a Run Report, not as a new subsection here.
 - Future evidence may freely change current conclusions (§6) without requiring any change to this file — only a change to the interpretation *method itself* (the loop, the paired-signal discipline, the lifecycle, the ownership table above) is a change to this file.
+
+## 11. Telemetry Event Semantics (canonical interpretation)
+
+Owner of how raw events and summaries are read. Implementation: `.claude/telemetry/collect.mjs` (events), `summarize.mjs` (summary), `verify-run-close.mjs` (attribution sanity); tests in `.claude/telemetry/*.test.mjs`. Design intent and metric catalogue: `docs/RUN_TELEMETRY.md`.
+
+**What telemetry is.** Runtime session/context measurements (event counts, characters, durations, session snapshots) — not billed tokens, not an invoice. Metadata only: never file contents, prompts, or tool-response bodies.
+
+**Event record** (`scratch/telemetry/<RUN_ID>/raw/<session_id>.jsonl`, `schema_version: 1`):
+
+| Field | Meaning |
+|---|---|
+| `event` | Claude Code hook name (`SessionStart`, `PostToolUse`, `SubagentStart`, `SubagentStop`, ...) |
+| `activity` | Collector class derived from `event`/tool: `SESSION_START/END`, `INSTRUCTION_LOAD`, `FILE_READ/EDIT/WRITE`, `SEARCH_GREP/GLOB`, `SHELL`, `TOOL`, `SUBAGENT_START/STOP`, `COMPACT_START/END`, `LIFECYCLE` |
+| `run_id` | Plan `RUN_ID` at event time (§ RUN_ID attribution below) |
+| `session_id` | Claude session; a Run spans one or more sessions |
+| `slice_id` | Optional (absent/`null` = unattributed); first token of the `CURRENT_SLICE:` line in `scratch/development_checkpoint.md` at event time. Never guessed after the fact |
+| `agent_id` / `agent_type` | Present on events emitted by or about a subagent; absent = main session. `agent_type` is empty for untyped background/internal agents |
+
+**RUN_ID attribution.** Every event is filed under the Plan's `RUN_ID` read at that event's time, so a Plan `RUN_ID` that is stale (not updated at Run start) silently files the whole Run under the previous Run's folder. Hooks read only the Plan; `UNLOCK_RUN_ID` is an explicit user-set override (outranks the Plan in collector, summarizer, and statusline) and is never persisted by the collector. Establish the Plan identity before the first worker; `verify-run-close.mjs` emits WARN-only attribution-sanity findings (missing Run folder; near-zero events despite many commits since `START_HEAD`; a recently active session in another folder whose name references this Run).
+
+**Subagent metrics.** `SubagentStart` fires only for agents dispatched via the Agent tool; `SubagentStop` also fires for untyped background/internal agents that have no start, no tool events, and tiny hand-backs. A resumed agent emits several start/stop events per `agent_id`. Therefore `started` (start events) and `completed` (all stop events) are different categories and are not expected to match; compare `started` with `completed_dispatched` (stops with a matching start or a non-empty `agent_type`); `completed_background_untyped` is reported separately.
+
+**Per-Slice attribution.** `summarize.mjs` adds a per-Slice table only when some event carries `slice_id`; Runs collected before the marker existed summarize unchanged, with no per-Slice section.

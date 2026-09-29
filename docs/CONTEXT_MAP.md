@@ -26,6 +26,8 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Historical execution | Git + `docs/RUNS/**` | RESTRICTED |
 | Temporary resume state | `scratch/development_checkpoint.md` | LOCAL/COLD |
 | How to interpret telemetry/context-cost signals | `docs/DEVOS_OBSERVABILITY.md` | COLD |
+| Long Autonomous Run orchestration (Phase 0 identity, gates, recovery) | `.claude/skills/autonomous-run/SKILL.md` | COLD |
+| Human index of how DevOS pieces fit | `docs/CLAUDE_CODE_OPERATING_GUIDE.md` (index only; canonical owners win) | COLD |
 
 ## Task → Smallest Context
 
@@ -92,6 +94,7 @@ High-frequency current ADRs include:
 | Slice orchestration | `.claude/skills/implement-slice/SKILL.md` |
 | Reviewer orchestration | `.claude/skills/review-commit/SKILL.md` |
 | Evidence gate | `.claude/skills/checkpoint/SKILL.md` |
+| Long Autonomous Run orchestration | `.claude/skills/autonomous-run/SKILL.md` |
 
 ## Historical / Restricted Material
 

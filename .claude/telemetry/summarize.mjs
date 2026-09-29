@@ -478,6 +478,43 @@ function aggregate(runId, events, snapshots) {
     ),
   );
 
+  // Subagent lifecycle semantics (see docs/DEVOS_OBSERVABILITY.md §11).
+  // SubagentStart fires only for agents dispatched through the Agent tool;
+  // SubagentStop ALSO fires for untyped background/internal agents that have
+  // no SubagentStart, no tool events, and an empty agent_type. So
+  // started !== completed is a real event-category difference, not a
+  // counting bug. A stop is "dispatched" when its agent_id matches a start
+  // OR it carries a non-empty agent_type; otherwise it is "background".
+  // A resumed agent can emit several start/stop events per agent_id, hence
+  // the unique-id counts.
+  const startedIds = new Set(
+    subagentStarts
+      .map((event) => event.agent_id)
+      .filter(Boolean),
+  );
+
+  const isDispatchedStop = (event) =>
+    (event.agent_id &&
+      startedIds.has(event.agent_id)) ||
+    Boolean(event.agent_type);
+
+  const dispatchedStops =
+    subagentStops.filter(isDispatchedStop);
+
+  const backgroundStops =
+    subagentStops.filter(
+      (event) => !isDispatchedStop(event),
+    );
+
+  const dispatchedHandbackValues =
+    finiteNumbers(
+      dispatchedStops.map(
+        (event) => event.handback_chars,
+      ),
+    );
+
+  const sliceSummary = summarizeSlices(events);
+
   const sessionIds = new Set(
     [
       ...events.map(
@@ -878,6 +915,32 @@ function aggregate(runId, events, snapshots) {
       completed:
         subagentStops.length,
 
+      // Distinct dispatched agents (Agent-tool SubagentStart agent_ids).
+      dispatched_unique_agents:
+        startedIds.size,
+
+      // Stop events attributable to a dispatched agent (matching start or
+      // typed) vs untyped background/internal agents with no start.
+      completed_dispatched:
+        dispatchedStops.length,
+
+      completed_background_untyped:
+        backgroundStops.length,
+
+      handback_chars_dispatched_total:
+        dispatchedHandbackValues.length > 0
+          ? sum(dispatchedHandbackValues)
+          : null,
+
+      handback_chars_dispatched_avg:
+        dispatchedHandbackValues.length > 0
+          ? round(
+              sum(dispatchedHandbackValues) /
+                dispatchedHandbackValues.length,
+              1,
+            )
+          : null,
+
       by_type:
         mapToSortedObject(
           subagentTypeCounts,
@@ -910,6 +973,8 @@ function aggregate(runId, events, snapshots) {
         handbackCharValues.length,
     },
 
+    slices: sliceSummary,
+
     qualitative: {
       context_misses:
         "NOT AUTOMATICALLY INFERRED",
@@ -926,8 +991,103 @@ function aggregate(runId, events, snapshots) {
       "Context misses and unnecessary rechecks require closeout judgment and are intentionally not inferred from raw events.",
       "shell_activity.by_command_class/by_category count each meaningful command in a compound `a && b` invocation separately, so their totals can exceed shell_activity.total (one entry per Bash/PowerShell tool call, not per sub-command).",
       "Raw events collected before command_classes existed carry only their first-matched command (the old command_class field); a compound command from before that field existed cannot be reclassified into its later sub-commands without rewriting historical raw data, which this summarizer does not do.",
+      "subagents.started counts SubagentStart events (Agent-tool dispatches only); subagents.completed counts ALL SubagentStop events, including untyped background/internal agents that never emit a start — use completed_dispatched to compare with started (a resumed agent can emit several starts/stops per agent_id).",
+      "Slice attribution comes from the optional slice_id stamped at collection time (CURRENT_SLICE: in scratch/development_checkpoint.md); events without it are reported as unattributed, never guessed.",
+      "Telemetry values are runtime session/context measurements, not billed tokens or an invoice.",
       "handback_chars is a LENGTH only (never the subagent's report text) and is populated only for SubagentStop events collected after this field existed — a Run spanning older raw events will show handback_measured_count below subagents.completed rather than treating unmeasured stops as zero-length.",
     ],
+  };
+}
+
+/**
+ * Compact per-Slice table from the optional `slice_id` event field. Returns
+ * null when NO event carries a slice_id (historical raw data), so older
+ * Runs summarize exactly as before. Slices are ordered by first event time.
+ */
+function summarizeSlices(events) {
+  if (!events.some((event) => event.slice_id)) {
+    return null;
+  }
+
+  const bySlice = new Map();
+  let unattributed = 0;
+
+  for (const event of events) {
+    if (!event.slice_id) {
+      unattributed += 1;
+      continue;
+    }
+
+    let row = bySlice.get(event.slice_id);
+
+    if (!row) {
+      row = {
+        slice_id: event.slice_id,
+        events: 0,
+        tool_calls: 0,
+        file_reads: 0,
+        shell_calls: 0,
+        subagents_started: 0,
+        tool_response_chars: 0,
+        first_event_at: event.timestamp ?? null,
+        last_event_at: event.timestamp ?? null,
+      };
+      bySlice.set(event.slice_id, row);
+    }
+
+    row.events += 1;
+
+    if (
+      event.event === "PostToolUse" ||
+      event.event === "PostToolUseFailure"
+    ) {
+      row.tool_calls += 1;
+      row.tool_response_chars +=
+        Number.isFinite(event.response_chars)
+          ? event.response_chars
+          : 0;
+    }
+
+    if (
+      event.activity === "FILE_READ" &&
+      event.success !== false
+    ) {
+      row.file_reads += 1;
+    }
+
+    if (event.activity === "SHELL") {
+      row.shell_calls += 1;
+    }
+
+    if (event.activity === "SUBAGENT_START") {
+      row.subagents_started += 1;
+    }
+
+    if (
+      event.timestamp &&
+      (!row.first_event_at ||
+        event.timestamp < row.first_event_at)
+    ) {
+      row.first_event_at = event.timestamp;
+    }
+
+    if (
+      event.timestamp &&
+      (!row.last_event_at ||
+        event.timestamp > row.last_event_at)
+    ) {
+      row.last_event_at = event.timestamp;
+    }
+  }
+
+  return {
+    by_slice: [...bySlice.values()].sort(
+      (a, b) =>
+        String(a.first_event_at).localeCompare(
+          String(b.first_event_at),
+        ),
+    ),
+    unattributed_events: unattributed,
   };
 }
 
@@ -1005,6 +1165,26 @@ function markdownTable(rows) {
         `| \`${String(key).replaceAll("|", "\\|")}\` | ${count} |`,
     ),
   ].join("\n");
+}
+
+function renderSlices(slices) {
+  if (!slices) {
+    return [];
+  }
+
+  return [
+    `## Per-Slice Activity (from slice_id stamps)`,
+    ``,
+    "| Slice | Events | Tool calls | File reads | Shell | Subagents started | Tool response chars |",
+    "|---|---:|---:|---:|---:|---:|---:|",
+    ...slices.by_slice.map(
+      (row) =>
+        `| ${row.slice_id} | ${row.events} | ${row.tool_calls} | ${row.file_reads} | ${row.shell_calls} | ${row.subagents_started} | ${row.tool_response_chars} |`,
+    ),
+    ``,
+    `Unattributed events (no slice_id): ${slices.unattributed_events}`,
+    ``,
+  ];
 }
 
 function renderMarkdown(summary) {
@@ -1108,8 +1288,10 @@ function renderMarkdown(summary) {
     ``,
     `## Subagents`,
     ``,
-    `- Started: ${summary.subagents.started}`,
-    `- Completed: ${summary.subagents.completed}`,
+    `- Dispatched (SubagentStart events): ${summary.subagents.started} (${summary.subagents.dispatched_unique_agents} unique agents)`,
+    `- Stop events, dispatched agents: ${summary.subagents.completed_dispatched}`,
+    `- Stop events, untyped background/internal agents (no start by design): ${summary.subagents.completed_background_untyped}`,
+    `- Stop events, total: ${summary.subagents.completed}`,
     `- File reads inside subagents: ${summary.subagents.file_reads}`,
     `- Hand-back size measured for: ${summary.subagents.handback_measured_count} of ${summary.subagents.completed} completions`,
     `- Hand-back characters (total, main-context cost proxy): ${
@@ -1123,6 +1305,7 @@ function renderMarkdown(summary) {
         : "NOT AVAILABLE"
     }`,
     ``,
+    ...renderSlices(summary.slices),
     `## Verification Activity`,
     ``,
     "```json",
