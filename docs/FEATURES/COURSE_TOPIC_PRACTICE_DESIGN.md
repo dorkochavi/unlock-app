@@ -102,7 +102,7 @@ Method: scratch-only harness (`scratch/ux02/selector.sim.test.ts`, not committed
 `generateTodayPlan` and every `PRODUCTION_*` policy (Today `maxItems` 15). SIMULATED: the §39A early-correct rule
 (scheduler wrapper returning the prior state) and the proposed selector (exclusions → ranked NBA → unseen → coverage).
 Learner histories are replayed day by day; "today" = day 21, 08:00. Each Attempt's session = its day; confidence
-is null (production does not capture confidence).
+is null (production did not capture confidence at design time; Run 010 now sends sure / not-sure).
 
 Fixture — Course A: Topic T1 "זיכרון" A01–A08, Topic T2 "תפיסה" A09–A14, no Topic A15–A16; Course B: B01–B12
 (one old correct answer each, all due).

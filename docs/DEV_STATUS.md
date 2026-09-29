@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-29 (DevOS V1.3 consolidation Run in progress; Run 010 COMPLETE locally)
+Updated: 2026-09-29 (DevOS V1.3 consolidation Run COMPLETE; Run 010 COMPLETE locally)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -135,8 +135,8 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
 ## Development OS State
 
 - Kernel: `CLAUDE.md` (Operating Kernel V1.2), rules in `.claude/rules/`, skills in `.claude/skills/`
-  (`implement-slice`, `review-commit`, `checkpoint`, `autonomous-run`). V1.3 consolidation is IN PROGRESS
-  (`docs/CHATGPT_PLAN.md`); nothing here is V1.3-final until that Run closes.
+  (`implement-slice`, `review-commit`, `checkpoint`, `autonomous-run`). V1.3 consolidation Run COMPLETE
+  (`docs/RUNS/2026-09-29-DEVOS-V1.3-CONSOLIDATION.md`).
 - Run identity model: START_HEAD / LAST_VERIFIED_HEAD / RUN_STATUS, checked by the deterministic zero-AI verifier
   `.claude/telemetry/verify-run-close.mjs`. Hooks attribute telemetry to whatever `RUN_ID:` `docs/CHATGPT_PLAN.md`
   declares (hooks re-read the Plan; the `UNLOCK_RUN_ID` environment variable is not what they use).
@@ -146,8 +146,8 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
     `RUN_ID` is current. Run 010 tracked orchestration only in the scratch checkpoint and never set the Plan
     identity, so its events landed under the prior `2026-09-28-DEVOS-MICRO-OPT-001` folder. This is attribution
     drift, mostly recoverable: about 3125 Run 010 events were reconstructed by session/timestamp. Fix (applied this
-    Run, Phase 0): set Plan `RUN_ID` / `START_HEAD` / `RUN_STATUS` before the first worker. Hardening tracked by the
-    V1.3 Plan (Slices D/E).
+    Run, Phase 0): set Plan `RUN_ID` / `START_HEAD` / `RUN_STATUS` before the first worker. Hardening delivered by the
+    V1.3 Run (Slices D/E; report in docs/RUNS).
   - No native per-Slice telemetry attribution (manual reconstruction from commits/Run report). WATCH.
   - Edit/Write tool-result echoes are a large fraction of tool-response characters; never caused a compaction. WATCH.
   - Tailwind class-conflict pattern (no `cn()` / `tailwind-merge`); convention in `docs/UX_SPEC.md` §12 item 56.
@@ -155,7 +155,6 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
   - Long Autonomous Run architecture (thin parent + fresh scoped workers): positive data points (UX-03-QA2,
     DevOS Micro-Opt, Run 010); not promoted into canonical policy beyond the `autonomous-run` skill.
   - `src/domain/import/types.ts` bundles three concerns; reconsider only if a fourth appears.
-  - Telemetry-summary (`summarize.mjs`) generation must be run at Run close.
 - Hard Claude denies (`.claude/settings.json`): `git push*`, destructive Git reset/clean/restore, destructive
   filesystem deletion, `supabase link*`, `supabase db push*`.
 
@@ -193,8 +192,8 @@ Pointers and one-liners only; nothing below is resolved by this file. These gate
   narrowing) -> verify. NEVER apply H.3 before the cutover is deployed. Re-check `npx supabase migration list` first.
 - E. `revokeCourseAuthor` last-author race: must be hardened (SELECT ... FOR UPDATE) before ANY route wires it —
   FUB-042 item 1. Currently unwired.
-- F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); tied to OQ-043 — tracked in Backlog (FUB-042 item 4)
-  must be resolved before any co-author-management UI.
+- F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); tied to OQ-043 (revoke/rejoin, LEARNER) — tracked in Backlog
+  (FUB-042 item 4); must be resolved before any co-author-management UI.
 - G. Unseen-question repository / Topic-diversifying cold-start SQL (`unseen-question-repository.ts` round-robin) has
   NOT been human-reviewed — pre-push review item on real Postgres (PGlite limits apply). Related: FUB-040.
 - Also before promotion: hosted Supabase Auth Redirect URL allow-list for `next=` values (open, non-blocking since

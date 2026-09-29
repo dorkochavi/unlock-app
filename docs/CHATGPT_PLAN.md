@@ -3,8 +3,9 @@
 PLAN_VERSION: 006
 RUN_ID: 2026-09-29-DEVOS-V1.3-CONSOLIDATION
 START_HEAD: `2e2634c`
-RUN_STATUS: IN_PROGRESS
-STATUS: **IN PROGRESS** — DevOS/docs/telemetry consolidation only.
+LAST_VERIFIED_HEAD: `1248b01`
+RUN_STATUS: COMPLETE
+STATUS: **COMPLETE** — DevOS/docs/telemetry consolidation only.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -26,21 +27,19 @@ deferred work only; Open Questions = unresolved decisions only. DevOS/docs/tooli
 
 ## 3. Gate Policy
 
-- **AUTO** — worker completes the Slice (implement, verify, commit) and the parent proceeds without stopping.
-- **REVIEW_GATE** — risk-based review (per `review-commit`) must be completed and material findings fixed before the parent proceeds.
-- **HUMAN_DECISION_GATE** — a product/architecture/hosted decision only the human can make; stop and report, never invent.
-- **FINAL_GATE** — Run-close acceptance: verifier, evidence freshness, final Git state; then STOP for the human.
+Every Slice declares one gate: AUTO, REVIEW_GATE, HUMAN_DECISION_GATE, or FINAL_GATE. Canonical semantics live in
+`.claude/skills/autonomous-run/SKILL.md` (not duplicated here).
 
 ## 4. Slice Queue
 
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Grounding + owner map (read-only) | AUTO | DONE |
-| B | Plan current-only + DEV_STATUS current snapshot (this Slice) | AUTO | IN PROGRESS |
-| C | FOLLOW_UP_BACKLOG consolidation + OPEN_QUESTIONS narrowing (no policy decisions) | AUTO | PENDING |
-| D | Skills/guide/CONTEXT_MAP hardening (Phase 0 identity, current-only rules) | REVIEW_GATE | PENDING |
-| E | Telemetry / verifier hardening | REVIEW_GATE | PENDING |
-| F | Run close: integrated acceptance, Run report, final Git state | FINAL_GATE | PENDING |
+| A | Grounding + exact ownership map (read-only) | AUTO | DONE |
+| B | CHATGPT_PLAN current-only + DEV_STATUS current snapshot | AUTO | DONE |
+| C | FOLLOW_UP_BACKLOG lifecycle cleanup | AUTO | DONE |
+| D | OPEN_QUESTIONS reconciliation (no policy decisions) | REVIEW_GATE | DONE |
+| E | autonomous-run skill patch + telemetry hardening | REVIEW_GATE | DONE (reviewed, no material findings) |
+| F | Integrated DevOS verification + Run close | FINAL_GATE | DONE |
 
 ## 5. Run Invariants
 
@@ -57,8 +56,7 @@ requiring push/deploy/hosted action; any need for a product decision or product-
 
 ## 7. Current Status
 
-- Slice A DONE (owner map, `scratch/slice-a-owner-map.md`, temporary).
-- Slice B in progress. Branch `feature/run-010-learning-intelligence`; no push.
+- Slices A–F DONE; Run COMPLETE (report: `docs/RUNS/2026-09-29-DEVOS-V1.3-CONSOLIDATION.md`). Branch `feature/run-010-learning-intelligence`; no push.
 
 ## History
 

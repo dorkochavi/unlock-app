@@ -121,6 +121,10 @@ Institution support may be added later.
 
 Status: **DECIDED AND IMPLEMENTED — see `docs/DECISIONS/015-user-course-membership-and-join-authorization-model.md`.**
 
+> Update (Run 010, H.1/H.3): Course management capability now lives in `course_authors`; `course_memberships` is
+> LEARNER-only once H.3 is applied. See `docs/DEV_STATUS.md` and ADR-015 for current state; the text below is the
+> original ADR-015 model.
+
 V1 uses an explicit `CourseMembership` relationship (conceptual fields:
 `userId`, `courseId`, `role`, `joinedAt`, `revokedAt`, `archivedAt`) with
 three roles (`OWNER`, `INSTRUCTOR`, `LEARNER`) and a per-Course join policy

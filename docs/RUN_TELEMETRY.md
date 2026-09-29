@@ -90,6 +90,8 @@ Claude should normally read only the generated summary.
 
 # 4. Run Identity
 
+Run identity and event started/completed semantics: canonical interpretation in `docs/DEVOS_OBSERVABILITY.md` §11 (pointer only).
+
 Telemetry should be grouped by the active `RUN_ID` from:
 
 `docs/CHATGPT_PLAN.md`
@@ -391,6 +393,8 @@ Do not optimize for cache hit ratio at the expense of correctness.
 ---
 
 # 15. Subagent Offload
+
+Started/completed semantics (dispatched typed subagents vs untyped background events): `docs/DEVOS_OBSERVABILITY.md` §11 (pointer only).
 
 Track where available:
 
