@@ -107,7 +107,7 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
     A local CA file is git-ignored (repo-root `/supabase-ca.crt`), never committed.
   - `DATABASE_POOL_MAX=5` (code default 1; valid 1..10). Hosted 30-learner burst: `max=1` Today p95 18.9 s / Answer
     p95 14.7 s; `max=5` Today p95 4.85 s / Answer p95 3.18 s; 30/30 succeeded both. Optional
-    `DATABASE_POOL_LOG_STATS=true`. Evidence: `docs/RUNS/2026-09-24-OVERNIGHT-PREPILOT.md`. Round-trip reduction
+    `DATABASE_POOL_LOG_STATS=true`. Evidence: `docs/RUNS/2026-09-23-PRE-PILOT.md`. Round-trip reduction
     deferred (FUB-026).
 - Backup: one manual hosted logical backup exists outside the repo (second copy off-machine). No restore drill was
   performed; no RPO/RTO claimed (FUB-009).
