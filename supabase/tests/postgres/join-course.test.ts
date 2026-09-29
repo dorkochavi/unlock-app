@@ -132,30 +132,108 @@ describe("joinCourse against real Postgres infrastructure", () => {
     expect(row.rows[0].revoked_at).not.toBeNull();
   });
 
-  it("never downgrades a pre-existing real OWNER row on self-join against an OPEN course", async () => {
-    const ownerUserId = await insertUser(db);
-    const courseId = await insertCourse(db, ownerUserId);
-    await courses.setJoinPolicy(courseId, "OPEN");
-    await insertCourseMembership(db, {
-      userId: ownerUserId,
+  // RUN010-H.3 (FUB-036, Option 4 decision 1): the old "never downgrades a
+  // pre-existing real OWNER row" scenario this test used to pin is now
+  // schema-impossible — course_memberships is learner-participation-only
+  // (Migration B narrows its role CHECK constraint to 'LEARNER'-only), so an
+  // OWNER row can never exist there again. Replaced by the approved author
+  // self-enrollment bypass's own real-Postgres proof below.
+  it("an active Course Author self-joins their own DRAFT Course as LEARNER via the bypass", async () => {
+    const authorId = await insertUser(db);
+    const courseId = await insertCourse(db, authorId, { status: "DRAFT" });
+    await authors.grant({
+      userId: authorId,
       courseId,
-      role: "OWNER",
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
     });
 
     const result = await joinCourse(
-      { actorUserId: ownerUserId, courseId },
+      { actorUserId: authorId, courseId },
       { courses, memberships, authors },
     );
 
-    expect(result.outcome).toBe("ALREADY_MEMBER");
-    if (result.outcome !== "ALREADY_MEMBER") throw new Error("unreachable");
-    expect(result.membership.role).toBe("OWNER");
+    expect(result.outcome).toBe("JOINED");
+    if (result.outcome !== "JOINED") throw new Error("unreachable");
+    expect(result.membership.role).toBe("LEARNER");
 
     const row = await db.query<{ role: string }>(
       "select role from course_memberships where user_id = $1 and course_id = $2",
-      [ownerUserId, courseId],
+      [authorId, courseId],
     );
-    expect(row.rows[0].role).toBe("OWNER");
+    expect(row.rows).toHaveLength(1);
+    expect(row.rows[0].role).toBe("LEARNER");
+  });
+
+  it("a non-author cannot use the bypass against the same DRAFT Course", async () => {
+    const authorId = await insertUser(db);
+    const courseId = await insertCourse(db, authorId, { status: "DRAFT" });
+    await authors.grant({
+      userId: authorId,
+      courseId,
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+    const strangerId = await insertUser(db);
+
+    const result = await joinCourse(
+      { actorUserId: strangerId, courseId },
+      { courses, memberships, authors },
+    );
+
+    expect(result.outcome).toBe("NOT_AUTHORIZED");
+    const row = await db.query(
+      "select id from course_memberships where user_id = $1 and course_id = $2",
+      [strangerId, courseId],
+    );
+    expect(row.rows).toHaveLength(0);
+  });
+
+  it("the bypass is scoped to exactly the Course the actor authors, not global", async () => {
+    const authorId = await insertUser(db);
+    const ownCourseId = await insertCourse(db, authorId, { status: "DRAFT" });
+    await authors.grant({
+      userId: authorId,
+      courseId: ownCourseId,
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: null,
+    });
+    const otherOwnerId = await insertUser(db);
+    const otherCourseId = await insertCourse(db, otherOwnerId, { status: "DRAFT" });
+
+    const result = await joinCourse(
+      { actorUserId: authorId, courseId: otherCourseId },
+      { courses, memberships, authors },
+    );
+
+    expect(result.outcome).toBe("NOT_AUTHORIZED");
+    const row = await db.query(
+      "select id from course_memberships where user_id = $1 and course_id = $2",
+      [authorId, otherCourseId],
+    );
+    expect(row.rows).toHaveLength(0);
+  });
+
+  it("a revoked author grant does not authorize the bypass", async () => {
+    const authorId = await insertUser(db);
+    const courseId = await insertCourse(db, authorId, { status: "DRAFT" });
+    await authors.grant({
+      userId: authorId,
+      courseId,
+      capability: "OWNER",
+      grantedAt: new Date("2026-01-01T00:00:00Z"),
+      revokedAt: new Date("2026-01-15T00:00:00Z"),
+    });
+
+    const result = await joinCourse(
+      { actorUserId: authorId, courseId },
+      { courses, memberships, authors },
+    );
+
+    expect(result.outcome).toBe("NOT_AUTHORIZED");
   });
 
   it("returns COURSE_NOT_FOUND for an unknown course, no row created", async () => {

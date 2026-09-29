@@ -585,8 +585,13 @@ describe("initial schema — real PostgreSQL constraint verification (pglite)", 
     const userId = await insertUser();
     const courseId = await insertCourse(userId);
 
+    // RUN010-H.3: course_memberships is now learner-participation-only (its
+    // role CHECK constraint accepts only 'LEARNER' —
+    // 20260929020000_course_membership_learner_only_v1.sql). The `role`
+    // value was always incidental to this test's actual point (there is no
+    // institution table/column); LEARNER is the only value that can persist.
     await expect(
-      insertCourseMembership({ userId, courseId, role: "OWNER" }),
+      insertCourseMembership({ userId, courseId, role: "LEARNER" }),
     ).resolves.toBeTypeOf("string");
 
     const institutionTable = await db.query<{ table_name: string }>(

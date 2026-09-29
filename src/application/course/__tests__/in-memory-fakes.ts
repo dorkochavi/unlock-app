@@ -166,6 +166,11 @@ export class InMemoryCourseDatabase {
           (g) => g.userId === userId && isActiveAuthorGrant(g),
         );
       },
+      listActiveForCourse: async (courseId) => {
+        return [...this.authorGrants.values()].filter(
+          (g) => g.courseId === courseId && isActiveAuthorGrant(g),
+        );
+      },
       grant: async (grant) => {
         const k = authorKey(grant.userId, grant.courseId, grant.capability);
         const existing = this.authorGrants.get(k);

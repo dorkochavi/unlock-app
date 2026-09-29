@@ -40,8 +40,15 @@ async function courseCount(): Promise<number> {
 }
 
 describe("PostgresCourseUnitOfWork", () => {
-  it("commits both writes together: the courses row and the OWNER membership both persist", async () => {
+  // RUN010-H.3: course_memberships is now learner-participation-only (its
+  // role CHECK constraint accepts only 'LEARNER' —
+  // 20260929020000_course_membership_learner_only_v1.sql), so this generic
+  // two-write-atomicity proof uses a LEARNER row rather than the old OWNER
+  // shape (the real createCourse behavior, which no longer writes any
+  // course_memberships row at all, is its own dedicated test below).
+  it("commits both writes together: the courses row and a course_memberships row both persist", async () => {
     const userId = await insertUser(db);
+    const learnerId = await insertUser(db);
 
     const courseId = await uow.runInTransaction(async (repos) => {
       const course = await repos.courses.createCourse({
@@ -50,9 +57,9 @@ describe("PostgresCourseUnitOfWork", () => {
         examDate: null,
       });
       await repos.memberships.createMembership({
-        userId,
+        userId: learnerId,
         courseId: course.id,
-        role: "OWNER",
+        role: "LEARNER",
         joinedAt: new Date(),
         revokedAt: null,
         archivedAt: null,
@@ -63,10 +70,10 @@ describe("PostgresCourseUnitOfWork", () => {
     expect(await courseCount()).toBe(1);
     const membershipRow = await db.query<{ role: string }>(
       "select role from course_memberships where user_id = $1 and course_id = $2",
-      [userId, courseId],
+      [learnerId, courseId],
     );
     expect(membershipRow.rows).toHaveLength(1);
-    expect(membershipRow.rows[0].role).toBe("OWNER");
+    expect(membershipRow.rows[0].role).toBe("LEARNER");
   });
 
   it("rolls back the courses insert when the transaction fails before commit — no orphaned, unmanageable Course row", async () => {

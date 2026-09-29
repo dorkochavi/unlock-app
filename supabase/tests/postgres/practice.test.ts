@@ -462,7 +462,14 @@ describe("eligibility fails closed (and never creates a plan)", () => {
   it.each([
     ["revoked membership", async (w: World) => db.query("update course_memberships set revoked_at = now() where user_id = $1", [w.learner])],
     ["archived membership (ADR-020 §7)", async (w: World) => db.query("update course_memberships set archived_at = now() where user_id = $1", [w.learner])],
-    ["non-LEARNER role", async (w: World) => db.query("update course_memberships set role = 'INSTRUCTOR' where user_id = $1", [w.learner])],
+    // RUN010-H.3: "non-LEARNER role" used to be tested here via a raw
+    // `UPDATE course_memberships SET role = 'INSTRUCTOR'` mutation. Since
+    // Migration B (20260929020000_course_membership_learner_only_v1.sql)
+    // narrowed course_memberships.role to a LEARNER-only CHECK constraint,
+    // that mutation is now schema-impossible (the DB itself rejects it,
+    // proven directly in course-membership-learner-only-narrowing.test.ts's
+    // own "rejects a non-LEARNER insert attempt" case) — removed rather than
+    // left to fail with an unhandled constraint-violation error.
     ["ARCHIVED Course", async (w: World) => db.query("update courses set status = 'ARCHIVED' where id = $1", [w.courseId])],
     ["DRAFT Course", async (w: World) => db.query("update courses set status = 'DRAFT' where id = $1", [w.courseId])],
     ["no membership", async (w: World) => db.query("delete from course_memberships where user_id = $1", [w.learner])],

@@ -162,4 +162,35 @@ describe("PostgresCourseAuthorRepository", () => {
       await repo.revoke(randomUUID(), randomUUID(), "OWNER", new Date()),
     ).toBeNull();
   });
+
+  // RUN010-H.3 — needed by revokeCourseAuthor's last-author-protection check.
+  it("listActiveForCourse returns every active grant on a Course, across every user, excluding revoked ones and other Courses", async () => {
+    const courseId = await insertCourse(db, await insertUser(db));
+    const ownerUserId = await insertUser(db);
+    const instructorUserId = await insertUser(db);
+    const revokedUserId = await insertUser(db);
+    await insertCourseAuthor(db, { userId: ownerUserId, courseId, capability: "OWNER" });
+    await insertCourseAuthor(db, { userId: instructorUserId, courseId, capability: "INSTRUCTOR" });
+    await insertCourseAuthor(db, {
+      userId: revokedUserId,
+      courseId,
+      capability: "INSTRUCTOR",
+      revokedAt: new Date("2026-01-01T00:00:00Z"),
+    });
+    const otherCourseId = await insertCourse(db, ownerUserId);
+    await insertCourseAuthor(db, { userId: ownerUserId, courseId: otherCourseId, capability: "OWNER" });
+
+    const repo = new PostgresCourseAuthorRepository(db);
+    const grants = await repo.listActiveForCourse(courseId);
+
+    expect(grants).toHaveLength(2);
+    expect(grants.map((g) => g.userId).sort()).toEqual([instructorUserId, ownerUserId].sort());
+    expect(grants.every((g) => g.revokedAt === null)).toBe(true);
+  });
+
+  it("listActiveForCourse returns an empty array for a Course with no active grants", async () => {
+    const courseId = await insertCourse(db, await insertUser(db));
+    const repo = new PostgresCourseAuthorRepository(db);
+    expect(await repo.listActiveForCourse(courseId)).toEqual([]);
+  });
 });

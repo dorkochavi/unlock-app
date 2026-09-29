@@ -1221,7 +1221,7 @@ Run 011 start.
 
 # FUB-036 — Author-Can-Learn-Own-Course Blocked by Single-Role Membership Schema (QA2-D, STOPPED)
 
-**Status:** `IN PROGRESS — Option 4 architecture, H.1 + H.2 KEEP; H.3 gated on explicit human go-ahead`
+**Status:** `IN PROGRESS — Option 4 architecture, H.1 + H.2 + H.3 all KEEP; optional H.4 (Insights CTE cleanup / polish) remains`
 **Area:** Course Membership / Authorization (ADR-015)
 
 QA2-D ("Author can learn their own Course") was investigated and STOPPED per its own gate — see
@@ -1411,6 +1411,88 @@ independently (see the Process note above). A standalone corrective commit (befo
 fixed the stale test; the fresh full schema/PGlite suite now shows only the one genuine pre-Run010 failure.
 This does not change H.2's own KEEP verdict or any of its authorization-cutover findings — it corrects only
 the schema/PGlite evidence-attribution claim.
+
+**RUN010-H.3 outcome (2026-09-29, STATUS KEEP) — GO received from human, gate cleared.** Implemented
+Phase C (Migration B + the two approved human decisions): (a) migration
+`supabase/migrations/20260929020000_course_membership_learner_only_v1.sql` DELETEs every legacy
+OWNER/INSTRUCTOR `course_memberships` row (redundant — already backfilled into `course_authors` by H.1, and
+no code path has written a non-LEARNER `course_memberships` row since H.2) and narrows the table's `role`
+CHECK constraint (dropped by its Postgres-assigned default name, `course_memberships_role_check`, matching
+this repo's own established convention — `20260925000000_daily_plan_new_material_v1.sql` drops an identical
+inline-unnamed constraint the same way) to `LEARNER`-only going forward. `course_authors` itself (H.1's
+table) is untouched by this migration in any way. The TypeScript `CourseRole`/`CourseMembership.role` domain
+type (`src/domain/course/types.ts`) was deliberately NOT narrowed — stays permissive, per this Slice's
+approved scope. (b) `src/application/course/join-course.ts`: the approved narrow author self-enrollment
+bypass — when `canSelfJoinCourse` denies self-join (DRAFT/AUTHORIZED_ONLY/ARCHIVED/etc.), an active Course
+Author (`repos.authors.findActiveCapabilities` on that exact `courseId`) may still self-join as an ordinary
+LEARNER; a non-author still gets `NOT_AUTHORIZED`, and the bypass is proven Course-scoped (an author of
+Course A cannot use it on Course B) and revocation-sensitive (a revoked grant does not authorize it). The
+resulting `course_memberships` row is byte-identical to any other learner's — no new field, no flag,
+confirmed at the DB level. (c) New use case `src/application/course/revoke-course-author.ts` (mirrors
+`revoke-course-membership.ts`'s shape) revokes a `course_authors` grant, failing closed with a new explicit
+`LAST_AUTHOR` outcome (not a generic error, nothing mutated) if the revoke would leave the Course with zero
+active `course_authors` rows — required a new port method `CourseAuthorRepository.listActiveForCourse`
+(`ports.ts` + Postgres impl + all 4 in-memory test fakes across
+`src/application/{course,import,question,topic}/__tests__/in-memory-fakes.ts`). `revokeCourseAuthor` is not
+yet wired to any API route (consistent with this Slice's approved scope — no new co-author-management UI).
+
+Migration B's destructive DELETE made a pre-existing test-infrastructure assumption schema-impossible: several
+PGlite test files seeded raw OWNER/INSTRUCTOR `course_memberships` rows (or, in one case,
+`practice.test.ts`'s `it.each` table, a raw `UPDATE course_memberships SET role = 'INSTRUCTOR'`) purely to
+authorize a test actor — a pattern already obsolete in production since H.2 but still live in test fixtures.
+Fixed by updating `supabase/tests/postgres/db-harness.ts`'s `insertCourseMembership` helper: for role
+OWNER/INSTRUCTOR it now creates ONLY the equivalent `course_authors` grant (no `course_memberships` row at
+all, returning `null` instead of an id), matching real production reality — every existing caller that used
+this purely for authorization keeps working unchanged. Six dependent test files were updated to match the new
+schema reality, each with an inline comment explaining the substitution: `course-membership-repository.test.ts`
+and `postgres-course-unit-of-work.test.ts` (OWNER fixture swapped for LEARNER — the round-trip/atomicity claim
+being proven does not depend on which role), `supabase/tests/postgres/join-course.test.ts` (the old "never
+downgrades a pre-existing real OWNER row" test, whose premise is now schema-impossible, replaced by 4 new
+tests covering the self-enrollment bypass directly), `practice.test.ts` (the `it.each` "non-LEARNER role" case
+removed — the DB itself now rejects that row shape, proven directly by the new narrowing test's own "rejects
+a non-LEARNER insert attempt" case), `daily-plan-live-membership.test.ts` (the separate "non-LEARNER role"
+test merged into "no membership row at all," since a management-role actor now produces that identical state
+post-migration), and `supabase/tests/schema.integration.test.ts` (test 29's incidental `role: "OWNER"` setup
+— the test's actual point is "no institution table/column exists" — changed to `LEARNER`; this file has its
+own separate `insertCourseMembership` helper, not `db-harness.ts`'s, and was the one file this Slice initially
+missed before a fresh full schema/PGlite run caught it).
+
+New tests: `supabase/tests/postgres/course-membership-learner-only-narrowing.test.ts` (4 tests — migration-
+ordering-sensitive, mirrors H.1's own `course-authors-backfill.test.ts` shape: legacy rows deleted,
+`course_authors` completely unaffected, existing LEARNER rows byte-identical before/after, narrowed constraint
+rejects a non-LEARNER insert); `src/application/course/__tests__/revoke-course-author.test.ts` (7 in-memory
+tests: successful revoke of one of several authors, `LAST_AUTHOR` fail-closed with nothing mutated,
+`NOT_AUTHORIZED` for a non-author, `NOT_A_GRANT_HOLDER` for a nonexistent target, dual-capability
+same-user distinction, cross-Course isolation); new self-enrollment-bypass tests added to both
+`src/application/course/__tests__/join-course.test.ts` (6 new in-memory cases) and
+`supabase/tests/postgres/join-course.test.ts` (4 new PGlite cases: happy path, non-author denial,
+Course-scoping, revoked-grant denial); `supabase/tests/postgres/author-self-enrollment.test.ts` (1 PGlite
+integration test: a dual-role Author-Learner self-enrolls on their own DRAFT Course via the bypass, the
+Course is later published by the same actor, they practice a real Question through the real
+`selectPracticeBatch`/`submitPracticeAnswer` pipeline, and their resulting Attempt is counted normally by
+`PostgresItemAnalysisRepository` — proving the corrected "authoring capability carries zero mastery/evidence
+signal" principle holds with zero new exclusion logic added anywhere); 2 new `listActiveForCourse` PGlite
+tests added to `course-author-repository.test.ts`.
+
+Verified: full unit suite 1665/1665 PASS; full schema/PGlite suite — only the one already-classified genuine
+pre-Run010 `practice-vertical.test.ts` `topicId` failure remains (FUB-041, RESOLVED); typecheck and lint
+clean. `unlock-db-reviewer`, `unlock-security-reviewer`, and `unlock-reviewer` all independently returned
+**NO BLOCKING FINDINGS**. Non-blocking notes recorded, none requiring action before commit: (1) a stale
+doc comment in `src/app/api/courses/[courseId]/join/route.ts` claiming `join-course.ts` never reads `authors`
+— fixed directly (trivial, no functional change); (2) `revokeCourseAuthor`'s last-author-protection check is a
+genuine check-then-write race (two concurrent revokes against a Course with exactly 2 active grants could both
+pass the pre-check and both write, leaving zero active rows) — the DB reviewer noted this is materially
+weaker than the "accepted race" precedent the code comments cite (that precedent covers a stale-authorization
+race on an otherwise DB-constraint-backed single UPDATE; this case has no DB constraint backing the
+multi-row "≥1 active author" invariant at all) — not exploitable today since `revokeCourseAuthor` is not wired
+to any route, but should be hardened (e.g. `SELECT ... FOR UPDATE` in a transaction) before it ever is; (3)
+the migration's constraint-drop-by-default-name approach is this repo's own established convention (matches
+`20260925000000_daily_plan_new_material_v1.sql`), not a new risk, per the DB reviewer's own independent check.
+Invariants confirmed intact: Today/Practice/Progress/Attempts/Evidence/FSRS semantics and their existing
+tests completely untouched; zero new Insights exclusion logic anywhere (confirmed by grep and by the new
+integration test); no new co-author-management UI; `revokeCourseMembership`'s own behavior/tests untouched;
+`course_authors`' shape (`unique(user_id, course_id, capability)`, no `archivedAt`) unchanged. No hosted DB
+mutation of any kind — `supabase link`/`supabase db push` never invoked.
 
 ---
 

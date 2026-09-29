@@ -27,10 +27,14 @@ afterEach(async () => {
 });
 
 describe("PostgresCourseMembershipRepository", () => {
+  // RUN010-H.3: course_memberships is now learner-participation-only (its
+  // role CHECK constraint accepts only 'LEARNER') — a management-role
+  // membership row is schema-impossible after Migration B, so this
+  // round-trip proof uses LEARNER, the only value that can ever persist.
   it("round-trips a membership through findMembership", async () => {
     const userId = await insertUser(db);
     const courseId = await insertCourse(db, userId);
-    await insertCourseMembership(db, { userId, courseId, role: "OWNER" });
+    await insertCourseMembership(db, { userId, courseId, role: "LEARNER" });
 
     const repo = new PostgresCourseMembershipRepository(db);
     const membership = await repo.findMembership(userId, courseId);
@@ -38,7 +42,7 @@ describe("PostgresCourseMembershipRepository", () => {
     expect(membership).not.toBeNull();
     expect(membership?.userId).toBe(userId);
     expect(membership?.courseId).toBe(courseId);
-    expect(membership?.role).toBe("OWNER");
+    expect(membership?.role).toBe("LEARNER");
     expect(membership?.revokedAt).toBeNull();
     expect(membership?.archivedAt).toBeNull();
     expect(membership?.joinedAt).toBeInstanceOf(Date);

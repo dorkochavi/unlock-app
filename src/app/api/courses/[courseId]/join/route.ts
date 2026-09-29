@@ -48,9 +48,10 @@ export async function POST(
         const pool = getPool();
         return joinCourse(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
-          // `joinCourse` itself never reads `authors` (join-course.ts is
-          // untouched by RUN010-H.2) — required only to satisfy
-          // `CourseRepositories`'s now-mandatory field.
+          // RUN010-H.3: `joinCourse` now reads `authors` on the self-join-
+          // denied path (the approved narrow author self-enrollment bypass —
+          // see `join-course.ts`'s own module doc comment), in addition to
+          // already satisfying `CourseRepositories`'s mandatory field.
           authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
         });

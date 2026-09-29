@@ -240,17 +240,21 @@ export async function seedQuestionChain(
  * `PostgresCourseMembershipRepository`, so callers exercising that
  * repository itself don't create a circular test dependency on it).
  *
- * RUN010-H.2: also inserts a matching `course_authors` row for an
- * OWNER/INSTRUCTOR role, mirroring RUN010-H.1's real migration backfill
- * exactly (preserves `revokedAt`; `archivedAt` is never consulted — no
- * equivalent column exists on `course_authors`). This keeps every existing
- * caller of this harness helper (written before RUN010-H.2's authorization
- * cutover to `course_authors`) authorized exactly as before, without each
- * call site needing its own separate `insertCourseAuthor` call. A caller
- * that specifically wants to test a `course_memberships`-only fixture with
- * NO matching `course_authors` grant should insert the membership directly
- * via SQL instead of this helper, or use `insertCourseAuthor`'s `revokedAt`
- * to immediately revoke the auto-created grant.
+ * RUN010-H.3 (FUB-036, Option 4 architecture): `course_memberships` is now
+ * learner-participation-only — its `role` CHECK constraint accepts only
+ * `'LEARNER'`
+ * (`supabase/migrations/20260929020000_course_membership_learner_only_v1.sql`).
+ * A management role therefore no longer gets a `course_memberships` row at
+ * all here — only the equivalent `course_authors` grant, mirroring real
+ * production reality since H.2's cutover (no code path has written a
+ * non-LEARNER `course_memberships` row since then, and this Slice's
+ * migration deletes every legacy one that pre-dates it). Every existing
+ * caller of this harness helper that passes `role: "OWNER"`/`"INSTRUCTOR"`
+ * purely to authorize an actor keeps working unchanged — it still gets an
+ * active `course_authors` grant, just no `course_memberships` row (returns
+ * `null` in that case, since there is no membership row id to return). A
+ * caller that specifically wants a `course_authors`-only fixture with no
+ * ambiguity should call `insertCourseAuthor` directly instead.
  */
 export async function insertCourseMembership(
   db: SqlExecutor,
@@ -261,14 +265,8 @@ export async function insertCourseMembership(
     revokedAt?: Date | null;
     archivedAt?: Date | null;
   },
-): Promise<string> {
-  const id = randomUUID();
+): Promise<string | null> {
   const role = args.role ?? "LEARNER";
-  await db.query(
-    `insert into course_memberships (id, user_id, course_id, role, revoked_at, archived_at)
-     values ($1, $2, $3, $4, $5, $6)`,
-    [id, args.userId, args.courseId, role, args.revokedAt ?? null, args.archivedAt ?? null],
-  );
   if (role === "OWNER" || role === "INSTRUCTOR") {
     await insertCourseAuthor(db, {
       userId: args.userId,
@@ -276,7 +274,14 @@ export async function insertCourseMembership(
       capability: role,
       revokedAt: args.revokedAt ?? null,
     });
+    return null;
   }
+  const id = randomUUID();
+  await db.query(
+    `insert into course_memberships (id, user_id, course_id, role, revoked_at, archived_at)
+     values ($1, $2, $3, $4, $5, $6)`,
+    [id, args.userId, args.courseId, role, args.revokedAt ?? null, args.archivedAt ?? null],
+  );
   return id;
 }
 

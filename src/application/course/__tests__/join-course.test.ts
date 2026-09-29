@@ -190,4 +190,133 @@ describe("joinCourse", () => {
     const active = await db.repos().memberships.listActiveForUser("user-1");
     expect(active).toHaveLength(0);
   });
+
+  // RUN010-H.3 (FUB-036, Option 4 decision 1, APPROVED 2026-09-29): the
+  // approved narrow author self-enrollment exception.
+  describe("author self-enrollment bypass", () => {
+    it("permits an active Course Author to self-join their own DRAFT Course as LEARNER", async () => {
+      const db = new InMemoryCourseDatabase();
+      db.seedCourse("course-1", "AUTHORIZED_ONLY", "Test Course", "DRAFT");
+      db.seedAuthorGrant({
+        userId: "author-1",
+        courseId: "course-1",
+        capability: "OWNER",
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: null,
+      });
+
+      const result = await joinCourse(
+        { actorUserId: "author-1", courseId: "course-1" },
+        db.repos(),
+      );
+
+      expect(result.outcome).toBe("JOINED");
+      if (result.outcome !== "JOINED") throw new Error("unreachable");
+      expect(result.membership.role).toBe("LEARNER");
+      expect(result.membership.revokedAt).toBeNull();
+      expect(result.membership.archivedAt).toBeNull();
+    });
+
+    it("permits an active Course Author to self-join their own AUTHORIZED_ONLY PUBLISHED Course as LEARNER", async () => {
+      const db = new InMemoryCourseDatabase();
+      db.seedCourse("course-1", "AUTHORIZED_ONLY", "Test Course", "PUBLISHED");
+      db.seedAuthorGrant({
+        userId: "author-1",
+        courseId: "course-1",
+        capability: "INSTRUCTOR",
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: null,
+      });
+
+      const result = await joinCourse(
+        { actorUserId: "author-1", courseId: "course-1" },
+        db.repos(),
+      );
+
+      expect(result.outcome).toBe("JOINED");
+    });
+
+    it("does not permit a non-author to use the bypass against the same DRAFT Course", async () => {
+      const db = new InMemoryCourseDatabase();
+      db.seedCourse("course-1", "AUTHORIZED_ONLY", "Test Course", "DRAFT");
+      db.seedAuthorGrant({
+        userId: "author-1",
+        courseId: "course-1",
+        capability: "OWNER",
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: null,
+      });
+
+      const result = await joinCourse(
+        { actorUserId: "stranger-1", courseId: "course-1" },
+        db.repos(),
+      );
+
+      expect(result.outcome).toBe("NOT_AUTHORIZED");
+      const membership = await db.repos().memberships.findMembership("stranger-1", "course-1");
+      expect(membership).toBeNull();
+    });
+
+    it("scopes the bypass to exactly the Course the actor authors, not global", async () => {
+      const db = new InMemoryCourseDatabase();
+      db.seedCourse("course-1", "AUTHORIZED_ONLY", "Author's Course", "DRAFT");
+      db.seedCourse("course-2", "AUTHORIZED_ONLY", "Someone Else's Course", "DRAFT");
+      db.seedAuthorGrant({
+        userId: "author-1",
+        courseId: "course-1",
+        capability: "OWNER",
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: null,
+      });
+
+      const result = await joinCourse(
+        { actorUserId: "author-1", courseId: "course-2" },
+        db.repos(),
+      );
+
+      expect(result.outcome).toBe("NOT_AUTHORIZED");
+      const membership = await db.repos().memberships.findMembership("author-1", "course-2");
+      expect(membership).toBeNull();
+    });
+
+    it("does not permit the bypass once the author's grant is revoked", async () => {
+      const db = new InMemoryCourseDatabase();
+      db.seedCourse("course-1", "AUTHORIZED_ONLY", "Test Course", "DRAFT");
+      db.seedAuthorGrant({
+        userId: "author-1",
+        courseId: "course-1",
+        capability: "OWNER",
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: new Date("2026-02-01T00:00:00Z"),
+      });
+
+      const result = await joinCourse(
+        { actorUserId: "author-1", courseId: "course-1" },
+        db.repos(),
+      );
+
+      expect(result.outcome).toBe("NOT_AUTHORIZED");
+    });
+
+    it("still uses the normal ordinary self-join path (no bypass needed) when the Course is already OPEN/PUBLISHED, even for an author", async () => {
+      const db = new InMemoryCourseDatabase();
+      db.seedCourse("course-1", "OPEN", "Test Course", "PUBLISHED");
+      db.seedAuthorGrant({
+        userId: "author-1",
+        courseId: "course-1",
+        capability: "OWNER",
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: null,
+      });
+
+      const result = await joinCourse(
+        { actorUserId: "author-1", courseId: "course-1" },
+        db.repos(),
+      );
+
+      expect(result.outcome).toBe("JOINED");
+      if (result.outcome !== "JOINED") throw new Error("unreachable");
+      expect(result.membership.role).toBe("LEARNER");
+    });
+  });
 });

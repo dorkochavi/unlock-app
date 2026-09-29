@@ -138,15 +138,17 @@ describe("F-04a: live LEARNER membership guard on existing DailyPlan items", () 
     await assertUntouched(chain.userId, dailyPlanId, dailyPlanItemId);
   });
 
-  it("no membership row at all: answer and skip denied", async () => {
+  // RUN010-H.3: also covers the former "non-LEARNER role (e.g. INSTRUCTOR):
+  // answer and skip denied" scenario. Since Migration B narrowed
+  // course_memberships to a LEARNER-only CHECK constraint
+  // (20260929020000_course_membership_learner_only_v1.sql), a management
+  // role never gets a course_memberships row at all anymore (only a
+  // course_authors grant, unrelated to this guard) — so
+  // `seed({ role: "INSTRUCTOR" })` now produces exactly this same "no
+  // membership row" state, not a persisted non-LEARNER row. Kept as one
+  // case rather than two identical-outcome tests.
+  it("no membership row at all (including a management-role actor, who never gets a course_memberships row post-Migration-B): answer and skip denied", async () => {
     const { chain, dailyPlanId, dailyPlanItemId } = await seed(null);
-    expect((await answer(chain.userId, dailyPlanItemId)).kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
-    expect((await skip(chain.userId, dailyPlanItemId)).kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
-    await assertUntouched(chain.userId, dailyPlanId, dailyPlanItemId);
-  });
-
-  it("non-LEARNER role (e.g. INSTRUCTOR): answer and skip denied", async () => {
-    const { chain, dailyPlanId, dailyPlanItemId } = await seed({ role: "INSTRUCTOR" });
     expect((await answer(chain.userId, dailyPlanItemId)).kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
     expect((await skip(chain.userId, dailyPlanItemId)).kind).toBe("ITEM_NOT_FOUND_OR_NOT_OWNED");
     await assertUntouched(chain.userId, dailyPlanId, dailyPlanItemId);

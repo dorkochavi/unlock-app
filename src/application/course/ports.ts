@@ -124,6 +124,18 @@ export interface CourseAuthorRepository {
   listActiveForUser(userId: string): Promise<CourseAuthorGrant[]>;
 
   /**
+   * RUN010-H.3 — every currently-active (non-revoked) capability grant on
+   * this Course, across every user who holds one. Distinct from
+   * `findActiveCapabilities` (scoped to one user) and `listActiveForUser`
+   * (scoped to one user, across every Course) — this is scoped to one
+   * Course, across every user. Needed for `revokeCourseAuthor`'s approved
+   * last-author-protection rule: whether revoking one specific grant would
+   * leave this Course with zero active `course_authors` rows requires
+   * seeing every active row on the Course, not just the target's own.
+   */
+  listActiveForCourse(courseId: string): Promise<CourseAuthorGrant[]>;
+
+  /**
    * Race-free by construction (the same `INSERT ... ON CONFLICT DO NOTHING
    * RETURNING` pattern `CourseMembershipRepository.createMembership` already
    * uses), keyed on the full `(user_id, course_id, capability)` unique
@@ -138,11 +150,16 @@ export interface CourseAuthorRepository {
   /**
    * Sets `revokedAt` for one specific `(user, course, capability)` row.
    * Returns the updated grant, or `null` if no matching row exists. Never
-   * deletes the row. The approved last-author-protection rule (fail closed
-   * if this would leave a Course with zero active `course_authors` rows) is
-   * a future caller's (H.3's) responsibility — this port performs the write
-   * unconditionally, mirroring `CourseMembershipRepository.revoke`'s own
-   * unconditional-UPDATE shape.
+   * deletes the row. This port performs the write unconditionally, mirroring
+   * `CourseMembershipRepository.revoke`'s own unconditional-UPDATE shape —
+   * the approved last-author-protection rule (fail closed if this would
+   * leave a Course with zero active `course_authors` rows) is enforced by
+   * the caller, `revokeCourseAuthor`
+   * (`src/application/course/revoke-course-author.ts`, RUN010-H.3), via a
+   * `listActiveForCourse` check BEFORE calling this method — the same
+   * accepted check-then-write race window `revokeCourseMembership`/
+   * `setCourseJoinPolicy` already document for this module (this file's own
+   * module doc comment).
    */
   revoke(
     userId: string,

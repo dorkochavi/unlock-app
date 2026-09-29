@@ -38,6 +38,15 @@ export class PostgresCourseAuthorRepository implements CourseAuthorRepository {
     return result.rows.map(mapCourseAuthorRow);
   }
 
+  async listActiveForCourse(courseId: string) {
+    const result = await this.db.query(
+      `select * from course_authors
+        where course_id = $1 and revoked_at is null`,
+      [courseId],
+    );
+    return result.rows.map(mapCourseAuthorRow);
+  }
+
   /**
    * Race-free by construction (`CourseMembershipRepository.createMembership`'s
    * own established pattern, reused here): `INSERT ... ON CONFLICT (user_id,
