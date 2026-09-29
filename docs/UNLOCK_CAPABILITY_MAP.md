@@ -250,18 +250,18 @@ Preserved from owners:
 - **Missing:** measured authenticated single-user timings; instructor UX pass.
 - **Pilot needs:** mobile/RTL usable, no blocking latency (`PILOT_READINESS.md` §5 GO criteria).
 - **Mature-only:** systematic a11y audit, performance budget.
-- **Sources:** `UX_SPEC.md`; `PILOT_READINESS.md`; FUB-026; `CHATGPT_PLAN.md` carried-over Slice B table.
+- **Sources:** `UX_SPEC.md`; `PILOT_READINESS.md`; FUB-026; `docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`.
 - **Trigger:** Preview walkthrough with a QA learner; pilot friction reports.
 
 ### 14. Trust / Security / Privacy — M2 (authz at M3) · A
 - **Owns:** identity, authorization, data minimisation, learner privacy, content IP, abuse resistance.
 - **Proven:** auth before DB/body on protected routes; explicit CourseMembership authorization (ADR-015); aggregate
   disclosure gate; learner-safe content reads (no correct answer); `npm audit` clean (Run 008); security reviews per Run.
-- **Partial:** login page is frameable (framing decision open, Slice B Q6a); session-expiry recovery UX gaps.
+- **Partial:** login page is frameable (framing decision open, Slice B Q6a; see `docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`); session-expiry recovery UX gaps.
 - **Missing:** privacy/legal pages (Roadmap Run 012), data deletion semantics (OQ-027 OPEN), pilot data ownership
   (OQ-039 OPEN), rate limiting/abuse hardening (FUB-011), F-04b archived-Course decision.
 - **Pilot needs:** privacy/data-ownership baseline (`PILOT_READINESS.md` §3 item 13d; OQ-039). Map assessment, not in
-  §3: the framing decision (Slice B Q6a). Full privacy/legal pages stay in Roadmap Run 012.
+  §3: the framing decision (Slice B Q6a, archived report). Full privacy/legal pages stay in Roadmap Run 012.
 - **Mature-only:** rate limiting, CSP, RLS if ever adopted (OQ-025).
 - **Sources:** `.claude/rules/auth.md`, `api.md`; ADR-015; `CONTENT_IP_THREAT_MODEL.md`; OQ-025/027/039; FUB-011.
 - **Trigger:** before a real cohort (privacy/ownership); any new data surface.
