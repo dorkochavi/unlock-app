@@ -3,8 +3,9 @@
 PLAN_VERSION: 007
 RUN_ID: 2026-09-29-GOVERNANCE-RECONCILE-001
 START_HEAD: `9019796`
-RUN_STATUS: IN_PROGRESS
-STATUS: **IN PROGRESS** — governance-docs-only reconciliation of `docs/FOLLOW_UP_BACKLOG.md`, `docs/OPEN_QUESTIONS.md`, `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md` (+ pointer-only `docs/DEV_STATUS.md` Pre-push updates). Not a Product Run; not Run 011.
+LAST_VERIFIED_HEAD: `1d9328a`
+RUN_STATUS: COMPLETE
+STATUS: **COMPLETE** — governance-docs-only reconciliation of `docs/FOLLOW_UP_BACKLOG.md`, `docs/OPEN_QUESTIONS.md`, `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md` (+ pointer-only `docs/DEV_STATUS.md` Pre-push updates). Not a Product Run; not Run 011.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -33,8 +34,8 @@ Every Slice declares one gate: AUTO, REVIEW_GATE, HUMAN_DECISION_GATE, or FINAL_
 | Step | Scope | Gate | Status |
 |---|---|---|---|
 | 1 | Plan identity + mechanical lifecycle/status normalization + stale framing cleanup | AUTO | DONE |
-| 2 | Semantic reconciliation: FUB↔OQ moves, OQ narrowing/new OQs, archive moves, DEV_STATUS Pre-push pointer-only updates (independent review before commit) | REVIEW_GATE | IN PROGRESS |
-| 3 | Run close: minimal Run report, RUN_STATUS COMPLETE, LAST_VERIFIED_HEAD, verifier | FINAL_GATE | PENDING |
+| 2 | Semantic reconciliation: FUB↔OQ moves, OQ narrowing/new OQs, archive moves, DEV_STATUS Pre-push pointer-only updates (independent review before commit) | REVIEW_GATE | DONE (reviewed, no blocking findings) |
+| 3 | Run close: minimal Run report, RUN_STATUS COMPLETE, LAST_VERIFIED_HEAD, verifier | FINAL_GATE | DONE |
 
 ## 5. Run Invariants
 
@@ -50,12 +51,13 @@ requiring another file to change; any need for a product decision.
 
 ## 7. Current Status
 
-- Step 1 DONE (`aee98d9`); Step 2 IN PROGRESS; Step 3 PENDING. Branch `feature/run-010-learning-intelligence`; no push.
+- Steps 1-3 DONE; Run COMPLETE (report: `docs/RUNS/2026-09-29-GOVERNANCE-RECONCILE-001.md`). Branch `feature/run-010-learning-intelligence`; no push.
 
 ## History
 
 Reports are the archive:
 
+- GOVERNANCE-RECONCILE-001: `docs/RUNS/2026-09-29-GOVERNANCE-RECONCILE-001.md`
 - DEVOS-V1.3 Consolidation: `docs/RUNS/2026-09-29-DEVOS-V1.3-CONSOLIDATION.md`
 - Run010 Learning Intelligence: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`
 - DevOS Micro-Optimization: `docs/RUNS/2026-09-28-DEVOS-MICRO-OPT-001.md`
