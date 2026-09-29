@@ -1401,6 +1401,17 @@ number) and confirmed they assert the right things. This Slice's evidence is tre
 basis; a fresh schema/PGlite run before RUN010-H.3 begins is reasonable due diligence, not a requirement
 this Slice failed to meet.
 
+**Pre-H.3 due-diligence review correction (2026-09-29):** the "321/323, 2 FUB-041 pre-existing failures"
+framing above (and H.1's identical framing) is only half accurate. A fresh full schema/PGlite run plus
+bisection against Run 010's own START_HEAD `d39c882` (see `FUB-041`, now `RESOLVED`) found that only the
+`practice-vertical.test.ts` `topicId` failure is genuinely pre-existing; the `practice.test.ts` reinforcement-
+ordering failure was introduced by RUN010-C's own intentional anti-immediate-repeat fix and its integration
+test was never updated to match — not caught here because H.2's own schema/PGlite run never completed
+independently (see the Process note above). A standalone corrective commit (before H.3, not folded into it)
+fixed the stale test; the fresh full schema/PGlite suite now shows only the one genuine pre-Run010 failure.
+This does not change H.2's own KEEP verdict or any of its authorization-cutover findings — it corrects only
+the schema/PGlite evidence-attribution claim.
+
 ---
 
 # FUB-037 — Question Management Workspace (Search/Filter/Pagination/Review Queue)
@@ -1567,36 +1578,51 @@ boundary," not a standalone fix to invent mid-Slice).
 
 ---
 
-# FUB-041 — Two Pre-Existing Failing Schema/PGlite Tests, Confirmed Unrelated to RUN010-E (NON-BLOCKING, NEEDS TRIAGE)
+# FUB-041 — Two Failing Schema/PGlite Tests Surfaced at RUN010-E; One Genuinely Pre-Run010, One a RUN010-C Stale-Test Miss (RESOLVED)
 
-**Status:** `RECORDED`
+**Status:** `RESOLVED` (pre-H.3 due-diligence review + corrective commit, 2026-09-29)
 **Area:** `supabase/tests/postgres/practice-vertical.test.ts`, `supabase/tests/postgres/practice.test.ts`
 
 While gathering final verification evidence for RUN010-E, a full `npx vitest run --config supabase/vitest.config.mts`
-pass surfaced 2 failing tests (out of 310) in files RUN010-E's diff does not touch:
+pass surfaced 2 failing tests (out of 310) in files RUN010-E's diff does not touch. At the time both were
+labeled "pre-existing/unrelated" and re-cited that way, unverified against the actual Run 010 baseline, through
+RUN010-D/E/H.1/H.2. The RUN010-H pre-H.3 due-diligence review (2026-09-29) checked this claim properly by
+bisecting both failures against Run 010's own START_HEAD (`d39c882`) and commit chain, and found the two
+failures have **different, genuinely different causes** — only one was actually pre-existing:
 
-1. `practice-vertical.test.ts` > "Practice selects around Today, answers through the normal pipeline, never
-   resolves Today, and Today keeps working" — fails because the Practice wire response now includes an
-   unexpected extra `topicId` field the test's exact-keys assertion does not allow for. Very likely a
+1. **`practice-vertical.test.ts`** > "Practice selects around Today, answers through the normal pipeline, never
+   resolves Today, and Today keeps working" — the Practice wire response includes an unexpected extra
+   `topicId` field the test's exact-keys assertion does not allow for. **Confirmed genuinely pre-existing**:
+   reproduced identically at Run 010's own START_HEAD `d39c882`, before any Run 010 Slice existed. Very likely a
    consequence of `questions.topic_id` (added by `20260928000000_question_authoring_v1.sql`, Run 006 S2) now
-   being included somewhere in the Practice read path's row mapping, with this test never updated for it.
-2. `practice.test.ts` > "RUN010-B — same-day reinforcement (Tier 4, resolves FUB-034) > never returns the
+   being included somewhere in the Practice read path's row mapping, with this test never updated for it. Left
+   unfixed — genuinely out of every Run 010 Slice's own scope; still open, still needs its own future triage.
+2. **`practice.test.ts`** > "RUN010-B — same-day reinforcement (Tier 4, resolves FUB-034) > never returns the
    just-answered Question first when a genuine alternative exists, even if that alternative is lower ranked by
-   evidence" — an ordering/tie-break assertion failure between two specific Questions.
+   evidence" — **NOT pre-existing.** Bisection: passed cleanly at RUN010-B (`4546593`, 29/29) and started failing
+   exactly at RUN010-C (`1a68c96`). RUN010-C's own diff (`select-practice-batch.ts`'s `rankReinforcementCandidates`)
+   *intentionally* reversed RUN010-B's original anti-immediate-repeat rule ("swap even against a lower-priority
+   alternative") — the corrected rule only swaps on an exact tie (same correctness bucket AND same
+   `lastAttemptAt`), so a materially stronger, uniquely-top candidate is now always returned first even as the
+   immediate repeat. This exact scenario is already proven correct at the unit level by RUN010-C's own
+   `rank-reinforcement-candidates.test.ts` ("RUN010-C Part 3: does NOT demote..."). This integration test's
+   assertion was simply never updated to match — it kept asserting RUN010-B's old, now-intentionally-reversed
+   order. RUN010-C's own commit never re-ran the schema/PGlite suite (its recorded evidence cites only the unit
+   suite), so the miss was never caught there, and every subsequent Slice's "pre-existing/unrelated" citation
+   compounded the mislabeling rather than checking it.
 
-**Confirmed unrelated to this Slice**: both failures were reproduced identically against the clean pre-Slice
-tree (`git stash` of every RUN010-E change, re-run, same 2 failures; `git stash pop` to restore). RUN010-E's
-diff never touches Practice selection/ranking code or the Practice read path — only
-`unseen-question-repository.ts`, `application/dailyPlan/ports.ts` (doc comment only), `question-card.tsx`,
-`he.ts`, and test/doc files. Per `.claude/rules/testing.md` §14 ("do not silently broaden scope to repair
-unrelated failures... report unrelated pre-existing blockers accurately"), these were left unfixed and are
-recorded here rather than folded into this Slice.
+**Corrective commit** (2026-09-29, before RUN010-H.3): updated the stale test to assert the current canonical
+RUN010-C rule (learning priority wins for non-tied candidates; anti-immediate-repeat/diversity may only reorder
+materially equivalent candidates), renamed it to describe that rule, and added a comment pointing at the unit
+test it now duplicates at the integration level. Fresh full schema/PGlite suite re-run after the fix: only the
+genuinely pre-existing `practice-vertical.test.ts` `topicId` failure remains.
 
 ## Promotion Trigger
 
-Triage promptly — a currently-broken schema/PGlite suite reduces confidence in future Slices' "no regression"
-claims for anything touching Practice. Whoever picks this up should first determine how long these have been
-failing (bisect recent RUN010-B/C/D commits) before assuming either is a trivial test-fixture staleness issue.
+The remaining genuine pre-Run010 `practice-vertical.test.ts` `topicId` failure still needs its own triage —
+bisect Run 006-era commits, confirm the `topics.topic_id`-in-row-mapping hypothesis, and fix the test (or the
+row mapping) once picked up. Not urgent (does not reduce confidence in any Run 010 Slice's own evidence,
+confirmed by this item's own bisection), but should not be left indefinitely.
 
 ---
 

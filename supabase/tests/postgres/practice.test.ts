@@ -716,19 +716,36 @@ describe("RUN010-B — same-day reinforcement (Tier 4, resolves FUB-034)", () =>
     expect(attempts).toHaveLength(3); // 3 rounds, each a real reinforcement Attempt
   });
 
-  it("never returns the just-answered Question first when a genuine alternative exists, even if that alternative is lower ranked by evidence", async () => {
+  it("RUN010-C canonical rule (integration-level): a materially stronger candidate is returned first even when it is the immediate repeat — anti-immediate-repeat only reorders exact ties", async () => {
+    // RUN010-B's original rule swapped the just-answered Question out of
+    // first place whenever ANY alternative existed, "even a lower-priority
+    // one." RUN010-C (1a68c96) corrected this: the swap now only fires on
+    // an exact tie (same correctness bucket AND same lastAttemptAt) — see
+    // `rankReinforcementCandidates` in select-practice-batch.ts and its own
+    // "RUN010-C Part 3" unit tests
+    // (src/application/practice/__tests__/rank-reinforcement-candidates.test.ts).
+    // This test previously asserted the pre-correction order and was left
+    // stale when the production rule changed (FUB-041 correction — see
+    // FOLLOW_UP_BACKLOG.md). It now proves the CURRENT canonical rule at the
+    // real-Postgres integration level: the weaker/older correct candidate
+    // and the incorrect just-answered candidate are NOT a tie (different
+    // correctness bucket, different lastAttemptAt), so the materially
+    // stronger (incorrect, higher weak-evidence-first priority) candidate
+    // must be returned first, never demoted purely to avoid an immediate
+    // repeat.
     const world = await createWorld();
     await todayPlan(world); // empty frozen plan: Questions below are added after freeze
-    const strongerButOlder = await addQuestion(world.courseId, null);
-    const weakerButJustAnswered = await addQuestion(world.courseId, null);
+    const weakerButOlder = await addQuestion(world.courseId, null);
+    const strongerAndJustAnswered = await addQuestion(world.courseId, null);
 
-    // Answer the first one correctly (becomes "older" reinforcement evidence).
-    await answerPractice(world, strongerButOlder, { selectedAnswer: "A", now: NOW });
-    // Answer the second one INCORRECTLY, most recently — by raw
-    // weak-evidence-first priority this would rank FIRST, but it is also
-    // the literal Question the learner just finished.
+    // Answer the first one correctly (becomes "older," lower-priority evidence).
+    await answerPractice(world, weakerButOlder, { selectedAnswer: "A", now: NOW });
+    // Answer the second one INCORRECTLY, most recently — genuinely the
+    // materially stronger reinforcement priority AND the literal Question
+    // the learner just finished; not a tie with the first, so it must not
+    // be swapped out of first place.
     const justAnsweredAt = new Date(NOW.getTime() + 5 * 60_000);
-    await answerPractice(world, weakerButJustAnswered, {
+    await answerPractice(world, strongerAndJustAnswered, {
       selectedAnswer: "B",
       now: justAnsweredAt,
     });
@@ -736,8 +753,8 @@ describe("RUN010-B — same-day reinforcement (Tier 4, resolves FUB-034)", () =>
     const result = await select(world, { now: justAnsweredAt });
     if (result.outcome !== "READY") throw new Error("expected READY");
     expect(result.items.map((i) => i.questionId)).toEqual([
-      strongerButOlder.questionId,
-      weakerButJustAnswered.questionId,
+      strongerAndJustAnswered.questionId,
+      weakerButOlder.questionId,
     ]);
   });
 
