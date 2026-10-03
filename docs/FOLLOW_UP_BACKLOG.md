@@ -397,8 +397,12 @@ genuinely warranted, no broader stack.
 Git protects code, not learner data. A manual hosted logical backup was
 taken before the pilot (Run 008 gate closed 2026-09-23; no restore drill
 performed; a second logical backup was taken 2026-10-03 before hosted
-migration H.3, also never restore-tested). Ongoing backup ownership, frequency, RPO/RTO, and a
-restore-verification procedure have still not been established.
+migration H.3). **Narrowed 2026-10-04 (PILOT-HARDENING-EVIDENCE-001 Slice B, `b818a90`):** the public schema, data and
+migration history were restored into a disposable local PostgreSQL 17.6 container (counts match, FK/author checks pass,
+hosted-isolation proven, resources destroyed). Auth restore is PARTIAL: auth DDL is not in the dump and the
+`handle_new_auth_user` trigger must be recreated. Still open: ongoing backup ownership, frequency, RPO/RTO, Supabase plan/PITR
+and retention/encryption check (all human-owned), plus an optional auth-aware restore runbook (engineering gap). Evidence:
+`docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-B-restore-drill.md`. Not closed.
 
 ## Follow-Up Investigation
 
@@ -1163,7 +1167,7 @@ Before or alongside any Slice that ships assisted Practice attempts (hints/secon
 
 # FUB-042 — FUB-036 Option 4 Remaining Cleanup (Optional H.4 Scope, Declined For Now)
 
-**Status:** `DEFERRED` (item 1 closed 2026-10-03; items 2-3 and 5-7 remain, item 4 moved to OQ-047)
+**Status:** `DEFERRED` (item 1 closed 2026-10-03; item 7(c) closed 2026-10-04; items 2-3, 5-6, 7(a)/(b) remain, item 4 moved to OQ-047)
 **Area:** Course Membership / Authorization (ADR-015), Instructor Insights
 
 Deliberately not part of Run 010. FUB-036 (Author-Can-Learn-Own-Course, Option 4 architecture; full text archived) is
@@ -1175,8 +1179,8 @@ preserved here rather than expanding Run010-H further. None of these items block
 1. **CLOSED 2026-10-03 (post-Run010 Product Fix, `eeeaaa5`): `revokeCourseAuthor` last-author concurrency hardening.**
    It now runs inside `CourseUnitOfWork`: it locks the Course's active `course_authors` rows `FOR UPDATE` ordered by id,
    counts under the lock, then revokes; still not wired to any route. Evidence limit: PGlite is single-connection, so tests
-   prove the SQL, sequential last-author protection and rollback only; true multi-connection serialization rests on
-   PostgreSQL `FOR UPDATE` semantics and is NOT proven locally (see item 7(c)). Details: archive.
+   prove the SQL, sequential last-author protection and rollback only; true multi-connection serialization is now proven by the opt-in real-PostgreSQL test
+   (item 7(c), 2026-10-04). Details: archive.
 2. **Insights CTE cleanup / polish** — the original H.4 scope item (no new exclusion logic implied or
    required; purely a code-quality/readability pass over the Insights aggregation queries, if one is ever
    warranted).
@@ -1200,13 +1204,18 @@ preserved here rather than expanding Run010-H further. None of these items block
    its default name follows repo convention; no action.)
 7. **Residuals of the item 1 hardening (non-blocking, from the `eeeaaa5` review; none affects the last-author invariant):**
    (a) the `revoke()` SQL lacks an `and revoked_at is null` guard (unreachable today because the locked list holds only
-   active rows; cheap hardening); (b) the actor-authorization check runs before the lock, leaving a stale-snapshot window
-   (a strict fix derives actor authorization from the locked rows); (c) add a two-connection real-PostgreSQL test to
-   prove the serialization that PGlite cannot.
+   active rows): cosmetic, no defect found, kept deferred (the port documents an unconditional UPDATE; tie to OQ-043 C);
+   (b) the actor-authorization check runs before the lock, leaving a stale-snapshot window (observed 2026-10-04 as N3: A
+   authorized, B revokes A, A still completes; last-author invariant holds). **HUMAN DECISION:** may a mid-flight-revoked
+   author still complete a revoke? Decide before `revokeCourseAuthor` is wired to a route (kept here, not a new OQ: no
+   behavior ships until it is wired, and it shares the OQ-047 gate; a strict fix derives actor authorization from the locked
+   rows); (c) **CLOSED 2026-10-04 (PILOT-HARDENING-EVIDENCE-001 Slice C, `1c534df`/`8409881`):** opt-in real-PostgreSQL
+   two-connection test (`npm run test:real-pg`, `UNLOCK_REAL_PG_URL`, localhost only) 14/14: N1 last-author invariant proven, N2
+   no corruption, N3 as above. Evidence: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-C-revoke-concurrency.md`.
 
 ## Promotion Trigger
 
-Item 3 requires OQ-047 to be settled first; item 7(b)/(c) should be reconsidered before `revokeCourseAuthor` is wired to a
+Item 3 requires OQ-047 to be settled first; item 7(b) (HUMAN DECISION) must be settled before `revokeCourseAuthor` is wired to a
 route. Items 2, 5-6 and 7(a) have no forcing trigger;
 pick up opportunistically or when co-author management becomes a real product need (likely Run011+).
 

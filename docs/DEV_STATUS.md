@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-10-03 (v0.2.0 in Production; QA-CLEANUP-001: QA-PREVIEW-A/B ARCHIVED, QA data retained)
+Updated: 2026-10-04 (v0.2.0 in Production; PILOT-HARDENING-EVIDENCE-001 closed: local evidence only, real pilot NOT approved)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -189,7 +189,8 @@ reports; only still-open pointers remain:
 - Resolved: exam_date = learner-local calendar date (OQ-046 Option A, `c8f3dc6`); `EXAM_URGENCY_DECAY_DAYS` rename
   (FUB-043); ARCHIVED hard-stops new author self-enrollment (OQ-045 Option B, `9a19b05`; residual asymmetry FUB-045);
   `revokeCourseAuthor` row locks (FUB-042 item 1, `eeeaaa5`; still unwired); rollout H.1 -> cutover -> H.3 done.
-- Still open: `revokeCourseAuthor` real-PostgreSQL two-connection proof and other residuals (FUB-042 item 7).
+- `revokeCourseAuthor` real-PostgreSQL two-connection proof DONE 2026-10-04 (opt-in `npm run test:real-pg`, localhost only; last-author invariant proven; FUB-042 7(c) closed). Still open: 7(b) HUMAN DECISION (may a mid-flight-revoked author complete a revoke?) before the use case is wired to a route; 7(a) cosmetic (FUB-042).
+- Backup restore drill DONE locally 2026-10-04 (public schema/data/migration history; Auth restore PARTIAL). FUB-009 narrowed, not closed: human-owned backup ownership/frequency/RPO/RTO/plan+PITR/retention check and an optional auth-aware restore runbook remain.
 - Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); decision owned by OQ-047 (distinct from learner OQ-043);
   FUB-042 item 4 is a pointer; must be resolved before any co-author-management UI.
 - Unseen-question / Topic-diversifying cold-start SQL — AUDITED 2026-10-03 (read-only post-Run010 audit, verdict KEEP, no
@@ -200,13 +201,14 @@ reports; only still-open pointers remain:
 - QA-PREVIEW-A and QA-PREVIEW-B are ARCHIVED (non-joinable; A archived by the human QA author via the product UI,
   2026-10-03, QA-CLEANUP-001; terminal in V1, no un-archive path). QA data is RETAINED as evidence: 1 inert QA learner
   membership (OQ-043 untouched), 7 Attempts, 6 progress rows. No hard delete done or planned (separate human decision).
-- Hosted Supabase Auth Redirect URL allow-list for `next=` values remains open, non-blocking.
+- Auth redirect audit (2026-10-04): no app-side open-redirect gap (allowlist-only `next`, fixed-shape `emailRedirectTo`, no server callback/Host use; tests added). Remaining human check: Supabase dashboard URL Configuration (Site URL; Redirect URLs accept `/login?next=...`; no broad wildcards); fails safe, non-blocking. UX note (non-security): `/instructor/courses/new` is not allowlisted for `next` and falls back to `/today`.
+- Pilot-readiness matrix (45 rows: 7 PROVEN_READY, 14 HUMAN_CHECK, 5 EXTERNAL/HOSTED_CHECK, 8 OPEN_DECISION, 1 ENGINEERING_GAP, 10 DEFERRED_NON_BLOCKER): `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-E-pilot-readiness-matrix.md`. Real pilot NOT approved; Content gate unchanged.
 
 ## Current Human / Manual Actions
 
 - Pushing, merging to `main`, promoting to Production, tags, hosted migrations, and Vercel/GitHub settings are human actions
   (ADR-019). Done 2026-10-03: QA-PREVIEW-A archive (human, product UI); push/merge/promotion to `fff8c40`, tag `v0.2.0`, H.1 and H.3 applied, Production smoke.
-- Remaining: decide OQ-047 before any co-author-management UI; pilot gates.
+- Remaining: decide OQ-047 and FUB-042 7(b) before any co-author-management UI / wiring `revokeCourseAuthor`; Supabase dashboard Auth URL check; human backup ownership/RPO/RTO/plan check (FUB-009); pilot gates.
 - Human decisions still open from the archived Pilot Readiness verification
   (`docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`): Q2-B (valid-refresh-token behavior after natural
   session expiry unproven), Q3 (accessibility of login/join/Progress/instructor flows unexercised), Q4 (no

@@ -3,8 +3,9 @@
 PLAN_VERSION: 013
 RUN_ID: 2026-10-04-PILOT-HARDENING-EVIDENCE-001
 START_HEAD: `be97aba`
-RUN_STATUS: IN_PROGRESS
-STATUS: **IN_PROGRESS** — overnight autonomous Run; local/read-only/reversible work only. Not a product Run; not Run 011.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `3dda311`
+STATUS: **COMPLETE** — overnight autonomous Run; local/read-only/reversible work only. Not a product Run; not Run 011.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -32,12 +33,12 @@ Canonical semantics: `.claude/skills/autonomous-run/SKILL.md` §7 (not duplicate
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
 | A | Phase 0 identity + grounding (FUB-009, FUB-042 item 7, Auth redirect allow-list, pilot gates) | AUTO | DONE (identity set; telemetry attributes to new RUN_ID; grounding recorded in checkpoint) |
-| B | Backup restore drill into disposable LOCAL PostgreSQL; hosted-isolation proof | REVIEW_GATE | PENDING |
-| C | FUB-042 item 7: real two-connection PostgreSQL concurrency evidence (prove before edit) | REVIEW_GATE | PENDING |
-| D | Auth redirect allow-list audit (no hosted Auth mutation) | REVIEW_GATE | PENDING |
-| E | Pilot readiness reconciliation; GO/NO-GO INPUT MATRIX | AUTO / REVIEW_GATE | PENDING |
-| F | Integrated evidence + adversarial review + telemetry read | FINAL_GATE | PENDING |
-| G | Run close (docs, verifier, local commits; no push) | FINAL_GATE | PENDING |
+| B | Backup restore drill into disposable LOCAL PostgreSQL; hosted-isolation proof | REVIEW_GATE | DONE (restore into disposable local PG 17.6: counts/FK/isolation PASS; Auth restore PARTIAL; FUB-009 narrowed, not closed) |
+| C | FUB-042 item 7: real two-connection PostgreSQL concurrency evidence (prove before edit) | REVIEW_GATE | DONE (opt-in real-PG two-connection test 14/14; last-author invariant proven; FUB-042 7(c) closed; 7(b) HUMAN DECISION) |
+| D | Auth redirect allow-list audit (no hosted Auth mutation) | REVIEW_GATE | DONE (no app-side open-redirect gap; +tests; hosted Supabase URL Configuration check remains human) |
+| E | Pilot readiness reconciliation; GO/NO-GO INPUT MATRIX | AUTO / REVIEW_GATE | DONE (45-row pilot-readiness matrix; real pilot NOT approved) |
+| F | Integrated evidence + adversarial review + telemetry read | FINAL_GATE | DONE (independent review: hostname-guard bypass found and fixed; re-review no findings; tsc/eslint/npm test green) |
+| G | Run close (docs, verifier, local commits; no push) | FINAL_GATE | DONE (Run-close docs; verifier; local commits; no push) |
 
 ## 5. Run Invariants (each proven, not asserted)
 
@@ -53,12 +54,13 @@ worked around. A non-global blocker stops only the affected path.
 
 ## 7. Current Status
 
-- Run IN_PROGRESS (Phase 0 identity set). Pushing is a human action.
+- Run COMPLETE (Slices A-G DONE; report `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001.md`). Real pilot NOT approved. Pushing is a human action.
 
 ## History
 
 Reports are the archive:
 
+- PILOT-HARDENING-EVIDENCE-001: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001.md` (+ slice evidence B-E in the same folder)
 - QA-CLEANUP-001: `docs/RUNS/2026-10-03-QA-CLEANUP-001.md`
 - POST-RUN010-PRODUCT-FIX-001 (incl. "Release close", v0.2.0): `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`
 - GOVERNANCE-RECONCILE-001: `docs/RUNS/2026-09-29-GOVERNANCE-RECONCILE-001.md`
