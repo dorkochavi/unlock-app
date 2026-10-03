@@ -86,6 +86,20 @@ Rules:
 - a worker's job ends with one compact handoff (§5) back to the parent; the parent does not read the
   worker's full internal transcript.
 
+**Dispatch packet.** A worker packet is a minimal execution boundary, built from the §7 pre-Slice
+record. Include only what the Slice needs:
+- RUN_ID, SLICE_ID, Slice goal;
+- START_HEAD (or current grounded baseline);
+- expected / smallest useful change;
+- exact relevant paths and/or canonical pointers;
+- MUST_REMAIN_UNCHANGED constraints, PROOF_REQUIRED, known RISKS;
+- a compact PRIOR_HANDOFF only when genuinely needed.
+
+Do not include full Run history, transcripts, raw telemetry/logs, broad doc dumps, unrelated source
+context, or large raw diffs where a targeted pointer suffices. The worker starts from the supplied
+paths/pointers and does not reread already-summarized context unless repository evidence requires it.
+Do not spawn a worker merely to parallelize trivial reads/searches the parent can do cheaply.
+
 If no materially equivalent isolation mechanism is available in the current environment, STOP the
 autonomous-Run experiment rather than silently collapsing into one monolithic session pretending to
 be multiple Slices. Record why in the Run-local checkpoint (§6).
