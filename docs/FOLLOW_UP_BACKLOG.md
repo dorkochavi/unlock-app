@@ -1160,32 +1160,9 @@ Before or alongside any Slice that ships assisted Practice attempts (hints/secon
 
 ---
 
-# FUB-041 — Pre-Run010 `practice-vertical.test.ts` `topicId` Schema/PGlite Failure (Open Residual)
-
-**Status:** `DEFERRED`
-**Area:** `supabase/tests/postgres/practice-vertical.test.ts`
-
-The other half of the original item (a RUN010-C stale reinforcement-order test) is RESOLVED; its full original text is in
-`docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`.
-
-The schema/PGlite test "Practice selects around Today, answers through the normal pipeline, never resolves Today, and Today
-keeps working" fails: the Practice wire response includes an extra `topicId` field the test's exact-keys assertion does not
-allow. **Genuinely pre-Run010** — reproduced identically at Run 010's START_HEAD `d39c882` (Run 010 report §3/§4). Hypothesis
-(unverified): `questions.topic_id` (`20260928000000_question_authoring_v1.sql`, Run 006 S2) now flows into the Practice
-read-path row mapping while the test was never updated. Whether the test or the mapping is wrong has not been determined and
-must not be assumed. Does not reduce confidence in any Run 010 Slice's evidence. It is the standing known-red in the full
-schema/PGlite suite (`docs/DEV_STATUS.md` Verification Baseline).
-
-## Promotion Trigger
-
-Ready for promotion into the next Product Fix run: bisect Run 006-era commits, confirm the hypothesis, then fix the test
-(or the mapping). Not urgent, but do not leave it indefinitely.
-
----
-
 # FUB-042 — FUB-036 Option 4 Remaining Cleanup (Optional H.4 Scope, Declined For Now)
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` (item 1 closed 2026-10-03; items 2-3 and 5-7 remain, item 4 moved to OQ-047)
 **Area:** Course Membership / Authorization (ADR-015), Instructor Insights
 
 Deliberately not part of Run 010. FUB-036 (Author-Can-Learn-Own-Course, Option 4 architecture; full text archived) is
@@ -1194,22 +1171,17 @@ functionally complete and RESOLVED through RUN010-H.3 (`12d5c51`) — Migration 
 was optional by the Run's own plan, and the human explicitly declined it for now (2026-09-29) so the remaining cleanup is
 preserved here rather than expanding Run010-H further. None of these items blocks or affects current correctness.
 
-1. **`revokeCourseAuthor` concurrency hardening (the one substantive H.3 review finding).**
-   `src/application/course/revoke-course-author.ts`'s last-author-protection check reads every active
-   `course_authors` grant on a Course, then writes — a genuine check-then-write race with no DB-constraint
-   backing the "≥1 active author" invariant (unlike this module's other accepted check-then-write races,
-   which sit on top of an otherwise DB-constraint-backed single UPDATE). Two concurrent revokes against a
-   Course with exactly 2 active grants could both pass the pre-check and both write, leaving zero active
-   authors. **Not exploitable today** — `revokeCourseAuthor` is not wired to any API route. Must be hardened
-   (e.g. a transaction with `SELECT ... FOR UPDATE` locking the Course's `course_authors` rows before the
-   count check) before any future Slice exposes it via an endpoint — do not wire it to a route without first
-   closing this gap.
+1. **CLOSED 2026-10-03 (post-Run010 Product Fix, `eeeaaa5`): `revokeCourseAuthor` last-author concurrency hardening.**
+   It now runs inside `CourseUnitOfWork`: it locks the Course's active `course_authors` rows `FOR UPDATE` ordered by id,
+   counts under the lock, then revokes; still not wired to any route. Evidence limit: PGlite is single-connection, so tests
+   prove the SQL, sequential last-author protection and rollback only; true multi-connection serialization rests on
+   PostgreSQL `FOR UPDATE` semantics and is NOT proven locally (see item 7(c)). Details: archive.
 2. **Insights CTE cleanup / polish** — the original H.4 scope item (no new exclusion logic implied or
    required; purely a code-quality/readability pass over the Insights aggregation queries, if one is ever
    warranted).
 3. **New co-author-management UI** — explicitly out of scope for every H.1-H.4 phase by FUB-036's own
    recorded decision; `revokeCourseAuthor` currently has no caller anywhere in `src/app`. A future Slice
-   would need to design this UI, close item 1 above, and have the re-grant semantics of `docs/OPEN_QUESTIONS.md`
+   would need to design this UI, and have the re-grant semantics of `docs/OPEN_QUESTIONS.md`
    OQ-047 decided before wiring `revokeCourseAuthor` or any grant path to a route.
 4. **MOVED to `docs/OPEN_QUESTIONS.md` OQ-047** (author re-grant after revoke; a lifecycle decision, not technical debt). The
    number is kept so existing references stay valid. It is NOT the same problem as learner revoke/rejoin (OQ-043).
@@ -1225,29 +1197,17 @@ preserved here rather than expanding Run010-H further. None of these items block
    vanished authorization asymmetry; unused `memberships` parameter on `checkAnalysisAccess`; `CourseUnitOfWork`
    port comment still says `createCourse` writes a `course_memberships` row. (H.3 note: dropping the CHECK by
    its default name follows repo convention; no action.)
+7. **Residuals of the item 1 hardening (non-blocking, from the `eeeaaa5` review; none affects the last-author invariant):**
+   (a) the `revoke()` SQL lacks an `and revoked_at is null` guard (unreachable today because the locked list holds only
+   active rows; cheap hardening); (b) the actor-authorization check runs before the lock, leaving a stale-snapshot window
+   (a strict fix derives actor authorization from the locked rows); (c) add a two-connection real-PostgreSQL test to
+   prove the serialization that PGlite cannot.
 
 ## Promotion Trigger
 
-Item 1 becomes a hard blocker the moment any future Slice wires `revokeCourseAuthor` to a route — do not skip
-it under time pressure. Item 3 requires item 1 and OQ-047 to be settled first. Items 2 and 5-6 have no forcing trigger;
+Item 3 requires OQ-047 to be settled first; item 7(b)/(c) should be reconsidered before `revokeCourseAuthor` is wired to a
+route. Items 2, 5-6 and 7(a) have no forcing trigger;
 pick up opportunistically or when co-author management becomes a real product need (likely Run011+).
-
----
-
-# FUB-043 — Exam-Urgency Constant Named `HALF_LIFE` Is an E-Folding Time Constant
-
-**Status:** `DEFERRED`
-**Priority:** `LOW`
-**Area:** `src/domain/learning/exam-urgency.ts` (naming/docs only)
-
-The exam-urgency amplifier constant named `HALF_LIFE` is used as `exp(-days / 7)`, so 7 is an e-folding time
-constant (amplitude falls to 1/e), not a half-life (which would be about 4.85 days). Behavior is not rejected;
-only the name/doc comments (and any `GLOBAL_TODAY_PRIORITY_MODEL.md` wording) are misleading. Cleanup pending;
-rename or document without changing behavior unless calibration (OQ-016) deliberately changes the curve.
-
-## Promotion Trigger
-
-Next touch of exam-urgency code, or before release documentation is written.
 
 ---
 
@@ -1274,6 +1234,24 @@ A Pilot UX / Readiness Run, or observed pilot friction on any of the recovery ga
 
 ---
 
+# FUB-045 — ARCHIVED Course: Author vs Non-Author Active-Membership Join Asymmetry
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Course join (`src/application/course`), Course lifecycle
+
+Residual of the OQ-045 decision (Option B, `9a19b05`, 2026-10-03; ARCHIVED hard-stops NEW learner enrollment including an
+active Course Author). On an ARCHIVED Course, an author with an existing ACTIVE LEARNER membership gets `ALREADY_MEMBER`
+(idempotent) while a non-author with an active membership gets `NOT_AUTHORIZED`; the non-author behavior was deliberately
+left unchanged. Both are non-enrolling and expose nothing new. Revisit only if a consistent outcome for existing active
+members on ARCHIVED Courses is wanted; any change to the non-author outcome is a product decision (open an OQ then).
+
+## Promotion Trigger
+
+Next change to Course join outcomes or ARCHIVED-Course handling (F-04b).
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.
@@ -1289,7 +1267,10 @@ These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSE
 | FUB-025 | Answer Submission Idempotency vs. Server-Generated `answeredAt` | closed — `RESOLVED` AS A BACKLOG ITEM; canonical ownership moved. The underlying decision is NOT resolved and now lives in OQ-048; see archive |
 | FUB-039 | Same-Day Reinforcement Freeze Can Delay a New Card's FSRS Graduation | closed — `RESOLVED`: the original audit question is resolved (the freeze is intentional); the residual FSRS-calibration interaction remains open in OQ-044; see archive |
 | FUB-040 | RUN010-E Residual Gaps: Cross-Course Topic Diversity, Unmapped OQ-018 Reason Categories | closed — `RESOLVED` AS A BACKLOG ITEM; canonical ownership moved. The underlying decisions are NOT resolved and now live in OQ-017 (item 1) and OQ-018 (items 2-3); see archive |
-| FUB-034 / FUB-041 | resolved parts only | pre-prune FUB-034 text and original FUB-041 text archived; open residuals remain active (FUB-034 narrowed to the tier-crossing gap) |
+| FUB-034 | resolved parts only | pre-prune FUB-034 text archived; the open residual remains active (narrowed to the tier-crossing gap) |
+| FUB-041 | Practice `practice-vertical.test.ts` `topicId` Failure | closed — `RESOLVED` 2026-10-03 (`a773f90`): stale exact-key test, not a mapping defect; see archive |
+| FUB-043 | Exam-Urgency Constant Named `HALF_LIFE` Is an E-Folding Constant | closed — `RESOLVED` 2026-10-03 (`c8f3dc6`): naming/docs only, behavior-neutral; see archive |
+| FUB-042 item 1 | `revokeCourseAuthor` last-author concurrency | closed 2026-10-03 (`eeeaaa5`); the item stays listed in FUB-042 with its closure note and residuals (item 7); see archive |
 
 ---
 

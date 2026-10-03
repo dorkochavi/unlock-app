@@ -93,41 +93,9 @@ Current state (implementation history: `docs/RUNS/2026-09-28-RUN-010-LEARNING-IN
 source and already feeds the within-tier ranking amplifier (never eligibility/tier). No personal/group
 override exists, so only the source hierarchy above remains open.
 
-Date interpretation of the date-only `exam_date` (Product finding A) is a distinct decision, owned by OQ-046. This
-question stays focused on the exam-date SOURCE hierarchy.
-
----
-
-## OQ-046 — Date-Only Exam-Date Interpretation (Exam-Day Urgency)
-
-Status: OPEN
-
-Current behavior (`src/domain/learning/exam-urgency.ts` module comment): `courses.exam_date` is a date-only value but is
-parsed as a UTC-midnight instant and compared to `now` as a raw instant. "Exam today" urgency therefore disappears during
-part of the exam calendar day (the module comment records a shift of up to ~10-14 hours relative to a distant learner's
-own local exam day). Split from OQ-002 (which owns
-the source hierarchy) on 2026-09-29; originally recorded as OQ-002's date-interpretation sub-question (Product finding A).
-
-Decision needed:
-
-What day semantics should a date-only `exam_date` have when computing exam urgency?
-
-- the learner's local calendar day;
-- the learner's learning-day boundary (as distinct from calendar midnight);
-- another explicit rule.
-
-Constraints:
-
-- the system must never invent an exam date
-- exam urgency remains a ranking amplifier within tier, not an eligibility gate or tier replacement, unless another
-  accepted policy says otherwise (ADR-016 §11)
-- the DailyPlan local day is defined by the learner's timezone (`.claude/rules/learning-engine.md`); do not introduce a
-  hidden timezone assumption (`.claude/rules/api.md`)
-
-Resolve before:
-
-the Product Fix that repairs exam-day urgency. It also gates any push of the Run 010 branch
-(`docs/DEV_STATUS.md` "Pre-push / Release Requirements" A). No code fix is authorized by this question.
+Date interpretation of the date-only `exam_date` is decided (former OQ-046, resolved 2026-10-03: learner-local calendar
+date; recorded in `src/domain/learning/exam-urgency.ts` and `docs/DEV_STATUS.md`). This question stays focused on the
+exam-date SOURCE hierarchy.
 
 ---
 
@@ -473,7 +441,12 @@ Still potentially unresolved for future iterations:
   item 1): `discoverNewMaterialItems` (`src/application/dailyPlan/generate-daily-plan-for-resolved-inputs.ts`) pools each
   eligible Course's Topic-diversified candidates and re-sorts globally by `createdAt` only before taking the final top-3, so
   a Course's Topic-diversified order can be partially overridden when several Courses are simultaneously eligible; bounded
-  edge case, and ADR-017 still forbids a per-Course fairness quota
+  edge case, and ADR-017 still forbids a per-Course fairness quota. The post-Run010 cold-start SQL audit (2026-10-03)
+  confirmed this behavior is consistent with ADR-017 §4's literal order and no-quota rule; it remains an open balance question
+- Topic-related New Material edge behaviors preserved as open policy (post-Run010 audit, 2026-10-03; no behavior change):
+  questions in archived Topics remain eligible as New Material (and in the ordinary review path); questions with no Topic
+  form their own bucket ordered last within the per-Course Topic round-robin; ADR-017 §4 does not record the Topic
+  round-robin
 - the escalation mechanism/thresholds by which severe Memory Need/overdue duration crosses a priority tier boundary
   (ADR-016 §10 accepts the requirement; numbers undecided; `docs/GLOBAL_TODAY_PRIORITY_MODEL.md` §5a; the unimplemented
   requirement itself is tracked in `docs/FOLLOW_UP_BACKLOG.md` FUB-034)
@@ -1102,26 +1075,6 @@ granting behavior until this question is resolved.
 
 ---
 
-## OQ-045 — Author Self-Enrollment vs Course Lifecycle (ARCHIVED)
-
-Status: OPEN
-
-Current behavior (as implemented in RUN010-H.3; see `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md` and `docs/FOLLOW_UP_BACKLOG.md` FUB-042):
-when `canSelfJoinCourse` denies self-join (DRAFT / AUTHORIZED_ONLY / ARCHIVED / etc.), an active Course Author
-may still self-enroll as an ordinary LEARNER in their own Course; the bypass is Course-scoped and a non-author
-still gets `NOT_AUTHORIZED`. A human decision on the ARCHIVED case has NOT been made. Per
-`.claude/rules/auth.md`, unresolved semantics fail closed and must not be widened by implementation.
-
-Decision needed:
-
-Should ARCHIVED be a join-policy restriction an author may bypass (as with DRAFT / AUTHORIZED_ONLY), or a
-lifecycle stop that applies to authors as well?
-
-Tracked as `docs/DEV_STATUS.md` "Pre-push / Release Requirements" C. Related: OQ-043 (membership
-revoke/rejoin), FUB-042.
-
----
-
 ## OQ-047 — CourseAuthor Grant Lifecycle (Re-grant / Reactivation)
 
 Status: OPEN
@@ -1147,7 +1100,7 @@ Also carried from OQ-043 B (not decided here): what counts as an active manager 
 implementation treats every active OWNER or INSTRUCTOR `course_authors` row on the Course as an active author grant for
 last-author protection), whether OWNER and
 INSTRUCTOR are equivalent for that rule, and ownership-transfer expectations. The technical check-then-write race in that
-protection is a separate hardening item: `docs/FOLLOW_UP_BACKLOG.md` FUB-042 item 1.
+protection was hardened 2026-10-03 (`docs/FOLLOW_UP_BACKLOG.md` FUB-042 item 1, closed; residuals in item 7).
 
 Constraints:
 

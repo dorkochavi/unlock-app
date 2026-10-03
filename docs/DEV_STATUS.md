@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-09-29 (DevOS V1.3 consolidation Run COMPLETE; Run 010 COMPLETE locally)
+Updated: 2026-10-03 (post-Run010 Product Fix Run COMPLETE locally; Run 010 COMPLETE locally)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -19,6 +19,10 @@ deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN
   `feature/run-010-learning-intelligence` (branched from `d39c882`; it is `main` + Run 010 only). NOT pushed, NOT
   merged, NOT deployed, and NOT yet approved for push (see "Pre-push / Release Requirements"). Last verified
   implementation head: `b82d194` (code + verification). Run-close docs commit: `2e2634c` (documentation only).
+- Post-Run010 Product Fix (`docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`) is COMPLETE locally on the same
+  branch (START_HEAD `4f360a7`, last verified code commit `eeeaaa5`): exam-day urgency, ARCHIVED author join,
+  `revokeCourseAuthor` locking and the Practice `topicId` test are fixed; see "Pre-push / Release Requirements". No
+  migrations, no hosted state, NOT pushed. Run010 invariants untouched; Run 011 not started.
 - Hosted / remote mutation and pushes are human-controlled actions (`CLAUDE.md` §6).
 - This is NOT a pilot approval (`docs/PILOT_READINESS.md`).
 
@@ -123,8 +127,10 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
 - typecheck clean; lint 0 errors + 1 pre-existing unrelated warning (`.claude/telemetry/statusline.mjs`).
 - Full unit suite 1665/1665 (162 files). Production build clean (39 routes: 14 static, 25 dynamic).
 - Schema/PGlite 331/332 at that point; the single exception was `practice-vertical.test.ts` (`topicId`), classified
-  as genuinely pre-Run010 (FUB-041, open residual). A stale reinforcement-order test caused by Run 010 itself was
-  fixed separately (RUNS Run 010 report; FUB-041).
+  as stale (FUB-041, closed 2026-10-03: stale exact-key test, `topicId` added by UX-03-QA1; test fixed in `a773f90`, so
+  that exception no longer applies). A stale reinforcement-order test caused by Run 010 itself was fixed separately
+  (RUNS Run 010 report). Post-Run010 Product Fix evidence is per-Slice in its Run report; the figures above are the
+  Run 010 baseline.
 - Reviewer coverage: risk-based per `/review-commit`; every dispatched pass returned no blocking findings (Run 010
   report §7).
 - NOT proven by any Run so far for this branch: hosted Preview/Supabase integration, hosted latency, true
@@ -181,21 +187,29 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
 Pointers and one-liners only; nothing below is resolved by this file. These gate any push/merge/deploy of
 `feature/run-010-learning-intelligence`, which is NOT yet approved for push.
 
-- A. `exam_date` interpretation — FIX CANDIDATE BEFORE PUSH. It is parsed as a UTC-midnight instant, so exam-day
-  urgency disappears; it should follow calendar-day / learner-day semantics. Decision owned by OQ-046
-  (never invent a date); the source hierarchy stays OQ-002.
-- B. HALF_LIFE naming (exam-urgency constants) — clarity issue, low severity; tracked in Backlog (FUB-043).
-- C. Author self-enroll bypass, including for an ARCHIVED Course — human decision NOT yet made; fails closed until
-  decided (`.claude/rules/auth.md`). Tracked as OQ-045. Related: FUB-042, OQ-043 (revoke/rejoin).
+- A. `exam_date` interpretation — SATISFIED locally (2026-10-03, `c8f3dc6`; former OQ-046, human decision Option A).
+  `exam_date` is the learner's LOCAL calendar date; `daysUntilExam` = whole local calendar days between `plannedForDate`
+  and `exam_date`; exam day => maximum amplifier (2.0, max unchanged); a passed exam => neutral. No schema change, no
+  recalibration, no separate learning-day boundary. The exam-date SOURCE hierarchy stays OQ-002.
+- B. `HALF_LIFE` naming — SATISFIED (FUB-043 closed, `c8f3dc6`; renamed `EXAM_URGENCY_DECAY_DAYS`, behavior-neutral).
+- C. Author self-enroll on an ARCHIVED Course — SATISFIED locally (2026-10-03, `9a19b05`; former OQ-045, human decision
+  Option B). ARCHIVED hard-stops NEW learner enrollment including an active Course Author; an author with an existing
+  ACTIVE LEARNER membership gets `ALREADY_MEMBER`; a revoked/archived membership gets `NOT_AUTHORIZED` (OQ-043 untouched);
+  DRAFT / AUTHORIZED_ONLY author bypass unchanged; no new outcome code, no schema. Residual asymmetry: FUB-045.
 - D. Migration rollout order (human actions, never before their prerequisite): apply H.1 (additive `course_authors`)
   -> deploy the app authorization cutover (reads `course_authors`) -> verify -> apply H.3 (destructive membership
   narrowing) -> verify. NEVER apply H.3 before the cutover is deployed. Re-check `npx supabase migration list` first.
-- E. `revokeCourseAuthor` last-author race: must be hardened (SELECT ... FOR UPDATE) before ANY route wires it —
-  FUB-042 item 1. Currently unwired.
+- E. `revokeCourseAuthor` last-author race — SATISFIED locally (FUB-042 item 1 closed, `eeeaaa5`: row locks inside
+  `CourseUnitOfWork`). Still unwired. Multi-connection serialization is NOT proven locally (PGlite is single-connection);
+  a two-connection real-PostgreSQL test and the other residuals are FUB-042 item 7.
 - F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); decision owned by OQ-047 (distinct from learner OQ-043);
   FUB-042 item 4 is a pointer; must be resolved before any co-author-management UI.
-- G. Unseen-question repository / Topic-diversifying cold-start SQL (`unseen-question-repository.ts` round-robin) has
-  NOT been human-reviewed — pre-push review item on real Postgres (PGlite limits apply). Related: OQ-017 (Topic diversity vs cross-Course pooling; archived FUB-040).
+- G. Unseen-question / Topic-diversifying cold-start SQL — AUDITED 2026-10-03 (read-only post-Run010 audit, verdict KEEP, no
+  code change): per-Course selection conforms to ADR-017 (unseen = no real Attempt; fallback-only; cap 3; no per-Course
+  quota; deterministic Topic round-robin; NULL-topic bucket last); cross-Course merge re-sorts by (createdAt, questionId)
+  before top-3, consistent with ADR-017 §4. Real-Postgres behavior is still not proven (PGlite limits). Open policy items
+  stay in OQ-017 (cross-Course Topic balance; archived-Topic eligibility; NULL-topic ordering; ADR-017 §4 not amended).
+- Still open before push: Manual / Hosted QA and release planning (item D order); no push is approved.
 - Also before promotion: hosted Supabase Auth Redirect URL allow-list for `next=` values (open, non-blocking since
   UX-01/02/03).
 

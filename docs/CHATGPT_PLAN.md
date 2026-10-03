@@ -1,10 +1,11 @@
 # UNLOCK — POST-RUN010-PRODUCT-FIX-001 — Post-Run010 Product Fix / Reconciliation
 
-PLAN_VERSION: 008
+PLAN_VERSION: 009
 RUN_ID: 2026-10-03-POST-RUN010-PRODUCT-FIX-001
 START_HEAD: `4f360a7`
-RUN_STATUS: IN_PROGRESS
-STATUS: **IN_PROGRESS** — bounded local correctness/reconciliation of known post-Run010 pre-push findings before Manual / Hosted QA. Not a reopening of Run010; not Run 011.
+LAST_VERIFIED_HEAD: `eeeaaa5`
+RUN_STATUS: COMPLETE
+STATUS: **COMPLETE** — bounded local correctness/reconciliation of known post-Run010 pre-push findings before Manual / Hosted QA. Not a reopening of Run010; not Run 011. Not pushed.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -33,14 +34,14 @@ Every Slice declares one gate: AUTO, REVIEW_GATE, HUMAN_DECISION_GATE, or FINAL_
 
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Grounding + exact reproduction of known findings | AUTO | PENDING |
-| B | OQ-046 — exam-date calendar semantics (decision) | HUMAN_DECISION_GATE | PENDING |
-| C | Implement accepted exam-date semantics + FUB-043 naming cleanup if behavior-neutral | REVIEW_GATE | PENDING |
-| D | FUB-041 — Practice `topicId` triage and fix | REVIEW_GATE | PENDING |
-| E | OQ-045 — ARCHIVED Author self-enrollment (decision) | HUMAN_DECISION_GATE | PENDING |
-| F | Apply OQ-045 if required + FUB-042 item 1 last-author concurrency hardening | REVIEW_GATE | PENDING |
-| G | Cold-start unseen-question SQL audit | REVIEW_GATE | PENDING |
-| H | Integrated local verification + Run close | FINAL_GATE | PENDING |
+| A | Grounding + exact reproduction of known findings | AUTO | DONE |
+| B | OQ-046 — exam-date calendar semantics (decision) | HUMAN_DECISION_GATE | DONE — human decision: Option A (learner-local calendar date) |
+| C | Implement accepted exam-date semantics + FUB-043 naming cleanup if behavior-neutral | REVIEW_GATE | DONE (`c8f3dc6`) |
+| D | FUB-041 — Practice `topicId` triage and fix | REVIEW_GATE | DONE (`a773f90`; stale test, no mapping change) |
+| E | OQ-045 — ARCHIVED Author self-enrollment (decision) | HUMAN_DECISION_GATE | DONE — human decision: Option B (ARCHIVED hard-stop) |
+| F | Apply OQ-045 if required + FUB-042 item 1 last-author concurrency hardening | REVIEW_GATE | DONE (`9a19b05`, `eeeaaa5`) |
+| G | Cold-start unseen-question SQL audit | REVIEW_GATE | DONE — audit verdict KEEP, no code change |
+| H | Integrated local verification + Run close | FINAL_GATE | DONE (docs reconciliation; integrated verification in the Run report) |
 
 Do not begin a dependent Slice while its Human Decision Gate is unresolved.
 
@@ -57,12 +58,13 @@ implementation; unexpected migration/hosted requirement; product semantics requi
 
 ## 7. Current Status
 
-- Run identity established; Slice A next. Branch `feature/run-010-learning-intelligence`; no push.
+- Run COMPLETE locally; report `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`. Next: Manual / Hosted QA and release planning (human). Branch `feature/run-010-learning-intelligence`; no push.
 
 ## History
 
 Reports are the archive:
 
+- POST-RUN010-PRODUCT-FIX-001: `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`
 - GOVERNANCE-RECONCILE-001: `docs/RUNS/2026-09-29-GOVERNANCE-RECONCILE-001.md`
 - DEVOS-V1.3 Consolidation: `docs/RUNS/2026-09-29-DEVOS-V1.3-CONSOLIDATION.md`
 - Run010 Learning Intelligence: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`

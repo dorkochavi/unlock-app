@@ -756,3 +756,27 @@ OQ-018's `STRENGTHEN_MEMORY`/"exam approaching" gap, or literally reconciling th
 call for the human product owner, not something to infer here. Promote item 3 alongside a formal OQ-018
 resolution (the DTO-tightening question is naturally part of "what does explainability mean at the API
 boundary," not a standalone fix to invent mid-Slice).
+
+---
+
+# Closed 2026-10-03 (post-Run010 Product Fix, Run `2026-10-03-POST-RUN010-PRODUCT-FIX-001`)
+
+## FUB-041 — Practice `topicId` Schema/PGlite Failure (RESOLVED, `a773f90`)
+
+**Status:** `RESOLVED`. Root cause: a stale exact-key test, not a mapping defect. `topicId` was intentionally added to the
+Practice wire response by UX-03-QA1 (`814eace`) for batch-completion topics-touched. The test was updated to a strict
+exact-key assertion that includes `topicId` plus value assertions. (The earlier origin hypothesis, `questions.topic_id` from
+Run 006 S2, was incorrect; the failure dates from UX-03-QA1.) Original text: see "FUB-041" above and the Run 010 report.
+
+## FUB-043 — Exam-Urgency `HALF_LIFE` Naming (RESOLVED, `c8f3dc6`)
+
+**Status:** `RESOLVED`. Naming/doc only, behavior-neutral: `EXAM_URGENCY_DECAY_HALF_LIFE_DAYS` renamed
+`EXAM_URGENCY_DECAY_DAYS`; documented as an e-folding constant (`exp(-days/7)`; the true half-life is about 4.85 days).
+Calibration remains OQ-016.
+
+## FUB-042 item 1 — `revokeCourseAuthor` Last-Author Concurrency (CLOSED, `eeeaaa5`)
+
+**Status:** closed. `revokeCourseAuthor` runs inside `CourseUnitOfWork`, locks the Course's active `course_authors` rows
+`FOR UPDATE` ordered by id, counts under the lock, then revokes. Not wired to any route. PGlite (single connection) proves
+the SQL, sequential last-author protection and rollback only; true multi-connection serialization is not proven locally.
+Residuals recorded in FUB-042 item 7.
