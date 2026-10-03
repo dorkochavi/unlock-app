@@ -48,6 +48,24 @@ export class PostgresCourseAuthorRepository implements CourseAuthorRepository {
   }
 
   /**
+   * Locks every active grant row of this Course until the surrounding
+   * transaction ends. `order by id` gives every caller the same lock
+   * acquisition order (no deadlock between two revokes of one Course). A
+   * waiter re-evaluates `revoked_at is null` after the holder commits
+   * (READ COMMITTED), so it sees only grants still active afterwards.
+   */
+  async listActiveForCourseForUpdate(courseId: string) {
+    const result = await this.db.query(
+      `select * from course_authors
+        where course_id = $1 and revoked_at is null
+        order by id
+        for update`,
+      [courseId],
+    );
+    return result.rows.map(mapCourseAuthorRow);
+  }
+
+  /**
    * Race-free by construction (`CourseMembershipRepository.createMembership`'s
    * own established pattern, reused here): `INSERT ... ON CONFLICT (user_id,
    * course_id, capability) DO NOTHING RETURNING`, never a check-then-insert.

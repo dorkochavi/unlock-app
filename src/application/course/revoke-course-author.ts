@@ -14,11 +14,20 @@
  * (`src/application/course/ports.ts`) explicitly defers this exact
  * protection to this caller.
  *
+ * FUB-042 item 1 (POST-RUN010-PRODUCT-FIX-001): the whole read-check-write
+ * runs in ONE `CourseUnitOfWork` transaction and reads the Course's active
+ * grants with row locks (`listActiveForCourseForUpdate`), so two concurrent
+ * revokes on the same Course serialize (by PostgreSQL `FOR UPDATE` +
+ * READ COMMITTED semantics; not proven by the single-connection PGlite
+ * tests): the second re-reads committed state
+ * after the first commits and gets `LAST_AUTHOR` instead of leaving zero
+ * active authors. (Not wired to any route.)
+ *
  * `actorUserId` is trusted as-is at this boundary — see `join-course.ts`'s
  * module doc comment for why.
  */
 import { hasActiveAuthorGrant } from "../../domain/course/types";
-import type { CourseAuthorCapability, CourseAuthorGrant, CourseRepositories } from "./ports";
+import type { CourseAuthorCapability, CourseAuthorGrant, CourseUnitOfWork } from "./ports";
 
 export interface RevokeCourseAuthorCommand {
   actorUserId: string;
@@ -35,46 +44,48 @@ export type RevokeCourseAuthorResult =
 
 export async function revokeCourseAuthor(
   command: RevokeCourseAuthorCommand,
-  repos: CourseRepositories,
+  uow: CourseUnitOfWork,
 ): Promise<RevokeCourseAuthorResult> {
-  const actorGrants = await repos.authors.findActiveCapabilities(
-    command.actorUserId,
-    command.courseId,
-  );
-  if (!hasActiveAuthorGrant(actorGrants)) {
-    return { outcome: "NOT_AUTHORIZED" };
-  }
+  return uow.runInTransaction(async (repos) => {
+    const actorGrants = await repos.authors.findActiveCapabilities(
+      command.actorUserId,
+      command.courseId,
+    );
+    if (!hasActiveAuthorGrant(actorGrants)) {
+      return { outcome: "NOT_AUTHORIZED" };
+    }
 
-  // Read every active grant on this Course BEFORE writing, so the
-  // last-author check sees the pre-revoke state (the same accepted
-  // check-then-write race window this module's other use cases already
-  // document — see `ports.ts`'s `CourseAuthorRepository.revoke` doc comment).
-  const activeGrantsForCourse = await repos.authors.listActiveForCourse(command.courseId);
-  const targetGrant = activeGrantsForCourse.find(
-    (grant) =>
-      grant.userId === command.targetUserId && grant.capability === command.capability,
-  );
-  if (targetGrant === undefined) {
-    return { outcome: "NOT_A_GRANT_HOLDER" };
-  }
-  if (activeGrantsForCourse.length === 1) {
-    // Revoking this grant would leave a non-deleted Course with zero active
-    // course_authors rows — fail closed (approved last-author-protection
-    // decision). Nothing mutated.
-    return { outcome: "LAST_AUTHOR" };
-  }
+    // Lock + read every active grant on this Course BEFORE writing; the lock
+    // is held until commit, so the last-author check below cannot be
+    // invalidated by a concurrent revoke on the same Course.
+    const activeGrantsForCourse = await repos.authors.listActiveForCourseForUpdate(
+      command.courseId,
+    );
+    const targetGrant = activeGrantsForCourse.find(
+      (grant) =>
+        grant.userId === command.targetUserId && grant.capability === command.capability,
+    );
+    if (targetGrant === undefined) {
+      return { outcome: "NOT_A_GRANT_HOLDER" };
+    }
+    if (activeGrantsForCourse.length === 1) {
+      // Revoking this grant would leave a non-deleted Course with zero active
+      // course_authors rows — fail closed (approved last-author-protection
+      // decision). Nothing mutated.
+      return { outcome: "LAST_AUTHOR" };
+    }
 
-  const updated = await repos.authors.revoke(
-    command.targetUserId,
-    command.courseId,
-    command.capability,
-    new Date(),
-  );
+    const updated = await repos.authors.revoke(
+      command.targetUserId,
+      command.courseId,
+      command.capability,
+      new Date(),
+    );
 
-  // `null` is reachable only via a genuine race between the pre-check above
-  // and this write (a concurrent revoke of the exact same grant) — treated
-  // the same as "no matching grant" rather than throwing.
-  return updated === null
-    ? { outcome: "NOT_A_GRANT_HOLDER" }
-    : { outcome: "REVOKED", grant: updated };
+    // `null` should be unreachable under the row lock; kept as a defensive
+    // "no matching grant" rather than throwing.
+    return updated === null
+      ? { outcome: "NOT_A_GRANT_HOLDER" }
+      : { outcome: "REVOKED", grant: updated };
+  });
 }

@@ -28,7 +28,7 @@ describe("revokeCourseAuthor", () => {
         targetUserId: "instructor-1",
         capability: "INSTRUCTOR",
       },
-      db.repos(),
+      db.uow(),
     );
 
     expect(result.outcome).toBe("REVOKED");
@@ -58,7 +58,7 @@ describe("revokeCourseAuthor", () => {
         targetUserId: "owner-1",
         capability: "OWNER",
       },
-      db.repos(),
+      db.uow(),
     );
 
     expect(result.outcome).toBe("LAST_AUTHOR");
@@ -93,7 +93,7 @@ describe("revokeCourseAuthor", () => {
         targetUserId: "instructor-1",
         capability: "INSTRUCTOR",
       },
-      db.repos(),
+      db.uow(),
     );
 
     expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
@@ -116,7 +116,7 @@ describe("revokeCourseAuthor", () => {
         targetUserId: "nobody",
         capability: "INSTRUCTOR",
       },
-      db.repos(),
+      db.uow(),
     );
 
     expect(result).toEqual({ outcome: "NOT_A_GRANT_HOLDER" });
@@ -146,7 +146,7 @@ describe("revokeCourseAuthor", () => {
         targetUserId: "owner-1",
         capability: "INSTRUCTOR",
       },
-      db.repos(),
+      db.uow(),
     );
 
     expect(result.outcome).toBe("REVOKED");
@@ -159,7 +159,7 @@ describe("revokeCourseAuthor", () => {
         targetUserId: "owner-1",
         capability: "OWNER",
       },
-      db.repos(),
+      db.uow(),
     );
     expect(second.outcome).toBe("LAST_AUTHOR");
   });
@@ -195,12 +195,67 @@ describe("revokeCourseAuthor", () => {
         targetUserId: "instructor-1",
         capability: "INSTRUCTOR",
       },
-      db.repos(),
+      db.uow(),
     );
 
     expect(result.outcome).toBe("REVOKED");
     const course2Grants = await db.repos().authors.findActiveCapabilities("owner-1", "course-2");
     expect(course2Grants).toHaveLength(1);
     expect(course2Grants[0].revokedAt).toBeNull();
+  });
+
+  // FUB-042 item 1: the check-then-revoke runs inside ONE transaction and
+  // reads the Course's grants under row locks BEFORE the write.
+  it("runs in a single transaction and takes the grant lock before revoking", async () => {
+    const db = new InMemoryCourseDatabase();
+    for (const [userId, capability] of [
+      ["owner-1", "OWNER"],
+      ["instructor-1", "INSTRUCTOR"],
+    ] as const) {
+      db.seedAuthorGrant({
+        userId,
+        courseId: "course-1",
+        capability,
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: null,
+      });
+    }
+    const events: string[] = [];
+    const base = db.repos();
+    const spied: typeof base = {
+      ...base,
+      authors: {
+        ...base.authors,
+        listActiveForCourseForUpdate: async (courseId) => {
+          events.push("lock");
+          return base.authors.listActiveForCourseForUpdate(courseId);
+        },
+        revoke: async (...args) => {
+          events.push("revoke");
+          return base.authors.revoke(...args);
+        },
+      },
+    };
+    const uow = {
+      runInTransaction: async <T>(fn: (r: typeof base) => Promise<T>) => {
+        events.push("begin");
+        const result = await fn(spied);
+        events.push("commit");
+        return result;
+      },
+    };
+
+    const result = await revokeCourseAuthor(
+      {
+        actorUserId: "owner-1",
+        courseId: "course-1",
+        targetUserId: "instructor-1",
+        capability: "INSTRUCTOR",
+      },
+      uow,
+    );
+
+    expect(result.outcome).toBe("REVOKED");
+    expect(events).toEqual(["begin", "lock", "revoke", "commit"]);
   });
 });

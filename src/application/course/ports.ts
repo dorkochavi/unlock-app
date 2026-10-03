@@ -136,6 +136,17 @@ export interface CourseAuthorRepository {
   listActiveForCourse(courseId: string): Promise<CourseAuthorGrant[]>;
 
   /**
+   * POST-RUN010-PRODUCT-FIX-001 (FUB-042 item 1) — same result as
+   * `listActiveForCourse`, but takes a row lock on every active grant of
+   * this Course (`SELECT ... FOR UPDATE`, in a deterministic order) for the
+   * remainder of the surrounding transaction. MUST be called inside a
+   * `CourseUnitOfWork` transaction: it exists so `revokeCourseAuthor` can
+   * serialize concurrent revokes on one Course and evaluate the
+   * last-author rule against committed state under that lock.
+   */
+  listActiveForCourseForUpdate(courseId: string): Promise<CourseAuthorGrant[]>;
+
+  /**
    * Race-free by construction (the same `INSERT ... ON CONFLICT DO NOTHING
    * RETURNING` pattern `CourseMembershipRepository.createMembership` already
    * uses), keyed on the full `(user_id, course_id, capability)` unique
@@ -159,7 +170,10 @@ export interface CourseAuthorRepository {
    * `listActiveForCourse` check BEFORE calling this method — the same
    * accepted check-then-write race window `revokeCourseMembership`/
    * `setCourseJoinPolicy` already document for this module (this file's own
-   * module doc comment).
+   * module doc comment). For `course_authors` that window is closed by PostgreSQL `FOR UPDATE` semantics:
+   * `revokeCourseAuthor` runs inside a `CourseUnitOfWork` transaction and
+   * reads via `listActiveForCourseForUpdate` (row locks) before this call
+   * (FUB-042 item 1).
    */
   revoke(
     userId: string,
@@ -329,7 +343,9 @@ export interface CourseRepositories {
  * Transaction boundary for Course use cases that must write across more
  * than one repository atomically — currently only `createCourse`
  * (`courses` insert + the creator's OWNER `course_memberships` insert; Run
- * 005 S2 DB review finding). Every other write in this module is a single
+ * 005 S2 DB review finding) and, as of POST-RUN010-PRODUCT-FIX-001,
+ * `revokeCourseAuthor` (lock + last-author check + revoke, FUB-042 item 1).
+ * Every other write in this module is a single
  * UPDATE statement and is therefore already atomic without this — do not
  * route them through a transaction merely for uniformity. Mirrors
  * `src/application/learning/ports.ts`'s `UnitOfWork` shape, narrowed to
