@@ -29,6 +29,22 @@ The invoking prompt owns:
 This skill does not invent any of the above. If the invoking prompt is missing one of them, that is
 a preflight gap — see §2.
 
+**Run prompt checklist** (pointers to the owners, not new policy; a prompt that fails an item is a §2 gap):
+- Identity: `RUN_ID` in repo format (`YYYY-MM-DD-NAME`); the parent sets the Plan's `RUN_ID` / `START_HEAD` /
+  `RUN_STATUS` before any worker (§2).
+- Baseline: expected branch / HEAD / remote / tag / tree as values, "repository truth wins", the accepted
+  alternatives, and a mismatch stop (`BASELINE_CONFLICT`). Verified with separate git commands, never from memory.
+- Goal and invariants, each invariant with its proof; named negative scenarios are proven before review
+  (`.claude/rules/testing.md` §1).
+- Slice queue with one gate per Slice and the §7 control record.
+- Authority: a Run prompt cannot widen `CLAUDE.md` §6, `.claude/rules/postgres.md`, `.claude/settings.json` or ADR-019.
+  Push, merge, deploy and hosted mutation are human steps: prepare the exact bounded action, stop at
+  `HUMAN_APPROVAL_REQUIRED: <X>`, and on a harness denial return the exact human command instead of working around it.
+- Dispatch: reference §4; add only Run-specific deltas.
+- Stop tokens: `BASELINE_CONFLICT`, `PLAN_CONFLICT`, `TOOLING_BLOCKER`, `HUMAN_APPROVAL_REQUIRED: <X>`.
+- Result and close: one compact Result with `START_HEAD` / `END_HEAD`, evidence with provenance (HUMAN_REPORTED /
+  DB read-only / automated), rollback and residuals; close per §12-§13.
+
 ## 2. Phase 0 — Orchestration Preflight
 
 Before dispatching any worker, the parent verifies repository truth directly (not from memory or a
