@@ -396,7 +396,8 @@ genuinely warranted, no broader stack.
 
 Git protects code, not learner data. A manual hosted logical backup was
 taken before the pilot (Run 008 gate closed 2026-09-23; no restore drill
-performed). Ongoing backup ownership, frequency, RPO/RTO, and a
+performed; a second logical backup was taken 2026-10-03 before hosted
+migration H.3, also never restore-tested). Ongoing backup ownership, frequency, RPO/RTO, and a
 restore-verification procedure have still not been established.
 
 ## Follow-Up Investigation
@@ -1249,6 +1250,25 @@ members on ARCHIVED Courses is wanted; any change to the non-author outcome is a
 ## Promotion Trigger
 
 Next change to Course join outcomes or ARCHIVED-Course handling (F-04b).
+
+---
+
+# FUB-046 — Hosted QA Data Cleanup (QA-PREVIEW-A / QA-PREVIEW-B)
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Hosted Supabase data hygiene, Pilot readiness
+
+Preview QA of the v0.2.0 release (2026-10-03) left QA data in the shared hosted database: Courses `QA-PREVIEW-A`
+(PUBLISHED, OPEN join policy, therefore still joinable) and `QA-PREVIEW-B` (ARCHIVED), 1 QA learner membership, and 6 QA
+Attempts on `QA-PREVIEW-A`. Attempts are immutable learner evidence, so the cleanup design needs care (not decided here).
+
+Cleanup is a separate hosted mutation: explicit human approval and a fresh backup first (`.claude/rules/postgres.md`).
+Earlier QA data (`QA-SliceB-*`) is tracked in `docs/PILOT_READINESS.md` item 12.
+
+## Promotion Trigger
+
+Before a real pilot, or earlier if QA-PREVIEW-A becomes visible to real users.
 
 ---
 

@@ -1108,7 +1108,7 @@ Constraints:
 
 Resolve before:
 
-any co-author-management UI or grant endpoint (FUB-042 item 3; `docs/DEV_STATUS.md` "Pre-push / Release Requirements" F).
+any co-author-management UI or grant endpoint (FUB-042 item 3; `docs/DEV_STATUS.md` "Release State / Open Items", author re-grant bullet).
 
 ---
 

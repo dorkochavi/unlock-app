@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-10-03 (post-Run010 Product Fix Run COMPLETE locally; Run 010 COMPLETE locally)
+Updated: 2026-10-03 (release v0.2.0 shipped to Production; hosted migrations H.1 + H.3 applied)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -11,18 +11,14 @@ deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN
 
 - Git (`git log` / `git status`) is authoritative for the current local HEAD, branch, and ahead/behind. Those
   values are deliberately NOT hard-coded here (this file is committed and would go stale against its own claim).
-- `main` is Production truth (Vercel Production Branch = `main`, ADR-019). `main` == `origin/main` == `d39c882`,
-  which already contains Run UX-03 + UX-03-QA1 + UX-03-QA2 + the DevOS Micro-Optimization Pass. Nothing there is
-  unmerged. Only tag: `v0.1.0` (`8e137e6`), the last manually verified Production RUNTIME baseline; no newer tag
-  exists. Actual Vercel deployment / Production verification of `d39c882` is NOT confirmed by any Claude session.
-- Run 010 (Learning Intelligence, `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`) is COMPLETE locally on
-  `feature/run-010-learning-intelligence` (branched from `d39c882`; it is `main` + Run 010 only). NOT pushed, NOT
-  merged, NOT deployed, and NOT yet approved for push (see "Pre-push / Release Requirements"). Last verified
-  implementation head: `b82d194` (code + verification). Run-close docs commit: `2e2634c` (documentation only).
-- Post-Run010 Product Fix (`docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`) is COMPLETE locally on the same
-  branch (START_HEAD `4f360a7`, last verified code commit `eeeaaa5`): exam-day urgency, ARCHIVED author join,
-  `revokeCourseAuthor` locking and the Practice `topicId` test are fixed; see "Pre-push / Release Requirements". No
-  migrations, no hosted state, NOT pushed. Run010 invariants untouched; Run 011 not started.
+- `main` is Production truth (Vercel Production Branch = `main`, ADR-019). `main` == `origin/main` == `fff8c40`
+  (fast-forwarded from `d39c882`, 31 commits, linear), Vercel Production Ready, Production smoke PASS (human-confirmed,
+  2026-10-03). Release tag: annotated `v0.2.0` -> `fff8c40`. Earlier tags: `v0.1.0` (`8e137e6`, previous Production
+  baseline) and `unlock-post-run010-governance-2026-10-02`.
+- Shipped: Run 010 (Learning Intelligence), Post-Run010 Product Fix, PREVIEW-QA-FIX-001 (question editor "create another
+  question" action + Hebrew Topic-required publish error). Reports: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`,
+  `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md` (including its "Release close" section: Preview QA, cutover, H.1,
+  H.3, rollback caveat). Run 011 not started.
 - Hosted / remote mutation and pushes are human-controlled actions (`CLAUDE.md` §6).
 - This is NOT a pilot approval (`docs/PILOT_READINESS.md`).
 
@@ -35,10 +31,10 @@ Learner navigation: Today, Progress, Courses. Instructor navigation: Courses, St
 
 ## Current Product Capabilities
 
-Current capabilities on the Run 010 branch (Run 010 items marked, all local-only until pushed/deployed):
+Current capabilities in Production (v0.2.0; Run 010 items marked):
 - Authentication; all authenticated JSON routes authenticate before parsing the request body.
 - Course management capability lives in `course_authors` (OWNER / INSTRUCTOR management capability, additive table
-  from Run 010 H.1). `course_memberships` is LEARNER-only after Run 010 H.3 (migration hosted-unapplied). An active
+  from Run 010 H.1). `course_memberships` is LEARNER-only after Run 010 H.3 (applied hosted 2026-10-03). An active
   Course Author may self-enroll in their own Course as an ordinary LEARNER (see finding C below). Authorization call
   sites use "active Course Author", not the legacy membership roles (ADR-015).
 - OPEN / AUTHORIZED_ONLY join; Course lifecycle DRAFT / PUBLISHED / ARCHIVED; flat Course-scoped Topics.
@@ -89,16 +85,20 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
 ## Database / Supabase
 
 - Supabase project `UNLOCK`, ref `luinowttujolknxsduug`, Central EU / Frankfurt.
-- Hosted migrations confirmed aligned through `20260929000000_retire_today_session.sql` (13th; human-confirmed
-  local = remote 2026-09-23).
-- Two Run 010 migrations are committed but NOT applied hosted (verified locally with schema/PGlite only):
-  - `20260929010000_course_authors_v1.sql` (H.1) — additive: creates `course_authors`, backfills OWNER/INSTRUCTOR
-    `course_memberships` rows into it.
-  - `20260929020000_course_membership_learner_only_v1.sql` (H.3) — destructive-but-redundant: deletes the superseded
-    OWNER/INSTRUCTOR membership rows and narrows the `role` CHECK to LEARNER-only.
-- Do not infer hosted application from local migration existence; re-check `npx supabase migration list` before
-  assuming local = remote. Claude must not run `supabase link` or `supabase db push` (`.claude/rules/postgres.md`).
-  Required rollout order: see "Pre-push / Release Requirements" D.
+- Hosted migrations: all 15 applied (no pending, no remote-only), human-confirmed 2026-10-03. H.1
+  (`20260929010000_course_authors_v1`, additive) was applied from an isolated workdir after a pre-H.1 backup and
+  backfilled 9 OWNER rows. H.3 (`20260929020000_course_membership_learner_only_v1`) was applied after a fresh pre-H.3
+  backup and dry-run: it deleted the 9 legacy OWNER `course_memberships` rows and narrowed the `role` CHECK to
+  LEARNER-only.
+- Post-H.3 state: `course_memberships` LEARNER 79, OWNER 0, INSTRUCTOR 0; `course_authors` OWNER 11 (11 active, 0 revoked);
+  11 Courses (9 PUBLISHED, 1 DRAFT, 1 ARCHIVED). Drift check going forward uses the canonical model only: every Course has
+  an active `course_authors` row (H.1 check D4 = 0); no legacy OWNER/INSTRUCTOR memberships remain. The old D3 check
+  (`course_authors` without legacy membership) is no longer a valid gate.
+- ROLLBACK CAVEAT: `d39c882` is NOT a safe app-only rollback after H.3 (old code reads OWNER memberships; every author
+  would be locked out). Restoring the old app first requires reconstructing the legacy OWNER rows (the pre-H.3 backup
+  holds them). Preferred recovery is fix-forward.
+- Claude must not run `supabase link` or `supabase db push` (`.claude/rules/postgres.md`); re-check
+  `npx supabase migration list` rather than inferring alignment.
 
 ## Environment / Deployment Truth
 
@@ -113,8 +113,8 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
     p95 14.7 s; `max=5` Today p95 4.85 s / Answer p95 3.18 s; 30/30 succeeded both. Optional
     `DATABASE_POOL_LOG_STATS=true`. Evidence: `docs/RUNS/2026-09-23-PRE-PILOT.md`. Round-trip reduction
     deferred (FUB-026).
-- Backup: one manual hosted logical backup exists outside the repo (second copy off-machine). No restore drill was
-  performed; no RPO/RTO claimed (FUB-009).
+- Backup: manual hosted logical backups exist outside the repo (pre-H.1 and pre-H.3, 2026-10-03; earlier pre-pilot copy).
+  None has been restore-tested; no RPO/RTO claimed (FUB-009).
 - Minimal CI (`.github/workflows/ci.yml`: typecheck, lint, unit) is active; the `main` ruleset has no required
   status checks (ADR-019 §3). What Vercel does on a failed build is undetermined (Slice B report, Q5).
 - Pre-Pilot Validation: Technical Go/No-Go PASS (2026-09-25); Content Go/No-Go WAITING FOR REAL PILOT MATERIAL (not
@@ -122,20 +122,17 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
   `docs/PILOT_CONTENT_VALIDATOR.md`.
 - `npm audit` was clean in Run 008 (529 dependencies); not re-run merely because time passed.
 
-## Verification Baseline (latest, Run 010 at `b82d194`) and Known Exceptions
+## Verification Baseline (release v0.2.0 at `fff8c40`) and Known Exceptions
 
-- typecheck clean; lint 0 errors + 1 pre-existing unrelated warning (`.claude/telemetry/statusline.mjs`).
-- Full unit suite 1665/1665 (162 files). Production build clean (39 routes: 14 static, 25 dynamic).
-- Schema/PGlite 331/332 at that point; the single exception was `practice-vertical.test.ts` (`topicId`), classified
-  as stale (FUB-041, closed 2026-10-03: stale exact-key test, `topicId` added by UX-03-QA1; test fixed in `a773f90`, so
-  that exception no longer applies). A stale reinforcement-order test caused by Run 010 itself was fixed separately
-  (RUNS Run 010 report). Post-Run010 Product Fix evidence is per-Slice in its Run report; the figures above are the
-  Run 010 baseline.
-- Reviewer coverage: risk-based per `/review-commit`; every dispatched pass returned no blocking findings (Run 010
-  report §7).
-- NOT proven by any Run so far for this branch: hosted Preview/Supabase integration, hosted latency, true
-  multi-connection concurrency, hosted application of the two new migrations, Vercel deployment of `d39c882`.
-  PGlite does not prove real-Postgres concurrency (`.claude/rules/postgres.md`).
+- Code/evidence-relevant head `fff8c40`: CI GREEN (human-confirmed, GitHub Actions); Preview QA PASS on a Vercel Preview of
+  `fff8c40` against the shared hosted Supabase (browser flows HUMAN_REPORTED; DB checks read-only; Practice/Skip/Today
+  invariants re-run as automated PGlite/unit tests, 4 files / 67 tests); Production smoke PASS after cutover and after H.3
+  (human-confirmed). Provenance table: Run report "Release close" section.
+- Earlier baselines: Run 010 at `b82d194` (full unit 1665, build clean); Post-Run010 Product Fix at `eeeaaa5` (full unit
+  1677 / 162 files, typecheck clean, lint 0 errors + 1 pre-existing warning in `.claude/telemetry/statusline.mjs`).
+- NOT proven: true multi-connection concurrency (PGlite is single-connection; FUB-042 item 7), hosted latency,
+  Hosted TLS beyond unit tests. Page-level wiring of the create-another action has no automated test (node env); it is
+  covered by the human Preview retest only.
 - Later Docs-only/DevOS changes do not invalidate this baseline (`.claude/rules/testing.md` §2).
 
 ## Development OS State
@@ -161,6 +158,8 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
   - Long Autonomous Run architecture (thin parent + fresh scoped workers): positive data points (UX-03-QA2,
     DevOS Micro-Opt, Run 010); not promoted into canonical policy beyond the `autonomous-run` skill.
   - `src/domain/import/types.ts` bundles three concerns; reconsider only if a fourth appears.
+- Hosted drift checks use the post-H.3 canonical model only (every Course has an active `course_authors` row; no legacy
+  OWNER/INSTRUCTOR memberships). Tests of API mappings must use the real wire value (PREVIEW-QA-FIX-001 lesson).
 - Hard Claude denies (`.claude/settings.json`): `git push*`, destructive Git reset/clean/restore, destructive
   filesystem deletion, `supabase link*`, `supabase db push*`.
 
@@ -182,43 +181,31 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
   Run 012 (Production / Scale; privacy/legal pages, rate limiting). Deferred work: `docs/FOLLOW_UP_BACKLOG.md`.
 - Open calibration/decisions live in `docs/OPEN_QUESTIONS.md` (e.g. OQ-002, OQ-014, OQ-016, OQ-018, OQ-044).
 
-## Pre-push / Release Requirements (Run 010)
+## Release State / Open Items (Run 010 + Post-Run010)
 
-Pointers and one-liners only; nothing below is resolved by this file. These gate any push/merge/deploy of
-`feature/run-010-learning-intelligence`, which is NOT yet approved for push.
+The Run 010 pre-push gates are resolved and the release shipped (above). Resolved items live in code, tests and the Run
+reports; only still-open pointers remain:
 
-- A. `exam_date` interpretation — SATISFIED locally (2026-10-03, `c8f3dc6`; former OQ-046, human decision Option A).
-  `exam_date` is the learner's LOCAL calendar date; `daysUntilExam` = whole local calendar days between `plannedForDate`
-  and `exam_date`; exam day => maximum amplifier (2.0, max unchanged); a passed exam => neutral. No schema change, no
-  recalibration, no separate learning-day boundary. The exam-date SOURCE hierarchy stays OQ-002.
-- B. `HALF_LIFE` naming — SATISFIED (FUB-043 closed, `c8f3dc6`; renamed `EXAM_URGENCY_DECAY_DAYS`, behavior-neutral).
-- C. Author self-enroll on an ARCHIVED Course — SATISFIED locally (2026-10-03, `9a19b05`; former OQ-045, human decision
-  Option B). ARCHIVED hard-stops NEW learner enrollment including an active Course Author; an author with an existing
-  ACTIVE LEARNER membership gets `ALREADY_MEMBER`; a revoked/archived membership gets `NOT_AUTHORIZED` (OQ-043 untouched);
-  DRAFT / AUTHORIZED_ONLY author bypass unchanged; no new outcome code, no schema. Residual asymmetry: FUB-045.
-- D. Migration rollout order (human actions, never before their prerequisite): apply H.1 (additive `course_authors`)
-  -> deploy the app authorization cutover (reads `course_authors`) -> verify -> apply H.3 (destructive membership
-  narrowing) -> verify. NEVER apply H.3 before the cutover is deployed. Re-check `npx supabase migration list` first.
-- E. `revokeCourseAuthor` last-author race — SATISFIED locally (FUB-042 item 1 closed, `eeeaaa5`: row locks inside
-  `CourseUnitOfWork`). Still unwired. Multi-connection serialization is NOT proven locally (PGlite is single-connection);
-  a two-connection real-PostgreSQL test and the other residuals are FUB-042 item 7.
-- F. Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); decision owned by OQ-047 (distinct from learner OQ-043);
+- Resolved: exam_date = learner-local calendar date (OQ-046 Option A, `c8f3dc6`); `EXAM_URGENCY_DECAY_DAYS` rename
+  (FUB-043); ARCHIVED hard-stops new author self-enrollment (OQ-045 Option B, `9a19b05`; residual asymmetry FUB-045);
+  `revokeCourseAuthor` row locks (FUB-042 item 1, `eeeaaa5`; still unwired); rollout H.1 -> cutover -> H.3 done.
+- Still open: `revokeCourseAuthor` real-PostgreSQL two-connection proof and other residuals (FUB-042 item 7).
+- Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); decision owned by OQ-047 (distinct from learner OQ-043);
   FUB-042 item 4 is a pointer; must be resolved before any co-author-management UI.
-- G. Unseen-question / Topic-diversifying cold-start SQL — AUDITED 2026-10-03 (read-only post-Run010 audit, verdict KEEP, no
+- Unseen-question / Topic-diversifying cold-start SQL — AUDITED 2026-10-03 (read-only post-Run010 audit, verdict KEEP, no
   code change): per-Course selection conforms to ADR-017 (unseen = no real Attempt; fallback-only; cap 3; no per-Course
   quota; deterministic Topic round-robin; NULL-topic bucket last); cross-Course merge re-sorts by (createdAt, questionId)
   before top-3, consistent with ADR-017 §4. Real-Postgres behavior is still not proven (PGlite limits). Open policy items
   stay in OQ-017 (cross-Course Topic balance; archived-Topic eligibility; NULL-topic ordering; ADR-017 §4 not amended).
-- Still open before push: Manual / Hosted QA and release planning (item D order); no push is approved.
-- Also before promotion: hosted Supabase Auth Redirect URL allow-list for `next=` values (open, non-blocking since
-  UX-01/02/03).
+- QA data cleanup deferred: QA-PREVIEW-A (open published Course), QA-PREVIEW-B, 1 QA learner membership, 6 QA Attempts remain
+  in the shared hosted DB (FUB-046; needs explicit human approval + fresh backup).
+- Hosted Supabase Auth Redirect URL allow-list for `next=` values remains open, non-blocking.
 
 ## Current Human / Manual Actions
 
-- Pushing, merging to `main`, promoting to Production, tags, and Vercel/GitHub settings are human actions (ADR-019).
-- Decide whether/when to push, merge, and deploy `feature/run-010-learning-intelligence`, after the Pre-push /
-  Release Requirements above. Applying the two Run 010 migrations hosted is a separate human action in the order in D.
-- Confirm (human) whether `d39c882` was actually deployed to Production and verified there; this file does not know.
+- Pushing, merging to `main`, promoting to Production, tags, hosted migrations, and Vercel/GitHub settings are human actions
+  (ADR-019). Done 2026-10-03: push/merge/promotion to `fff8c40`, tag `v0.2.0`, H.1 and H.3 applied, Production smoke.
+- Remaining: approve and run the QA data cleanup (FUB-046); decide OQ-047 before any co-author-management UI; pilot gates.
 - Human decisions still open from the archived Pilot Readiness verification
   (`docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`): Q2-B (valid-refresh-token behavior after natural
   session expiry unproven), Q3 (accessibility of login/join/Progress/instructor flows unexercised), Q4 (no

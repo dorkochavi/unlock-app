@@ -1,11 +1,11 @@
 # UNLOCK — POST-RUN010-PRODUCT-FIX-001 — Post-Run010 Product Fix / Reconciliation
 
-PLAN_VERSION: 009
+PLAN_VERSION: 010
 RUN_ID: 2026-10-03-POST-RUN010-PRODUCT-FIX-001
 START_HEAD: `4f360a7`
-LAST_VERIFIED_HEAD: `eeeaaa5`
+LAST_VERIFIED_HEAD: `fff8c40`
 RUN_STATUS: COMPLETE
-STATUS: **COMPLETE** — bounded local correctness/reconciliation of known post-Run010 pre-push findings before Manual / Hosted QA. Not a reopening of Run010; not Run 011. Not pushed.
+STATUS: **COMPLETE** — bounded local correctness/reconciliation of known post-Run010 pre-push findings before Manual / Hosted QA. Not a reopening of Run010; not Run 011. Release v0.2.0 shipped to Production (human-run, 2026-10-03).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -47,7 +47,7 @@ Do not begin a dependent Slice while its Human Decision Gate is unresolved.
 
 ## 5. Run Invariants
 
-- No push, merge, deploy, hosted Supabase mutation, or hosted migration. No Run 011, no unrelated features/refactors.
+- Agents do not push, merge, deploy or mutate hosted Supabase (release actions were human-run; see report "Release close"). No Run 011, no unrelated features/refactors.
 - No product/architecture/authorization decision made or inferred; OQ-045/046 need explicit human decisions; OQ-047 is not resolved here.
 - Exclusions per Run prompt §20 (maintainability refactors, UX polish, telemetry experiments, etc.) stay untouched.
 
@@ -58,7 +58,8 @@ implementation; unexpected migration/hosted requirement; product semantics requi
 
 ## 7. Current Status
 
-- Run COMPLETE locally; report `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`. Next: Manual / Hosted QA and release planning (human). Branch `feature/run-010-learning-intelligence`; no push.
+- Run COMPLETE; report `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`. Branch `feature/run-010-learning-intelligence`.
+- Release: `main` == Production == `fff8c40`, tag `v0.2.0`; hosted H.1 + H.3 applied (see `docs/DEV_STATUS.md`). Deferred: QA data cleanup (FUB-046).
 
 ## History
 
