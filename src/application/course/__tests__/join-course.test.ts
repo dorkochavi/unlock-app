@@ -192,7 +192,8 @@ describe("joinCourse", () => {
   });
 
   // RUN010-H.3 (FUB-036, Option 4 decision 1, APPROVED 2026-09-29): the
-  // approved narrow author self-enrollment exception.
+  // approved narrow author self-enrollment exception (DRAFT/AUTHORIZED_ONLY;
+  // ARCHIVED is excluded per OQ-045 — see the nested describe below).
   describe("author self-enrollment bypass", () => {
     it("permits an active Course Author to self-join their own DRAFT Course as LEARNER", async () => {
       const db = new InMemoryCourseDatabase();
@@ -317,6 +318,151 @@ describe("joinCourse", () => {
       expect(result.outcome).toBe("JOINED");
       if (result.outcome !== "JOINED") throw new Error("unreachable");
       expect(result.membership.role).toBe("LEARNER");
+    });
+
+    // OQ-045 Option B (POST-RUN010-PRODUCT-FIX-001): ARCHIVED is a hard-stop
+    // for NEW enrollment, even for an active Course Author.
+    describe("ARCHIVED lifecycle hard-stop (OQ-045 Option B)", () => {
+      const author = {
+        userId: "author-1",
+        courseId: "course-1",
+        capability: "OWNER" as const,
+        grantedAt: new Date("2026-01-01T00:00:00Z"),
+        revokedAt: null,
+      };
+
+      it("denies an active author with no membership on an ARCHIVED Course and creates nothing", async () => {
+        for (const policy of ["OPEN", "AUTHORIZED_ONLY"] as const) {
+          const db = new InMemoryCourseDatabase();
+          db.seedCourse("course-1", policy, "Test Course", "ARCHIVED");
+          db.seedAuthorGrant(author);
+
+          const result = await joinCourse(
+            { actorUserId: "author-1", courseId: "course-1" },
+            db.repos(),
+          );
+
+          expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+          expect(await db.repos().memberships.findMembership("author-1", "course-1")).toBeNull();
+          expect(await db.repos().memberships.listActiveForUser("author-1")).toHaveLength(0);
+        }
+      });
+
+      it("returns idempotent ALREADY_MEMBER for an author with an existing ACTIVE LEARNER membership, leaving it unchanged", async () => {
+        const db = new InMemoryCourseDatabase();
+        db.seedCourse("course-1", "AUTHORIZED_ONLY", "Test Course", "ARCHIVED");
+        db.seedAuthorGrant(author);
+        const seeded = {
+          id: "learner-membership",
+          userId: "author-1",
+          courseId: "course-1",
+          role: "LEARNER" as const,
+          joinedAt: new Date("2026-01-02T00:00:00Z"),
+          revokedAt: null,
+          archivedAt: null,
+        };
+        db.seedMembership(seeded);
+
+        const result = await joinCourse(
+          { actorUserId: "author-1", courseId: "course-1" },
+          db.repos(),
+        );
+
+        expect(result.outcome).toBe("ALREADY_MEMBER");
+        if (result.outcome !== "ALREADY_MEMBER") throw new Error("unreachable");
+        expect(result.membership).toEqual(seeded);
+        expect(await db.repos().memberships.findMembership("author-1", "course-1")).toEqual(seeded);
+      });
+
+      it("fails closed (NOT_AUTHORIZED, unchanged) for an author whose existing membership is revoked (OQ-043 unresolved)", async () => {
+        const db = new InMemoryCourseDatabase();
+        db.seedCourse("course-1", "OPEN", "Test Course", "ARCHIVED");
+        db.seedAuthorGrant(author);
+        const seeded = {
+          id: "revoked-membership",
+          userId: "author-1",
+          courseId: "course-1",
+          role: "LEARNER" as const,
+          joinedAt: new Date("2026-01-02T00:00:00Z"),
+          revokedAt: new Date("2026-01-15T00:00:00Z"),
+          archivedAt: null,
+        };
+        db.seedMembership(seeded);
+
+        const result = await joinCourse(
+          { actorUserId: "author-1", courseId: "course-1" },
+          db.repos(),
+        );
+
+        expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+        expect(await db.repos().memberships.findMembership("author-1", "course-1")).toEqual(seeded);
+      });
+
+      it("fails closed for an author whose existing membership is archived", async () => {
+        const db = new InMemoryCourseDatabase();
+        db.seedCourse("course-1", "OPEN", "Test Course", "ARCHIVED");
+        db.seedAuthorGrant(author);
+        const seeded = {
+          id: "archived-membership",
+          userId: "author-1",
+          courseId: "course-1",
+          role: "LEARNER" as const,
+          joinedAt: new Date("2026-01-02T00:00:00Z"),
+          revokedAt: null,
+          archivedAt: new Date("2026-01-15T00:00:00Z"),
+        };
+        db.seedMembership(seeded);
+
+        const result = await joinCourse(
+          { actorUserId: "author-1", courseId: "course-1" },
+          db.repos(),
+        );
+
+        expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+        expect(await db.repos().memberships.findMembership("author-1", "course-1")).toEqual(seeded);
+      });
+
+      it("still denies a non-author on an ARCHIVED Course, even with an existing active membership (unchanged non-author behavior)", async () => {
+        const db = new InMemoryCourseDatabase();
+        db.seedCourse("course-1", "OPEN", "Test Course", "ARCHIVED");
+        db.seedAuthorGrant(author);
+        db.seedMembership({
+          id: "stranger-membership",
+          userId: "stranger-1",
+          courseId: "course-1",
+          role: "LEARNER",
+          joinedAt: new Date("2026-01-02T00:00:00Z"),
+          revokedAt: null,
+          archivedAt: null,
+        });
+
+        const result = await joinCourse(
+          { actorUserId: "stranger-1", courseId: "course-1" },
+          db.repos(),
+        );
+        const noMembership = await joinCourse(
+          { actorUserId: "stranger-2", courseId: "course-1" },
+          db.repos(),
+        );
+
+        expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+        expect(noMembership).toEqual({ outcome: "NOT_AUTHORIZED" });
+      });
+
+      it("denies an author of a DIFFERENT Course on an ARCHIVED Course", async () => {
+        const db = new InMemoryCourseDatabase();
+        db.seedCourse("course-1", "OPEN", "Archived", "ARCHIVED");
+        db.seedCourse("course-2", "OPEN", "Other", "PUBLISHED");
+        db.seedAuthorGrant({ ...author, courseId: "course-2" });
+
+        const result = await joinCourse(
+          { actorUserId: "author-1", courseId: "course-1" },
+          db.repos(),
+        );
+
+        expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+        expect(await db.repos().memberships.findMembership("author-1", "course-1")).toBeNull();
+      });
     });
   });
 });
