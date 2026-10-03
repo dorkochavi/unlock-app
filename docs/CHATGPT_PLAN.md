@@ -32,9 +32,9 @@ Every Slice declares one gate: AUTO, REVIEW_GATE, HUMAN_DECISION_GATE, or FINAL_
 
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Phase 0 identity + read-only inventory of QA-PREVIEW-A/B by canonical id | AUTO | IN_PROGRESS |
-| B | Decision record (read-only): smallest cleanup; verify the hypothesis (archive QA-PREVIEW-A via the product archive path) | AUTO | PENDING |
-| C | Fresh backup (outside repo) + exact bounded action + rollback; stop at `HUMAN_APPROVAL_REQUIRED: EXECUTE_QA_CLEANUP` | AUTO | PENDING |
+| A | Phase 0 identity + read-only inventory of QA-PREVIEW-A/B by canonical id | AUTO | DONE |
+| B | Decision record (read-only): smallest cleanup; verify the hypothesis (archive QA-PREVIEW-A via the product archive path) | AUTO | DONE (hypothesis confirmed: single `courses.status` transition on A; B already ARCHIVED) |
+| C | Fresh backup (outside repo) + exact bounded action + rollback; stop at `HUMAN_APPROVAL_REQUIRED: EXECUTE_QA_CLEANUP` | AUTO | DONE (backup `pre-QACLEANUP-20261003-210229`, outside repo) |
 | D | Execute the approved action (preferred: human, as the QA author in the product UI) | HUMAN_DECISION_GATE | PENDING |
 | E | Post-verify invariants I1-I5 (read-only) | AUTO | PENDING |
 | F | Docs close (FUB-046, DEV_STATUS, Run report), verifier PASS, local commit; push is human | FINAL_GATE | PENDING |
@@ -42,7 +42,7 @@ Every Slice declares one gate: AUTO, REVIEW_GATE, HUMAN_DECISION_GATE, or FINAL_
 ## 5. Run Invariants (each proven, not asserted)
 
 - I1 no non-QA row changes (pre/post md5 of non-QA courses, memberships, authors, attempts).
-- I2 Attempts preserved (QA-PREVIEW-A: 6 before == 6 after; none deleted).
+- I2 Attempts preserved (QA-PREVIEW-A: 7 before == 7 after; none deleted; total attempts 190 unchanged).
 - I3 QA Courses end non-joinable (status ARCHIVED; join denied by `canSelfJoinCourse` and the existing ARCHIVED join tests).
 - I4 canonical author integrity (every Course has an active `course_authors` row; authors 11/11 active).
 - I5 no schema/migration/app change (15 applied, 0 pending); `main` and `v0.2.0` unchanged.
@@ -55,7 +55,7 @@ evidence-bearing Attempts; ambiguous product/data semantics. A harness denial is
 
 ## 7. Current Status
 
-- Phase 0 done; Slice A in progress. Branch `feature/run-010-learning-intelligence`; no push by the agent.
+- Slices A-C done; stopped at `HUMAN_APPROVAL_REQUIRED: EXECUTE_QA_CLEANUP` (Slice D). Branch `feature/run-010-learning-intelligence`; no push by the agent.
 
 ## History
 
