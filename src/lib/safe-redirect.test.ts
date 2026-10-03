@@ -99,7 +99,8 @@ describe("resolveSafeNextPath / resolveNextPathFromSearch — additional open-re
     "%2F%2Fevil.example.com",
     "/%2Fevil.example.com",
     "/%5Cevil.example.com",
-    "/\/evil.example.com",
+    "/\\/evil.example.com",
+    "/\\evil.example.com",
     "\\evil.example.com",
     "/today\r\nLocation: https://evil.example.com",
     "/today\r",
@@ -129,8 +130,13 @@ describe("resolveSafeNextPath / resolveNextPathFromSearch — additional open-re
     ]) {
       const got = new URLSearchParams(search).get("next");
       expect(got).not.toBeNull();
-      // First value wins (URLSearchParams.get); whatever it is must be allowlisted or default.
-      expect(["/today"]).toContain(resolveSafeNextPath(got));
+      // URLSearchParams.get returns the FIRST value; it must resolve to /today.
+      expect(resolveSafeNextPath(got)).toBe("/today");
+      for (const v of new URLSearchParams(search).getAll("next")) {
+        expect(resolveSafeNextPath(v)).not.toMatch(/evil/);
+      }
     }
+    // Duplicate next: URLSearchParams.get returns the first (safe) value; the malicious second is never read.
+    expect(new URLSearchParams("?next=%2Ftoday&next=https%3A%2F%2Fevil.example.com%2F").get("next")).toBe("/today");
   });
 });

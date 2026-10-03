@@ -15,7 +15,7 @@ Provenance: [REPO] = read from committed code/tests this slice; [TEST] = execute
 |---|---|---|---|
 | 1 | `https://evil.example` / `http://` absolute | fallback /today | [TEST] existing |
 | 2 | `//evil.example` protocol-relative | fallback | [TEST] existing |
-| 3 | `/\evil`, `/\/evil`, `\evil`, `/%5Cevil` | fallback | [TEST] existing + added |
+| 3 | Backslash variants: `/\evil`, `/\/evil`, `\evil`, `/%5Cevil` | fallback | [TEST] existing + added; the `/\/evil` it.each row was originally a duplicate of `//evil` (JS-literal escape) and was corrected in 6/n to true backslash literals |
 | 4 | `%2F%2Fevil` (raw and via query string), double-encoded `%252F` | fallback (no decoding is ever applied) | [TEST] added |
 | 5 | `javascript:`, mixed-case `JaVaScRiPt:`, `data:` | fallback | [TEST] existing + added |
 | 6 | CR/LF header-injection, trailing `\r`/`\n`, tab, leading/trailing space, NUL | fallback (JS `$` without `m` flag does not tolerate trailing newline) | [TEST] existing + added |

@@ -33,13 +33,14 @@ import type { ConnectionProvider } from "../../../src/infrastructure/postgres/co
 import { PgConnectionProvider } from "../../../src/infrastructure/postgres/pg-connection-provider";
 import { PostgresCourseUnitOfWork } from "../../../src/infrastructure/postgres/postgres-course-unit-of-work";
 import type { SqlExecutor } from "../../../src/infrastructure/postgres/sql-executor";
+import { assertLocalPgUrl } from "./local-pg-url";
 
 const BASE_URL = process.env.UNLOCK_REAL_PG_URL;
 
-// Hosted-isolation guard: refuse anything that is not a local server.
-if (BASE_URL && !["localhost", "127.0.0.1", "[::1]"].includes(new URL(BASE_URL).hostname)) {
-  throw new Error("UNLOCK_REAL_PG_URL must point at a local Postgres (localhost/127.0.0.1/::1).");
-}
+// Hosted-isolation guard (strict parse, no query params, explicit config pieces;
+// see ./local-pg-url.ts). Connection config is built from parsed pieces, never the raw string.
+const TARGET = BASE_URL ? assertLocalPgUrl(BASE_URL) : undefined;
+const cfg = (database?: string): pg.ClientConfig => ({ ...TARGET!, database: database ?? TARGET!.database });
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.join(here, "../../migrations");
@@ -104,7 +105,6 @@ const suite = BASE_URL ? describe : describe.skip;
 
 suite("revokeCourseAuthor on REAL PostgreSQL, two connections (FUB-042 item 7)", () => {
   const dbName = `unlock_conc_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
-  let url: string;
   let admin: pg.Pool; // assertions + pg_stat_activity (own connection)
   let poolA: pg.Pool; // connection #1 (max 1)
   let poolB: pg.Pool; // connection #2 (max 1)
@@ -114,14 +114,11 @@ suite("revokeCourseAuthor on REAL PostgreSQL, two connections (FUB-042 item 7)",
     new PostgresCourseUnitOfWork(new HookedProvider(pool, hooks));
 
   beforeAll(async () => {
-    const root = new pg.Client({ connectionString: BASE_URL });
+    const root = new pg.Client(cfg());
     await root.connect();
     await root.query(`create database ${dbName}`);
     await root.end();
-    const u = new URL(BASE_URL!);
-    u.pathname = `/${dbName}`;
-    url = u.toString();
-    const client = new pg.Client({ connectionString: url });
+    const client = new pg.Client(cfg(dbName));
     await client.connect();
     try {
       await client.query("create schema if not exists auth");
@@ -132,15 +129,15 @@ suite("revokeCourseAuthor on REAL PostgreSQL, two connections (FUB-042 item 7)",
     } finally {
       await client.end();
     }
-    admin = new pg.Pool({ connectionString: url, max: 2 });
-    poolA = new pg.Pool({ connectionString: url, max: 1 });
-    poolB = new pg.Pool({ connectionString: url, max: 1 });
-    poolC = new pg.Pool({ connectionString: url, max: 1 });
+    admin = new pg.Pool({ ...cfg(dbName), max: 2 });
+    poolA = new pg.Pool({ ...cfg(dbName), max: 1 });
+    poolB = new pg.Pool({ ...cfg(dbName), max: 1 });
+    poolC = new pg.Pool({ ...cfg(dbName), max: 1 });
   });
 
   afterAll(async () => {
     await Promise.all([admin?.end(), poolA?.end(), poolB?.end(), poolC?.end()]);
-    const root = new pg.Client({ connectionString: BASE_URL });
+    const root = new pg.Client(cfg());
     await root.connect();
     await root.query(`drop database if exists ${dbName} with (force)`);
     await root.end();

@@ -12,7 +12,7 @@ RUN_ID 2026-10-04-PILOT-HARDENING-EVIDENCE-001, SLICE C, START_HEAD `b818a90`. P
   hook decorator around the connection (pause after actor-auth read / after the FOR UPDATE lock); blocking was proven via
   `pg_stat_activity` (`wait_event_type = 'Lock'`). Randomised-jitter loops complement the forced cases.
 - **Durable form:** `supabase/tests/real-pg/revoke-course-author.real-pg.test.ts`, opt-in `npm run test:real-pg` with
-  `UNLOCK_REAL_PG_URL` (refuses non-local hosts; skipped when unset; excluded from `npm test` and `npm run test:schema`).
+  `UNLOCK_REAL_PG_URL` (host guard hardened in the 6/n fix: strict URL parse, any query string/fragment/multi-host/non-postgres protocol refused, PGHOSTADDR/PGSERVICE/PGSERVICEFILE fail closed, pg config built from parsed pieces not the raw string; guard unit-tested in the default run by `src/infrastructure/postgres/real-pg-url-guard.test.ts`; skipped when unset; excluded from `npm test` and `npm run test:schema`).
 - **Negative control:** a naive count-then-revoke (no `FOR UPDATE`) under the same forced interleaving DOES leave zero active
   authors, so the harness can detect the N1 defect.
 - **Limits:** one local server; says nothing about hosted Supabase/Supavisor. Not wired to any route.
