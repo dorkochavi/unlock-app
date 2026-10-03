@@ -18,16 +18,14 @@
  * exam date field exists anywhere in the schema, so there is no hierarchy
  * to resolve here.
  *
- * KNOWN SIMPLIFICATION (RUN010-D review, non-blocking): `daysUntilExam` is
- * computed against `now` as a raw instant, with `examDate` parsed as UTC
- * midnight of its `YYYY-MM-DD` string — NOT the learner's own IANA-timezone
- * local day (`deriveLocalDateString`, used elsewhere for `plannedForDate`).
- * For a learner far from UTC this can shift the amplifier's curve by up to
- * ~10-14 hours relative to their own local exam day. Because the curve is
- * smooth/continuous and confined to a within-tier tie-break (never a tier
- * or applicability decision), this is judged low-impact today, but should
- * be aligned to the learner-local-day convention if/when this amplifier is
- * calibrated further.
+ * Exam-date semantics (accepted decision OQ-046): `exam_date` is the
+ * learner's LOCAL calendar date. `daysUntilExam` is the whole number of
+ * local calendar days between the learner's current local date (the same
+ * local date that keys the DailyPlan, `plannedForDate`) and `exam_date`.
+ * The exam date itself => 0 days => maximum amplifier; a local date after
+ * `exam_date` => neutral. There is no separate learning-day boundary and no
+ * instant/timezone math in this module: both inputs are `YYYY-MM-DD`
+ * strings and the difference is plain UTC date arithmetic on them.
  *
  * Curve shape: deliberately SMOOTH (continuous, monotonically decreasing as
  * the exam recedes), not the product spec's illustrative two-stage
@@ -38,7 +36,7 @@
  * decay avoids any discontinuity while preserving the same qualitative
  * "cost of forgetting rises as the exam approaches" intuition.
  *
- * STATUS: the constants below (AMPLITUDE, DECAY_HALF_LIFE_DAYS) are an
+ * STATUS: the constants below (AMPLITUDE, DECAY_DAYS) are an
  * INITIAL CALIBRATION CANDIDATE, explicitly NOT final — exactly the same
  * status docs/OPEN_QUESTIONS.md #16 gives the Today Plan Budget's 5/8-12/15
  * numbers. The architecture (multiplicative, within-tier-only, neutral when
@@ -59,46 +57,75 @@ export const NEUTRAL_EXAM_URGENCY_AMPLIFIER = 1;
 export const EXAM_URGENCY_AMPLITUDE = 1;
 
 /**
- * Smoothing constant for the exponential decay (in days) — roughly how
- * quickly the amplifier decays back toward neutral as the exam recedes.
+ * E-folding (decay) constant, in days, of `exp(-daysUntilExam / this)`: the
+ * excess over neutral shrinks by a factor of e every this-many days. This is
+ * NOT a half-life (the true half-life is ln(2) * 7 ~= 4.85 days).
  * Calibration candidate — see module doc comment.
  */
-export const EXAM_URGENCY_DECAY_HALF_LIFE_DAYS = 7;
+export const EXAM_URGENCY_DECAY_DAYS = 7;
+
+const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+function dateStringToUtcDayNumber(value: string, label: string): number {
+  const match = DATE_PATTERN.exec(value);
+  if (match === null) {
+    throw new Error(`computeExamUrgencyAmplifier: ${label} must be YYYY-MM-DD, got "${value}"`);
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const ms = Date.UTC(year, month - 1, day);
+  const check = new Date(ms);
+  if (
+    check.getUTCFullYear() !== year ||
+    check.getUTCMonth() !== month - 1 ||
+    check.getUTCDate() !== day
+  ) {
+    throw new Error(`computeExamUrgencyAmplifier: ${label} is not a real date: "${value}"`);
+  }
+  return ms / MS_PER_DAY;
+}
 
 /**
- * Computes the exam-urgency amplifier for a single Course's exam date, at
- * `now`. Pure, deterministic: no Date.now().
+ * Whole local calendar days from `localDate` to `examDate` (both
+ * `YYYY-MM-DD`). Negative when `examDate` is before `localDate`.
+ */
+export function wholeDaysUntilExamDate(examDate: string, localDate: string): number {
+  return (
+    dateStringToUtcDayNumber(examDate, "examDate") -
+    dateStringToUtcDayNumber(localDate, "localDate")
+  );
+}
+
+/**
+ * Computes the exam-urgency amplifier for a single Course's exam date, given
+ * the learner's current local calendar date. Pure, deterministic: no
+ * Date.now(), no instants, no timezone lookup.
  *
  * - `examDate === null` (no exam set for this Course) -> NEUTRAL (1.0),
  *   always — an exam-free Course must never be penalized or boosted
  *   (docs/GLOBAL_TODAY_PRIORITY_MODEL.md §3/§8).
- * - `examDate` already in the past (relative to `now`) -> NEUTRAL — a
- *   lapsed exam date carries no forward-looking urgency to amplify, and
- *   treating a stale exam date as maximally urgent forever would be a
- *   silent bug, not a feature.
- * - otherwise -> a smooth, monotonically-increasing-as-the-exam-approaches
- *   value in `(NEUTRAL, NEUTRAL + EXAM_URGENCY_AMPLITUDE]`, via exponential
- *   decay in `daysUntilExam`. At `daysUntilExam === 0` (exam is today), the
- *   amplifier reaches its maximum. Far from the exam, the amplifier
- *   converges to NEUTRAL (in double-precision arithmetic, effectively
- *   indistinguishable from exactly 1.0 well before a year out).
+ * - `examDate` before `learnerLocalDate` (exam passed) -> NEUTRAL — a
+ *   lapsed exam date carries no forward-looking urgency to amplify.
+ * - otherwise -> `NEUTRAL + AMPLITUDE * exp(-days / EXAM_URGENCY_DECAY_DAYS)`
+ *   with `days` the whole local calendar days until the exam. On the exam
+ *   date itself (days === 0) the amplifier is exactly its maximum (2.0).
  */
 export function computeExamUrgencyAmplifier(
-  examDate: Date | null,
-  now: Date,
+  examDate: string | null,
+  learnerLocalDate: string,
 ): number {
   if (examDate === null) {
     return NEUTRAL_EXAM_URGENCY_AMPLIFIER;
   }
 
-  const daysUntilExam = (examDate.getTime() - now.getTime()) / MS_PER_DAY;
+  const daysUntilExam = wholeDaysUntilExamDate(examDate, learnerLocalDate);
   if (daysUntilExam < 0) {
     return NEUTRAL_EXAM_URGENCY_AMPLIFIER;
   }
 
   return (
     NEUTRAL_EXAM_URGENCY_AMPLIFIER +
-    EXAM_URGENCY_AMPLITUDE *
-      Math.exp(-daysUntilExam / EXAM_URGENCY_DECAY_HALF_LIFE_DAYS)
+    EXAM_URGENCY_AMPLITUDE * Math.exp(-daysUntilExam / EXAM_URGENCY_DECAY_DAYS)
   );
 }

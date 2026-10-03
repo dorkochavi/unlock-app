@@ -236,9 +236,9 @@ export async function generateDailyPlanForResolvedInputs(
         let amplifier = amplifierByCourseId.get(courseId);
         if (amplifier === undefined) {
           const examDateString = command.examDatesByCourseId.get(courseId) ?? null;
-          const examDate =
-            examDateString === null ? null : new Date(`${examDateString}T00:00:00.000Z`);
-          amplifier = computeExamUrgencyAmplifier(examDate, context.now);
+          // OQ-046: exam_date is the learner's local calendar date;
+          // plannedForDate is the learner's current local date.
+          amplifier = computeExamUrgencyAmplifier(examDateString, command.plannedForDate);
           amplifierByCourseId.set(courseId, amplifier);
         }
         examUrgencyAmplifierByQuestionId.set(questionId, amplifier);
