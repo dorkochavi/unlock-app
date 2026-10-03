@@ -16,6 +16,8 @@ This file is not a Run report and not the current execution plan. Historical evi
 | Content Go/No-Go | **WAITING FOR REAL PILOT MATERIAL** — NOT EXECUTED, NOT PASS (external dependency; material not expected soon) |
 | Real pilot | **NOT YET APPROVED** |
 
+Update 2026-10-04: a go/no-go INPUT matrix reconciling every open item below against repository evidence (after backup-restore, revoke-concurrency and auth-redirect evidence) is in `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-E-pilot-readiness-matrix.md`. It is not a launch decision; the gates above are unchanged.
+
 The Pre-Pilot Run (`2026-09-23-PRE-PILOT`) stays formally open on Content only. Content is a **pre-pilot release gate**; it does not block independent product development (Run 009).
 
 Run 009 (learner Progress + instructor Insights) is COMPLETE and was Production-verified on 2026-09-26 at `v0.1.0` (`8e137e6`; current release state: `docs/DEV_STATUS.md`, model: ADR-019). A verified Production baseline is **not** a pilot approval: the Content gate above is still open, and Run 009 is not a gate.
@@ -53,6 +55,7 @@ Hosted configuration that must remain: `DATABASE_SSL_CA` set; `DATABASE_POOL_MAX
     about their data and who owns pilot data (OQ-039). This does NOT pull Roadmap Run 012 forward: advanced
     observability, analytics infrastructure, scale work and broader production hardening stay in Run 012. How each item
     is met is decided when it is executed.
+    Evidence note 2026-10-04 (13c): the 2026-10-03 logical backup was restored into a disposable local PostgreSQL; public schema, data and migration history restored with exact row counts (Auth restore only partial; backup ownership, RPO/RTO and Supabase plan backup/PITR remain open and human-owned). Not a hosted restore and not a recurring-backup claim. See the Slice B report `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-B-restore-drill.md`.
 
 Note (no longer a dependency): the F-02 privacy contract (Run 009 D1) is IMPLEMENTED in Run 009 S3 (`aa9f858`) and was verified in Production on 2026-09-26 (`v0.1.0`): the analysis page showed no learner identities, exact responder counts, percentages, per-option distributions or drill-down. Operating rule unchanged: refresh only after a group answering window.
 
