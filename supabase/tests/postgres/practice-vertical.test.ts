@@ -134,7 +134,7 @@ describe("Run UX-02 integrated vertical path (real handlers, real repositories, 
     expect(first.status).toBe(200);
     const firstBody = first.body as {
       scope: { kind: string; title: string };
-      items: Array<{ questionId: string; questionVersionId: string; answerOptions: unknown[] }>;
+      items: Array<{ questionId: string; questionVersionId: string; answerOptions: unknown[]; topicId: string | null }>;
       hasMore: boolean;
     };
     expect(firstBody.scope).toEqual({ kind: "COURSE", title: "Test Course" });
@@ -144,9 +144,17 @@ describe("Run UX-02 integrated vertical path (real handlers, real repositories, 
     expect(firstBody.hasMore).toBe(false);
     const wire = JSON.stringify(first.body);
     expect(wire).not.toMatch(/correct|explanation|answer_definition/i);
-    expect(Object.keys(firstBody.items[0]).sort()).toEqual(
-      ["answerOptions", "prompt", "questionId", "questionType", "questionVersionId"].sort(),
-    );
+    // Exact-key leak guard. `topicId` is an intentional learner-safe field (UX-03-QA1 Finding 7 / ADR-018:
+    // batch-completion summary counts distinct Topics); null for Topic-less Questions.
+    for (const item of firstBody.items) {
+      expect(Object.keys(item).sort()).toEqual(
+        ["answerOptions", "prompt", "questionId", "questionType", "questionVersionId", "topicId"].sort(),
+      );
+    }
+    const seededIndex = new Map(seeded.map((s, i) => [s.questionId, i]));
+    for (const item of firstBody.items) {
+      expect(item.topicId).toBe(seededIndex.get(item.questionId)! < 4 ? topicId : null);
+    }
 
     // 2. Topic Practice scope honored through the HTTP layer (Topic-less excluded).
     const topicBatch = await get({ topicIdParam: topicId });
