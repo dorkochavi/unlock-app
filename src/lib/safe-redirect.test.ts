@@ -91,3 +91,46 @@ describe("buildSignInHref", () => {
     expect(buildSignInHref("https://evil.example.com")).toBe("/login");
   });
 });
+
+describe("resolveSafeNextPath / resolveNextPathFromSearch — additional open-redirect negatives (PILOT-HARDENING-EVIDENCE-001 D)", () => {
+  const ID = "3f5b1c2a-3d9e-4b7a-9c1e-2a8f7b6d5e4f";
+
+  it.each([
+    "%2F%2Fevil.example.com",
+    "/%2Fevil.example.com",
+    "/%5Cevil.example.com",
+    "/\/evil.example.com",
+    "\\evil.example.com",
+    "/today\r\nLocation: https://evil.example.com",
+    "/today\r",
+    "\t/today",
+    " /today",
+    "/today ",
+    "/\u0000/evil.example.com",
+    "／／evil.example.com",
+    "/∕evil.example.com",
+    "/login?next=/join/" + ID,
+    `/join/${ID}#//evil.example.com`,
+    `/join/${ID}/../../x`,
+    "data:text/html,<script>alert(1)</script>",
+    "JaVaScRiPt:alert(1)",
+  ])("falls back to /today for %j", (raw) => {
+    expect(resolveSafeNextPath(raw)).toBe("/today");
+  });
+
+  it("treats a percent-encoded or nested next in the query string as opaque and falls back", () => {
+    for (const search of [
+      "?next=%252F%252Fevil.example.com",
+      "?next=%2F%2Fevil.example.com",
+      "?next=%2Flogin%3Fnext%3Dhttps%3A%2F%2Fevil.example.com",
+      "?next=https%3A%2F%2Fevil.example.com",
+      "?next=%2Ftoday%0d%0aSet-Cookie%3Ax",
+      "?next=%2Ftoday&next=https%3A%2F%2Fevil.example.com%2F",
+    ]) {
+      const got = new URLSearchParams(search).get("next");
+      expect(got).not.toBeNull();
+      // First value wins (URLSearchParams.get); whatever it is must be allowlisted or default.
+      expect(["/today"]).toContain(resolveSafeNextPath(got));
+    }
+  });
+});
