@@ -326,8 +326,12 @@ export const he = {
     publishSuccess: "הגרסה פורסמה. הלומדים יראו כעת את התוכן המעודכן.",
     publishError: "לא ניתן היה לפרסם. נסו שוב.",
     publishNotReadyError: "לא ניתן לפרסם: {reason}",
+    publishTopicRequiredError: "לא ניתן לפרסם שאלה ללא נושא. יש לבחור נושא, לשמור את הטיוטה ולפרסם שוב.",
     publishNothingToPublishError: "אין שינויים שממתינים לפרסום.",
     publishCourseArchivedError: "לא ניתן לפרסם שאלה בקורס שנמצא בארכיון.",
+    createAnotherAction: "יצירת שאלה נוספת",
+    creatingAnother: "יוצר שאלה...",
+    createAnotherError: "לא ניתן היה ליצור שאלה חדשה. נסו שוב.",
   },
   courseView: {
     loading: "טוען את פרטי הקורס...",

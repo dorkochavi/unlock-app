@@ -22,7 +22,7 @@
  */
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
@@ -30,6 +30,15 @@ import { Input, Label, Select, Textarea } from "@/components/input";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 import type { CourseStatus } from "@/domain/course/types";
+
+import { CreateAnotherAction } from "./create-another-action";
+import {
+  createEmptyQuestion,
+  isEditorDirty,
+  publishNotReadyMessage,
+  shouldShowCreateAnother,
+  type EditorFormValues,
+} from "./editor-logic";
 
 type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_CHOICE";
 type QuestionAuthoringState = "DRAFT_ONLY" | "PUBLISHED" | "PUBLISHED_WITH_DRAFT_CHANGES";
@@ -185,6 +194,7 @@ export default function InstructorQuestionEditorPage() {
   const params = useParams<{ courseId: string; questionId: string }>();
   const courseId = String(params.courseId);
   const questionId = String(params.questionId);
+  const router = useRouter();
 
   const [state, setState] = useState<ViewState>({ kind: "loading" });
   const [retryCount, setRetryCount] = useState(0);
@@ -204,11 +214,26 @@ export default function InstructorQuestionEditorPage() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedAt, setPublishedAt] = useState<number | null>(null);
 
+  // Snapshot of the form as last loaded or successfully saved; the dirty guard
+  // for "create another" compares the live form against it.
+  const [baseline, setBaseline] = useState<EditorFormValues | null>(null);
+  const [creatingAnother, setCreatingAnother] = useState(false);
+  const [createAnotherError, setCreateAnotherError] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
       setState({ kind: "loading" });
+      // The route component is reused when navigating to another question id:
+      // clear per-question notices so they never leak onto the next question.
+      setSavedAt(null);
+      setSaveError(null);
+      setPublishedAt(null);
+      setPublishError(null);
+      setCreateAnotherError(null);
+      setCreatingAnother(false);
+      setBaseline(null);
       const [questionResult, courseResult, topicsResult] = await Promise.all([
         fetchQuestion(courseId, questionId),
         fetchCourseStatus(courseId),
@@ -252,6 +277,14 @@ export default function InstructorQuestionEditorPage() {
       setOptionsDraft(effective?.answerOptions ?? []);
       setCorrectOptionIdsDraft(effective?.correctOptionIds ?? []);
       setExplanationDraft(effective?.explanation ?? "");
+      setBaseline({
+        topicId: question.topicId ?? "",
+        questionType: effective?.questionType ?? "SINGLE_CHOICE",
+        prompt: effective?.prompt ?? "",
+        options: effective?.answerOptions ?? [],
+        correctOptionIds: effective?.correctOptionIds ?? [],
+        explanation: effective?.explanation ?? "",
+      });
     }
 
     run();
@@ -292,11 +325,38 @@ export default function InstructorQuestionEditorPage() {
     );
   }
 
+  function currentValues(): EditorFormValues {
+    return {
+      topicId: topicIdDraft,
+      questionType: questionTypeDraft,
+      prompt: promptDraft,
+      options: optionsDraft,
+      correctOptionIds: correctOptionIdsDraft,
+      explanation: explanationDraft,
+    };
+  }
+
+  async function handleCreateAnother() {
+    if (creatingAnother) return;
+    setCreatingAnother(true);
+    setCreateAnotherError(null);
+    const result = await createEmptyQuestion(courseId);
+    if (result.outcome === "CREATED") {
+      // Stay "creating" while navigating; the load effect resets it for the new question.
+      router.push(`/instructor/courses/${courseId}/questions/${result.questionId}`);
+      return;
+    }
+    setCreateAnotherError(messages.questionEditor.createAnotherError);
+    setCreatingAnother(false);
+  }
+
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
     if (saving) return;
     setSaving(true);
     setSaveError(null);
+    // Captured before the request so edits made while saving stay "dirty".
+    const submitted = currentValues();
     try {
       const response = await fetch(`/api/courses/${courseId}/questions/${questionId}`, {
         method: "PATCH",
@@ -335,6 +395,7 @@ export default function InstructorQuestionEditorPage() {
 
       const body = (await response.json()) as { question: QuestionAuthoringDto };
       setState((previous) => (previous.kind === "ready" ? { ...previous, question: body.question } : previous));
+      setBaseline(submitted);
       setSavedAt(Date.now());
     } catch {
       setSaveError(messages.questionEditor.saveError);
@@ -374,9 +435,7 @@ export default function InstructorQuestionEditorPage() {
           try {
             const body = (await response.json()) as { error?: { code?: string; reason?: string } };
             if (body.error?.code === "NOT_READY" && body.error.reason) {
-              setPublishError(
-                interpolate(messages.questionEditor.publishNotReadyError, { reason: body.error.reason }),
-              );
+              setPublishError(publishNotReadyMessage(body.error.reason, messages.questionEditor));
               return;
             }
           } catch {
@@ -589,6 +648,23 @@ export default function InstructorQuestionEditorPage() {
                 {publishError ? <p className="text-sm text-danger">{publishError}</p> : null}
                 {!publishError && publishedAt !== null ? (
                   <p className="text-sm text-state-solid">{messages.questionEditor.publishSuccess}</p>
+                ) : null}
+
+                {shouldShowCreateAnother({
+                  courseArchived: state.courseStatus === "ARCHIVED",
+                  dirty: baseline === null || isEditorDirty(baseline, currentValues()),
+                  savedOk: savedAt !== null,
+                  publishedOk: publishedAt !== null,
+                  saveError: saveError !== null,
+                  publishError: publishError !== null,
+                }) ? (
+                  <CreateAnotherAction
+                    creating={creatingAnother}
+                    error={createAnotherError}
+                    onCreate={handleCreateAnother}
+                    label={messages.questionEditor.createAnotherAction}
+                    creatingLabel={messages.questionEditor.creatingAnother}
+                  />
                 ) : null}
               </form>
             </Card>
