@@ -780,3 +780,16 @@ Calibration remains OQ-016.
 `FOR UPDATE` ordered by id, counts under the lock, then revokes. Not wired to any route. PGlite (single connection) proves
 the SQL, sequential last-author protection and rollback only; true multi-connection serialization is not proven locally.
 Residuals recorded in FUB-042 item 7.
+
+## FUB-046 — Hosted QA Data Cleanup, QA-PREVIEW-A / QA-PREVIEW-B (CLOSED 2026-10-03)
+
+**Status:** closed (Run `2026-10-03-QA-CLEANUP-001`; `docs/RUNS/2026-10-03-QA-CLEANUP-001.md`). QA-PREVIEW-A was archived by
+the human QA author through the product UI (`courses.status` + `updated_at` only; terminal in V1); QA-PREVIEW-B was already
+ARCHIVED. Both Courses are now non-joinable. QA data is intentionally RETAINED as evidence: 1 inert QA learner membership, 7
+Attempts (immutable learner evidence), 6 progress rows, questions/versions/topics/author unchanged. Hard delete of QA data is
+NOT done and not planned; if ever wanted it is a separate human-approved decision. Earlier `QA-SliceB-*` data stays tracked
+in `docs/PILOT_READINESS.md` item 12 (not cleaned by this item).
+
+Original description (2026-10-03, before cleanup): preview QA left `QA-PREVIEW-A` (PUBLISHED, OPEN join, joinable) and
+`QA-PREVIEW-B` (ARCHIVED) in the shared hosted database with 1 QA learner membership and 6 QA Attempts on A (a seventh
+Attempt followed during continued human QA). Priority MEDIUM; area: hosted data hygiene, Pilot readiness.

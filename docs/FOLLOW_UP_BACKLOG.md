@@ -1253,25 +1253,6 @@ Next change to Course join outcomes or ARCHIVED-Course handling (F-04b).
 
 ---
 
-# FUB-046 — Hosted QA Data Cleanup (QA-PREVIEW-A / QA-PREVIEW-B)
-
-**Status:** `DEFERRED`
-**Priority:** `MEDIUM`
-**Area:** Hosted Supabase data hygiene, Pilot readiness
-
-Preview QA of the v0.2.0 release (2026-10-03) left QA data in the shared hosted database: Courses `QA-PREVIEW-A`
-(PUBLISHED, OPEN join policy, therefore still joinable) and `QA-PREVIEW-B` (ARCHIVED), 1 QA learner membership, and 6 QA
-Attempts on `QA-PREVIEW-A`. Attempts are immutable learner evidence, so the cleanup design needs care (not decided here).
-
-Cleanup is a separate hosted mutation: explicit human approval and a fresh backup first (`.claude/rules/postgres.md`).
-Earlier QA data (`QA-SliceB-*`) is tracked in `docs/PILOT_READINESS.md` item 12.
-
-## Promotion Trigger
-
-Before a real pilot, or earlier if QA-PREVIEW-A becomes visible to real users.
-
----
-
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.
@@ -1291,6 +1272,7 @@ These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSE
 | FUB-041 | Practice `practice-vertical.test.ts` `topicId` Failure | closed — `RESOLVED` 2026-10-03 (`a773f90`): stale exact-key test, not a mapping defect; see archive |
 | FUB-043 | Exam-Urgency Constant Named `HALF_LIFE` Is an E-Folding Constant | closed — `RESOLVED` 2026-10-03 (`c8f3dc6`): naming/docs only, behavior-neutral; see archive |
 | FUB-042 item 1 | `revokeCourseAuthor` last-author concurrency | closed 2026-10-03 (`eeeaaa5`); the item stays listed in FUB-042 with its closure note and residuals (item 7); see archive |
+| FUB-046 | Hosted QA Data Cleanup (QA-PREVIEW-A / QA-PREVIEW-B) | closed 2026-10-03: both Courses ARCHIVED (A via product UI); QA data retained as evidence, no hard delete; see archive |
 
 ---
 

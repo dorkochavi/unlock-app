@@ -1,10 +1,11 @@
 # UNLOCK — QA-CLEANUP-001 — QA-PREVIEW-* Cleanup
 
-PLAN_VERSION: 011
+PLAN_VERSION: 012
 RUN_ID: 2026-10-03-QA-CLEANUP-001
 START_HEAD: `30e7f4f`
-RUN_STATUS: IN_PROGRESS
-STATUS: **IN_PROGRESS** — make QA-PREVIEW-A / QA-PREVIEW-B non-joinable and inert with the smallest safe hosted change (FUB-046). Not a product Run; not Run 011.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `29889b0`
+STATUS: **COMPLETE** — QA-PREVIEW-A / QA-PREVIEW-B are ARCHIVED (non-joinable, inert); FUB-046 closed; QA data retained. Not a product Run; not Run 011.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -35,9 +36,9 @@ Every Slice declares one gate: AUTO, REVIEW_GATE, HUMAN_DECISION_GATE, or FINAL_
 | A | Phase 0 identity + read-only inventory of QA-PREVIEW-A/B by canonical id | AUTO | DONE |
 | B | Decision record (read-only): smallest cleanup; verify the hypothesis (archive QA-PREVIEW-A via the product archive path) | AUTO | DONE (hypothesis confirmed: single `courses.status` transition on A; B already ARCHIVED) |
 | C | Fresh backup (outside repo) + exact bounded action + rollback; stop at `HUMAN_APPROVAL_REQUIRED: EXECUTE_QA_CLEANUP` | AUTO | DONE (backup `pre-QACLEANUP-20261003-210229`, outside repo) |
-| D | Execute the approved action (preferred: human, as the QA author in the product UI) | HUMAN_DECISION_GATE | PENDING |
-| E | Post-verify invariants I1-I5 (read-only) | AUTO | PENDING |
-| F | Docs close (FUB-046, DEV_STATUS, Run report), verifier PASS, local commit; push is human | FINAL_GATE | PENDING |
+| D | Execute the approved action (preferred: human, as the QA author in the product UI) | HUMAN_DECISION_GATE | DONE (human archived QA-PREVIEW-A via product UI, 2026-10-03) |
+| E | Post-verify invariants I1-I5 (read-only) | AUTO | DONE (I1-I5 PASS; I1 amended: exclude post-start Today plan rows, see report) |
+| F | Docs close (FUB-046, DEV_STATUS, Run report), verifier PASS, local commit; push is human | FINAL_GATE | DONE (docs; commit by parent) |
 
 ## 5. Run Invariants (each proven, not asserted)
 
@@ -55,12 +56,13 @@ evidence-bearing Attempts; ambiguous product/data semantics. A harness denial is
 
 ## 7. Current Status
 
-- Slices A-C done; stopped at `HUMAN_APPROVAL_REQUIRED: EXECUTE_QA_CLEANUP` (Slice D). Branch `feature/run-010-learning-intelligence`; no push by the agent.
+- Run COMPLETE. Branch `feature/run-010-learning-intelligence`; pushing it is a human action (no push by the agent). No active Run.
 
 ## History
 
 Reports are the archive:
 
+- QA-CLEANUP-001: `docs/RUNS/2026-10-03-QA-CLEANUP-001.md`
 - POST-RUN010-PRODUCT-FIX-001 (incl. "Release close", v0.2.0): `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`
 - GOVERNANCE-RECONCILE-001: `docs/RUNS/2026-09-29-GOVERNANCE-RECONCILE-001.md`
 - DEVOS-V1.3 Consolidation: `docs/RUNS/2026-09-29-DEVOS-V1.3-CONSOLIDATION.md`

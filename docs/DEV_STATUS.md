@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-10-03 (release v0.2.0 shipped to Production; hosted migrations H.1 + H.3 applied)
+Updated: 2026-10-03 (v0.2.0 in Production; QA-CLEANUP-001: QA-PREVIEW-A/B ARCHIVED, QA data retained)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -91,7 +91,7 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
   backup and dry-run: it deleted the 9 legacy OWNER `course_memberships` rows and narrowed the `role` CHECK to
   LEARNER-only.
 - Post-H.3 state: `course_memberships` LEARNER 79, OWNER 0, INSTRUCTOR 0; `course_authors` OWNER 11 (11 active, 0 revoked);
-  11 Courses (9 PUBLISHED, 1 DRAFT, 1 ARCHIVED). Drift check going forward uses the canonical model only: every Course has
+  Courses now 11 (8 PUBLISHED, 1 DRAFT, 2 ARCHIVED; QA-CLEANUP-001). Drift check going forward uses the canonical model only: every Course has
   an active `course_authors` row (H.1 check D4 = 0); no legacy OWNER/INSTRUCTOR memberships remain. The old D3 check
   (`course_authors` without legacy membership) is no longer a valid gate.
 - ROLLBACK CAVEAT: `d39c882` is NOT a safe app-only rollback after H.3 (old code reads OWNER memberships; every author
@@ -166,7 +166,7 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
 ## Current Limitations / Blockers
 
 - No Run 008 blocker and no technical Pre-Pilot blocker remain. Open before a REAL pilot: `docs/PILOT_READINESS.md`
-  (content gate, SMTP / Auth email capacity, QA data cleanup, privacy/data ownership OQ-039).
+  (content gate, SMTP / Auth email capacity, earlier QA/test-data cleanup item 12, privacy/data ownership OQ-039).
 - Finding status (details in Run reports):
   - F-01 (empty DailyPlan frozen for the local day): MITIGATED, design issue deferred; learners must join before Today.
   - F-04b (Course PUBLISHED -> ARCHIVED after the plan exists): DECISION PENDING; Progress is PUBLISHED-only as a
@@ -197,22 +197,23 @@ reports; only still-open pointers remain:
   quota; deterministic Topic round-robin; NULL-topic bucket last); cross-Course merge re-sorts by (createdAt, questionId)
   before top-3, consistent with ADR-017 §4. Real-Postgres behavior is still not proven (PGlite limits). Open policy items
   stay in OQ-017 (cross-Course Topic balance; archived-Topic eligibility; NULL-topic ordering; ADR-017 §4 not amended).
-- QA data cleanup deferred: QA-PREVIEW-A (open published Course), QA-PREVIEW-B, 1 QA learner membership, 6 QA Attempts remain
-  in the shared hosted DB (FUB-046; needs explicit human approval + fresh backup).
+- QA-PREVIEW-A and QA-PREVIEW-B are ARCHIVED (non-joinable; A archived by the human QA author via the product UI,
+  2026-10-03, QA-CLEANUP-001; terminal in V1, no un-archive path). QA data is RETAINED as evidence: 1 inert QA learner
+  membership (OQ-043 untouched), 7 Attempts, 6 progress rows. No hard delete done or planned (separate human decision).
 - Hosted Supabase Auth Redirect URL allow-list for `next=` values remains open, non-blocking.
 
 ## Current Human / Manual Actions
 
 - Pushing, merging to `main`, promoting to Production, tags, hosted migrations, and Vercel/GitHub settings are human actions
-  (ADR-019). Done 2026-10-03: push/merge/promotion to `fff8c40`, tag `v0.2.0`, H.1 and H.3 applied, Production smoke.
-- Remaining: approve and run the QA data cleanup (FUB-046); decide OQ-047 before any co-author-management UI; pilot gates.
+  (ADR-019). Done 2026-10-03: QA-PREVIEW-A archive (human, product UI); push/merge/promotion to `fff8c40`, tag `v0.2.0`, H.1 and H.3 applied, Production smoke.
+- Remaining: decide OQ-047 before any co-author-management UI; pilot gates.
 - Human decisions still open from the archived Pilot Readiness verification
   (`docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`): Q2-B (valid-refresh-token behavior after natural
   session expiry unproven), Q3 (accessibility of login/join/Progress/instructor flows unexercised), Q4 (no
   authenticated Today timings), Q5 (Vercel failed-build behavior unknown), Q6a (`/login` is frameable; framing
   protection is a human DECISION). Expired-session recovery UX gaps (401 links lack `next`; instructor mutations have
   no 401 branch; a 401 during Answer drops the selection silently) are confirmed, low severity, non-blocking.
-  Isolated QA data (`QA-SliceB-*`) belongs in the pre-pilot cleanup (`docs/PILOT_READINESS.md` item 12).
-- Pre-pilot: content gate, SMTP / Auth email capacity, QA data cleanup — `docs/PILOT_READINESS.md` §3.
+  Isolated QA data (`QA-SliceB-*`) and other test data remain in the pre-pilot cleanup (`docs/PILOT_READINESS.md` item 12).
+- Pre-pilot: content gate, SMTP / Auth email capacity, earlier test-data cleanup (item 12) — `docs/PILOT_READINESS.md` §3.
 
 Current execution source: `docs/CHATGPT_PLAN.md`. Run history: `docs/RUNS/**`.
