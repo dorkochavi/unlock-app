@@ -50,11 +50,21 @@ export function shouldShowCreateAnother(input: {
 /** The one known server reason that gets a dedicated Hebrew message. */
 export const TOPIC_REQUIRED_REASON = "a Topic must be selected before publishing";
 
+/**
+ * The publish API's `reason` is the domain error's own `message`, which
+ * `QuestionNotPublishReadyError` prefixes with this text — so the wire value is
+ * "Question is not publish-ready: <reason>", not the bare reason.
+ */
+const NOT_PUBLISH_READY_PREFIX = "Question is not publish-ready: ";
+
 export function publishNotReadyMessage(
   reason: string,
   strings: { publishNotReadyError: string; publishTopicRequiredError: string },
 ): string {
-  if (reason === TOPIC_REQUIRED_REASON) return strings.publishTopicRequiredError;
+  const bareReason = reason.startsWith(NOT_PUBLISH_READY_PREFIX)
+    ? reason.slice(NOT_PUBLISH_READY_PREFIX.length)
+    : reason;
+  if (bareReason === TOPIC_REQUIRED_REASON) return strings.publishTopicRequiredError;
   return strings.publishNotReadyError.replace("{reason}", reason);
 }
 

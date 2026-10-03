@@ -8,6 +8,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { assertQuestionPublishReady } from "@/domain/question/types";
 import { he } from "@/messages/he";
 
 import { CreateAnotherAction } from "../create-another-action";
@@ -136,12 +137,36 @@ describe("CreateAnotherAction markup", () => {
 });
 
 describe("publishNotReadyMessage (Hebrew publish-readiness mapping)", () => {
-  it("maps the Topic-required reason to the dedicated Hebrew string, not the raw English", () => {
+  it("maps the REAL wire reason (domain error message, prefixed) to Hebrew only", () => {
+    // The publish API sends `reason: error.message`; take it from the real domain rule, not a hand-typed string.
+    let wireReason = "";
+    try {
+      assertQuestionPublishReady({
+        topicId: null,
+        questionType: "SINGLE_CHOICE",
+        prompt: "p",
+        answerOptions: [],
+        correctOptionIds: [],
+        explanation: null,
+      } as unknown as Parameters<typeof assertQuestionPublishReady>[0]);
+    } catch (error) {
+      wireReason = (error as Error).message;
+    }
+    expect(wireReason).toBe("Question is not publish-ready: a Topic must be selected before publishing");
+
+    const message = publishNotReadyMessage(wireReason, he.questionEditor);
+    expect(message).toBe(he.questionEditor.publishTopicRequiredError);
+    expect(message).not.toMatch(/publish-ready|Topic must be selected/);
+  });
+  it("also maps the bare Topic-required reason to Hebrew only", () => {
     const message = publishNotReadyMessage("a Topic must be selected before publishing", he.questionEditor);
     expect(message).toBe(he.questionEditor.publishTopicRequiredError);
     expect(message).not.toMatch(/Topic must be selected/);
   });
-  it("keeps the generic interpolated message for other reasons", () => {
+  it("keeps the generic interpolated message for other reasons (prefixed or not)", () => {
     expect(publishNotReadyMessage("some other reason", he.questionEditor)).toBe("לא ניתן לפרסם: some other reason");
+    expect(publishNotReadyMessage("Question is not publish-ready: prompt must not be empty", he.questionEditor)).toBe(
+      "לא ניתן לפרסם: Question is not publish-ready: prompt must not be empty",
+    );
   });
 });
