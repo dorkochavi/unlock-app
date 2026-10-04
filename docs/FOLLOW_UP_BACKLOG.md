@@ -405,12 +405,10 @@ local-only guards, tests, independently reviewed). Real drill on the latest back
 migration history verified (12 tables, 25 FKs, 15 migrations match repo); trigger recreated post-load; Auth only STAGED
 in an all-text schema, NOT faithfully recovered (backup is auth data-only: no auth DDL, auth.schema_migrations/GoTrue
 version, trigger/supabase_migrations DDL or roles; dump command undocumented). Hosted restore, sign-in usability and
-concurrency remain unproven. Remaining engineering item: change the manual backup procedure to also capture auth
-schema-only DDL + auth.schema_migrations data, supabase_migrations DDL, roles/grants, the trigger, and a MANIFEST
-(commands/versions/sha256/row counts). Human-gated: it changes the hosted backup procedure/policy, out of agent scope.
+concurrency remain unproven. **Engineering narrowed 2026-10-04 (BACKUP-DR-V1-IMPLEMENTATION-001, Slices B-G):** the V1 FULL procedure tooling is DONE and independently reviewed (security + DB, twice; no blocking findings after fixes): `backup:create|validate|keygen|encrypt|decrypt|retention` and the `restore:local` package layout. A disposable restore drill is FULL but on a SYNTHETIC_LOCAL source (GoTrue v2.197.0 replay), not hosted (`docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001-F-restore-drill.md`). **Remaining (human-owned): HUMAN_APPROVAL_REQUIRED: CREATE_V1_BACKUP** (real hosted V1 backup; `SUPA_DB_URL` unset, hosted access is human-only), then a local restore drill FULL on that real backup; plus HUMAN_CONFIGURATION_REQUIRED off-device encrypted storage destination. Operations checklist/cadence (recommended): `docs/BACKUP_DR_POLICY.md`. Non-blocking review residuals: FUB-047.
 Still human-owned: backup owner, frequency, RPO/RTO, Supabase plan/PITR, retention/encryption of PII dumps. **Policy decided 2026-10-04 (human-approved): `docs/BACKUP_DR_POLICY.md`** (owner, frequency, scope, RPO/RTO, retention, encryption, Pilot DR gate); Supabase plan/PITR still unverified. Evidence:
 `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-B-restore-drill.md`,
-`docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001-D-local-drill.md`. Not closed.
+`docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001-D-local-drill.md`. Not closed: Pilot DR gate NOT_READY.
 
 ## Follow-Up Investigation
 
@@ -1267,6 +1265,27 @@ members on ARCHIVED Courses is wanted; any change to the non-author outcome is a
 ## Promotion Trigger
 
 Next change to Course join outcomes or ARCHIVED-Course handling (F-04b).
+
+---
+
+# FUB-047 — Backup/DR V1 Tooling Non-Blocking Review Residuals
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Backup/DR tooling (`scripts/backup-*.mjs`, `scripts/restore-local-backup.mjs`), `docs/BACKUP_DR_POLICY.md`
+
+Non-blocking residuals from the two independent reviews of BACKUP-DR-V1-IMPLEMENTATION-001 (none changes the approved policy):
+- Re-read relationship counts after the dump (false-FAIL on a live source); distinct reason code `migration-recheck-missing` for old manifests.
+- S5 compare: relkind r/p only, and require manifest `after` keys == `before` keys. Sequence value sanity; extension version drift diff; role attribute/membership fidelity.
+- README/runbook: PG* credentials live in container Config.Env (visible to `docker inspect` while the container runs); consider `--env-file`/pgpass. Optional `--cap-add` minimization.
+- Optional host-guard denies (`.localdomain`, `2002::/16`, `2001:db8::/32`).
+- Document the volatile-table window trade-off; an unencrypted package's manifest is unauthenticated (optional HMAC; encrypted packages already bind it).
+- Run the `--user`/mode-bit branches on Linux/macOS.
+- Passphrase/scrypt key mode; monthly-selection helper; automation of the daily backup (no hosted automation, cloud job or scheduled task exists).
+
+## Promotion Trigger
+
+First real hosted V1 backup (Slice E) or the next change to the backup tooling.
 
 ---
 

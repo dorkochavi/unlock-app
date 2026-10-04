@@ -111,7 +111,7 @@ async function main() {
     out(`source: host fingerprint sha256=${fp.slice(0, 16)}... port=${src.port} database=${src.database} sslmode=${src.sslmode ?? (testNet ? "(default)" : "(absent => PGSSLMODE=require)")} user=[redacted] password=[redacted]`);
     out(`image: ${image} (local only, --pull never)${testNet ? `  [TEST MODE network ${testNet}]` : ""}`);
     out(`read-only: PGOPTIONS=-c default_transaction_read_only=on${flags.has("--no-pgoptions") ? " DISABLED (--no-pgoptions)" : ""}; pg_dump is read-only by construction`);
-    out(`container env (names only, values never printed): ${SOURCE_ENV_NAMES.join(" ")}; no URL in argv or container config`);
+    out(`container env (names only, values never printed): ${SOURCE_ENV_NAMES.join(" ")}; no URL in argv, but credential values are passed as container environment (visible to docker inspect while running)`);
     out("container: --cap-drop ALL --security-opt no-new-privileges --memory 2g --pids-limit 512");
     out(`1. psql -X -At (PG* env) < info/migrations/relationship/row-count queries (SELECT only)`);
     out(`2. pg_dump -w -Fc ${DUMP_SCHEMAS.map((s) => `--schema=${s}`).join(" ")} -f ${DUMP_FILE}`);
@@ -132,7 +132,7 @@ async function main() {
   created = true;
 
   const baseEnv = sanitizedEnv(process.env);
-  // PG* values exist only in the docker CLIENT's env; docker gets their NAMES (-e NAME). No URL anywhere in argv/config.
+  // PG* values exist only in the docker CLIENT's env; docker gets their NAMES (-e NAME). No URL in argv; the values are still container environment (docker inspect visible while running).
   const srcEnv = sourceContainerEnv(src, { testMode: testNet !== undefined, pgoptions: !flags.has("--no-pgoptions") });
   const runEnv = { ...baseEnv, ...srcEnv };
   const envNames = SOURCE_ENV_NAMES.filter((n) => n in srcEnv);

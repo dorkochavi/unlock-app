@@ -51,6 +51,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Evidence/readiness | current Slice | `testing.md`, `checkpoint` | fresh evidence + Git diff |
 | Cursor coding | `AGENTS.md` + task owner | relevant `.cursor/rules/*.mdc` | current files |
 | Local backup restore / DR (FUB-009) | `RESTORE_RUNBOOK.md` | `postgres.md` | `scripts/restore-local-backup.mjs` |
+| Backup/DR policy, Pilot DR gate, operations checklist (FUB-009) | `BACKUP_DR_POLICY.md` | `postgres.md` | `RESTORE_RUNBOOK.md` |
 | Telemetry analysis | `RUN_TELEMETRY.md` | — | `.claude/telemetry/**`, scratch telemetry |
 
 ## Canonical Product / Architecture References
