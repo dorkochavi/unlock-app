@@ -48,3 +48,13 @@ Auth schema; partial restore fails closed or reports PARTIAL; Pilot readiness un
 
 ## 8. Telemetry (mechanism): WATCH
 Fresh sequential workers (9 slice workers + 4 reviewer runs), 1 STOP-class event (Slice E human boundary), 0 compactions known. Isolation held; provisional, too few Runs to promote.
+
+## 9. Post-close addendum (2026-10-04, human-executed): Slice E / Pilot DR gate proof
+The Run closed PARTIAL above (Slice E blocked on a human). Afterwards the owner executed it; this section records that evidence without rewriting the sections above. No agent touched hosted systems, application code, schema or the encrypted files/key.
+- DB password rotated; Vercel `DATABASE_URL` updated and redeployed; Production smoke PASS (`/api/daily-plan/today`, `/api/courses/mine`, course context/topic-progress, practice, practice/answer all 200). Local `.env.local` updated (transaction pooler 6543, `sslmode=verify-full`, root cert; shape checked without printing values).
+- Real Production V1 backup via Session Pooler (5432): `C:\Users\dorko\UNLOCK-backups\v1\daily-20261004-184139`; `backup:create` RESULT FULL_CANDIDATE; `backup:validate` FULL_CANDIDATE; artifacts `10-full.dump`, `20-roles.sql`, `30-server-info.txt`, `MANIFEST.json`.
+- `backup:encrypt` (key_id `3a27b9203ec29ddb`, non-secret): ciphertext re-verified, RESULT ENCRYPTED. `backup:decrypt`: 3 artifacts, hashes and manifest MAC verified, RESULT DECRYPTED.
+- Disposable local `restore:local` on the decrypted copy: **RESULT FULL.** Table set equals manifest; public counts match; auth counts match within the documented volatile ranges; `supabase_migrations` 15/15, `auth.schema_migrations` 82/82, repo versions 15 vs 15; 25 FKs 0 orphans; real Auth schema restored; `public.users`/`auth.users` orphan counts 3/0 = manifest; `on_auth_user_created` present and enabled; `handle_new_auth_user` present; container cleaned up.
+- Custody: plaintext deleted after the proof (PlaintextBackup False); encrypted local copy kept; encrypted off-device copy uploaded manually to Google Drive; key kept locally with a separate copy in OneDrive (not with the Drive backup). True offline key custody not done: FUB-048.
+- Evidence provenance: HUMAN_REPORTED (owner-run commands and their RESULT lines, relayed in chat); not independently re-executed by an agent.
+- Effect: Slice E DONE; Pilot DR gate (13c) SATISFIED. Unchanged: hosted GoTrue-version equality and sign-in usability on restored Auth are NOT proven; PITR/Supabase plan backups, hosted DR and 24/7 response are NOT proven; FUB-009 stays narrowed (plan/PITR check, cadence approval); FUB-047 residuals unchanged; a real pilot is NOT approved and other Pilot-readiness items are not claimed complete.

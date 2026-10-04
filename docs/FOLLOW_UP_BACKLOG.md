@@ -405,10 +405,11 @@ local-only guards, tests, independently reviewed). Real drill on the latest back
 migration history verified (12 tables, 25 FKs, 15 migrations match repo); trigger recreated post-load; Auth only STAGED
 in an all-text schema, NOT faithfully recovered (backup is auth data-only: no auth DDL, auth.schema_migrations/GoTrue
 version, trigger/supabase_migrations DDL or roles; dump command undocumented). Hosted restore, sign-in usability and
-concurrency remain unproven. **Engineering narrowed 2026-10-04 (BACKUP-DR-V1-IMPLEMENTATION-001, Slices B-G):** the V1 FULL procedure tooling is DONE and independently reviewed (security + DB, twice; no blocking findings after fixes): `backup:create|validate|keygen|encrypt|decrypt|retention` and the `restore:local` package layout. A disposable restore drill is FULL but on a SYNTHETIC_LOCAL source (GoTrue v2.197.0 replay), not hosted (`docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001-F-restore-drill.md`). **Remaining (human-owned): HUMAN_APPROVAL_REQUIRED: CREATE_V1_BACKUP** (real hosted V1 backup; `SUPA_DB_URL` unset, hosted access is human-only), then a local restore drill FULL on that real backup; plus HUMAN_CONFIGURATION_REQUIRED off-device encrypted storage destination. Operations checklist/cadence (recommended): `docs/BACKUP_DR_POLICY.md`. Non-blocking review residuals: FUB-047.
+concurrency remain unproven. **Engineering narrowed 2026-10-04 (BACKUP-DR-V1-IMPLEMENTATION-001, Slices B-G):** the V1 FULL procedure tooling is DONE and independently reviewed (security + DB, twice; no blocking findings after fixes): `backup:create|validate|keygen|encrypt|decrypt|retention` and the `restore:local` package layout. A disposable restore drill is FULL but on a SYNTHETIC_LOCAL source (GoTrue v2.197.0 replay), not hosted (`docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001-F-restore-drill.md`). **Production proof DONE 2026-10-04 (human-executed; Run report "Post-close addendum"):** a real Production V1 backup (Session Pooler, FULL_CANDIDATE) was validated, encrypted (UBKENC01), decrypted and restored into a disposable local container: RESULT FULL (public + auth + migration state; 15/15 `supabase_migrations`, 82/82 `auth.schema_migrations`, 25 FKs 0 orphans, orphan counts 3/0 = manifest, trigger present and enabled). Plaintext deleted; encrypted local copy and an encrypted off-device copy (Google Drive, owner-chosen) exist. **Closed parts:** real-Production backup procedure, Auth-inclusive package, migration-state recovery, disposable local FULL drill, off-device encrypted copy. Operations checklist/cadence (recommended): `docs/BACKUP_DR_POLICY.md`. Non-blocking review residuals: FUB-047; key custody hardening: FUB-048.
+**Still open (NARROWED, not closed):** (a) Supabase plan / managed-backup / PITR settings (human check; this Run never verified them); (b) the recommended restore-drill cadence is not owner-approved; (c) no hosted restore / hosted DR, no 24/7 response; (d) FULL local restore does NOT prove hosted GoTrue-version equality or sign-in usability against the restored Auth.
 Still human-owned: backup owner, frequency, RPO/RTO, Supabase plan/PITR, retention/encryption of PII dumps. **Policy decided 2026-10-04 (human-approved): `docs/BACKUP_DR_POLICY.md`** (owner, frequency, scope, RPO/RTO, retention, encryption, Pilot DR gate); Supabase plan/PITR still unverified. Evidence:
 `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-B-restore-drill.md`,
-`docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001-D-local-drill.md`. Not closed: Pilot DR gate NOT_READY.
+`docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001-D-local-drill.md`. Not closed: items (a)-(d) above remain. The Pilot DR gate is SATISFIED (2026-10-04); it was NOT_READY until the Production proof.
 
 ## Follow-Up Investigation
 
@@ -1285,7 +1286,21 @@ Non-blocking residuals from the two independent reviews of BACKUP-DR-V1-IMPLEMEN
 
 ## Promotion Trigger
 
-First real hosted V1 backup (Slice E) or the next change to the backup tooling.
+The first real hosted V1 backup has occurred (2026-10-04; FULL drill, no false FAIL observed, so the hosted-privilege and pooler-behavior unknowns for the `postgres` role are now proven for that backup). Remaining trigger: the next change to the backup tooling, or a false FAIL on a live source. The residuals above are otherwise unchanged.
+
+---
+
+# FUB-048 — Offline Custody of the Backup Encryption Key
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Backup/DR operations (`docs/BACKUP_DR_POLICY.md` key custody)
+
+The Production V1 backup key (key_id `3a27b9203ec29ddb`, non-secret) exists locally and as a separate copy in OneDrive; it is not stored with the encrypted off-device backup. Desired hardening: true offline/separate custody (e.g. an encrypted USB drive) so that loss or compromise of one cloud account does not take both the key and a backup. Non-blocking operational hardening; policy already requires only that the key is not stored beside the backup. No deadline or cadence is set. Key loss makes every backup encrypted with it unrecoverable.
+
+## Promotion Trigger
+
+Owner decision, or the next key rotation / change of off-device storage.
 
 ---
 

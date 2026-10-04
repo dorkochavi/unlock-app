@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-10-04 (v0.2.0 in Production; BACKUP-DR-V1-IMPLEMENTATION-001 closed PARTIAL: backup/restore tooling + synthetic FULL drill, real hosted FULL unproven, Pilot DR gate NOT_READY, real pilot NOT approved)
+Updated: 2026-10-04 (v0.2.0 in Production; Backup/DR V1 operationally proven on real Production data: encrypted backup + local FULL restore drill, Pilot DR gate SATISFIED; offline key custody FUB-048; real pilot NOT approved)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -114,7 +114,7 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
     `DATABASE_POOL_LOG_STATS=true`. Evidence: `docs/RUNS/2026-09-23-PRE-PILOT.md`. Round-trip reduction
     deferred (FUB-026).
 - Backup: manual hosted logical backups exist outside the repo (pre-H.1 and pre-H.3, 2026-10-03; earlier pre-pilot copy).
-  Backup/DR V1 tooling DONE locally 2026-10-04 (`backup:create|validate|keygen|encrypt|decrypt|retention`, `restore:local`; policy `docs/BACKUP_DR_POLICY.md`; runbook `docs/RESTORE_RUNBOOK.md`). FULL (DB+Auth+migrations) proven only on a SYNTHETIC_LOCAL source; no real V1 hosted backup exists yet; hosted restore and RPO/RTO unproven and unclaimed (FUB-009).
+  Backup/DR V1 tooling DONE locally 2026-10-04 (`backup:create|validate|keygen|encrypt|decrypt|retention`, `restore:local`; policy `docs/BACKUP_DR_POLICY.md`; runbook `docs/RESTORE_RUNBOOK.md`). A real Production V1 backup exists (2026-10-04, human-executed): validated, encrypted, off-device encrypted copy held, and a disposable local restore drill returned FULL (DB+Auth+migrations); plaintext deleted. Not proven: hosted GoTrue-version equality, sign-in usability on restored Auth, PITR/Supabase plan backups, hosted restore/DR, 24/7 response (FUB-009 narrowed; key custody FUB-048).
 - Minimal CI (`.github/workflows/ci.yml`: typecheck, lint, unit) is active; the `main` ruleset has no required
   status checks (ADR-019 §3). What Vercel does on a failed build is undetermined (Slice B report, Q5).
 - Pre-Pilot Validation: Technical Go/No-Go PASS (2026-09-25); Content Go/No-Go WAITING FOR REAL PILOT MATERIAL (not
@@ -190,7 +190,7 @@ reports; only still-open pointers remain:
   (FUB-043); ARCHIVED hard-stops new author self-enrollment (OQ-045 Option B, `9a19b05`; residual asymmetry FUB-045);
   `revokeCourseAuthor` row locks (FUB-042 item 1, `eeeaaa5`; still unwired); rollout H.1 -> cutover -> H.3 done.
 - `revokeCourseAuthor` real-PostgreSQL two-connection proof DONE 2026-10-04 (opt-in `npm run test:real-pg`, localhost only; last-author invariant proven; FUB-042 7(c) closed). Still open: 7(b) HUMAN DECISION (may a mid-flight-revoked author complete a revoke?) before the use case is wired to a route; 7(a) cosmetic (FUB-042).
-- Backup/DR V1 Run DONE 2026-10-04, result PARTIAL (`docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001.md`): tooling (UBKENC01 AES-256-GCM encryption, package create/validate, `restore:local` package layout) security+DB reviewed twice, no blocking findings after fixes; disposable drill FULL on SYNTHETIC_LOCAL (GoTrue-replay) source only. Pilot DR gate NOT_READY; FUB-009 narrowed, not closed; FUB-047 non-blocking residuals. Human-owned: `HUMAN_APPROVAL_REQUIRED: CREATE_V1_BACKUP` (real hosted V1 backup; then local drill on it), off-device encrypted storage destination (HUMAN_CONFIGURATION_REQUIRED), approve/adjust recommended cadence, owner/RPO/RTO/plan+PITR/retention. Unproven: hosted restore, sign-in usability, concurrency.
+- Backup/DR V1 Run DONE 2026-10-04, result PARTIAL (`docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001.md`): tooling (UBKENC01 AES-256-GCM encryption, package create/validate, `restore:local` package layout) security+DB reviewed twice, no blocking findings after fixes; disposable drill FULL on SYNTHETIC_LOCAL (GoTrue-replay) source. Post-close addendum (same day, human-executed): Slice E done: real Production V1 backup + encrypted/decrypted local restore drill FULL; Pilot DR gate SATISFIED. FUB-009 narrowed (open: Supabase plan/PITR check, cadence approval, hosted DR); FUB-047 non-blocking residuals; FUB-048 offline key custody (key copy currently in OneDrive, not with the backup). Unproven: hosted GoTrue-version equality, sign-in usability on restored Auth, hosted restore, concurrency.
 - Author re-grant after revoke (`ON CONFLICT DO NOTHING` may silently no-op); decision owned by OQ-047 (distinct from learner OQ-043);
   FUB-042 item 4 is a pointer; must be resolved before any co-author-management UI.
 - Unseen-question / Topic-diversifying cold-start SQL — AUDITED 2026-10-03 (read-only post-Run010 audit, verdict KEEP, no
@@ -208,7 +208,7 @@ reports; only still-open pointers remain:
 
 - Pushing, merging to `main`, promoting to Production, tags, hosted migrations, and Vercel/GitHub settings are human actions
   (ADR-019). Done 2026-10-03: QA-PREVIEW-A archive (human, product UI); push/merge/promotion to `fff8c40`, tag `v0.2.0`, H.1 and H.3 applied, Production smoke.
-- Remaining: decide OQ-047 and FUB-042 7(b) before any co-author-management UI / wiring `revokeCourseAuthor`; Supabase dashboard Auth URL check; `CREATE_V1_BACKUP` + off-device storage + backup ownership/RPO/RTO/plan check (FUB-009); pilot gates.
+- Remaining: decide OQ-047 and FUB-042 7(b) before any co-author-management UI / wiring `revokeCourseAuthor`; Supabase dashboard Auth URL check; Supabase plan/PITR check + drill-cadence approval (FUB-009), offline key custody (FUB-048); other pilot gates (the DR gate is satisfied).
 - Human decisions still open from the archived Pilot Readiness verification
   (`docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`): Q2-B (valid-refresh-token behavior after natural
   session expiry unproven), Q3 (accessibility of login/join/Progress/instructor flows unexercised), Q4 (no
