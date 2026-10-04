@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -86,6 +87,12 @@ describe("restore-local: classifyResult", () => {
     expect(classifyResult({ ...good, authPopulated: ["users"], authRestoredReal: ["users"] }).level).toBe("FULL");
     expect(classifyResult({ ...good, authPopulated: [] }).exit).toBe(0);
   });
+  it("auth emptied while public.users populated => PARTIAL, not FULL (drill D regression)", () => {
+    const r = classifyResult({ ...good, authPopulated: [], publicUsers: 76, stagedAuthUsers: 0 });
+    expect([r.level, r.exit]).toEqual(["PARTIAL", 2]);
+    expect(r.lines.join("\n")).toContain("AUTH NOT RECOVERED");
+    expect(classifyResult({ ...good, authPopulated: [], publicUsers: 0, stagedAuthUsers: 0 }).level).toBe("FULL");
+  });
   it("FAIL output never claims full recovery", () => {
     const r = classifyResult({ ...good, backupComplete: false, authPopulated: [] });
     expect(r.lines.join("\n")).not.toMatch(/full recovery|RESULT: FULL/i);
@@ -114,6 +121,22 @@ describe("restore-local: COPY rewrite / parse", () => {
   it("extracts the trigger from the repo migration", () => {
     expect(extractTriggerSql("x\ncreate trigger on_auth_user_created\n after insert on auth.users\n for each row execute function f();\n")).toMatch(/;$/);
   });
+});
+
+describe("restore-local CLI: unsupported options refused (drill D regression)", () => {
+  const script = join(process.cwd(), "scripts", "restore-local-backup.mjs");
+  for (const url of [
+    "postgresql://postgres:x@db.abcdefgh.supabase.co:5432/postgres",
+    "postgresql://u:p@localhost:5432/db?host=evil.example.com",
+    "postgresql://u:p@localhost:5432/db?hostaddr=1.2.3.4",
+  ]) {
+    it(`--url ${url.slice(0, 30)}... exits 1 before any Docker use`, () => {
+      const r = spawnSync(process.execPath, [script, "restore", tmpdir(), "--url", url], { encoding: "utf8" });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("restore refused");
+      expect(r.stdout).not.toContain("container started");
+    });
+  }
 });
 
 describe("restore-local: validate mode on synthetic fixtures", () => {

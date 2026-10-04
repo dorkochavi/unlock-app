@@ -168,11 +168,11 @@ export function validateBackupDir(dir, expect = EXPECTED) {
 }
 
 /**
- * @param {{backupComplete: boolean, validations: {name: string, ok: boolean}[], authBlockCount: number, authPopulated: string[], authRestoredReal?: string[]}} o
+ * @param {{backupComplete: boolean, validations: {name: string, ok: boolean}[], authBlockCount: number, authPopulated: string[], authRestoredReal?: string[], publicUsers?: number, stagedAuthUsers?: number | null}} o
  * Result level. FULL only if the backup is complete, every validation passes,
  * and no populated auth table is omitted from the real auth schema.
  */
-export function classifyResult({ backupComplete, validations, authBlockCount, authPopulated, authRestoredReal = [] }) {
+export function classifyResult({ backupComplete, validations, authBlockCount, authPopulated, authRestoredReal = [], publicUsers = 0, stagedAuthUsers = null }) {
   const failed = validations.filter((v) => !v.ok).map((v) => v.name);
   if (!backupComplete) failed.unshift("backup incomplete");
   if (authBlockCount > 0 && authBlockCount < EXPECTED.authTables) failed.push("auth COPY blocks incomplete");
@@ -181,6 +181,8 @@ export function classifyResult({ backupComplete, validations, authBlockCount, au
   }
   const omitted = authPopulated.filter((t) => !authRestoredReal.includes(t));
   if (authBlockCount === 0) omitted.push("(auth data absent from backup)");
+  // Auth emptied/absent while learners exist => never FULL (Drill D regression).
+  if (publicUsers > 0 && stagedAuthUsers === 0) omitted.push("(auth.users empty but public.users populated)");
   if (omitted.length > 0) {
     return {
       level: "PARTIAL",

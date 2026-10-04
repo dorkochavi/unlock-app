@@ -26,7 +26,9 @@ public schema -> public data -> `supabase_migrations` table + rows -> auth data 
 ## Safety (enforced in code, tested)
 - Ignores `DATABASE_URL`/`SUPABASE_*`/`PG*` for child processes; refuses non-local `PGHOST`, `PGHOSTADDR`, `PGSERVICE*`, non-local `DOCKER_HOST`.
 - Image must be a `supabase/postgres:<tag>`; name `unlock-restore-*`; publish only `127.0.0.1:<port>:5432`.
-- `--url` is validated with `assertLocalPgUrl` (`supabase/tests/real-pg/local-pg-url.ts`); even a valid local URL is refused: only the script's own container is a target.
+- The CLI accepts only `--keep/--image/--publish`; any other option (including `--url`) exits 1 before Docker is touched. Library-level `--url` validation (`assertLocalPgUrl`) still refuses hosted/query-string URLs, and even a valid local URL is refused: only the script's own container is a target.
+- FULL is never reported while `public.users` is populated and staged `auth.users` is empty (auth cannot be silently dropped).
+- Drill evidence: `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001-D-local-drill.md`.
 - Output: names and integer counts only; psql stderr is never forwarded (it can quote row values).
 
 ## Limits

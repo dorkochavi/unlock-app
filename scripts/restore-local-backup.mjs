@@ -58,6 +58,14 @@ if (!["validate", "restore"].includes(mode) || !dir) {
   process.exit(1);
 }
 
+// Unknown options are refused (never silently ignored): in particular --url / external targets.
+const KNOWN_FLAGS = new Set(["--keep", "--image", "--publish"]);
+const badFlag = args.slice(2).find((a) => a.startsWith("--") && !KNOWN_FLAGS.has(a.split("=")[0]));
+if (badFlag) {
+  console.error(`restore refused: unsupported option ${badFlag.split("=")[0]}; external targets are not supported (only the script's own disposable container)`);
+  process.exit(1);
+}
+
 if (mode === "validate") {
   const r = validateBackupDir(dir);
   printValidate(r);
@@ -101,6 +109,8 @@ async function main() {
     validations.push({ name: n, ok: !!ok });
     out(`check ${ok ? "ok  " : "FAIL"} ${n}${detail ? ` (${detail})` : ""}`);
   };
+  let publicUsers = 0;
+  let stagedAuthUsers = null;
   const finish = (extra = {}) => {
     const c = classifyResult({
       backupComplete: v.ok,
@@ -108,6 +118,8 @@ async function main() {
       authBlockCount: v.summary.authBlocks,
       authPopulated: v.summary.authPopulated,
       authRestoredReal: [],
+      publicUsers,
+      stagedAuthUsers,
       ...extra,
     });
     for (const l of c.lines) out(l);
@@ -183,6 +195,8 @@ async function main() {
 
   const pu = num("select count(*) from public.users");
   const au = num(`select count(*) from ${STAGE_SCHEMA}.users`);
+  publicUsers = pu;
+  stagedAuthUsers = au;
   const pNoA = num(`select count(*) from public.users p where not exists (select 1 from ${STAGE_SCHEMA}.users a where a.id = p.id::text)`);
   const aNoP = num(`select count(*) from ${STAGE_SCHEMA}.users a where not exists (select 1 from public.users p where p.id::text = a.id)`);
   out(`info public.users=${pu}, staged auth.users=${au}, public without auth=${pNoA}, auth without public=${aNoP}`);
