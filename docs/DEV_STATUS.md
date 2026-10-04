@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-10-04 (v0.2.0 in Production; Backup/DR V1 operationally proven on real Production data: encrypted backup + local FULL restore drill, Pilot DR gate SATISFIED; offline key custody FUB-048; real pilot NOT approved)
+Updated: 2026-10-05 (Pilot closure Run: 13(a) satisfied by derivation; custom SMTP + 60/h email limit HUMAN_REPORTED; password recovery implemented locally, not deployed; prior: v0.2.0 in Production; Backup/DR V1 operationally proven on real Production data: encrypted backup + local FULL restore drill, Pilot DR gate SATISFIED; offline key custody FUB-048; real pilot NOT approved)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -178,7 +178,10 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
   - F-14: original initial-load failure resolved locally by automated tests only; initial-load MANUAL verification
     NOT executed.
   - F-12, F-13, F-04a, FUB-027, FUB-028: resolved.
-- Operational: Supabase Auth email rate limiting / SMTP capacity for a class-sized cohort — decide before a real pilot.
+- Auth email / SMTP capacity: CLOSED on [HUMAN_REPORTED] 2026-10-05 evidence (custom SMTP via Resend, verified `auth.kishurim.co`, real recovery email delivered, email limit 60/hour). WATCH: per-IP 30 requests / 5 min on a shared classroom IP.
+- Pilot 13(a): SATISFIED by derivation (`docs/PILOT_EVIDENCE_OPERATIONS.md` §3.1); "Today opened with no persisted action" is not observable and not required. 13(b): watcher Dor + cadence recorded (HUMAN_REPORTED); NOT READY until Vercel Runtime Logs retention (checklist V2) is reported. OQ-039 (13d) and the Content gate: unchanged, open.
+- Password recovery (2026-10-05, local commit `2d9d3bc`, NOT deployed): `/login` has a forgot-password flow (`src/lib/password-recovery.ts`, `src/app/login/page.tsx`); PKCE; fixed same-origin `redirectTo=<origin>/login?mode=recovery`; neutral enumeration-safe UX; other sessions revoked after change. Unit-tested only (no component/browser test; hosted code exchange unverified). Security reviewed: no HIGH; MEDIUM (429 enumeration) fixed. HUMAN_CONFIGURATION_REQUIRED only if the hosted Redirect URLs lack the `/login**` wildcard. Caveat: PKCE link must be opened in the same browser that requested it.
+- Supabase Free plan: no managed scheduled backups, no PITR (HUMAN_REPORTED); FUB-009 narrowed; does not invalidate the satisfied Pilot DR gate.
 - Product roadmap remaining: Run 011 (PDF/AI; also Question Management Workspace FUB-037, content-quality FUB-035),
   Run 012 (Production / Scale; privacy/legal pages, rate limiting). Deferred work: `docs/FOLLOW_UP_BACKLOG.md`.
 - Open calibration/decisions live in `docs/OPEN_QUESTIONS.md` (e.g. OQ-002, OQ-014, OQ-016, OQ-018, OQ-044).

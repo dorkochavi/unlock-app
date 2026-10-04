@@ -3,33 +3,34 @@
 PLAN_VERSION: 017
 RUN_ID: 2026-10-05-PILOT-CLOSURE-OVERNIGHT-001
 START_HEAD: `36d5b57`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `36d5b57`
-STATUS: **IN_PROGRESS** — unattended overnight Run. Queue: A Pilot 13(a) closure review (docs); B password recovery flow (Auth, security review required); C backlog triage (max 2 items, promoted explicitly here); D close. No push.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `2d9d3bc`
+STATUS: **COMPLETE** — unattended overnight Run; eligible queue exhausted. No push. Human actions remain (Run report §6).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Reduce engineering uncertainty for PILOT_READINESS 13(a) product-event evidence and 13(b) runtime/error visibility; prepare (not decide) OQ-039 and dashboard-dependent items.
+Close decision-independent Pilot items (13a review), add a learner password-recovery flow, and triage the backlog without crossing human/hosted/product boundaries.
 
 ## 2. Authority / References
-`CLAUDE.md`, `.claude/rules/*.md`; operating contract and human packets: `docs/PILOT_EVIDENCE_OPERATIONS.md`; Run report `docs/RUNS/2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001.md`.
+`CLAUDE.md`, `.claude/rules/*.md`; operating contract and human packets: `docs/PILOT_EVIDENCE_OPERATIONS.md`; Run report `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`.
 
 ## 3. Slices
 | Slice | Scope | Status |
 |---|---|---|
-| A | Sanitized logging helper + call-site migration + tests (13b) | DONE (`1a433eb`) |
-| B | Aggregate evidence SQL + PGlite proof (13a) | DONE (`1a433eb`) |
-| C | Security review + fixes | DONE (MED/LOW fixed) |
-| D | Human dashboard checklist + OQ-039 packet | DONE (in operations doc) |
+| A | Pilot 13(a) closure review (docs; derivation satisfies, no `today_opened`) | DONE (`93d0ce2`) |
+| B | Password recovery on /login (PKCE; security review, M1/L1 fixed) | DONE (`2d9d3bc`) |
+| C | Backlog triage: 36 items, 0 GREEN_NOW, none promoted/implemented | DONE (docs only) |
+| D | Run close | DONE |
 
 ## 4. Current Status
-Run PARTIAL by design: 13(a)/13(b) are NOT declared READY. Human gate: see operations doc §5–§6. Pushing is a human action.
+Run COMPLETE. Report: `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`. Pushing is a human action.
 
 ## History
 
 Reports are the archive:
 
+- PILOT-CLOSURE-OVERNIGHT-001: `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`
 - PILOT-MINIMUM-EVIDENCE-PREP-001: `docs/RUNS/2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001.md`
 - BACKUP-DR-V1-IMPLEMENTATION-001: `docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001.md` (+ slice evidence B, F in the same folder)
 - AUTH-RESTORE-HARDENING-001: `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001.md` (+ slice evidence B, D in the same folder)
