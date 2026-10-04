@@ -12,7 +12,7 @@ OQ-039 and does not declare any item READY. Gates stay owned by `docs/PILOT_READ
 
 | Item | Meets-the-minimum approach | Engineering state | Open (human) |
 | --- | --- | --- | --- |
-| 13(a) | Derive from authoritative records with read-only aggregate SQL (`scripts/pilot-evidence-aggregates.sql`); Vercel request log for "was Today opened" if retained | IMPLEMENTED + tested (queries valid on the migrated schema; identity-free shape) | Accept "derivation + Runtime Logs" as sufficient, or require a `today_opened` observation (FUB-023 / OQ-026) |
+| 13(a) | Derive from authoritative records with read-only aggregate SQL (`scripts/pilot-evidence-aggregates.sql`); Vercel request log for "was Today opened" if retained | IMPLEMENTED + tested (queries valid on the migrated schema; identity-free shape) | **Resolved 2026-10-05 (Run `2026-10-05-PILOT-CLOSURE-OVERNIGHT-001`): derivation satisfies 13(a); no `today_opened` added** (see §3.1). Sharing small-cohort aggregates stays OQ-039-dependent |
 | 13(b) | Vercel Runtime Logs (status per request) + sanitized error-level lines for every unexpected fault, operated by a named person per §3 | IMPLEMENTED + tested (`src/lib/ops-log.ts`; every unexpected-fault log in API handlers and UoW rollback paths goes through the sanitizer, with no raw console.error left in production code except inside it; expected 4xx not error-level) | Who watches; Vercel plan/log retention (checklist V2) |
 
 Hypotheses tested: **H1 confirmed** (every handler already logged unexpected faults with a constant route label; the
@@ -59,6 +59,26 @@ Honest limits: no alerting and no trace/latency tooling (Run 012 / FUB-008); log
 All queries are read-only, aggregate-only and UTC-bucketed. Small cohorts: `distinct_*` counts of 1–4 identify
 individuals to anyone who knows the roster, so **operator-only** use is assumed; sharing beyond the operator is
 OQ-039-dependent (§4).
+
+### 3.1 13(a) closure review (2026-10-05, repository evidence; no new telemetry)
+
+Canonical wording (`PILOT_READINESS` §3 item 13a): "funnel/usage answerable, derived from authoritative records where they
+suffice (FUB-023 lists what they cannot show)"; "how each item is met is decided when it is executed". It does not require
+page-open proof; FUB-023 itself only asks whether the pilot KPI needs `today_opened` "at all".
+
+| Question | Answer (existing records + the five aggregate queries) |
+| --- | --- |
+| Plan created for a learner-local day? | Yes: `plans_generated_per_day`. Caveat: `getOrCreateDailyPlanForToday` is also called by Practice batch selection and Practice answer, so a plan row proves "first Today-or-Practice activity of the local day", not specifically a Today page request |
+| Accepted answers tied to Today? | Yes: `accepted_answers_per_day`, `via_daily_plan = true` (attempts exist only on acceptance) |
+| Today vs Practice distinguishable? | Yes: `daily_plan_item_id is not null` (Today) vs null (Practice) |
+| Item resolution/completion? | Yes: `plan_items_resolution_per_day` (completed vs skipped from item status; pending not counted) |
+| Repeat use across days? | Yes: `repeat_behavior_last_7_days` (completed items on ≥3 distinct UTC days; single count) |
+| NOT provable | Today rendered/opened with no persisted action (no DB row); repeat opens within a day; rejected (409/400) answers (Runtime Logs only); sign-up/sign-in success (Supabase Auth logs) |
+
+Result: **13(a) satisfied by derivation** (HUMAN decision not required; the missing fact is not part of the canonical wording).
+Vercel Runtime Logs for `GET /api/daily-plan/today` remain an optional, retention-limited cross-check, not a requirement.
+Not added: `today_opened`, any event store, learner drill-down. Queries stay aggregate-only and operator-only (OQ-039 for sharing).
+Proof: `supabase/tests/postgres/pilot-evidence-aggregates.test.ts` (schema + seeded semantics, PGlite; not hosted data).
 
 ## 4. Privacy classification of logged / derived fields
 

@@ -1,11 +1,11 @@
-# UNLOCK — PILOT-MINIMUM-EVIDENCE-PREP-001 — Pilot items 13(a)/13(b) prep
+# UNLOCK — PILOT-CLOSURE-OVERNIGHT-001 — Pilot closure + safe backlog
 
-PLAN_VERSION: 016
-RUN_ID: 2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001
-START_HEAD: `9f6abcf`
-RUN_STATUS: PARTIAL
-LAST_VERIFIED_HEAD: `1a433eb`
-STATUS: **PARTIAL** — local, decision-independent engineering complete; remaining items are human decisions/dashboard checks. Not a product Run.
+PLAN_VERSION: 017
+RUN_ID: 2026-10-05-PILOT-CLOSURE-OVERNIGHT-001
+START_HEAD: `36d5b57`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `36d5b57`
+STATUS: **IN_PROGRESS** — unattended overnight Run. Queue: A Pilot 13(a) closure review (docs); B password recovery flow (Auth, security review required); C backlog triage (max 2 items, promoted explicitly here); D close. No push.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
