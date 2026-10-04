@@ -152,7 +152,8 @@ Track:
 - RUN_ID / RUN_GOAL;
 - START_HEAD / CURRENT_HEAD;
 - COMPLETED_SLICES (compact per-Slice summary, not full transcripts);
-- CURRENT_SLICE / NEXT_SLICE;
+- CURRENT_SLICE / NEXT_SLICE (keep exactly one `CURRENT_SLICE:` line; overwrite it in place, never append —
+  telemetry reads the first match);
 - BLOCKERS;
 - STOP_ESCALATE_EVENTS;
 - UNCOMMITTED_WORK;
