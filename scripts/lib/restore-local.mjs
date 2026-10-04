@@ -174,6 +174,9 @@ export function validateBackupDir(dir, expect = EXPECTED) {
  */
 export function classifyResult({ backupComplete, validations, authBlockCount, authPopulated, authRestoredReal = [], publicUsers = 0, stagedAuthUsers = null }) {
   const failed = validations.filter((v) => !v.ok).map((v) => v.name);
+  // Non-finite counts (e.g. NaN from a failed psql) can never support PARTIAL/FULL.
+  if (!Number.isFinite(publicUsers)) failed.push("public.users count unavailable");
+  if (stagedAuthUsers !== null && !Number.isFinite(stagedAuthUsers)) failed.push("staged auth.users count unavailable");
   if (!backupComplete) failed.unshift("backup incomplete");
   if (authBlockCount > 0 && authBlockCount < EXPECTED.authTables) failed.push("auth COPY blocks incomplete");
   if (failed.length > 0) {
@@ -199,8 +202,8 @@ export function classifyResult({ backupComplete, validations, authBlockCount, au
 }
 
 /** Refuse anything that is not a disposable local container run. Throws. */
-/** @param {{image?: string, name?: string, publish?: string | null, url?: string, env?: Record<string, string | undefined>}} o */
-export function assertSafeRunOptions({ image = DEFAULT_IMAGE, name, publish, url, env = process.env }) {
+/** @param {{image?: string, name?: string, publish?: string | null, url?: string, env?: Record<string, string | undefined>, backupDir?: string}} o */
+export function assertSafeRunOptions({ image = DEFAULT_IMAGE, name, publish, url, env = process.env, backupDir }) {
   const refuse = (why) => {
     throw new Error(`restore refused: ${why}`);
   };
@@ -213,7 +216,9 @@ export function assertSafeRunOptions({ image = DEFAULT_IMAGE, name, publish, url
   // Env redirectors (reuses the shared guard's PGHOSTADDR/PGSERVICE/PGSERVICEFILE check).
   assertLocalPgUrl("postgres://u@127.0.0.1:5432/postgres", env);
   if (env.PGHOST && !LOCAL_HOSTS.has(env.PGHOST)) refuse("PGHOST is set to a non-local host");
-  if (env.DOCKER_HOST && !/^(npipe|unix):\/\//.test(env.DOCKER_HOST)) refuse("DOCKER_HOST is not a local socket/pipe");
+  assertSafeDockerEnv(env);
+  // --mount is a comma-separated key=value list: these characters would inject mount options.
+  if (backupDir !== undefined && /[,"\r\n\0]/.test(backupDir)) refuse("backup dir path must not contain commas, double quotes or newlines");
   if (url !== undefined) {
     assertLocalPgUrl(url, env);
     refuse("external targets are not supported; only the script's own disposable container");
@@ -221,13 +226,34 @@ export function assertSafeRunOptions({ image = DEFAULT_IMAGE, name, publish, url
   return { image, name, publish: publish ?? null };
 }
 
+/** Refuse env that could point docker at a remote daemon. Pure; runs before any docker use. Throws. */
+/** @param {Record<string, string | undefined>} [env] */
+export function assertSafeDockerEnv(env = process.env) {
+  if (env.DOCKER_HOST && !/^(npipe|unix):\/\//.test(env.DOCKER_HOST)) throw new Error("restore refused: DOCKER_HOST is not a local socket/pipe");
+  if (env.DOCKER_CONTEXT && env.DOCKER_CONTEXT !== "default") throw new Error("restore refused: DOCKER_CONTEXT is set to a non-default context");
+}
+
+/** Refuse a docker context whose endpoint is not a local pipe/socket. Pure. Throws. */
+export function assertLocalDockerEndpoint(host) {
+  if (typeof host !== "string" || !/^(npipe|unix):\/\//.test(host.trim())) throw new Error("restore refused: active docker context endpoint is not a local socket/pipe");
+}
+
+/** psql result -> integer count; NaN (never 0) when psql failed or output is not an integer. */
+export function parseCount(r) {
+  const t = String(r?.out ?? "").trim();
+  return r && r.ok && /^\d+$/.test(t) ? Number(t) : NaN;
+}
+
+/** Count-query helper over an injectable psql function. */
+export const makeCounter = (psqlFn) => (sql) => parseCount(psqlFn({ sql, tuples: true }));
+
 /** Child-process env: drops anything that could carry a hosted target. */
 /** @param {Record<string, string | undefined>} [env] */
 export function sanitizedEnv(env = process.env) {
   /** @type {Record<string, string | undefined>} */
   const out = {};
   for (const [k, v] of Object.entries(env)) {
-    if (/^(DATABASE_URL|SUPABASE_|PG|POSTGRES|NEXT_PUBLIC_SUPABASE)/i.test(k)) continue;
+    if (/^(DATABASE_URL|SUPABASE_|PG|POSTGRES|NEXT_PUBLIC_SUPABASE|DOCKER_CONTEXT$)/i.test(k)) continue;
     out[k] = v;
   }
   return out;

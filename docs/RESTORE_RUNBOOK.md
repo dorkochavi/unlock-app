@@ -14,6 +14,7 @@ Backups live outside the repo (`C:\Users\dorko\UNLOCK-backups\<name>\`), 3 files
 2. `restore` — creates one container `unlock-restore-<id>` from the local image `public.ecr.aws/supabase/postgres:17.6.1.166` (never pulled), `--network none`, backup `:ro`, random throwaway password (never printed), removed on exit/Ctrl-C unless `--keep`.
    `npm run restore:local -- restore <backup-dir>` (same as `node scripts/restore-local-backup.mjs restore <backup-dir>`)
    Options: `--keep`, `--image <supabase/postgres tag already local>`, `--publish 127.0.0.1:<port>:5432`.
+   WARNING: `--publish` replaces `--network none` (Docker cannot combine them), so the container then sits on the default bridge with outbound network access. The restore itself does not use the network; use `--publish` only if you truly need host access, and prefer the default (no network).
 
 ## Sequence (restore)
 public schema -> public data -> `supabase_migrations` table + rows -> auth data into all-text `auth_dump_stage` (COPY target rewritten in-stream) -> trigger `on_auth_user_created` (statement read from `supabase/migrations/20260923000000_*`) AFTER auth load -> checks: per-table counts vs file, FK orphan counts, public.users vs staged auth.users counts (info only), trigger/function presence, migration versions vs repo.
@@ -24,7 +25,9 @@ public schema -> public data -> `supabase_migrations` table + rows -> auth data 
 - FAIL (1): missing/truncated file, any count mismatch, FK orphan, version diff, missing trigger, load error, or a refused option.
 
 ## Safety (enforced in code, tested)
-- Ignores `DATABASE_URL`/`SUPABASE_*`/`PG*` for child processes; refuses non-local `PGHOST`, `PGHOSTADDR`, `PGSERVICE*`, non-local `DOCKER_HOST`.
+- Ignores `DATABASE_URL`/`SUPABASE_*`/`PG*` for child processes; refuses non-local `PGHOST`, `PGHOSTADDR`, `PGSERVICE*`, non-local `DOCKER_HOST`, any non-`default` `DOCKER_CONTEXT`, and an active docker context whose endpoint is not a local pipe/socket. `DOCKER_CONTEXT` is stripped from child env. The docker env check runs first, before any other action (including `validate`).
+- Backup dir path containing `,` `"` or newlines is refused (would inject `--mount` options). Option forms like `--keep=x` / `--image=x` are refused (exact flags only).
+- Failed psql never counts as 0: counts become NaN and every check/classification treats NaN as FAIL. Cleanup always runs `docker rm -f -v` on the script's own random container name, even if `docker run` failed.
 - Image must be a `supabase/postgres:<tag>`; name `unlock-restore-*`; publish only `127.0.0.1:<port>:5432`.
 - The CLI accepts only `--keep/--image/--publish`; any other option (including `--url`) exits 1 before Docker is touched. Library-level `--url` validation (`assertLocalPgUrl`) still refuses hosted/query-string URLs, and even a valid local URL is refused: only the script's own container is a target.
 - FULL is never reported while `public.users` is populated and staged `auth.users` is empty (auth cannot be silently dropped).

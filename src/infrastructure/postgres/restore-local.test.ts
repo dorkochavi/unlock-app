@@ -4,10 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  assertLocalDockerEndpoint,
+  assertSafeDockerEnv,
   assertSafeRunOptions,
   buildAuthStageSql,
   classifyResult,
   extractTriggerSql,
+  makeCounter,
+  parseCount,
   parseCopyBlocks,
   rewriteCopyTarget,
   sanitizedEnv,
@@ -137,6 +141,67 @@ describe("restore-local CLI: unsupported options refused (drill D regression)", 
       expect(r.stdout).not.toContain("container started");
     });
   }
+});
+
+describe("restore-local: slice E review fixes", () => {
+  const good = { backupComplete: true, validations: [{ name: "x", ok: true }], authBlockCount: 26, authPopulated: [] as string[] };
+  it("parseCount: psql failure / non-integer => NaN, never 0", () => {
+    expect(parseCount({ ok: false, out: "" })).toBeNaN();
+    expect(parseCount({ ok: false, out: "5" })).toBeNaN();
+    expect(parseCount({ ok: true, out: "" })).toBeNaN();
+    expect(parseCount({ ok: true, out: "abc" })).toBeNaN();
+    expect(parseCount({ ok: true, out: "1.5" })).toBeNaN();
+    expect(parseCount({ ok: true, out: " 42 " })).toBe(42);
+    expect(parseCount({ ok: true, out: "0" })).toBe(0);
+  });
+  it("makeCounter with a failing psql seam yields NaN (so zero-row / orphan checks cannot pass)", () => {
+    const num = makeCounter(() => ({ ok: false, code: 1, out: "" }));
+    const got = num("select count(*) from t");
+    expect(got).toBeNaN();
+    expect(Number.isFinite(got) && got === 0).toBe(false); // zero-row comparison
+    expect(Number.isFinite(got) && got === 0).toBe(false); // orphan check: NaN total is not 0
+    expect(0 + got + 0).toBeNaN();
+  });
+  it("NaN publicUsers / stagedAuthUsers => FAIL exit 1", () => {
+    for (const extra of [{ publicUsers: NaN }, { stagedAuthUsers: NaN }, { publicUsers: NaN, stagedAuthUsers: NaN }, { publicUsers: Infinity }]) {
+      const r = classifyResult({ ...good, ...extra });
+      expect([r.level, r.exit]).toEqual(["FAIL", 1]);
+    }
+  });
+  it("DOCKER_CONTEXT non-default / DOCKER_HOST remote refused; local ok", () => {
+    expect(() => assertSafeDockerEnv({ DOCKER_CONTEXT: "remote-prod" })).toThrow(/DOCKER_CONTEXT/);
+    expect(() => assertSafeDockerEnv({ DOCKER_HOST: "tcp://1.2.3.4:2375" })).toThrow(/DOCKER_HOST/);
+    expect(() => assertSafeDockerEnv({ DOCKER_CONTEXT: "default", DOCKER_HOST: "npipe:////./pipe/docker_engine" })).not.toThrow();
+    expect(() => assertSafeRunOptions({ env: { DOCKER_CONTEXT: "x" }, name: "unlock-restore-abc" })).toThrow();
+    expect(sanitizedEnv({ DOCKER_CONTEXT: "x", PATH: "p" })).toEqual({ PATH: "p" });
+  });
+  it("active docker context endpoint must be local pipe/socket", () => {
+    expect(() => assertLocalDockerEndpoint("npipe:////./pipe/dockerDesktopLinuxEngine")).not.toThrow();
+    expect(() => assertLocalDockerEndpoint("unix:///var/run/docker.sock")).not.toThrow();
+    expect(() => assertLocalDockerEndpoint("tcp://10.0.0.1:2376")).toThrow();
+    expect(() => assertLocalDockerEndpoint("ssh://user@host")).toThrow();
+    expect(() => assertLocalDockerEndpoint("")).toThrow();
+  });
+  it.each(["C:/b,ackup", 'C:/b"ackup', "C:/a,target=/etc", "C:/a\nb"])("rejects mount-breaking backup dir %j", (backupDir) => {
+    expect(() => assertSafeRunOptions({ env: {}, name: "unlock-restore-abc", backupDir })).toThrow(/backup dir/);
+  });
+  it("accepts an ordinary backup dir path", () => {
+    expect(() => assertSafeRunOptions({ env: {}, name: "unlock-restore-abc", backupDir: "C:/Users/x/UNLOCK-backups/pre-QA 2026-1" })).not.toThrow();
+  });
+  const script = join(process.cwd(), "scripts", "restore-local-backup.mjs");
+  it.each(["--keep=x", "--image=supabase/postgres:1", "--publish=127.0.0.1:55432:5432"])("CLI refuses %s form before Docker", (flag) => {
+    const r = spawnSync(process.execPath, [script, "restore", tmpdir(), flag], { encoding: "utf8" });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("unsupported option");
+    expect(r.stdout).not.toContain("container started");
+  });
+  it("CLI refuses non-default DOCKER_CONTEXT / remote DOCKER_HOST even in validate mode", () => {
+    for (const env of [{ DOCKER_CONTEXT: "remote" }, { DOCKER_HOST: "tcp://1.2.3.4:2375" }]) {
+      const r = spawnSync(process.execPath, [script, "validate", tmpdir()], { encoding: "utf8", env: { ...process.env, ...env } });
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain("restore refused");
+    }
+  });
 });
 
 describe("restore-local: validate mode on synthetic fixtures", () => {

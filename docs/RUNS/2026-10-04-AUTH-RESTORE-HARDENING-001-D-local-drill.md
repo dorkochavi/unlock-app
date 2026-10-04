@@ -49,3 +49,12 @@ Local Docker only; does not prove hosted Supabase/GoTrue behaviour, multi-connec
 
 ## Verification
 vitest restore-local.test.ts 43/43; eslint touched files clean; tsc --noEmit clean.
+
+## Post-review fixes (Slice E)
+Security review findings fixed in `scripts/restore-local-backup.mjs` + `scripts/lib/restore-local.mjs`:
+1. psql failure now yields NaN (not 0); count/FK/user checks and `classifyResult` treat non-finite as FAIL.
+2. Cleanup always `docker rm -f -v` on own random name (covers failed/interrupted `docker run`).
+3. `DOCKER_CONTEXT` non-default refused + stripped from child env; active context endpoint must be local; docker env checked first.
+4. `--publish` drops `--network none`: documented in runbook (not otherwise preventable).
+5. Backup dir with `,`/`"`/newline refused (mount-option injection). 6. `--keep=x`/`--image=x` forms refused.
+Evidence: vitest restore-local 57/57, eslint + tsc clean; re-ran drill: PARTIAL exit 2, identical counts, 0 containers left.

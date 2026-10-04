@@ -23,7 +23,10 @@ import {
   assertSafeRunOptions,
   buildAuthStageSql,
   buildMigrationsSql,
+  assertLocalDockerEndpoint,
+  assertSafeDockerEnv,
   classifyResult,
+  makeCounter,
   extractTriggerSql,
   parseCopyBlocks,
   quoteIdent,
@@ -60,9 +63,18 @@ if (!["validate", "restore"].includes(mode) || !dir) {
 
 // Unknown options are refused (never silently ignored): in particular --url / external targets.
 const KNOWN_FLAGS = new Set(["--keep", "--image", "--publish"]);
-const badFlag = args.slice(2).find((a) => a.startsWith("--") && !KNOWN_FLAGS.has(a.split("=")[0]));
+// Exact match only: --keep=x / --image=x forms are refused too.
+const badFlag = args.slice(2).find((a) => a.startsWith("--") && !KNOWN_FLAGS.has(a));
 if (badFlag) {
   console.error(`restore refused: unsupported option ${badFlag.split("=")[0]}; external targets are not supported (only the script's own disposable container)`);
+  process.exit(1);
+}
+
+// Docker-redirect env is checked before anything else (validate never uses docker, restore does).
+try {
+  assertSafeDockerEnv(process.env);
+} catch (e) {
+  console.error(e.message);
   process.exit(1);
 }
 
@@ -73,7 +85,8 @@ if (mode === "validate") {
 }
 
 // ---------------- restore ----------------
-const docker = (a, o = {}) => spawnSync("docker", a, { encoding: "utf8", env: o.env, input: o.input });
+// Default env drops DOCKER_CONTEXT/DB redirectors; DOCKER_HOST was validated above.
+const docker = (a, o = {}) => spawnSync("docker", a, { encoding: "utf8", env: o.env ?? sanitizedEnv(), input: o.input });
 let name = `${NAME_PREFIX}${randomBytes(4).toString("hex")}`;
 let created = false;
 let cleaned = false;
@@ -83,7 +96,8 @@ const password = randomBytes(18).toString("hex"); // throwaway, never printed or
 function cleanup() {
   if (cleaned) return;
   cleaned = true;
-  if (created && !keep) docker(["rm", "-f", "-v", name]);
+  // Idempotent, own random name only: also covers a failed/interrupted `docker run` that left a Created container.
+  if (!(keep && created)) docker(["rm", "-f", "-v", name]);
   if (keep && created) out(`kept container ${name} (remove with: docker rm -f -v ${name})`);
   const left = docker(["ps", "-a", "-q", "--filter", `name=${NAME_PREFIX}`]).stdout?.split("\n").filter(Boolean).length ?? "?";
   out(`cleanup: containers with prefix ${NAME_PREFIX} remaining: ${left}`);
@@ -99,7 +113,8 @@ function psql({ sql, file, stdin, tuples = false }) {
   // stderr may quote row values: never forward it, only expose the exit code.
   return { ok: r.status === 0, code: r.status, out: (r.stdout ?? "").trim() };
 }
-const num = (sql) => Number(psql({ sql, tuples: true }).out);
+// NaN (never 0) when psql fails: every consumer treats NaN as a failed check.
+const num = makeCounter(psql);
 
 async function main() {
   const v = validateBackupDir(dir);
@@ -127,7 +142,10 @@ async function main() {
   };
   if (!v.ok) return finish();
 
-  const opts = assertSafeRunOptions({ image: opt("--image") ?? DEFAULT_IMAGE, name, publish: opt("--publish"), env: process.env });
+  const opts = assertSafeRunOptions({ image: opt("--image") ?? DEFAULT_IMAGE, name, publish: opt("--publish"), env: process.env, backupDir: dir });
+  // Active (config) docker context must also be a local pipe/socket.
+  const ctx = docker(["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"]);
+  assertLocalDockerEndpoint(ctx.status === 0 ? ctx.stdout.trim() : "");
   if (docker(["image", "inspect", opts.image]).status !== 0) {
     check("image present locally (no pull)", false);
     return finish();
@@ -167,14 +185,14 @@ async function main() {
   const t2 = parseCopyBlocks(readFileSync(join(dir, "02-data-public.sql"), "utf8"));
   for (const b of t2) {
     const got = num(`select count(*) from public.${quoteIdent(b.table)}`);
-    check(`public.${b.table} rows`, got === b.rows, `${got}/${b.rows}`);
+    check(`public.${b.table} rows`, Number.isFinite(got) && got === b.rows, `${got}/${b.rows}`);
   }
   for (const b of authBlocks) {
     const got = num(`select count(*) from ${quoteIdent(STAGE_SCHEMA)}.${quoteIdent(b.table)}`);
-    check(`staged auth.${b.table} rows`, got === b.rows, `${got}/${b.rows}`);
+    check(`staged auth.${b.table} rows`, Number.isFinite(got) && got === b.rows, `${got}/${b.rows}`);
   }
   const migGot = num("select count(*) from supabase_migrations.schema_migrations");
-  check("schema_migrations rows", migGot === migBlock.rows, `${migGot}/${migBlock.rows}`);
+  check("schema_migrations rows", Number.isFinite(migGot) && migGot === migBlock.rows, `${migGot}/${migBlock.rows}`);
   const versions = psql({ sql: "select version from supabase_migrations.schema_migrations order by 1", tuples: true }).out.split("\n").filter(Boolean);
   const repoV = repoMigrationVersions(join(REPO, "supabase/migrations"));
   check("migration versions == repo", JSON.stringify(versions) === JSON.stringify(repoV), `${versions.length} vs ${repoV.length}`);
@@ -191,7 +209,7 @@ async function main() {
     const eq = cc.map((c, i) => `p.${pc[i]} = c.${c}`).join(" and ");
     orphans += num(`select count(*) from ${child} c where ${nn} and not exists (select 1 from ${parent} p where ${eq})`);
   }
-  check("public FK integrity", fks.length > 0 && orphans === 0, `${fks.length} FKs, ${orphans} orphan rows`);
+  check("public FK integrity", fks.length > 0 && Number.isFinite(orphans) && orphans === 0, `${fks.length} FKs, ${orphans} orphan rows`);
 
   const pu = num("select count(*) from public.users");
   const au = num(`select count(*) from ${STAGE_SCHEMA}.users`);
