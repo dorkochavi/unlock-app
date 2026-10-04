@@ -399,10 +399,18 @@ taken before the pilot (Run 008 gate closed 2026-09-23; no restore drill
 performed; a second logical backup was taken 2026-10-03 before hosted
 migration H.3). **Narrowed 2026-10-04 (PILOT-HARDENING-EVIDENCE-001 Slice B, `b818a90`):** the public schema, data and
 migration history were restored into a disposable local PostgreSQL 17.6 container (counts match, FK/author checks pass,
-hosted-isolation proven, resources destroyed). Auth restore is PARTIAL: auth DDL is not in the dump and the
-`handle_new_auth_user` trigger must be recreated. Still open: ongoing backup ownership, frequency, RPO/RTO, Supabase plan/PITR
-and retention/encryption check (all human-owned), plus an optional auth-aware restore runbook (engineering gap). Evidence:
-`docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-B-restore-drill.md`. Not closed.
+hosted-isolation proven, resources destroyed). **Narrowed further 2026-10-04 (AUTH-RESTORE-HARDENING-001):** the
+local runbook/script gap is DONE: `docs/RESTORE_RUNBOOK.md` + `scripts/restore-local-backup.mjs` (validate/restore,
+local-only guards, tests, independently reviewed). Real drill on the latest backup = PARTIAL (exit 2): public data and
+migration history verified (12 tables, 25 FKs, 15 migrations match repo); trigger recreated post-load; Auth only STAGED
+in an all-text schema, NOT faithfully recovered (backup is auth data-only: no auth DDL, auth.schema_migrations/GoTrue
+version, trigger/supabase_migrations DDL or roles; dump command undocumented). Hosted restore, sign-in usability and
+concurrency remain unproven. Remaining engineering item: change the manual backup procedure to also capture auth
+schema-only DDL + auth.schema_migrations data, supabase_migrations DDL, roles/grants, the trigger, and a MANIFEST
+(commands/versions/sha256/row counts). Human-gated: it changes the hosted backup procedure/policy, out of agent scope.
+Still human-owned: backup owner, frequency, RPO/RTO, Supabase plan/PITR, retention/encryption of PII dumps. Evidence:
+`docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-B-restore-drill.md`,
+`docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001-D-local-drill.md`. Not closed.
 
 ## Follow-Up Investigation
 

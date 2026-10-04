@@ -50,6 +50,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Security review | relevant trust change | `auth.md`, `api.md` | `unlock-security-reviewer` |
 | Evidence/readiness | current Slice | `testing.md`, `checkpoint` | fresh evidence + Git diff |
 | Cursor coding | `AGENTS.md` + task owner | relevant `.cursor/rules/*.mdc` | current files |
+| Local backup restore / DR (FUB-009) | `RESTORE_RUNBOOK.md` | `postgres.md` | `scripts/restore-local-backup.mjs` |
 | Telemetry analysis | `RUN_TELEMETRY.md` | — | `.claude/telemetry/**`, scratch telemetry |
 
 ## Canonical Product / Architecture References
