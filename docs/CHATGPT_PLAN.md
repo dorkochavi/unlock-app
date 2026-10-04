@@ -1,11 +1,11 @@
-# UNLOCK — AUTH-RESTORE-HARDENING-001 — Auth-Aware Local Restore
+undefinedDONE (Run-close docs; verifier; no push) |undefinedDONE (telemetry WATCH: keep one CURRENT_SLICE line) |undefinedDONE (FUB-009 narrowed, not closed; readiness reconciled) |undefinedDONE (independent security review; fixes; re-review no findings) |undefinedDONE (real local drill PARTIAL: public verified; Auth staged only) |undefinedDONE (local restore tooling + runbook + guard tests) |undefinedDONE (restore model + gap classification) |undefinedDONE (grounding) |# UNLOCK — AUTH-RESTORE-HARDENING-001 — Auth-Aware Local Restore
 
 PLAN_VERSION: 014
 RUN_ID: 2026-10-04-AUTH-RESTORE-HARDENING-001
 START_HEAD: `d052bad`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `d052bad`
-STATUS: **IN PROGRESS** — unattended autonomous Run; local/disposable only. Not a product Run.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `b447b0b`
+STATUS: **COMPLETE** — unattended autonomous Run; local/disposable only. Not a product Run.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -31,14 +31,14 @@ Canonical semantics: `.claude/skills/autonomous-run/SKILL.md` §7.
 
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Phase 0 identity + grounding (backup inventory, auth migrations/triggers, FUB-009 + readiness wording) | AUTO | IN PROGRESS |
-| B | Restore model: ordering, guards, exact backup-content gap classification | AUTO | PENDING |
-| C | Implementation: local-only restore/validate tooling + safety-guard tests | REVIEW_GATE | PENDING |
-| D | Real local drill + named negatives | REVIEW_GATE | PENDING |
-| E | Fresh independent review; fix + re-review | REVIEW_GATE | PENDING |
-| F | FUB-009 / PILOT_READINESS reconciliation | AUTO | PENDING |
-| G | Optional: telemetry CURRENT_SLICE attribution WATCH | AUTO | PENDING |
-| H | Run close (docs, verifier, local commits; no push) | FINAL_GATE | PENDING |
+| A | Phase 0 identity + grounding (backup inventory, auth migrations/triggers, FUB-009 + readiness wording) | AUTO | DONE (grounding) |
+| B | Restore model: ordering, guards, exact backup-content gap classification | AUTO | DONE (restore model + gap classification) |
+| C | Implementation: local-only restore/validate tooling + safety-guard tests | REVIEW_GATE | DONE (local restore tooling + runbook + guard tests) |
+| D | Real local drill + named negatives | REVIEW_GATE | DONE (real local drill PARTIAL: public verified; Auth staged only) |
+| E | Fresh independent review; fix + re-review | REVIEW_GATE | DONE (independent security review; fixes; re-review no findings) |
+| F | FUB-009 / PILOT_READINESS reconciliation | AUTO | DONE (FUB-009 narrowed, not closed; readiness reconciled) |
+| G | Optional: telemetry CURRENT_SLICE attribution WATCH | AUTO | DONE (telemetry WATCH: keep one CURRENT_SLICE line) |
+| H | Run close (docs, verifier, local commits; no push) | FINAL_GATE | DONE (Run-close docs; verifier; no push) |
 
 ## 5. Run Invariants (each proven, not asserted)
 
@@ -52,12 +52,13 @@ Canonical semantics: `.claude/skills/autonomous-run/SKILL.md` §7.
 
 ## 7. Current Status
 
-- Slice A in progress.
+- Run COMPLETE (Slices A-H DONE; report `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001.md`). Auth restore PARTIAL; real pilot NOT approved. Pushing is a human action.
 
 ## History
 
 Reports are the archive:
 
+- AUTH-RESTORE-HARDENING-001: `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001.md` (+ slice evidence B, D in the same folder)
 - PILOT-HARDENING-EVIDENCE-001: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001.md`
 - PILOT-HARDENING-EVIDENCE-001: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001.md` (+ slice evidence B-E in the same folder)
 - QA-CLEANUP-001: `docs/RUNS/2026-10-03-QA-CLEANUP-001.md`
