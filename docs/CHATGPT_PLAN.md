@@ -1,66 +1,36 @@
-# UNLOCK — BACKUP-DR-V1-IMPLEMENTATION-001 — Backup & Disaster Recovery Policy V1
+# UNLOCK — PILOT-MINIMUM-EVIDENCE-PREP-001 — Pilot items 13(a)/13(b) prep
 
-PLAN_VERSION: 015
-RUN_ID: 2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001
-START_HEAD: `b28d04b`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `04fad62`
-STATUS: **COMPLETE** — unattended autonomous Run; local/disposable only. Tooling/ops Run, not a product Run.
+PLAN_VERSION: 016
+RUN_ID: 2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001
+START_HEAD: `9f6abcf`
+RUN_STATUS: PARTIAL
+LAST_VERIFIED_HEAD: `1a433eb`
+STATUS: **PARTIAL** — local, decision-independent engineering complete; remaining items are human decisions/dashboard checks. Not a product Run.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
----
-
 ## 1. Goal
+Reduce engineering uncertainty for PILOT_READINESS 13(a) product-event evidence and 13(b) runtime/error visibility; prepare (not decide) OQ-039 and dashboard-dependent items.
 
-Implement the human-approved Backup & DR Policy V1 (owner Dor Kochavi) including a canonical backup package (create/validate/restore-local),
-then prove it with a disposable LOCAL restore drill. Determine truthfully whether FULL_RECOVERY = database + Auth + migration state is
-achievable before real Pilot onboarding; otherwise PARTIAL with exact evidence. Do not manufacture success.
+## 2. Authority / References
+`CLAUDE.md`, `.claude/rules/*.md`; operating contract and human packets: `docs/PILOT_EVIDENCE_OPERATIONS.md`; Run report `docs/RUNS/2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001.md`.
 
-## 2. Authority / Canonical References (pointers only)
+## 3. Slices
+| Slice | Scope | Status |
+|---|---|---|
+| A | Sanitized logging helper + call-site migration + tests (13b) | DONE (`1a433eb`) |
+| B | Aggregate evidence SQL + PGlite proof (13a) | DONE (`1a433eb`) |
+| C | Security review + fixes | DONE (MED/LOW fixed) |
+| D | Human dashboard checklist + OQ-039 packet | DONE (in operations doc) |
 
-- Kernel/rules: `CLAUDE.md`, `.claude/rules/*.md`. Skill: `.claude/skills/autonomous-run`. Policy decisions: Run prompt (recorded in Slice A in its canonical owner).
-- State: `docs/DEV_STATUS.md`; FUB-009 in `docs/FOLLOW_UP_BACKLOG.md`; `docs/PILOT_READINESS.md`; RESTORE_RUNBOOK; prior Run `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001.md`.
-- Baseline (verified): branch `feature/run-010-learning-intelligence`; local HEAD = remote feature = `b28d04b`; remote `main` = `be97aba` (v0.2.0 `fff8c40` is its ancestor); tree clean. Local `main` may be stale (not a conflict).
-
-## 3. Gate Policy
-
-Canonical semantics: `.claude/skills/autonomous-run/SKILL.md` §7.
-
-## 4. Slice Queue
-
-| Slice | Scope | Gate | Status |
-|---|---|---|---|
-| A | Phase 0 identity + grounding; record approved policy in canonical owner | AUTO | DONE (grounding + approved policy record) |
-| B | Backup capability research + capability matrix | REVIEW_GATE | DONE (capability research: FULL YES-pending-real-dump) |
-| C | Canonical backup package (create/validate, manifest, guards) | REVIEW_GATE | DONE (backup:create/validate + restore:local package layout) |
-| D | Encryption / storage operating model | REVIEW_GATE | DONE (UBKENC01 encryption/retention tooling; off-device destination chosen by owner) |
-| E | Produce new V1 backup (read-only; human boundary if needed) | HUMAN_BOUNDARY | DONE (human-executed 2026-10-04: real Production V1 backup; see Run report "Post-close addendum") |
-| F | Disposable FULL restore drill + named negatives | REVIEW_GATE | DONE (disposable drill FULL on SYNTHETIC_LOCAL source + CLI negatives; real Production drill FULL, see addendum) |
-| G | Specialist review (security + DB), fixes, re-review | REVIEW_GATE | DONE (security + DB review x2; fixes; no blocking after re-review) |
-| H | Pilot DR gate reconciliation | FINAL_GATE | DONE (initially NOT_READY; superseded: Pilot DR gate SATISFIED, see addendum) |
-| I | Policy operations / scheduling checklist | AUTO | DONE (operations checklist; cadence RECOMMENDED, not approved) |
-| J | Run close | FINAL_GATE | DONE (Run-close docs; verifier; no push) |
-
-## 5. Run Invariants (each proven, not asserted)
-
-- I1 no hosted DB mutation. I2 no hosted Auth config mutation. I3 no Production/Vercel mutation. I4 no remote Git mutation.
-- I5 no secrets/PII/backup payloads/keys in Git. I6 backups outside repo, handled as sensitive. I7 restore targets disposable, local, provably isolated.
-- I8 FULL only if Auth restored into a real compatible Auth schema (not text staging). I9 partial restore fails closed or reports PARTIAL.
-- I10 no product semantics changed. I11 approved policy implemented, not renegotiated. I12 Pilot readiness changes only on new evidence.
-
-## 6. STOP Conditions
-
-`BASELINE_CONFLICT`, `PLAN_CONFLICT`, `TOOLING_BLOCKER`, `HUMAN_APPROVAL_REQUIRED: <X>`; harness denials are not worked around; a non-global blocker stops only the affected path.
-
-## 7. Current Status
-
-- Run COMPLETE (report `docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001.md`). Original close result PARTIAL (Slice E blocked on a human); post-close addendum 2026-10-04: the human executed Slice E (real Production V1 backup, encrypted, decrypted, local restore drill FULL). Pilot DR gate SATISFIED; this does not approve a real pilot or complete every Pilot-readiness item. Offline key custody: FUB-048. Pushing is a human action.
+## 4. Current Status
+Run PARTIAL by design: 13(a)/13(b) are NOT declared READY. Human gate: see operations doc §5–§6. Pushing is a human action.
 
 ## History
 
 Reports are the archive:
 
+- PILOT-MINIMUM-EVIDENCE-PREP-001: `docs/RUNS/2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001.md`
 - BACKUP-DR-V1-IMPLEMENTATION-001: `docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001.md` (+ slice evidence B, F in the same folder)
 - AUTH-RESTORE-HARDENING-001: `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001.md` (+ slice evidence B, D in the same folder)
 - PILOT-HARDENING-EVIDENCE-001: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001.md`

@@ -165,6 +165,8 @@ Legacy `TodaySession` is fully retired (ADR-011 SUPERSEDED; migration `202609290
 
 ## Current Limitations / Blockers
 
+- Pilot items 13(a)/13(b) (2026-10-04, `2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001`, local commits only): API unexpected-fault logging goes through `src/lib/ops-log.ts` (allow-listed, bounded; no answers, ids of learners, DB row detail); evidence SQL `scripts/pilot-evidence-aggregates.sql`. Not READY; human packet in `docs/PILOT_EVIDENCE_OPERATIONS.md`.
+
 - No Run 008 blocker and no technical Pre-Pilot blocker remain. Open before a REAL pilot: `docs/PILOT_READINESS.md`
   (content gate, SMTP / Auth email capacity, earlier QA/test-data cleanup item 12, privacy/data ownership OQ-039).
 - Finding status (details in Run reports):

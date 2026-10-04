@@ -377,6 +377,8 @@ logging, and latency/error visibility for import/auth/Today failure paths
 
 ## Do Not Do Yet
 
+Update 2026-10-04: pilot-minimum sanitized error logging now exists (`src/lib/ops-log.ts`); see `docs/PILOT_EVIDENCE_OPERATIONS.md`.
+
 Pilot-minimum runtime/error visibility is owned by `docs/PILOT_READINESS.md`
 §3 item 13 and does not by itself require a provider; this entry covers
 monitoring beyond that minimum. Do not choose or integrate a provider now;
