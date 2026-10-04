@@ -408,7 +408,7 @@ version, trigger/supabase_migrations DDL or roles; dump command undocumented). H
 concurrency remain unproven. Remaining engineering item: change the manual backup procedure to also capture auth
 schema-only DDL + auth.schema_migrations data, supabase_migrations DDL, roles/grants, the trigger, and a MANIFEST
 (commands/versions/sha256/row counts). Human-gated: it changes the hosted backup procedure/policy, out of agent scope.
-Still human-owned: backup owner, frequency, RPO/RTO, Supabase plan/PITR, retention/encryption of PII dumps. Evidence:
+Still human-owned: backup owner, frequency, RPO/RTO, Supabase plan/PITR, retention/encryption of PII dumps. **Policy decided 2026-10-04 (human-approved): `docs/BACKUP_DR_POLICY.md`** (owner, frequency, scope, RPO/RTO, retention, encryption, Pilot DR gate); Supabase plan/PITR still unverified. Evidence:
 `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-B-restore-drill.md`,
 `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001-D-local-drill.md`. Not closed.
 
