@@ -28,6 +28,7 @@ import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-auth
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function PATCH(
   request: Request,
@@ -42,10 +43,7 @@ export async function PATCH(
     try {
       authResult = await requireAuthenticatedUser(supabase);
     } catch (error) {
-      console.error(
-        "PATCH /api/courses/:courseId/join-policy: unexpected error during authentication",
-        error,
-      );
+      logUnexpectedError("PATCH /api/courses/:courseId/join-policy: unexpected error during authentication", error);
       return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
     }
     if (authResult.outcome === "UNAUTHENTICATED") {
@@ -75,7 +73,7 @@ export async function PATCH(
 
     return NextResponse.json(responseBody, { status });
   } catch (error) {
-    console.error("PATCH /api/courses/:courseId/join-policy: unexpected route-level error", error);
+    logUnexpectedError("PATCH /api/courses/:courseId/join-policy: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

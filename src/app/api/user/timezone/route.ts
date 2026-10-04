@@ -35,6 +35,7 @@ import { createSupabaseServerClient } from "@/infrastructure/supabase/server-cli
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
 
 import { handleSetUserTimezone } from "./handle-set-user-timezone";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: Request): Promise<Response> {
     try {
       authResult = await requireAuthenticatedUser(supabase);
     } catch (error) {
-      console.error("POST /api/user/timezone: unexpected error during authentication", error);
+      logUnexpectedError("POST /api/user/timezone: unexpected error during authentication", error);
       return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
     }
     if (authResult.outcome === "UNAUTHENTICATED") {
@@ -78,7 +79,7 @@ export async function POST(request: Request): Promise<Response> {
 
     return NextResponse.json(body, { status });
   } catch (error) {
-    console.error("POST /api/user/timezone: unexpected route-level error", error);
+    logUnexpectedError("POST /api/user/timezone: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

@@ -25,6 +25,7 @@ import { toQuestionAuthoringDto } from "./question-dto";
 
 import type { CreateQuestionDraftResult } from "@/application/question/create-question-draft";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleCreateQuestionDraftDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -48,7 +49,7 @@ export async function handleCreateQuestionDraft(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("POST /api/courses/:courseId/questions: unexpected error during authentication", error);
+    logUnexpectedError("POST /api/courses/:courseId/questions: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -64,7 +65,7 @@ export async function handleCreateQuestionDraft(
   try {
     result = await deps.create({ actorUserId: authResult.userId, courseId: deps.courseId });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/questions: unexpected error during creation", error);
+    logUnexpectedError("POST /api/courses/:courseId/questions: unexpected error during creation", error);
     return internalErrorResponse();
   }
 
@@ -77,10 +78,8 @@ export async function handleCreateQuestionDraft(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/courses/:courseId/questions: unhandled CreateQuestionDraftResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/questions: unhandled CreateQuestionDraftResult outcome");
       return internalErrorResponse();
     }
   }

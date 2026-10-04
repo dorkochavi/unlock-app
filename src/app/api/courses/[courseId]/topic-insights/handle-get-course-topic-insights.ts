@@ -21,6 +21,7 @@ import { isUuid } from "../../../../../lib/uuid";
 
 import type { GetCourseTopicInsightsResult } from "@/application/insights/get-course-topic-insights";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleGetCourseTopicInsightsDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -49,7 +50,7 @@ export async function handleGetCourseTopicInsights(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("GET /api/courses/:courseId/topic-insights: unexpected error during authentication", error);
+    logUnexpectedError("GET /api/courses/:courseId/topic-insights: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -69,7 +70,7 @@ export async function handleGetCourseTopicInsights(
       now: deps.now(),
     });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/topic-insights: unexpected error during read", error);
+    logUnexpectedError("GET /api/courses/:courseId/topic-insights: unexpected error during read", error);
     return internalErrorResponse();
   }
 
@@ -97,10 +98,8 @@ export async function handleGetCourseTopicInsights(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "GET /api/courses/:courseId/topic-insights: unhandled GetCourseTopicInsightsResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("GET /api/courses/:courseId/topic-insights: unhandled GetCourseTopicInsightsResult outcome");
       return internalErrorResponse();
     }
   }

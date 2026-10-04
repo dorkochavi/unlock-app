@@ -356,6 +356,7 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
       }),
     );
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const response = await handleSubmitDailyPlanItemAnswer({
       authenticate: authenticated(),
@@ -369,9 +370,14 @@ describe("handleSubmitDailyPlanItemAnswer", () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: { code: "INVALID_ANSWER" } });
     expect(JSON.stringify(response.body)).not.toContain("internal detail");
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    // Pilot 13b: an expected 400 is warn-level with a constant label, never error-level,
+    // and the reason (which echoes the submitted answer) is never logged.
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(consoleWarnSpy.mock.calls)).not.toContain("internal detail");
 
     consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   it("QUESTION_VERSION_CONSISTENCY_VIOLATION: 500 INTERNAL_ERROR, logged as a data-consistency fault", async () => {

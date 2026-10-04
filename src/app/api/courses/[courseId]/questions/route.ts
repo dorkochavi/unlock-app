@@ -29,6 +29,7 @@ import { PostgresQuestionRepository } from "@/infrastructure/postgres/question-a
 import { PostgresTopicRepository } from "@/infrastructure/postgres/topic-repository";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function GET(
   _request: Request,
@@ -54,7 +55,7 @@ export async function GET(
 
     return NextResponse.json(body, { status });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/questions: unexpected route-level error", error);
+    logUnexpectedError("GET /api/courses/:courseId/questions: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }
@@ -83,7 +84,7 @@ export async function POST(
 
     return NextResponse.json(body, { status });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/questions: unexpected route-level error", error);
+    logUnexpectedError("POST /api/courses/:courseId/questions: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

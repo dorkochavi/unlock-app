@@ -12,6 +12,7 @@ import { PostgresCourseAuthorRepository } from "./course-author-repository";
 import { PostgresCourseMembershipRepository } from "./course-membership-repository";
 import { PostgresCourseRepository } from "./course-repository";
 import { PostgresQuestionRepository } from "./question-authoring-repository";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export class PostgresQuestionUnitOfWork implements QuestionUnitOfWork {
   constructor(private readonly connectionProvider: ConnectionProvider) {}
@@ -38,10 +39,7 @@ export class PostgresQuestionUnitOfWork implements QuestionUnitOfWork {
           // Same discipline as `PostgresCourseUnitOfWork`: a failed
           // ROLLBACK must never replace/mask the original error, which is
           // what the caller actually needs to see.
-          console.error(
-            "PostgresQuestionUnitOfWork: ROLLBACK itself failed after a transaction error",
-            rollbackError,
-          );
+          logUnexpectedError("PostgresQuestionUnitOfWork: ROLLBACK itself failed after a transaction error", rollbackError);
         }
         throw error;
       }

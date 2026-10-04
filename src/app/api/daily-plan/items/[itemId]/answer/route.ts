@@ -42,6 +42,7 @@ import { createSupabaseServerClient } from "@/infrastructure/supabase/server-cli
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
 
 import { handleSubmitDailyPlanItemAnswer } from "./handle-submit-daily-plan-item-answer";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function POST(
   request: Request,
@@ -58,10 +59,7 @@ export async function POST(
     try {
       authResult = await requireAuthenticatedUser(supabase);
     } catch (error) {
-      console.error(
-        "POST /api/daily-plan/items/:itemId/answer: unexpected error during authentication",
-        error,
-      );
+      logUnexpectedError("POST /api/daily-plan/items/:itemId/answer: unexpected error during authentication", error);
       return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
     }
     if (authResult.outcome === "UNAUTHENTICATED") {
@@ -118,10 +116,7 @@ export async function POST(
 
     return NextResponse.json(responseBody, { status });
   } catch (error) {
-    console.error(
-      "POST /api/daily-plan/items/:itemId/answer: unexpected route-level error",
-      error,
-    );
+    logUnexpectedError("POST /api/daily-plan/items/:itemId/answer: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

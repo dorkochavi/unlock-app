@@ -19,6 +19,7 @@ import { toTopicDto } from "../../topic-dto";
 
 import type { ArchiveTopicResult } from "@/application/topic/archive-topic";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleArchiveTopicDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -51,10 +52,7 @@ export async function handleArchiveTopic(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "POST /api/courses/:courseId/topics/:topicId/archive: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("POST /api/courses/:courseId/topics/:topicId/archive: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -74,10 +72,7 @@ export async function handleArchiveTopic(
       topicId: deps.topicId,
     });
   } catch (error) {
-    console.error(
-      "POST /api/courses/:courseId/topics/:topicId/archive: unexpected error during archive",
-      error,
-    );
+    logUnexpectedError("POST /api/courses/:courseId/topics/:topicId/archive: unexpected error during archive", error);
     return internalErrorResponse();
   }
 
@@ -93,10 +88,8 @@ export async function handleArchiveTopic(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/courses/:courseId/topics/:topicId/archive: unhandled ArchiveTopicResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/topics/:topicId/archive: unhandled ArchiveTopicResult outcome");
       return internalErrorResponse();
     }
   }

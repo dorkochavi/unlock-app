@@ -25,6 +25,7 @@ import { toTopicDto } from "./topic-dto";
 
 import type { CreateTopicResult } from "@/application/topic/create-topic";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleCreateTopicDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -53,7 +54,7 @@ export async function handleCreateTopic(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("POST /api/courses/:courseId/topics: unexpected error during authentication", error);
+    logUnexpectedError("POST /api/courses/:courseId/topics: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -79,7 +80,7 @@ export async function handleCreateTopic(
   try {
     result = await deps.create({ actorUserId: authResult.userId, courseId: deps.courseId, name });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/topics: unexpected error during creation", error);
+    logUnexpectedError("POST /api/courses/:courseId/topics: unexpected error during creation", error);
     return internalErrorResponse();
   }
 
@@ -95,7 +96,8 @@ export async function handleCreateTopic(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error("POST /api/courses/:courseId/topics: unhandled CreateTopicResult outcome", exhaustiveCheck);
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/topics: unhandled CreateTopicResult outcome");
       return internalErrorResponse();
     }
   }

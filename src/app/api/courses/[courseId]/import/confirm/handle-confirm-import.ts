@@ -47,6 +47,7 @@ import { MAX_IMPORT_SOURCE_LENGTH } from "../limits";
 import type { ConfirmImportResult } from "@/application/import/confirm-import";
 import type { ImportSourceFormat } from "@/application/import/preview-import";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleConfirmImportDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -97,10 +98,7 @@ export async function handleConfirmImport(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "POST /api/courses/:courseId/import/confirm: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("POST /api/courses/:courseId/import/confirm: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -130,7 +128,7 @@ export async function handleConfirmImport(
       sourceText: parsedBody.sourceText,
     });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/import/confirm: unexpected error during confirm", error);
+    logUnexpectedError("POST /api/courses/:courseId/import/confirm: unexpected error during confirm", error);
     return internalErrorResponse();
   }
 
@@ -171,10 +169,8 @@ export async function handleConfirmImport(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/courses/:courseId/import/confirm: unhandled ConfirmImportResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/import/confirm: unhandled ConfirmImportResult outcome");
       return internalErrorResponse();
     }
   }

@@ -44,6 +44,7 @@ import type {
   SetUserTimezoneResult,
 } from "../../../../application/user/set-user-timezone";
 import type { RequireAuthenticatedUserResult } from "../../../../infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleSetUserTimezoneDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -76,7 +77,7 @@ export async function handleSetUserTimezone(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("POST /api/user/timezone: unexpected error during authentication", error);
+    logUnexpectedError("POST /api/user/timezone: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -95,7 +96,7 @@ export async function handleSetUserTimezone(
       timezone: deps.timezone,
     });
   } catch (error) {
-    console.error("POST /api/user/timezone: unexpected error during persistence", error);
+    logUnexpectedError("POST /api/user/timezone: unexpected error during persistence", error);
     return internalErrorResponse();
   }
 
@@ -107,11 +108,8 @@ export async function handleSetUserTimezone(
       return invalidTimezoneResponse();
 
     case "USER_NOT_FOUND":
-      console.error(
-        `POST /api/user/timezone: USER_NOT_FOUND for an authenticated userId ` +
-          `(${authResult.userId}) — the auth.users -> public.users provisioning ` +
-          `trigger should make this unreachable; this is a server-side ` +
-          `data-consistency fault, not a client error.`,
+      logUnexpectedError(
+        "POST /api/user/timezone: USER_NOT_FOUND for an authenticated user — the auth.users -> public.users provisioning trigger should make this unreachable (data-consistency fault; learner id deliberately not logged)",
       );
       return {
         status: 500,
@@ -120,10 +118,8 @@ export async function handleSetUserTimezone(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/user/timezone: unhandled SetUserTimezoneResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/user/timezone: unhandled SetUserTimezoneResult outcome");
       return internalErrorResponse();
     }
   }

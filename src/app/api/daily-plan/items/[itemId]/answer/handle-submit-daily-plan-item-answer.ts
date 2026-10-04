@@ -77,6 +77,7 @@
 import type { SubmitDailyPlanItemAnswerResult } from "../../../../../../application/dailyPlan/submit-daily-plan-item-answer";
 import type { ConfidenceLevel, SelectedAnswer } from "../../../../../../domain/learning/types";
 import type { RequireAuthenticatedUserResult } from "../../../../../../infrastructure/supabase/require-authenticated-user";
+import { logClientRejection, logUnexpectedError } from "@/lib/ops-log";
 
 const VALID_CONFIDENCE_LEVELS: readonly ConfidenceLevel[] = ["low", "medium", "high"];
 
@@ -169,10 +170,7 @@ export async function handleSubmitDailyPlanItemAnswer(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "POST /api/daily-plan/items/:itemId/answer: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("POST /api/daily-plan/items/:itemId/answer: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -217,10 +215,7 @@ export async function handleSubmitDailyPlanItemAnswer(
       answeredAt: deps.now,
     });
   } catch (error) {
-    console.error(
-      "POST /api/daily-plan/items/:itemId/answer: unexpected error during submission",
-      error,
-    );
+    logUnexpectedError("POST /api/daily-plan/items/:itemId/answer: unexpected error during submission", error);
     return internalErrorResponse();
   }
 
@@ -239,9 +234,8 @@ export async function handleSubmitDailyPlanItemAnswer(
       return { status: 409, body: { error: { code: "SUBMISSION_ID_REUSED" } } };
 
     case "INVALID_SELECTED_ANSWER":
-      console.error(
-        `POST /api/daily-plan/items/:itemId/answer: INVALID_SELECTED_ANSWER — ${result.reason}`,
-      );
+      // Constant label only: `result.reason` echoes the submitted answer.
+      logClientRejection("POST /api/daily-plan/items/:itemId/answer: INVALID_SELECTED_ANSWER");
       return { status: 400, body: { error: { code: "INVALID_ANSWER" } } };
 
     case "QUESTION_VERSION_CONSISTENCY_VIOLATION":
@@ -268,10 +262,8 @@ export async function handleSubmitDailyPlanItemAnswer(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/daily-plan/items/:itemId/answer: unhandled SubmitDailyPlanItemAnswerResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/daily-plan/items/:itemId/answer: unhandled SubmitDailyPlanItemAnswerResult outcome");
       return internalErrorResponse();
     }
   }

@@ -26,6 +26,7 @@ import { isValidDateOnly } from "@/lib/date-only";
 
 import type { UpdateCourseMetadataResult } from "@/application/course/update-course-metadata";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleUpdateCourseMetadataDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -75,7 +76,7 @@ export async function handleUpdateCourseMetadata(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("PATCH /api/courses/:courseId/manage: unexpected error during authentication", error);
+    logUnexpectedError("PATCH /api/courses/:courseId/manage: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -110,7 +111,7 @@ export async function handleUpdateCourseMetadata(
       ...(examDate !== ABSENT ? { examDate } : {}),
     });
   } catch (error) {
-    console.error("PATCH /api/courses/:courseId/manage: unexpected error during update", error);
+    logUnexpectedError("PATCH /api/courses/:courseId/manage: unexpected error during update", error);
     return internalErrorResponse();
   }
 
@@ -129,10 +130,8 @@ export async function handleUpdateCourseMetadata(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "PATCH /api/courses/:courseId/manage: unhandled UpdateCourseMetadataResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("PATCH /api/courses/:courseId/manage: unhandled UpdateCourseMetadataResult outcome");
       return internalErrorResponse();
     }
   }

@@ -14,6 +14,7 @@ import { PostgresCourseRepository } from "@/infrastructure/postgres/course-repos
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 
 import { handleGetCourseSummary } from "./handle-get-course-summary";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function GET(
   _request: Request,
@@ -32,7 +33,7 @@ export async function GET(
 
     return NextResponse.json(body, { status });
   } catch (error) {
-    console.error("GET /api/courses/:courseId: unexpected route-level error", error);
+    logUnexpectedError("GET /api/courses/:courseId: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

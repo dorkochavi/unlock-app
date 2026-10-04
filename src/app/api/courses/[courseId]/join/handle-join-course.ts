@@ -34,6 +34,7 @@
 import { isUuid } from "../../../../../lib/uuid";
 import type { JoinCourseResult } from "../../../../../application/course/join-course";
 import type { RequireAuthenticatedUserResult } from "../../../../../infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleJoinCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -61,7 +62,7 @@ export async function handleJoinCourse(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("POST /api/courses/:courseId/join: unexpected error during authentication", error);
+    logUnexpectedError("POST /api/courses/:courseId/join: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -77,7 +78,7 @@ export async function handleJoinCourse(
   try {
     result = await deps.join({ actorUserId: authResult.userId, courseId: deps.courseId });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/join: unexpected error during join", error);
+    logUnexpectedError("POST /api/courses/:courseId/join: unexpected error during join", error);
     return internalErrorResponse();
   }
 
@@ -102,10 +103,8 @@ export async function handleJoinCourse(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/courses/:courseId/join: unhandled JoinCourseResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/join: unhandled JoinCourseResult outcome");
       return internalErrorResponse();
     }
   }

@@ -23,6 +23,7 @@
 import { isUuid } from "../../../../../lib/uuid";
 import type { GetCourseContextForLearnerResult } from "../../../../../application/course/get-course-context-for-learner";
 import type { RequireAuthenticatedUserResult } from "../../../../../infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleGetCourseContextDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -53,10 +54,7 @@ export async function handleGetCourseContext(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "GET /api/courses/:courseId/context: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("GET /api/courses/:courseId/context: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -72,7 +70,7 @@ export async function handleGetCourseContext(
   try {
     result = await deps.getContext({ actorUserId: authResult.userId, courseId: deps.courseId });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/context: unexpected error", error);
+    logUnexpectedError("GET /api/courses/:courseId/context: unexpected error", error);
     return internalErrorResponse();
   }
 
@@ -105,10 +103,8 @@ export async function handleGetCourseContext(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "GET /api/courses/:courseId/context: unhandled outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("GET /api/courses/:courseId/context: unhandled outcome");
       return internalErrorResponse();
     }
   }

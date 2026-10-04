@@ -74,6 +74,7 @@ import type {
 } from "../../../../application/dailyPlan/get-or-create-daily-plan-for-today";
 import type { LearnerQuestionContent } from "../../../../application/learning/ports";
 import type { RequireAuthenticatedUserResult } from "../../../../infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleGetDailyPlanTodayDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -107,7 +108,7 @@ export async function handleGetDailyPlanToday(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("GET /api/daily-plan/today: unexpected error during authentication", error);
+    logUnexpectedError("GET /api/daily-plan/today: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -119,7 +120,7 @@ export async function handleGetDailyPlanToday(
   try {
     result = await deps.generateDailyPlan({ userId: authResult.userId, now: deps.now });
   } catch (error) {
-    console.error("GET /api/daily-plan/today: unexpected error during generation", error);
+    logUnexpectedError("GET /api/daily-plan/today: unexpected error during generation", error);
     return internalErrorResponse();
   }
 
@@ -137,10 +138,7 @@ export async function handleGetDailyPlanToday(
       try {
         content = await deps.loadLearnerQuestionContent(uniqueVersionIds);
       } catch (error) {
-        console.error(
-          "GET /api/daily-plan/today: unexpected error loading learner-facing question content",
-          error,
-        );
+        logUnexpectedError("GET /api/daily-plan/today: unexpected error loading learner-facing question content", error);
         return internalErrorResponse();
       }
 
@@ -168,11 +166,8 @@ export async function handleGetDailyPlanToday(
       return { status: 422, body: { error: { code: "TIMEZONE_NOT_SET" } } };
 
     case "USER_NOT_FOUND":
-      console.error(
-        `GET /api/daily-plan/today: USER_NOT_FOUND for an authenticated userId ` +
-          `(${authResult.userId}) — the auth.users -> public.users provisioning ` +
-          `trigger should make this unreachable; this is a server-side ` +
-          `data-consistency fault, not a client error.`,
+      logUnexpectedError(
+        "GET /api/daily-plan/today: USER_NOT_FOUND for an authenticated user — the auth.users -> public.users provisioning trigger should make this unreachable (data-consistency fault; learner id deliberately not logged)",
       );
       return {
         status: 500,
@@ -181,10 +176,8 @@ export async function handleGetDailyPlanToday(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "GET /api/daily-plan/today: unhandled GetOrCreateDailyPlanForTodayResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("GET /api/daily-plan/today: unhandled GetOrCreateDailyPlanForTodayResult outcome");
       return internalErrorResponse();
     }
   }

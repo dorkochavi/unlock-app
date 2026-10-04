@@ -26,6 +26,7 @@ import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-auth
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
 import { handleGetPractice } from "./handle-get-practice";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function GET(
   request: Request,
@@ -54,7 +55,7 @@ export async function GET(
 
     return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/practice: unexpected route-level error", error);
+    logUnexpectedError("GET /api/courses/:courseId/practice: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

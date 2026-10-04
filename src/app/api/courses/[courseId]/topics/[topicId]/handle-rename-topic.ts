@@ -23,6 +23,7 @@ import { toTopicDto } from "../topic-dto";
 
 import type { RenameTopicResult } from "@/application/topic/rename-topic";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleRenameTopicDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -61,10 +62,7 @@ export async function handleRenameTopic(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "PATCH /api/courses/:courseId/topics/:topicId: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("PATCH /api/courses/:courseId/topics/:topicId: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -95,7 +93,7 @@ export async function handleRenameTopic(
       name,
     });
   } catch (error) {
-    console.error("PATCH /api/courses/:courseId/topics/:topicId: unexpected error during rename", error);
+    logUnexpectedError("PATCH /api/courses/:courseId/topics/:topicId: unexpected error during rename", error);
     return internalErrorResponse();
   }
 
@@ -114,10 +112,8 @@ export async function handleRenameTopic(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "PATCH /api/courses/:courseId/topics/:topicId: unhandled RenameTopicResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("PATCH /api/courses/:courseId/topics/:topicId: unhandled RenameTopicResult outcome");
       return internalErrorResponse();
     }
   }

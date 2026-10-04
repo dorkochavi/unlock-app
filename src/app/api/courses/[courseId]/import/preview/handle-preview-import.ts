@@ -45,6 +45,7 @@ import { toPreviewImportDto } from "./preview-import-dto";
 
 import type { ImportSourceFormat, PreviewImportResult } from "@/application/import/preview-import";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandlePreviewImportDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -95,10 +96,7 @@ export async function handlePreviewImport(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "POST /api/courses/:courseId/import/preview: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("POST /api/courses/:courseId/import/preview: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -128,7 +126,7 @@ export async function handlePreviewImport(
       sourceText: parsedBody.sourceText,
     });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/import/preview: unexpected error during preview", error);
+    logUnexpectedError("POST /api/courses/:courseId/import/preview: unexpected error during preview", error);
     return internalErrorResponse();
   }
 
@@ -150,10 +148,8 @@ export async function handlePreviewImport(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/courses/:courseId/import/preview: unhandled PreviewImportResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/import/preview: unhandled PreviewImportResult outcome");
       return internalErrorResponse();
     }
   }

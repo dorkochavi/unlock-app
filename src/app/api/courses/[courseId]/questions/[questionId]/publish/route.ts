@@ -30,6 +30,7 @@ import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { PostgresQuestionUnitOfWork } from "@/infrastructure/postgres/postgres-question-unit-of-work";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function POST(
   _request: Request,
@@ -52,10 +53,7 @@ export async function POST(
 
     return NextResponse.json(body, { status });
   } catch (error) {
-    console.error(
-      "POST /api/courses/:courseId/questions/:questionId/publish: unexpected route-level error",
-      error,
-    );
+    logUnexpectedError("POST /api/courses/:courseId/questions/:questionId/publish: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

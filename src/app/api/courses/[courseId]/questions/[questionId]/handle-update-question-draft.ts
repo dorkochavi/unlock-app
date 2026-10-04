@@ -43,6 +43,7 @@ import { toQuestionAuthoringDto } from "../question-dto";
 import type { UpdateQuestionDraftResult } from "@/application/question/update-question-draft";
 import type { AnswerOption, UpdateQuestionDraftInput } from "@/application/question/ports";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleUpdateQuestionDraftDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -140,10 +141,7 @@ export async function handleUpdateQuestionDraft(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "PATCH /api/courses/:courseId/questions/:questionId: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("PATCH /api/courses/:courseId/questions/:questionId: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -169,7 +167,7 @@ export async function handleUpdateQuestionDraft(
       ...input,
     });
   } catch (error) {
-    console.error("PATCH /api/courses/:courseId/questions/:questionId: unexpected error during update", error);
+    logUnexpectedError("PATCH /api/courses/:courseId/questions/:questionId: unexpected error during update", error);
     return internalErrorResponse();
   }
 
@@ -194,10 +192,8 @@ export async function handleUpdateQuestionDraft(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "PATCH /api/courses/:courseId/questions/:questionId: unhandled UpdateQuestionDraftResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("PATCH /api/courses/:courseId/questions/:questionId: unhandled UpdateQuestionDraftResult outcome");
       return internalErrorResponse();
     }
   }

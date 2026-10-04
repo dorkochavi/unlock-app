@@ -23,6 +23,7 @@ import { toQuestionAuthoringDto, toTopicSummaryDto } from "./question-dto";
 
 import type { ListQuestionsForCourseResult } from "@/application/question/list-questions-for-course";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleListQuestionsForCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -46,7 +47,7 @@ export async function handleListQuestionsForCourse(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("GET /api/courses/:courseId/questions: unexpected error during authentication", error);
+    logUnexpectedError("GET /api/courses/:courseId/questions: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -62,7 +63,7 @@ export async function handleListQuestionsForCourse(
   try {
     result = await deps.listQuestions({ actorUserId: authResult.userId, courseId: deps.courseId });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/questions: unexpected error during read", error);
+    logUnexpectedError("GET /api/courses/:courseId/questions: unexpected error during read", error);
     return internalErrorResponse();
   }
 
@@ -84,10 +85,8 @@ export async function handleListQuestionsForCourse(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "GET /api/courses/:courseId/questions: unhandled ListQuestionsForCourseResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("GET /api/courses/:courseId/questions: unhandled ListQuestionsForCourseResult outcome");
       return internalErrorResponse();
     }
   }

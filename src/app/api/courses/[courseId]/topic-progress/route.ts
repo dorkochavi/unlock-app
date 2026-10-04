@@ -27,6 +27,7 @@ import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { PostgresLearnerTopicProgressRepository } from "@/infrastructure/postgres/topic-progress-repository";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -53,7 +54,7 @@ export async function GET(
 
     return NextResponse.json(body, { status, headers: NO_STORE });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/topic-progress: unexpected route-level error", error);
+    logUnexpectedError("GET /api/courses/:courseId/topic-progress: unexpected route-level error", error);
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR" } },
       { status: 500, headers: NO_STORE },

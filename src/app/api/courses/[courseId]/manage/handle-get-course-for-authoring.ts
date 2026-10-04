@@ -22,6 +22,7 @@ import { toCourseAuthoringDto } from "../../authoring-dto";
 
 import type { GetCourseForAuthoringResult } from "@/application/course/get-course-for-authoring";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleGetCourseForAuthoringDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -48,7 +49,7 @@ export async function handleGetCourseForAuthoring(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("GET /api/courses/:courseId/manage: unexpected error during authentication", error);
+    logUnexpectedError("GET /api/courses/:courseId/manage: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -64,7 +65,7 @@ export async function handleGetCourseForAuthoring(
   try {
     result = await deps.getCourse({ actorUserId: authResult.userId, courseId: deps.courseId });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/manage: unexpected error during read", error);
+    logUnexpectedError("GET /api/courses/:courseId/manage: unexpected error during read", error);
     return internalErrorResponse();
   }
 
@@ -80,10 +81,8 @@ export async function handleGetCourseForAuthoring(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "GET /api/courses/:courseId/manage: unhandled GetCourseForAuthoringResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("GET /api/courses/:courseId/manage: unhandled GetCourseForAuthoringResult outcome");
       return internalErrorResponse();
     }
   }

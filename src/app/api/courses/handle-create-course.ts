@@ -27,6 +27,7 @@ import { isValidDateOnly } from "@/lib/date-only";
 
 import type { CreateCourseResult } from "@/application/course/create-course";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleCreateCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -65,7 +66,7 @@ export async function handleCreateCourse(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("POST /api/courses: unexpected error during authentication", error);
+    logUnexpectedError("POST /api/courses: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -92,7 +93,7 @@ export async function handleCreateCourse(
   try {
     result = await deps.create({ actorUserId: authResult.userId, title, examDate });
   } catch (error) {
-    console.error("POST /api/courses: unexpected error during creation", error);
+    logUnexpectedError("POST /api/courses: unexpected error during creation", error);
     return internalErrorResponse();
   }
 
@@ -105,7 +106,8 @@ export async function handleCreateCourse(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error("POST /api/courses: unhandled CreateCourseResult outcome", exhaustiveCheck);
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses: unhandled CreateCourseResult outcome");
       return internalErrorResponse();
     }
   }

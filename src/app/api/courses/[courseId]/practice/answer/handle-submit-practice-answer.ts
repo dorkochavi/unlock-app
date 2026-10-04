@@ -52,6 +52,7 @@ import type { SubmitPracticeAnswerResult } from "../../../../../../application/p
 import type { ConfidenceLevel, SelectedAnswer } from "../../../../../../domain/learning/types";
 import { CONFIDENCE_LEVELS } from "../../../../../../domain/learning/types";
 import type { RequireAuthenticatedUserResult } from "../../../../../../infrastructure/supabase/require-authenticated-user";
+import { logClientRejection, logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleSubmitPracticeAnswerDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -122,7 +123,7 @@ export async function handleSubmitPracticeAnswer(
   try {
     authResult = await deps.authenticate();
   } catch (cause) {
-    console.error("POST /api/courses/:courseId/practice/answer: error during authentication", cause);
+    logUnexpectedError("POST /api/courses/:courseId/practice/answer: error during authentication", cause);
     return error(500, "INTERNAL_ERROR");
   }
   if (authResult.outcome === "UNAUTHENTICATED") return error(401, "UNAUTHENTICATED");
@@ -185,7 +186,7 @@ export async function handleSubmitPracticeAnswer(
       now: deps.now,
     });
   } catch (cause) {
-    console.error("POST /api/courses/:courseId/practice/answer: unexpected error", cause);
+    logUnexpectedError("POST /api/courses/:courseId/practice/answer: unexpected error", cause);
     return error(500, "INTERNAL_ERROR");
   }
 
@@ -203,9 +204,8 @@ export async function handleSubmitPracticeAnswer(
     case "TIMEZONE_NOT_SET":
       return error(422, "TIMEZONE_NOT_SET");
     case "INVALID_SELECTED_ANSWER":
-      console.error(
-        `POST /api/courses/:courseId/practice/answer: INVALID_SELECTED_ANSWER — ${result.reason}`,
-      );
+      // Constant label only: `result.reason` echoes the submitted answer.
+      logClientRejection("POST /api/courses/:courseId/practice/answer: INVALID_SELECTED_ANSWER");
       return error(400, "INVALID_ANSWER");
     case "ACCEPTED": {
       const feedback = await deps.getFeedbackContent(questionVersionId);
@@ -220,7 +220,8 @@ export async function handleSubmitPracticeAnswer(
     }
     default: {
       const exhaustiveCheck: never = result;
-      console.error("POST /api/courses/:courseId/practice/answer: unhandled outcome", exhaustiveCheck);
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/practice/answer: unhandled outcome");
       return error(500, "INTERNAL_ERROR");
     }
   }

@@ -44,6 +44,7 @@ import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-auth
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export async function POST(
   request: Request,
@@ -57,10 +58,7 @@ export async function POST(
     try {
       authResult = await requireAuthenticatedUser(supabase);
     } catch (error) {
-      console.error(
-        "POST /api/courses/:courseId/import/confirm: unexpected error during authentication",
-        error,
-      );
+      logUnexpectedError("POST /api/courses/:courseId/import/confirm: unexpected error during authentication", error);
       return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
     }
     if (authResult.outcome === "UNAUTHENTICATED") {
@@ -94,7 +92,7 @@ export async function POST(
 
     return NextResponse.json(responseBody, { status });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/import/confirm: unexpected route-level error", error);
+    logUnexpectedError("POST /api/courses/:courseId/import/confirm: unexpected route-level error", error);
     return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
   }
 }

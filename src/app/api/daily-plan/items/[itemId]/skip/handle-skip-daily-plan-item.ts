@@ -22,6 +22,7 @@
  */
 import type { SkipDailyPlanItemResult } from "../../../../../../application/dailyPlan/skip-daily-plan-item";
 import type { RequireAuthenticatedUserResult } from "../../../../../../infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleSkipDailyPlanItemDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -54,10 +55,7 @@ export async function handleSkipDailyPlanItem(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "POST /api/daily-plan/items/:itemId/skip: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("POST /api/daily-plan/items/:itemId/skip: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -73,10 +71,7 @@ export async function handleSkipDailyPlanItem(
       skippedAt: deps.now,
     });
   } catch (error) {
-    console.error(
-      "POST /api/daily-plan/items/:itemId/skip: unexpected error during skip",
-      error,
-    );
+    logUnexpectedError("POST /api/daily-plan/items/:itemId/skip: unexpected error during skip", error);
     return internalErrorResponse();
   }
 
@@ -95,10 +90,8 @@ export async function handleSkipDailyPlanItem(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/daily-plan/items/:itemId/skip: unhandled SkipDailyPlanItemResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/daily-plan/items/:itemId/skip: unhandled SkipDailyPlanItemResult outcome");
       return internalErrorResponse();
     }
   }

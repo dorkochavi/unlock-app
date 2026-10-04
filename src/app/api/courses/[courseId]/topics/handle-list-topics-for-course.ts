@@ -16,6 +16,7 @@ import { toTopicDto } from "./topic-dto";
 
 import type { ListTopicsForCourseResult } from "@/application/topic/list-topics-for-course";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleListTopicsForCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -39,7 +40,7 @@ export async function handleListTopicsForCourse(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("GET /api/courses/:courseId/topics: unexpected error during authentication", error);
+    logUnexpectedError("GET /api/courses/:courseId/topics: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -55,7 +56,7 @@ export async function handleListTopicsForCourse(
   try {
     result = await deps.listTopics({ actorUserId: authResult.userId, courseId: deps.courseId });
   } catch (error) {
-    console.error("GET /api/courses/:courseId/topics: unexpected error during read", error);
+    logUnexpectedError("GET /api/courses/:courseId/topics: unexpected error during read", error);
     return internalErrorResponse();
   }
 
@@ -68,10 +69,8 @@ export async function handleListTopicsForCourse(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "GET /api/courses/:courseId/topics: unhandled ListTopicsForCourseResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("GET /api/courses/:courseId/topics: unhandled ListTopicsForCourseResult outcome");
       return internalErrorResponse();
     }
   }

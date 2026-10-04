@@ -31,6 +31,7 @@
 import { isUuid } from "../../../../../lib/uuid";
 import type { SelectPracticeBatchResult } from "../../../../../application/practice/select-practice-batch";
 import type { RequireAuthenticatedUserResult } from "../../../../../infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 /** Client-held skipped ids; more than this is a malformed request, not silently truncated. */
 export const MAX_SKIP_IDS = 200;
@@ -75,7 +76,7 @@ export async function handleGetPractice(
   try {
     authResult = await deps.authenticate();
   } catch (cause) {
-    console.error("GET /api/courses/:courseId/practice: unexpected error during authentication", cause);
+    logUnexpectedError("GET /api/courses/:courseId/practice: unexpected error during authentication", cause);
     return error(500, "INTERNAL_ERROR");
   }
   if (authResult.outcome === "UNAUTHENTICATED") return error(401, "UNAUTHENTICATED");
@@ -97,7 +98,7 @@ export async function handleGetPractice(
       now: deps.now,
     });
   } catch (cause) {
-    console.error("GET /api/courses/:courseId/practice: unexpected error", cause);
+    logUnexpectedError("GET /api/courses/:courseId/practice: unexpected error", cause);
     return error(500, "INTERNAL_ERROR");
   }
 
@@ -126,7 +127,8 @@ export async function handleGetPractice(
       };
     default: {
       const exhaustiveCheck: never = result;
-      console.error("GET /api/courses/:courseId/practice: unhandled outcome", exhaustiveCheck);
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("GET /api/courses/:courseId/practice: unhandled outcome");
       return error(500, "INTERNAL_ERROR");
     }
   }

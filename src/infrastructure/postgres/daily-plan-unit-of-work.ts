@@ -24,6 +24,7 @@ import { PostgresDailyPlanRepository } from "./daily-plan-repository";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
 import { PostgresUserQuestionProgressRepository } from "./progress-repository";
 import { PostgresUnseenQuestionRepository } from "./unseen-question-repository";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export class PostgresDailyPlanUnitOfWork implements DailyPlanUnitOfWork {
   constructor(private readonly connectionProvider: ConnectionProvider) {}
@@ -58,10 +59,7 @@ export class PostgresDailyPlanUnitOfWork implements DailyPlanUnitOfWork {
           // one — the original `error` is what this function throws;
           // the rollback failure is surfaced (not swallowed), just not in
           // place of the real cause.
-          console.error(
-            "PostgresDailyPlanUnitOfWork: ROLLBACK itself failed after a transaction error",
-            rollbackError,
-          );
+          logUnexpectedError("PostgresDailyPlanUnitOfWork: ROLLBACK itself failed after a transaction error", rollbackError);
         }
         throw error;
       }

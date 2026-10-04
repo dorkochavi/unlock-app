@@ -18,6 +18,7 @@ import { toCourseAuthoringDto } from "../../authoring-dto";
 
 import type { ArchiveCourseResult } from "@/application/course/archive-course";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleArchiveCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -41,7 +42,7 @@ export async function handleArchiveCourse(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("POST /api/courses/:courseId/archive: unexpected error during authentication", error);
+    logUnexpectedError("POST /api/courses/:courseId/archive: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -57,7 +58,7 @@ export async function handleArchiveCourse(
   try {
     result = await deps.archive({ actorUserId: authResult.userId, courseId: deps.courseId });
   } catch (error) {
-    console.error("POST /api/courses/:courseId/archive: unexpected error during archive", error);
+    logUnexpectedError("POST /api/courses/:courseId/archive: unexpected error during archive", error);
     return internalErrorResponse();
   }
 
@@ -76,10 +77,8 @@ export async function handleArchiveCourse(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/courses/:courseId/archive: unhandled ArchiveCourseResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/archive: unhandled ArchiveCourseResult outcome");
       return internalErrorResponse();
     }
   }

@@ -13,6 +13,7 @@ import { PostgresDailyPlanRepository } from "./daily-plan-repository";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
 import { PostgresUserQuestionProgressRepository } from "./progress-repository";
 import type { TransactionExecutor } from "./sql-executor";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 /**
  * ADR-010's transaction-scoped advisory lock, keyed by `(userId,
@@ -116,10 +117,7 @@ export class PostgresUnitOfWork implements UnitOfWork {
           // framework exists yet (`docs/ARCHITECTURE.md` §24: introduce
           // one when there is a concrete operational need) — `console
           // .error` is the minimal honest fallback until then.
-          console.error(
-            "PostgresUnitOfWork: ROLLBACK itself failed after a transaction error",
-            rollbackError,
-          );
+          logUnexpectedError("PostgresUnitOfWork: ROLLBACK itself failed after a transaction error", rollbackError);
         }
         throw error;
       }

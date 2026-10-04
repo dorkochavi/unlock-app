@@ -41,6 +41,7 @@ import { COURSE_JOIN_POLICIES } from "@/domain/course/types";
 import type { SetCourseJoinPolicyResult } from "@/application/course/set-course-join-policy";
 import type { CourseJoinPolicy } from "@/domain/course/types";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleSetCourseJoinPolicyDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -81,7 +82,7 @@ export async function handleSetCourseJoinPolicy(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("PATCH /api/courses/:courseId/join-policy: unexpected error during authentication", error);
+    logUnexpectedError("PATCH /api/courses/:courseId/join-policy: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -111,7 +112,7 @@ export async function handleSetCourseJoinPolicy(
       joinPolicy,
     });
   } catch (error) {
-    console.error("PATCH /api/courses/:courseId/join-policy: unexpected error during update", error);
+    logUnexpectedError("PATCH /api/courses/:courseId/join-policy: unexpected error during update", error);
     return internalErrorResponse();
   }
 
@@ -127,10 +128,8 @@ export async function handleSetCourseJoinPolicy(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "PATCH /api/courses/:courseId/join-policy: unhandled SetCourseJoinPolicyResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("PATCH /api/courses/:courseId/join-policy: unhandled SetCourseJoinPolicyResult outcome");
       return internalErrorResponse();
     }
   }

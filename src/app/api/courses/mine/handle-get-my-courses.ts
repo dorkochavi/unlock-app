@@ -13,6 +13,7 @@
  */
 import type { MyCourseEntry } from "../../../../application/course/list-my-courses";
 import type { RequireAuthenticatedUserResult } from "../../../../infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleGetMyCoursesDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -35,7 +36,7 @@ export async function handleGetMyCourses(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error("GET /api/courses/mine: unexpected error during authentication", error);
+    logUnexpectedError("GET /api/courses/mine: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -47,7 +48,7 @@ export async function handleGetMyCourses(
   try {
     courses = await deps.listCourses(authResult.userId);
   } catch (error) {
-    console.error("GET /api/courses/mine: unexpected error while listing courses", error);
+    logUnexpectedError("GET /api/courses/mine: unexpected error while listing courses", error);
     return internalErrorResponse();
   }
 

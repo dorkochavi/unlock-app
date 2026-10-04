@@ -19,6 +19,7 @@
  */
 import { isUuid } from "../../../../lib/uuid";
 import type { CourseSummary } from "../../../../application/course/ports";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandleGetCourseSummaryDependencies {
   courseId: string;
@@ -41,7 +42,7 @@ export async function handleGetCourseSummary(
   try {
     summary = await deps.getSummary(deps.courseId);
   } catch (error) {
-    console.error("GET /api/courses/:courseId: unexpected error", error);
+    logUnexpectedError("GET /api/courses/:courseId: unexpected error", error);
     return { status: 500, body: { error: { code: "INTERNAL_ERROR" } } };
   }
 

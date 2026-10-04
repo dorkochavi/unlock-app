@@ -30,6 +30,7 @@ import { toQuestionAuthoringDto } from "../../question-dto";
 
 import type { PublishQuestionResult } from "@/application/question/publish-question";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
+import { logUnexpectedError } from "@/lib/ops-log";
 
 export interface HandlePublishQuestionDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -60,10 +61,7 @@ export async function handlePublishQuestion(
   try {
     authResult = await deps.authenticate();
   } catch (error) {
-    console.error(
-      "POST /api/courses/:courseId/questions/:questionId/publish: unexpected error during authentication",
-      error,
-    );
+    logUnexpectedError("POST /api/courses/:courseId/questions/:questionId/publish: unexpected error during authentication", error);
     return internalErrorResponse();
   }
 
@@ -83,10 +81,7 @@ export async function handlePublishQuestion(
       questionId: deps.questionId,
     });
   } catch (error) {
-    console.error(
-      "POST /api/courses/:courseId/questions/:questionId/publish: unexpected error during publish",
-      error,
-    );
+    logUnexpectedError("POST /api/courses/:courseId/questions/:questionId/publish: unexpected error during publish", error);
     return internalErrorResponse();
   }
 
@@ -111,10 +106,8 @@ export async function handlePublishQuestion(
 
     default: {
       const exhaustiveCheck: never = result;
-      console.error(
-        "POST /api/courses/:courseId/questions/:questionId/publish: unhandled PublishQuestionResult outcome",
-        exhaustiveCheck,
-      );
+      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
+      logUnexpectedError("POST /api/courses/:courseId/questions/:questionId/publish: unhandled PublishQuestionResult outcome");
       return internalErrorResponse();
     }
   }
