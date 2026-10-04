@@ -16,7 +16,7 @@ import { toTopicDto } from "./topic-dto";
 
 import type { ListTopicsForCourseResult } from "@/application/topic/list-topics-for-course";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleListTopicsForCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -69,8 +69,7 @@ export async function handleListTopicsForCourse(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("GET /api/courses/:courseId/topics: unhandled ListTopicsForCourseResult outcome");
+      logUnhandledOutcome("GET /api/courses/:courseId/topics: unhandled ListTopicsForCourseResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

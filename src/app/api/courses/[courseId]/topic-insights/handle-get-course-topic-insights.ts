@@ -21,7 +21,7 @@ import { isUuid } from "../../../../../lib/uuid";
 
 import type { GetCourseTopicInsightsResult } from "@/application/insights/get-course-topic-insights";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleGetCourseTopicInsightsDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -98,8 +98,7 @@ export async function handleGetCourseTopicInsights(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("GET /api/courses/:courseId/topic-insights: unhandled GetCourseTopicInsightsResult outcome");
+      logUnhandledOutcome("GET /api/courses/:courseId/topic-insights: unhandled GetCourseTopicInsightsResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

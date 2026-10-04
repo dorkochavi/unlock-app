@@ -31,7 +31,7 @@
 import { isUuid } from "../../../../../lib/uuid";
 import type { SelectPracticeBatchResult } from "../../../../../application/practice/select-practice-batch";
 import type { RequireAuthenticatedUserResult } from "../../../../../infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 /** Client-held skipped ids; more than this is a malformed request, not silently truncated. */
 export const MAX_SKIP_IDS = 200;
@@ -127,8 +127,7 @@ export async function handleGetPractice(
       };
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("GET /api/courses/:courseId/practice: unhandled outcome");
+      logUnhandledOutcome("GET /api/courses/:courseId/practice: unhandled outcome", exhaustiveCheck);
       return error(500, "INTERNAL_ERROR");
     }
   }

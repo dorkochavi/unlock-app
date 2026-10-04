@@ -2,11 +2,13 @@
 -- READ-ONLY, AGGREGATE-ONLY. Derived from authoritative records (FUB-023); no event table, no new data.
 -- Every statement returns counts / buckets only: no user_id, email, name, answer or question text column.
 -- Run by a human operator, read-only, e.g. in the Supabase SQL editor or via psql against a restored copy.
--- Day buckets are UTC (a reporting convenience; learner-local day is a DailyPlan concept, not used here).
+-- Day buckets are UTC BY DESIGN (a reporting convenience; the learner-local day is a DailyPlan concept and is not
+-- used here), so a late-evening local action can fall on the next UTC day.
 -- Sections are separated by "-- @query <name>" markers (the schema test splits on them).
 
 -- @query joins_per_day
--- Invite -> join: learners joined per course per day (LEARNER role only).
+-- Invite -> join: CURRENT (non-revoked) LEARNER memberships by UTC join day and course.
+-- NOT a historical join-event count: a learner who joined and was later revoked is excluded from the day they joined.
 select date_trunc('day', joined_at at time zone 'UTC')::date as day_utc,
        course_id,
        count(*)::int as learners_joined
@@ -46,6 +48,8 @@ order by 1, 2;
 
 -- @query repeat_behavior_last_7_days
 -- Pilot signal "completes Today on >= 3 distinct days in a week": a single count, no learner rows.
+-- UTC days; anchored to now(), so the result depends on when it runs (re-running on a restored copy later gives a
+-- different answer). Counts COMPLETED items only (skips are not completions).
 select count(*)::int as learners_with_3_plus_active_days
 from (
   select user_id

@@ -13,7 +13,7 @@ OQ-039 and does not declare any item READY. Gates stay owned by `docs/PILOT_READ
 | Item | Meets-the-minimum approach | Engineering state | Open (human) |
 | --- | --- | --- | --- |
 | 13(a) | Derive from authoritative records with read-only aggregate SQL (`scripts/pilot-evidence-aggregates.sql`); Vercel request log for "was Today opened" if retained | IMPLEMENTED + tested (queries valid on the migrated schema; identity-free shape) | Accept "derivation + Runtime Logs" as sufficient, or require a `today_opened` observation (FUB-023 / OQ-026) |
-| 13(b) | Vercel Runtime Logs (status per request) + sanitized error-level lines for every unexpected fault, operated by a named person per §3 | IMPLEMENTED + tested (`src/lib/ops-log.ts`; all 5xx paths sanitized; expected 4xx not error-level) | Who watches; Vercel plan/log retention (checklist V2) |
+| 13(b) | Vercel Runtime Logs (status per request) + sanitized error-level lines for every unexpected fault, operated by a named person per §3 | IMPLEMENTED + tested (`src/lib/ops-log.ts`; every unexpected-fault log in API handlers and UoW rollback paths goes through the sanitizer, with no raw console.error left in production code except inside it; expected 4xx not error-level) | Who watches; Vercel plan/log retention (checklist V2) |
 
 Hypotheses tested: **H1 confirmed** (every handler already logged unexpected faults with a constant route label; the
 real gap was *what* was logged, not *whether*). **H2 confirmed** (authoritative records already answer the funnel; no
@@ -64,13 +64,13 @@ OQ-039-dependent (§4).
 
 | Class | Fields |
 | --- | --- |
-| SAFE_NOW | constant route label; HTTP status; outcome code; error class name; SQLSTATE / Node error code; constraint, table, column names; bounded (≤300 chars) single-line message of **application** errors (not database, parse or Node-system-code errors); server-side `questionVersionId` in two consistency-fault lines (content id, not learner data — a deliberate, documented exception to constant-label-only); ≤8 stack frames (≤200 chars each); Vercel timestamp and request id; course ids and counts in the aggregate SQL |
+| SAFE_NOW | constant route label; HTTP status; outcome code; error class name; SQLSTATE / Node error code; constraint, table, column names; bounded (≤300 chars) single-line message of **application** errors (not database, parse or Node-system-code errors); (consistency-fault log lines are now constant text with no ids); ≤8 stack frames (≤200 chars each); Vercel timestamp and request id; course ids and counts in the aggregate SQL |
 | REQUIRES_OQ039_DECISION | sharing/exporting small-cohort aggregates; any persisted event store carrying a learner id (also OQ-026); log retention/deletion promises to learners |
 | FORBIDDEN_FOR_PILOT_MINIMUM | credentials, cookies, tokens, connection strings; email, name; selected answers; request bodies; question/option/explanation or course text; DB `detail` / `where` / `hint` / `query` / `parameters`; raw error objects and `cause` chains; text of thrown primitives; `message` of PostgreSQL (SQLSTATE), Node-system-code (`ECONNREFUSED`…; host/port) and `SyntaxError` errors; learner ids (the two provisioning-fault logs no longer carry `userId`) |
 
-Known residual (security review, accepted): messages of *application* errors are logged as-is (bounded). A few domain errors interpolate values (e.g. `exam-urgency.ts`); none was found to be request-derived, and the one that echoes a submitted option id (`InvalidSelectedAnswerError`) is mapped to a 400 before any logging.
+Known residual (accepted, narrow): messages of *application* errors are logged as-is (bounded, single-line). Thrown application messages no longer interpolate learner ids (`submit-answer.ts`); the remaining interpolations are non-learner content/record ids (`questionId`/`courseId` in `generate-daily-plan-for-resolved-inputs.ts` consistency faults, `dailyPlanItemId` in one `submit-answer.ts` fault — the item id is already in the request path in Vercel logs). This is the only identifier exception; it is not broadened, and "no identifier can ever appear in a log" is NOT claimed. A few domain errors interpolate values (e.g. `exam-urgency.ts`); none was found to be request-derived, and the one that echoes a submitted option id (`InvalidSelectedAnswerError`) is mapped to a 400 before any logging.
 
-Mechanics (`src/lib/ops-log.ts`): allow-list summary only; logging never throws (falls back to the label); control characters/newlines collapsed (no log injection);
+Mechanics (`src/lib/ops-log.ts`): allow-list summary only; stack frames come only from the frame-shaped contiguous tail after the header (message text cannot pass as a frame; regression-tested); unhandled-outcome faults log only a fixed UPPER_SNAKE `kind`/`outcome` value (`logUnhandledOutcome`); logging never throws (falls back to the label); control characters/newlines collapsed (no log injection);
 every field length-bounded; non-object throws reduced to a type tag.
 
 ## 5. Human dashboard checklist (for Dor; no secrets — report values/categories only)
@@ -98,7 +98,7 @@ what are learners told (PILOT_READINESS 13d).
 learner-facing export or deletion path (none of the 26 API routes provide one); instructors see only banded aggregate
 insights with a ≥5-responder disclosure gate (ADR-019/Run 009); backups are encrypted FULL copies held off-device by
 the owner (`docs/BACKUP_DR_POLICY.md`), so any deletion promise must state how backups are treated. After this Run,
-application logs contain no learner content and no learner id.
+application logs contain no learner content and, by construction and tests, no learner id in the sanitizer paths and no learner id in the handler-level messages; application-error messages are bounded text with the narrow non-learner id exception in section 4.
 
 **What the Pilot minimum needs:** one short learner-facing statement of purpose, data held, who can see what, and who to
 ask; and one internal statement of who the data controller is. Nothing technical blocks either.

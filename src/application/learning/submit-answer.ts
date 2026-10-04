@@ -363,7 +363,7 @@ async function handleExistingAttempt(
     // (there is no longer a "recorded but never folded" state this design
     // can produce). Surfaced as an unexpected error.
     throw new Error(
-      `submitAnswer: Attempt ${existingAttempt.id} exists but no UserQuestionProgress row was found for (${command.userId}, ${command.questionId}) — data inconsistency`,
+      "submitAnswer: an Attempt exists but no UserQuestionProgress row was found for its (user, question) — data inconsistency",
     );
   }
   return {
@@ -697,7 +697,7 @@ async function rebuildProgress(
     // at least one entry. Surfaced loudly rather than silently, in case
     // that invariant is ever broken by a future change.
     throw new Error(
-      `submitAnswer: rebuild produced no progress for (${command.userId}, ${command.questionId}) despite at least one Attempt existing`,
+      "submitAnswer: rebuild produced no progress despite at least one Attempt existing",
     );
   }
   return rebuilt;

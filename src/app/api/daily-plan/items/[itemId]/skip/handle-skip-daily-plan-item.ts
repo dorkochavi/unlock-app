@@ -22,7 +22,7 @@
  */
 import type { SkipDailyPlanItemResult } from "../../../../../../application/dailyPlan/skip-daily-plan-item";
 import type { RequireAuthenticatedUserResult } from "../../../../../../infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleSkipDailyPlanItemDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -90,8 +90,7 @@ export async function handleSkipDailyPlanItem(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/daily-plan/items/:itemId/skip: unhandled SkipDailyPlanItemResult outcome");
+      logUnhandledOutcome("POST /api/daily-plan/items/:itemId/skip: unhandled SkipDailyPlanItemResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

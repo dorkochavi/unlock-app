@@ -25,7 +25,7 @@ import { toTopicDto } from "./topic-dto";
 
 import type { CreateTopicResult } from "@/application/topic/create-topic";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleCreateTopicDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -96,8 +96,7 @@ export async function handleCreateTopic(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/courses/:courseId/topics: unhandled CreateTopicResult outcome");
+      logUnhandledOutcome("POST /api/courses/:courseId/topics: unhandled CreateTopicResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

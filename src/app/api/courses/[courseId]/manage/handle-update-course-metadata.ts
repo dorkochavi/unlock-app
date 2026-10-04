@@ -26,7 +26,7 @@ import { isValidDateOnly } from "@/lib/date-only";
 
 import type { UpdateCourseMetadataResult } from "@/application/course/update-course-metadata";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleUpdateCourseMetadataDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -130,8 +130,7 @@ export async function handleUpdateCourseMetadata(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("PATCH /api/courses/:courseId/manage: unhandled UpdateCourseMetadataResult outcome");
+      logUnhandledOutcome("PATCH /api/courses/:courseId/manage: unhandled UpdateCourseMetadataResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

@@ -17,7 +17,7 @@
  * server faults in the Runtime Logs level filter.
  *
  * This is not an observability platform: no transport, no sampling, no
- * identifiers, no persistence. Request correlation is Vercel's own
+ * identifiers of its own, no persistence. Request correlation is Vercel's own
  * `x-vercel-id` (present in Runtime Logs and on every response).
  */
 
@@ -55,16 +55,38 @@ function readStringProp(source: object, key: string): unknown {
   return (source as Record<string, unknown>)[key];
 }
 
-function frames(stack: unknown): string[] | undefined {
+// V8 frame shapes only: "at fn (path:line:col)", "at new Fn (...)", "at async fn (...)", "at path:line:col".
+// No whitespace is allowed inside the location, so free text cannot pass as a frame.
+const FRAME_SHAPE =
+  /^at (?:(?:async |new )?[^\s()]+(?: \[as [^\s\]]+\])? \([^\s()]+:\d+:\d+\)|[^\s()]+:\d+:\d+)$/;
+
+/**
+ * Frames are taken only from the contiguous tail of the stack AFTER the header.
+ * The header ("Name: message", possibly multi-line) embeds the message, which can carry
+ * request/DB-derived text, so it is cut out by locating the message inside the stack; the
+ * shape check and contiguous-tail rule are defence in depth when it cannot be located.
+ */
+function frames(stack: unknown, message: unknown): string[] | undefined {
   if (typeof stack !== "string") return undefined;
-  const lines = stack
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("at "))
+  let region = stack;
+  if (typeof message === "string" && message.length > 0) {
+    const at = stack.indexOf(message);
+    if (at >= 0) region = stack.slice(at + message.length);
+  }
+  const lines = region.split("\n").map((line) => line.trim());
+  const tail: string[] = [];
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i]!;
+    if (line === "") continue;
+    if (!FRAME_SHAPE.test(line)) break;
+    tail.push(line);
+  }
+  const out = tail
+    .reverse()
     .slice(0, MAX_STACK_FRAMES)
     .map((line) => clean(line, MAX_STACK_FRAME_CHARS))
     .filter((line): line is string => line !== undefined);
-  return lines.length > 0 ? lines : undefined;
+  return out.length > 0 ? out : undefined;
 }
 
 /** Builds the allow-listed summary. Never reads `detail`, `where`, `hint`, `cause`, `query` or `parameters`. */
@@ -98,7 +120,7 @@ export function summarizeUnexpectedError(error: unknown): UnexpectedErrorSummary
     if (message !== undefined) summary.message = message;
   }
 
-  const stackFrames = frames(readStringProp(error, "stack"));
+  const stackFrames = frames(readStringProp(error, "stack"), readStringProp(error, "message"));
   if (stackFrames !== undefined) summary.stackFrames = stackFrames;
 
   return summary;
@@ -133,4 +155,29 @@ export function logUnexpectedError(label: string, error?: unknown): void {
  */
 export function logClientRejection(label: string): void {
   console.warn(label);
+}
+
+const OUTCOME_VOCABULARY = /^[A-Z][A-Z0-9_]{0,63}$/;
+
+/**
+ * Logs an exhaustiveness-default fault (a result variant with no handler). Only the variant's
+ * fixed-vocabulary discriminant (`kind` / `outcome`) is emitted, and only when it looks like an
+ * UPPER_SNAKE constant; anything else is reported as UNRECOGNIZED. Never the object itself.
+ */
+export function logUnhandledOutcome(label: string, unhandled: unknown): void {
+  try {
+    let outcome = "UNRECOGNIZED";
+    if (unhandled !== null && typeof unhandled === "object") {
+      const record = unhandled as Record<string, unknown>;
+      const candidate = typeof record.kind === "string" ? record.kind : record.outcome;
+      if (typeof candidate === "string" && OUTCOME_VOCABULARY.test(candidate)) outcome = candidate;
+    }
+    console.error(label, { outcome });
+  } catch {
+    try {
+      console.error(label);
+    } catch {
+      // nothing left to do
+    }
+  }
 }

@@ -23,7 +23,7 @@
 import { isUuid } from "../../../../../lib/uuid";
 import type { GetCourseContextForLearnerResult } from "../../../../../application/course/get-course-context-for-learner";
 import type { RequireAuthenticatedUserResult } from "../../../../../infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleGetCourseContextDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -103,8 +103,7 @@ export async function handleGetCourseContext(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("GET /api/courses/:courseId/context: unhandled outcome");
+      logUnhandledOutcome("GET /api/courses/:courseId/context: unhandled outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

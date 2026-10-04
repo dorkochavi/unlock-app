@@ -77,7 +77,7 @@
 import type { SubmitDailyPlanItemAnswerResult } from "../../../../../../application/dailyPlan/submit-daily-plan-item-answer";
 import type { ConfidenceLevel, SelectedAnswer } from "../../../../../../domain/learning/types";
 import type { RequireAuthenticatedUserResult } from "../../../../../../infrastructure/supabase/require-authenticated-user";
-import { logClientRejection, logUnexpectedError } from "@/lib/ops-log";
+import { logClientRejection, logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 const VALID_CONFIDENCE_LEVELS: readonly ConfidenceLevel[] = ["low", "medium", "high"];
 
@@ -239,10 +239,8 @@ export async function handleSubmitDailyPlanItemAnswer(
       return { status: 400, body: { error: { code: "INVALID_ANSWER" } } };
 
     case "QUESTION_VERSION_CONSISTENCY_VIOLATION":
-      console.error(
-        `POST /api/daily-plan/items/:itemId/answer: QUESTION_VERSION_CONSISTENCY_VIOLATION ` +
-          `for questionVersionId (${result.questionVersionId}) — should be unreachable for a ` +
-          `real persisted DailyPlanItem; treated as a server-side data-consistency fault.`,
+      logUnexpectedError(
+        "POST /api/daily-plan/items/:itemId/answer: QUESTION_VERSION_CONSISTENCY_VIOLATION — data-consistency fault (should be unreachable for a persisted DailyPlanItem)",
       );
       return internalErrorResponse();
 
@@ -262,8 +260,7 @@ export async function handleSubmitDailyPlanItemAnswer(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/daily-plan/items/:itemId/answer: unhandled SubmitDailyPlanItemAnswerResult outcome");
+      logUnhandledOutcome("POST /api/daily-plan/items/:itemId/answer: unhandled SubmitDailyPlanItemAnswerResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

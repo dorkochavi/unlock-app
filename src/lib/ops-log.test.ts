@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { logClientRejection, logUnexpectedError, summarizeUnexpectedError } from "./ops-log";
+import { logClientRejection, logUnexpectedError, logUnhandledOutcome, summarizeUnexpectedError } from "./ops-log";
 
 function pgError(overrides: Record<string, unknown> = {}): Error {
   return Object.assign(new Error('new row for relation "attempts" violates check constraint'), {
@@ -115,5 +115,68 @@ describe("logUnexpectedError / logClientRejection", () => {
     logClientRejection("POST /x: INVALID_SELECTED_ANSWER");
     expect(error).not.toHaveBeenCalled();
     expect(warn.mock.calls).toEqual([["POST /x: INVALID_SELECTED_ANSWER"]]);
+  });
+});
+
+describe("stack frames: message text can never pass as a frame", () => {
+  const NL = String.fromCharCode(10);
+  const frame = "    at realFn (/app/src/x.ts:10:5)";
+  const realFrame = "at realFn (/app/src/x.ts:10:5)";
+
+  it("regression: multi-line message whose later line starts with 'at ' (SQLSTATE error) is not emitted", () => {
+    const err = pgError({
+      code: "22P02",
+      message: 'invalid input syntax for type uuid: "x' + NL + '   at SECRET learner@example.com"',
+    });
+    err.stack = "error: " + err.message + NL + frame;
+    const summary = summarizeUnexpectedError(err);
+    expect(JSON.stringify(summary)).not.toMatch(/SECRET|learner@example/);
+    expect(summary.stackFrames).toEqual([realFrame]);
+  });
+
+  it("even a well-formed fake frame embedded in the message is dropped (header is cut out by locating the message)", () => {
+    const err = new Error("boom" + NL + "    at fake (learner@example.com:1:1)");
+    err.stack = "Error: " + err.message + NL + frame;
+    const summary = summarizeUnexpectedError(err);
+    expect(JSON.stringify(summary.stackFrames)).not.toContain("learner@example");
+    expect(summary.stackFrames).toEqual([realFrame]);
+  });
+
+  it("when the message cannot be located in the stack, only frame-shaped contiguous-tail lines survive", () => {
+    const err = new Error("different");
+    err.stack = ["Error: other header", "   at free text with spaces SECRET", frame].join(NL);
+    expect(summarizeUnexpectedError(err).stackFrames).toEqual([realFrame]);
+  });
+
+  it("frame count and length stay bounded", () => {
+    const err = new Error("m");
+    const many = Array.from({ length: 30 }, (_, i) => "    at f" + i + " (/" + "p".repeat(500) + ":1:1)");
+    err.stack = ["Error: m", ...many].join(NL);
+    const summary = summarizeUnexpectedError(err);
+    expect(summary.stackFrames === undefined || summary.stackFrames.length <= 8).toBe(true);
+    for (const f of summary.stackFrames ?? []) expect(f.length).toBeLessThanOrEqual(201);
+  });
+});
+
+describe("logUnhandledOutcome", () => {
+  it("logs only the fixed-vocabulary kind/outcome, never the object", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    logUnhandledOutcome("GET /x: unhandled outcome", { kind: "BRAND_NEW_KIND", userId: "u-SENTINEL", detail: "d-SENTINEL" });
+    logUnhandledOutcome("GET /x: unhandled outcome", { outcome: "OTHER_OUTCOME", extra: "e-SENTINEL" });
+    expect(spy.mock.calls).toEqual([
+      ["GET /x: unhandled outcome", { outcome: "BRAND_NEW_KIND" }],
+      ["GET /x: unhandled outcome", { outcome: "OTHER_OUTCOME" }],
+    ]);
+  });
+
+  it("free text, lowercase, oversize or non-object values collapse to UNRECOGNIZED; never throws", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    logUnhandledOutcome("l", { kind: "learner@example.com" });
+    logUnhandledOutcome("l", { kind: "A".repeat(200) });
+    logUnhandledOutcome("l", "str-SENTINEL");
+    logUnhandledOutcome("l", null);
+    expect(spy.mock.calls.map((c) => c[1])).toEqual(Array(4).fill({ outcome: "UNRECOGNIZED" }));
+    const hostile = new Proxy({}, { get: () => { throw new Error("boom"); } });
+    expect(() => logUnhandledOutcome("l", hostile)).not.toThrow();
   });
 });

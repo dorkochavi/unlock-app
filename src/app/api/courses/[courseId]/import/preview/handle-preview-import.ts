@@ -45,7 +45,7 @@ import { toPreviewImportDto } from "./preview-import-dto";
 
 import type { ImportSourceFormat, PreviewImportResult } from "@/application/import/preview-import";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandlePreviewImportDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -148,8 +148,7 @@ export async function handlePreviewImport(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/courses/:courseId/import/preview: unhandled PreviewImportResult outcome");
+      logUnhandledOutcome("POST /api/courses/:courseId/import/preview: unhandled PreviewImportResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

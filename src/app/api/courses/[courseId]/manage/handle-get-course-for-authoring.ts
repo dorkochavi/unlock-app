@@ -22,7 +22,7 @@ import { toCourseAuthoringDto } from "../../authoring-dto";
 
 import type { GetCourseForAuthoringResult } from "@/application/course/get-course-for-authoring";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleGetCourseForAuthoringDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -81,8 +81,7 @@ export async function handleGetCourseForAuthoring(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("GET /api/courses/:courseId/manage: unhandled GetCourseForAuthoringResult outcome");
+      logUnhandledOutcome("GET /api/courses/:courseId/manage: unhandled GetCourseForAuthoringResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

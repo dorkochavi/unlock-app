@@ -25,7 +25,7 @@ import { toQuestionAuthoringDto } from "./question-dto";
 
 import type { CreateQuestionDraftResult } from "@/application/question/create-question-draft";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleCreateQuestionDraftDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -78,8 +78,7 @@ export async function handleCreateQuestionDraft(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/courses/:courseId/questions: unhandled CreateQuestionDraftResult outcome");
+      logUnhandledOutcome("POST /api/courses/:courseId/questions: unhandled CreateQuestionDraftResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

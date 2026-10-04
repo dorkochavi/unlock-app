@@ -196,6 +196,27 @@ describe("Today load: operator-visible outcome classes", () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 
+  it("unhandled outcome variant: 500 and the operator sees the variant name (fixed vocabulary) but not its payload", async () => {
+    const response = await handleGetDailyPlanToday({
+      ...baseDeps,
+      generateDailyPlan: vi.fn(async () => ({ outcome: "NEW_UNHANDLED_OUTCOME", userId: LEARNER_ID })) as never,
+    });
+    expect(response.status).toBe(500);
+    expect(errorSpy.mock.calls).toEqual([
+      ["GET /api/daily-plan/today: unhandled GetOrCreateDailyPlanForTodayResult outcome", { outcome: "NEW_UNHANDLED_OUTCOME" }],
+    ]);
+    expectNoSensitiveLogOutput();
+  });
+
+  it("consistency-fault logs carry no ids (QUESTION_VERSION_CONSISTENCY_VIOLATION)", async () => {
+    const response = await handleSubmitDailyPlanItemAnswer(
+      answerDeps(async () => ({ kind: "QUESTION_VERSION_CONSISTENCY_VIOLATION", questionVersionId: "qv-SENTINEL" }) as never),
+    );
+    expect(response.status).toBe(500);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expectNoSensitiveLogOutput();
+  });
+
   it("unexpected 500 (generation throws): one error-level line, sanitized", async () => {
     const response = await handleGetDailyPlanToday({
       ...baseDeps,

@@ -13,7 +13,7 @@ import { PostgresDailyPlanRepository } from "./daily-plan-repository";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
 import { PostgresUserQuestionProgressRepository } from "./progress-repository";
 import type { TransactionExecutor } from "./sql-executor";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError } from "../../lib/ops-log";
 
 /**
  * ADR-010's transaction-scoped advisory lock, keyed by `(userId,

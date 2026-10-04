@@ -24,7 +24,7 @@ import { PostgresDailyPlanRepository } from "./daily-plan-repository";
 import { PostgresQuestionVersionRepository } from "./question-version-repository";
 import { PostgresUserQuestionProgressRepository } from "./progress-repository";
 import { PostgresUnseenQuestionRepository } from "./unseen-question-repository";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError } from "../../lib/ops-log";
 
 export class PostgresDailyPlanUnitOfWork implements DailyPlanUnitOfWork {
   constructor(private readonly connectionProvider: ConnectionProvider) {}

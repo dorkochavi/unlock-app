@@ -30,7 +30,7 @@ import { toQuestionAuthoringDto } from "../../question-dto";
 
 import type { PublishQuestionResult } from "@/application/question/publish-question";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandlePublishQuestionDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -106,8 +106,7 @@ export async function handlePublishQuestion(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/courses/:courseId/questions/:questionId/publish: unhandled PublishQuestionResult outcome");
+      logUnhandledOutcome("POST /api/courses/:courseId/questions/:questionId/publish: unhandled PublishQuestionResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

@@ -19,7 +19,7 @@ import { toTopicDto } from "../../topic-dto";
 
 import type { ArchiveTopicResult } from "@/application/topic/archive-topic";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleArchiveTopicDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -88,8 +88,7 @@ export async function handleArchiveTopic(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/courses/:courseId/topics/:topicId/archive: unhandled ArchiveTopicResult outcome");
+      logUnhandledOutcome("POST /api/courses/:courseId/topics/:topicId/archive: unhandled ArchiveTopicResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

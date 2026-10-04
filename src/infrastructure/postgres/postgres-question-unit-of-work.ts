@@ -12,7 +12,7 @@ import { PostgresCourseAuthorRepository } from "./course-author-repository";
 import { PostgresCourseMembershipRepository } from "./course-membership-repository";
 import { PostgresCourseRepository } from "./course-repository";
 import { PostgresQuestionRepository } from "./question-authoring-repository";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError } from "../../lib/ops-log";
 
 export class PostgresQuestionUnitOfWork implements QuestionUnitOfWork {
   constructor(private readonly connectionProvider: ConnectionProvider) {}

@@ -52,7 +52,7 @@ import type { SubmitPracticeAnswerResult } from "../../../../../../application/p
 import type { ConfidenceLevel, SelectedAnswer } from "../../../../../../domain/learning/types";
 import { CONFIDENCE_LEVELS } from "../../../../../../domain/learning/types";
 import type { RequireAuthenticatedUserResult } from "../../../../../../infrastructure/supabase/require-authenticated-user";
-import { logClientRejection, logUnexpectedError } from "@/lib/ops-log";
+import { logClientRejection, logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleSubmitPracticeAnswerDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -220,8 +220,7 @@ export async function handleSubmitPracticeAnswer(
     }
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/courses/:courseId/practice/answer: unhandled outcome");
+      logUnhandledOutcome("POST /api/courses/:courseId/practice/answer: unhandled outcome", exhaustiveCheck);
       return error(500, "INTERNAL_ERROR");
     }
   }

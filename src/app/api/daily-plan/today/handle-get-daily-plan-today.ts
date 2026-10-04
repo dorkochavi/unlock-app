@@ -74,7 +74,7 @@ import type {
 } from "../../../../application/dailyPlan/get-or-create-daily-plan-for-today";
 import type { LearnerQuestionContent } from "../../../../application/learning/ports";
 import type { RequireAuthenticatedUserResult } from "../../../../infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleGetDailyPlanTodayDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -149,12 +149,8 @@ export async function handleGetDailyPlanToday(
         (versionId) => !contentByVersionId.has(versionId),
       );
       if (missingVersionId !== undefined) {
-        console.error(
-          `GET /api/daily-plan/today: no learner-facing content found for questionVersionId ` +
-            `(${missingVersionId}) referenced by a persisted DailyPlanItem — this should be ` +
-            `unreachable since QuestionVersion rows are immutable and never deleted; treated ` +
-            `as a server-side data-consistency fault, never silently substituted with another ` +
-            `version's content.`,
+        logUnexpectedError(
+          "GET /api/daily-plan/today: no learner-facing content found for a QuestionVersion referenced by a persisted DailyPlanItem — data-consistency fault (should be unreachable: QuestionVersions are immutable and never deleted)",
         );
         return internalErrorResponse();
       }
@@ -176,8 +172,7 @@ export async function handleGetDailyPlanToday(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("GET /api/daily-plan/today: unhandled GetOrCreateDailyPlanForTodayResult outcome");
+      logUnhandledOutcome("GET /api/daily-plan/today: unhandled GetOrCreateDailyPlanForTodayResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

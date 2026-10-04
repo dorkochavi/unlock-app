@@ -27,7 +27,7 @@ import { isValidDateOnly } from "@/lib/date-only";
 
 import type { CreateCourseResult } from "@/application/course/create-course";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleCreateCourseDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -106,8 +106,7 @@ export async function handleCreateCourse(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("POST /api/courses: unhandled CreateCourseResult outcome");
+      logUnhandledOutcome("POST /api/courses: unhandled CreateCourseResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

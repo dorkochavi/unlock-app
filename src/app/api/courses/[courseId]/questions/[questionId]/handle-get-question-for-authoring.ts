@@ -26,7 +26,7 @@ import { toQuestionAuthoringDto, toQuestionDraftContentDto, toTopicSummaryDto } 
 
 import type { GetQuestionForAuthoringResult } from "@/application/question/get-question-for-authoring";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleGetQuestionForAuthoringDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -102,8 +102,7 @@ export async function handleGetQuestionForAuthoring(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("GET /api/courses/:courseId/questions/:questionId: unhandled GetQuestionForAuthoringResult outcome");
+      logUnhandledOutcome("GET /api/courses/:courseId/questions/:questionId: unhandled GetQuestionForAuthoringResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }

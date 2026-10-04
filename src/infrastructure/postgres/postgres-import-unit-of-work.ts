@@ -15,7 +15,7 @@ import { PostgresCourseMembershipRepository } from "./course-membership-reposito
 import { PostgresCourseRepository } from "./course-repository";
 import { PostgresQuestionRepository } from "./question-authoring-repository";
 import { PostgresTopicRepository } from "./topic-repository";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError } from "../../lib/ops-log";
 
 export class PostgresImportUnitOfWork implements ImportUnitOfWork {
   constructor(private readonly connectionProvider: ConnectionProvider) {}

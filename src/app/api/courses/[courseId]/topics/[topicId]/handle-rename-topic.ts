@@ -23,7 +23,7 @@ import { toTopicDto } from "../topic-dto";
 
 import type { RenameTopicResult } from "@/application/topic/rename-topic";
 import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/require-authenticated-user";
-import { logUnexpectedError } from "@/lib/ops-log";
+import { logUnexpectedError, logUnhandledOutcome } from "@/lib/ops-log";
 
 export interface HandleRenameTopicDependencies {
   authenticate: () => Promise<RequireAuthenticatedUserResult>;
@@ -112,8 +112,7 @@ export async function handleRenameTopic(
 
     default: {
       const exhaustiveCheck: never = result;
-      void exhaustiveCheck; // type-level exhaustiveness only; value deliberately not logged
-      logUnexpectedError("PATCH /api/courses/:courseId/topics/:topicId: unhandled RenameTopicResult outcome");
+      logUnhandledOutcome("PATCH /api/courses/:courseId/topics/:topicId: unhandled RenameTopicResult outcome", exhaustiveCheck);
       return internalErrorResponse();
     }
   }
