@@ -47,6 +47,7 @@ export function timestampUtc(d = new Date()) {
 export const DEFAULT_SOURCE_ENV = "SUPA_DB_URL";
 export const TEST_NAME_RE = /^unlock-bkptest-[a-z0-9][a-z0-9-]{0,40}$/;
 const SSLMODES = new Set(["require", "verify-ca", "verify-full", "prefer", "disable", "allow"]);
+const STRONG_SSLMODES = new Set(["require", "verify-ca", "verify-full"]);
 
 export class BackupError extends Error {
   /** @param {string} code @param {string} [detail] */
@@ -69,16 +70,51 @@ function isUnreachableHost(h) {
   return false;
 }
 
+const NUMERIC_OR_HEX_LABEL = /^(\d+|0x[0-9a-f]*)$/;
+/**
+ * Hosted-mode host shape (applied after isUnreachableHost; the host is lower-cased with trailing dots already stripped).
+ * Only a real DNS name or a global-unicast IPv6 literal (2000::/3) is a hosted source. Everything a libc/libpq
+ * resolver could read as an IPv4 shorthand (127.1, 0177.0.0.1, 0x7f.0.0.1, 10.1, ...), zone ids (%), IPv4-mapped,
+ * unique-local (fc00::/7), link-local (fe80::/10) and loopback IPv6 is refused. String-only: DNS names that resolve to
+ * private addresses (e.g. wildcard-DNS services) cannot be detected here and remain a documented limit.
+ * @returns {string | null} a short reason, or null when acceptable
+ */
+export function hostedHostProblem(h) {
+  if (h.includes("%")) return "host contains a percent sign";
+  if (h.startsWith("[")) {
+    if (!h.endsWith("]")) return "malformed IPv6 literal";
+    const first = h.slice(1, -1).split(":")[0];
+    const v = /^[0-9a-f]{1,4}$/.test(first) ? parseInt(first, 16) : NaN;
+    if (!(v >= 0x2000 && v <= 0x3fff)) return "IPv6 literal is not global unicast";
+    return null;
+  }
+  if (h.includes(":")) return "unbracketed IPv6 literal";
+  const labels = h.split(".");
+  if (labels.some((l) => !/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(l))) return "host is not a DNS name";
+  if (NUMERIC_OR_HEX_LABEL.test(labels[labels.length - 1])) return "host looks like an IPv4 address";
+  if (!labels.some((l) => /[a-z]/.test(l) && !NUMERIC_OR_HEX_LABEL.test(l))) return "host is not a DNS name";
+  return null;
+}
+
 /**
  * Strict source URL parse. Never echoes the raw value in errors.
- * Hosted mode (default) refuses loopback/private/single-label hosts. Test mode (explicit, see docs) accepts
- * only a host named unlock-bkptest-* (a disposable container on a disposable docker network).
+ * Hosted mode (default) refuses loopback/private/single-label/IP-shorthand hosts and requires TLS (sslmode
+ * require|verify-ca|verify-full, or absent => the caller passes PGSSLMODE=require). Test mode (explicit, see docs)
+ * accepts only a host named unlock-bkptest-* (a disposable container on a disposable docker network).
+ * The result carries the password (for the container env): never print or log it.
  * @param {string} raw
  * @param {{testMode?: boolean}} [o]
  */
 export function parseSourceUrl(raw, { testMode = false } = {}) {
   const bad = (code, why) => {
     throw new BackupError(code, why);
+  };
+  const decode = (v, what) => {
+    try {
+      return decodeURIComponent(v);
+    } catch {
+      return bad("SOURCE_URL_INVALID", what);
+    }
   };
   if (typeof raw !== "string" || raw.length === 0) bad("SOURCE_URL_INVALID", "empty");
   if (raw.includes(",")) bad("SOURCE_URL_INVALID", "multi-host list");
@@ -103,18 +139,49 @@ export function parseSourceUrl(raw, { testMode = false } = {}) {
     if (k !== "sslmode" || !SSLMODES.has(v) || sslmode !== undefined) bad("SOURCE_URL_FORBIDDEN_PARAM", `query parameter ${/^[A-Za-z_]{1,32}$/.test(k) ? k : "(invalid)"}`);
     sslmode = v;
   }
-  const host = u.hostname.toLowerCase();
+  // A trailing dot is the same host (FQDN form): strip it before every check so "localhost." cannot slip past.
+  const host = u.hostname.toLowerCase().replace(/\.+$/, "");
+  if (!host) bad("SOURCE_URL_INVALID", "no host");
   const port = u.port ? Number(u.port) : 5432;
   if (!Number.isInteger(port) || port < 1 || port > 65535) bad("SOURCE_URL_INVALID", "port");
-  const database = decodeURIComponent(u.pathname.replace(/^\//, "")) || "postgres";
+  const database = decode(u.pathname.replace(/^\//, ""), "database name") || "postgres";
   if (/[\0\r\n]/.test(database)) bad("SOURCE_URL_INVALID", "database name");
+  const user = decode(u.username, "user");
+  const password = decode(u.password, "password");
+  if (/[\0\r\n]/.test(user) || /[\0\r\n]/.test(password)) bad("SOURCE_URL_INVALID", "credentials contain control characters");
   if (testMode) {
     if (!TEST_NAME_RE.test(host)) bad("SOURCE_HOST_NOT_ALLOWED", "test mode requires an unlock-bkptest-* container host");
-  } else if (isUnreachableHost(host) || TEST_NAME_RE.test(host)) {
-    bad("SOURCE_HOST_NOT_ALLOWED", "loopback/private/single-label host is not a hosted source");
+  } else {
+    if (isUnreachableHost(host) || TEST_NAME_RE.test(host)) bad("SOURCE_HOST_NOT_ALLOWED", "loopback/private/single-label host is not a hosted source");
+    const why = hostedHostProblem(host);
+    if (why) bad("SOURCE_HOST_NOT_ALLOWED", why);
+    if (sslmode !== undefined && !STRONG_SSLMODES.has(sslmode)) bad("SOURCE_SSLMODE_WEAK", "hosted sources require sslmode require, verify-ca or verify-full");
   }
-  return { host, port, database, user: decodeURIComponent(u.username), sslmode };
+  return { host, port, database, user, password, sslmode };
 }
+
+/**
+ * PG* environment for the throwaway container. Values live in the docker client's env only; docker is given just the
+ * variable NAMES (`-e NAME`), so neither the URL nor any credential is in argv, and no combined URL is built.
+ * Hosted mode without an explicit sslmode defaults to PGSSLMODE=require; test mode passes sslmode only if given.
+ */
+export function sourceContainerEnv(src, { testMode = false, pgoptions = true } = {}) {
+  /** @type {Record<string, string>} */
+  const env = {
+    PGHOST: src.host.startsWith("[") ? src.host.slice(1, -1) : src.host,
+    PGPORT: String(src.port),
+    PGUSER: src.user,
+    PGPASSWORD: src.password,
+    PGDATABASE: src.database,
+  };
+  const ssl = src.sslmode ?? (testMode ? undefined : "require");
+  if (ssl) env.PGSSLMODE = ssl;
+  if (pgoptions) env.PGOPTIONS = "-c default_transaction_read_only=on";
+  return env;
+}
+
+/** Names (never values) of the variables sourceContainerEnv hands to docker. */
+export const SOURCE_ENV_NAMES = ["PGHOST", "PGPORT", "PGUSER", "PGPASSWORD", "PGDATABASE", "PGSSLMODE", "PGOPTIONS"];
 
 export const hostFingerprint = (host) => createHash("sha256").update(String(host).trim().toLowerCase()).digest("hex");
 
@@ -159,6 +226,16 @@ export function assertOutputOutsideRepo(outPath, repoRoot) {
   return real;
 }
 
+/**
+ * Bind-mount source guard: the REAL (symlink/junction-resolved) path is what docker receives, so it must be re-checked
+ * for the characters that would inject `--mount` options. Returns the resolved path to use as the mount source.
+ */
+export function assertSafeMountSource(p) {
+  const real = realpathSync.native(p);
+  if (/[,"\r\n\0]/.test(real)) throw new BackupError("OUTPUT_PATH_UNSAFE", "resolved path must not contain commas, double quotes or newlines");
+  return real;
+}
+
 // ---------------------------------------------------------------- hashing / files
 export function sha256File(p) {
   return new Promise((res, rej) => {
@@ -189,6 +266,39 @@ export function parseInfoOutput(text) {
   info.extensions.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   info.tables = [...new Set(info.tables)].filter((t) => COUNT_SCHEMAS.includes(t.split(".")[0])).sort();
   return info;
+}
+
+/** `mig_supabase|N|latest` / `mig_auth|N|latest` lines only (the post-dump re-read). null when unreadable. */
+export function parseMigrationState(text) {
+  const p = parseInfoOutput(text);
+  return { supabase_migrations: p.supabase_migrations, auth: p.auth_migrations };
+}
+
+/** `rel|public_without_auth|N` / `rel|auth_without_public|N`. A missing/garbled line is null, never 0. */
+export function parseRelationshipCounts(text) {
+  const out = { public_without_auth: null, auth_without_public: null };
+  for (const raw of String(text).split("\n")) {
+    const m = /^rel\|(public_without_auth|auth_without_public)\|(\d+)\r?$/.exec(raw);
+    if (m && out[m[1]] === null) out[m[1]] = Number(m[2]);
+  }
+  return out;
+}
+
+export function buildMigrationStateSql() {
+  return [
+    "select 'mig_supabase|'||count(*)||'|'||coalesce(max(version),'') from supabase_migrations.schema_migrations;",
+    "select 'mig_auth|'||count(*)||'|'||coalesce(max(version),'') from auth.schema_migrations;",
+    "",
+  ].join("\n");
+}
+
+/** Informational public.users <-> auth.users orphan counts, recorded in the manifest and compared (equal) on restore. */
+export function buildRelationshipSql() {
+  return [
+    "select 'rel|public_without_auth|'||count(*) from public.users p where not exists (select 1 from auth.users a where a.id = p.id);",
+    "select 'rel|auth_without_public|'||count(*) from auth.users a where not exists (select 1 from public.users p where p.id = a.id);",
+    "",
+  ].join("\n");
 }
 export const serverMajor = (v) => (/^(\d+)/.exec(String(v ?? ""))?.[1] ? Number(/^(\d+)/.exec(String(v))[1]) : NaN);
 
@@ -269,6 +379,7 @@ export function summarizeToc(toc) {
     auth_users_table: toc.tables.has("auth.users"),
     auth_schema_migrations_data: toc.dataTables.has("auth.schema_migrations"),
     supabase_migrations_data: toc.dataTables.has("supabase_migrations.schema_migrations"),
+    data_tables: [...toc.dataTables].sort(),
     auth_user_trigger: toc.triggers.has("auth.users.on_auth_user_created"),
     public_handle_new_auth_user: toc.functions.has("public.handle_new_auth_user"),
     entries: toc.entries,
@@ -300,6 +411,16 @@ export function deriveReasons(ev) {
   const m = ev.migrations ?? {};
   const okMig = (x) => !!x && Number.isInteger(x.count) && x.count > 0 && typeof x.latest === "string" && x.latest.length > 0;
   if (!okMig(m.supabase_migrations) || !okMig(m.auth)) r.add("incomplete-migration-metadata");
+  // The migration state read after the dump must equal the one read before it; unreadable/absent => fail closed.
+  // An unreadable/empty PRE-dump state is already incomplete-migration-metadata; this reason is about a readable state that
+  // changed, or could not be re-verified, after the dump.
+  const sameMig = (a, b) => okMig(b) && a.count === b.count && a.latest === b.latest;
+  const ma = ev.migrationsAfter ?? {};
+  if ((okMig(m.supabase_migrations) && !sameMig(m.supabase_migrations, ma.supabase_migrations)) || (okMig(m.auth) && !sameMig(m.auth, ma.auth))) {
+    r.add("migration-state-changed-during-dump");
+  }
+  const rel = ev.relationships;
+  if (!rel || !Number.isInteger(rel.public_without_auth) || !Number.isInteger(rel.auth_without_public)) r.add("relationship-counts-unavailable");
   const rc = ev.rowCounts;
   const allCounts = rc ? [...Object.values(rc.public ?? {}), ...Object.values(rc.auth ?? {})] : [];
   if (!rc || allCounts.length === 0 || allCounts.some((v) => !Number.isInteger(v)) || Object.keys(rc.auth ?? {}).length === 0) r.add("row-counts-unavailable");
@@ -334,7 +455,13 @@ export function buildManifest(m) {
     migrations: {
       supabase_migrations: m.evidence.migrations.supabase_migrations,
       auth: m.evidence.migrations.auth,
+      after: { supabase_migrations: m.evidence.migrationsAfter?.supabase_migrations ?? null, auth: m.evidence.migrationsAfter?.auth ?? null },
       repo: { count: m.repo.count, latest: m.repo.latest },
+    },
+    relationships: {
+      basis: "informational public.users<->auth.users orphan counts taken before the dump; restore must reproduce them exactly (not required to be zero)",
+      public_without_auth: m.evidence.relationships?.public_without_auth ?? null,
+      auth_without_public: m.evidence.relationships?.auth_without_public ?? null,
     },
     row_counts_basis: "read-only counts taken before and after the dump; a restored count must lie within [min,max]; null = unavailable (never 0)",
     row_counts: { before: { public: rows(m.evidence.rowCounts?.public), auth: rows(m.evidence.rowCounts?.auth) } },
@@ -505,6 +632,8 @@ export async function validatePackage(dir, { readToc = null } = {}) {
     infoPresent: present[INFO_FILE],
     toc: tocSummary,
     migrations: { supabase_migrations: mig.supabase_migrations ?? null, auth: mig.auth ?? null },
+    migrationsAfter: mig.after ?? null,
+    relationships: manifest.relationships ?? null,
     rowCounts: manifest.row_counts?.before ? { public: manifest.row_counts.before.public ?? {}, auth: manifest.row_counts.before.auth ?? {} } : null,
   });
   for (const r of derived) reasons.add(r);
@@ -522,7 +651,9 @@ export async function validatePackage(dir, { readToc = null } = {}) {
     return result("INVALID", { manifest, toc: tocSummary });
   }
   for (const r of claimedReasons) if (typeof r === "string" && /^[a-z-]{1,40}$/.test(r)) reasons.add(r);
-  if (claimed === LEVEL_PARTIAL && claimedReasons.length === 0) reasons.add("manifest-partial");
+  // A claimed PARTIAL can never become FULL_CANDIDATE: if no valid reason survived the filter (empty list, or only
+  // malformed codes such as "X_Y"), record why it is still partial.
+  if (claimed === LEVEL_PARTIAL && reasons.size === 0) reasons.add("manifest-partial");
   return result(reasons.size === 0 ? LEVEL_FULL_CANDIDATE : LEVEL_PARTIAL, { manifest, toc: tocSummary });
 }
 
@@ -532,6 +663,50 @@ export function countWithinRange(restored, before, after) {
   if (![restored, before, after].every((n) => Number.isInteger(n))) return false;
   return restored >= Math.min(before, after) && restored <= Math.max(before, after);
 }
+
+/**
+ * Auth tables whose row count churns while a dump runs (sessions/tokens are created and deleted continuously), so the
+ * strict [min(before,after), max(before,after)] window is not meaningful. This is an EXPLICIT allow-list: nothing else
+ * (public.*, auth.users, auth.identities, *.schema_migrations, ...) may use the wide window.
+ */
+export const VOLATILE_TABLES = Object.freeze(["auth.audit_log_entries", "auth.flow_state", "auth.mfa_amr_claims", "auth.mfa_challenges", "auth.one_time_tokens", "auth.refresh_tokens", "auth.sessions"]);
+export const isVolatileTable = (t) => VOLATILE_TABLES.includes(t);
+
+/**
+ * Per-table restored-count verdict. Non-volatile: restored in [min(before,after), max(before,after)]. Volatile: restored in
+ * [0, max(before,after)] AND the dump TOC has the table's data entry (pg_restore --exit-on-error already guarantees the
+ * load itself). null/NaN anywhere never passes.
+ * @returns {{ok: boolean, volatile: boolean, range: string}}
+ */
+export function checkTableCount({ table, restored, before, after, dataTables }) {
+  const volatile = isVolatileTable(table);
+  if (![restored, before, after].every((n) => Number.isInteger(n))) return { ok: false, volatile, range: "n/a" };
+  const hi = Math.max(before, after);
+  if (!volatile) return { ok: countWithinRange(restored, before, after), volatile, range: `[${Math.min(before, after)},${hi}]` };
+  const inToc = Array.isArray(dataTables) && dataTables.includes(table);
+  return { ok: restored >= 0 && restored <= hi && inToc, volatile, range: `[0,${hi}]${inToc ? "" : " no TOC data entry"}` };
+}
+
+/** Manifest table set vs restored table set (both `schema.table` lists). Any difference fails the drill. */
+export function compareTableSets(manifestTables, restoredTables) {
+  const m = new Set(manifestTables);
+  const r = new Set(restoredTables);
+  const missingFromRestore = [...m].filter((t) => !r.has(t)).sort();
+  const extraInRestore = [...r].filter((t) => !m.has(t)).sort();
+  return { ok: m.size > 0 && missingFromRestore.length === 0 && extraInRestore.length === 0, missingFromRestore, extraInRestore };
+}
+
+/**
+ * public.users<->auth.users orphan counts: the restored values must EQUAL the manifest's (not be zero).
+ * Manifest values that are not integers => skipped (the package is already PARTIAL); a restored NaN/mismatch => not ok.
+ */
+export function relationshipCheck(manifestRel, restored) {
+  const keys = ["public_without_auth", "auth_without_public"];
+  if (!manifestRel || keys.some((k) => !Number.isInteger(manifestRel[k]))) return { skipped: true, ok: true };
+  return { skipped: false, ok: keys.every((k) => Number.isInteger(restored?.[k]) && restored[k] === manifestRel[k]) };
+}
+
+export const FULL_CAVEAT = "FULL = package restored into a real local Auth schema; hosted GoTrue-version equality and sign-in usability are not verified";
 
 /**
  * Package-layout restore classification. FULL only when the package is FULL_CANDIDATE, every
@@ -548,5 +723,5 @@ export function classifyPackageRestore({ level, validations, authRestoredReal, t
   if (!triggerPresent) why.push("trigger on_auth_user_created not present");
   if (skippedCounts > 0) why.push(`${skippedCounts} table counts unavailable in manifest`);
   if (why.length > 0) return { level: "PARTIAL", exit: 2, lines: ["RESULT: PARTIAL", ...why.map((w) => `  partial: ${w}`)] };
-  return { level: "FULL", exit: 0, lines: ["RESULT: FULL (local drill: counts, migrations, auth and trigger verified)"] };
+  return { level: "FULL", exit: 0, lines: ["RESULT: FULL (local drill: counts, migrations, auth and trigger verified)", `note: ${FULL_CAVEAT}`] };
 }

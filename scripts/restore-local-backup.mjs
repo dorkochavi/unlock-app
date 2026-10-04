@@ -20,6 +20,8 @@ import { fileURLToPath } from "node:url";
 import {
   DEFAULT_IMAGE,
   NAME_PREFIX,
+  TRIGGER_CHECK_SQL,
+  buildRestoreRunArgs,
   STAGE_SCHEMA,
   assertSafeRunOptions,
   buildAuthStageSql,
@@ -38,7 +40,7 @@ import {
 import { assertDockerLocal, assertImageLocal, readTocViaDocker } from "./lib/backup-docker.mjs";
 import { isEncryptedPackageDir } from "./lib/backup-crypto.mjs";
 import {
-  MANIFEST_FILE, ROLES_FILE, DUMP_FILE, classifyPackageRestore, countWithinRange, parseRoleNames, validatePackage,
+  MANIFEST_FILE, ROLES_FILE, DUMP_FILE, assertSafeMountSource, checkTableCount, classifyPackageRestore, compareTableSets, parseRoleNames, relationshipCheck, validatePackage,
 } from "./lib/backup-package.mjs";
 
 const REPO = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -200,10 +202,8 @@ async function main() {
     check("image present locally (no pull)", false);
     return finish();
   }
-  const run = ["run", "-d", "--pull", "never", "--name", name, "--label", "unlock-restore=1", "-e", "POSTGRES_PASSWORD", "-e", "PGPASSWORD", "--mount", `type=bind,source=${dir},target=/backup,readonly`];
-  if (opts.publish) run.push("-p", opts.publish);
-  else run.push("--network", "none");
-  run.push(opts.image);
+  // The REAL path (symlinks/junctions resolved) is what docker receives: re-check it for mount-option injection characters.
+  const run = buildRestoreRunArgs({ name, image: opts.image, mountSource: assertSafeMountSource(dir), publish: opts.publish });
   const started = docker(run, { env: { ...sanitizedEnv(), POSTGRES_PASSWORD: password, PGPASSWORD: password } });
   created = started.status === 0;
   check("container started", created);
@@ -258,7 +258,7 @@ async function main() {
   const aNoP = num(`select count(*) from ${STAGE_SCHEMA}.users a where not exists (select 1 from public.users p where p.id::text = a.id)`);
   out(`info public.users=${pu}, staged auth.users=${au}, public without auth=${pNoA}, auth without public=${aNoP}`);
 
-  check("trigger present", num("select count(*) from pg_trigger where tgname='on_auth_user_created' and not tgisinternal") === 1);
+  check("trigger present", num(TRIGGER_CHECK_SQL) === 1);
   check("function handle_new_auth_user present", psql({ sql: "select to_regprocedure('public.handle_new_auth_user()') is not null", tuples: true }).out === "t");
   return finish();
 }
@@ -299,10 +299,7 @@ async function mainPackage() {
   const manifest = v.manifest;
   const toc = v.toc;
 
-  const run = ["run", "-d", "--pull", "never", "--name", name, "--label", "unlock-restore=1", "-e", "POSTGRES_PASSWORD", "-e", "PGPASSWORD", "--mount", "type=bind,source=" + dir + ",target=/backup,readonly"];
-  if (opts.publish) run.push("-p", opts.publish);
-  else run.push("--network", "none");
-  run.push(opts.image);
+  const run = buildRestoreRunArgs({ name, image: opts.image, mountSource: assertSafeMountSource(dir), publish: opts.publish });
   created = docker(run, { env: { ...sanitizedEnv(), POSTGRES_PASSWORD: password, PGPASSWORD: password } }).status === 0;
   check("container started", created);
   if (!created) return finish();
@@ -344,9 +341,11 @@ async function mainPackage() {
   if (toc?.schema_ddl_entries?.includes("public")) check("image public schema dropped (dump recreates it)", psql({ sql: "drop schema public cascade", superuser: true }).ok);
 
   // Data load must not fire on_auth_user_created (it would duplicate public.users): replica role for the whole restore.
+  // Runs as the container's root (DAC_OVERRIDE is in the cap set) because package files are owner-only (0600) and the
+  // 'postgres' user could not read them; it is a pure client here (TCP + password), nothing is written to the mount.
   // Needs a true superuser: in this image "postgres" is not one, supabase_admin is (same throwaway password).
   const rr = docker(
-    ["exec", "-u", "postgres", "-e", "PGPASSWORD", "-e", "PGOPTIONS", name, "pg_restore", "-h", "127.0.0.1", "-U", "supabase_admin", "-d", "postgres", "--exit-on-error", "/backup/" + DUMP_FILE],
+    ["exec", "-u", "root", "-e", "PGPASSWORD", "-e", "PGOPTIONS", name, "pg_restore", "-h", "127.0.0.1", "-U", "supabase_admin", "-d", "postgres", "--exit-on-error", "/backup/" + DUMP_FILE],
     { env: { ...sanitizedEnv(), PGPASSWORD: password, PGOPTIONS: "-c session_replication_role=replica" } },
   );
   check("pg_restore --exit-on-error 10-full.dump (replica role)", rr.status === 0);
@@ -356,6 +355,11 @@ async function mainPackage() {
   const before = { ...(manifest.row_counts?.before?.public ?? {}), ...(manifest.row_counts?.before?.auth ?? {}) };
   const after = { ...(manifest.row_counts_after?.public ?? {}), ...(manifest.row_counts_after?.auth ?? {}) };
   let tablesChecked = 0;
+  // The manifest is a plaintext, unauthenticated document: the table SET it lists must equal what was actually restored
+  // (public + auth), so a forged manifest cannot hide a missing or extra table behind a short list.
+  const restoredTables = psql({ sql: "select schemaname||'.'||tablename from pg_tables where schemaname in ('public','auth') order by 1", tuples: true });
+  const setCmp = compareTableSets(Object.keys(before), restoredTables.out.split("\n").filter(Boolean));
+  check("manifest table set == restored public+auth table set", restoredTables.ok && setCmp.ok, `${setCmp.missingFromRestore.length} missing, ${setCmp.extraInRestore.length} extra`);
   for (const t of Object.keys(before).sort()) {
     const [s, n] = t.split(".");
     if (!Number.isInteger(before[t]) || !Number.isInteger(after[t])) {
@@ -363,7 +367,8 @@ async function mainPackage() {
       continue;
     }
     const got = num("select count(*) from " + quoteIdent(s) + "." + quoteIdent(n));
-    check("rows " + t, countWithinRange(got, before[t], after[t]), got + " in [" + Math.min(before[t], after[t]) + "," + Math.max(before[t], after[t]) + "]");
+    const c = checkTableCount({ table: t, restored: got, before: before[t], after: after[t], dataTables: toc?.data_tables });
+    check("rows " + t + (c.volatile ? " (volatile)" : ""), c.ok, got + " in " + c.range);
     tablesChecked++;
   }
   check("manifest row counts present", tablesChecked > 0);
@@ -397,10 +402,13 @@ async function mainPackage() {
   const pNoA = realAuth ? num("select count(*) from public.users p where not exists (select 1 from auth.users a where a.id = p.id)") : NaN;
   const aNoP = realAuth ? num("select count(*) from auth.users a where not exists (select 1 from public.users p where p.id = a.id)") : NaN;
   out("info public.users=" + pu + ", auth.users=" + au + ", public without auth=" + pNoA + ", auth without public=" + aNoP);
+  // Informational relationship (the source may legitimately have orphans): the restore must reproduce the manifest's counts exactly.
+  const rel = relationshipCheck(manifest.relationships, { public_without_auth: pNoA, auth_without_public: aNoP });
+  if (rel.skipped) skipped++;
+  else check("public.users<->auth.users orphan counts == manifest", rel.ok, pNoA + "/" + aNoP);
 
-  const trig = num("select count(*) from pg_trigger where tgname='on_auth_user_created' and not tgisinternal and tgenabled <> 'D'");
-  triggerPresent = trig === 1;
-  check("trigger on_auth_user_created present and enabled", triggerPresent);
+  triggerPresent = num(TRIGGER_CHECK_SQL) === 1;
+  check("trigger on_auth_user_created on auth.users present, enabled (O), runs handle_new_auth_user", triggerPresent);
   check("function handle_new_auth_user present", psql({ sql: "select to_regprocedure('public.handle_new_auth_user()') is not null", tuples: true }).out === "t");
   return finish();
 }

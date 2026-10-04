@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- loosely typed manifest fixtures for negative tests */
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -365,5 +365,63 @@ describe("repo hygiene", () => {
     }
     const ls = spawnSync("git", ["ls-files"], { encoding: "utf8", cwd: REPO });
     expect(ls.stdout.split("\n").filter((x) => /\.(enc|key|keyfile)$/.test(x))).toEqual([]);
+  });
+});
+
+describe("slice G review fixes: file modes (S3) and no-clobber on a lost wx race (S8)", () => {
+  // POSIX only: NTFS has no mode bits and relies on the directory ACLs of the owner-only output location.
+  const posix = process.platform !== "win32";
+  const mode = (p: string) => statSync(p).mode & 0o777;
+  it.skipIf(!posix)("S3: encrypt/decrypt create 0700 dirs and 0600 files (artifacts, manifest) regardless of umask", () => {
+    const old = process.umask(0o000);
+    try {
+      const f = fixture();
+      const out = join(mk(), "enc");
+      encryptPackage({ srcDir: f.pkg, outDir: out, keyFile: f.keyFile, repoRoot: REPO, chunkSize: 32 });
+      expect(mode(out)).toBe(0o700);
+      for (const n of readdirSync(out)) expect(mode(join(out, n)), n).toBe(0o600);
+      const o = join(mk(), "plain");
+      decryptPackage({ encDir: out, outDir: o, keyFile: f.keyFile, repoRoot: REPO });
+      expect(mode(o)).toBe(0o700);
+      for (const n of readdirSync(o)) expect(mode(join(o, n)), n).toBe(0o600);
+    } finally {
+      process.umask(old);
+    }
+  });
+  it("S3 (all platforms): the bits are requested in the source", () => {
+    const src = readFileSync(join(REPO, "scripts", "lib", "backup-crypto.mjs"), "utf8");
+    expect(src).not.toMatch(/openSync\(dst, "wx"\)/);
+    expect(src).not.toMatch(/mkdirSync\(out, \{ recursive: true \}\)/);
+    expect((src.match(/openSync\(dst, "wx", 0o600\)/g) ?? []).length).toBe(2);
+  });
+  it("S8: encryptFile that loses the exclusive-create race leaves the other file untouched", () => {
+    const d = mk();
+    const key = randomBytes(32);
+    const src = join(d, "src");
+    writeFileSync(src, randomBytes(40));
+    const dst = join(d, "dst.enc");
+    writeFileSync(dst, "someone else's data");
+    expect(code(() => encryptFile(key, src, dst, "20-roles.sql", 32))).toBe("ENCRYPT_FAILED");
+    expect(readFileSync(dst, "utf8")).toBe("someone else's data");
+  });
+  it("S8: decryptFile that loses the race leaves the other file untouched", () => {
+    const d = mk();
+    const key = randomBytes(32);
+    const src = join(d, "src");
+    writeFileSync(src, randomBytes(40));
+    encryptFile(key, src, join(d, "e"), "20-roles.sql", 32);
+    const dst = join(d, "plain");
+    writeFileSync(dst, "keep me");
+    expect(code(() => decryptFile(key, join(d, "e"), dst, "20-roles.sql"))).toBe("DECRYPT_FAILED");
+    expect(readFileSync(dst, "utf8")).toBe("keep me");
+  });
+  it("S8: a failure after a successful create still removes our own partial file", () => {
+    const d = mk();
+    const key = randomBytes(32);
+    const src = join(d, "src");
+    writeFileSync(src, randomBytes(100));
+    encryptFile(key, src, join(d, "e"), "20-roles.sql", 32);
+    expect(code(() => decryptFile(key, join(d, "e"), join(d, "plain"), "10-full.dump"))).toBe("DECRYPT_AUTH_FAILED"); // wrong artifact name => auth failure
+    expect(existsSync(join(d, "plain"))).toBe(false);
   });
 });

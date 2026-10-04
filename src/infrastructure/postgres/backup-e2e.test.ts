@@ -99,6 +99,9 @@ insert into public.enrollments (user_id) select id from public.users limit 2;`;
     expect(m.row_counts.before.auth["auth.users"]).toBe(3);
     expect(m.row_counts.before.public["public.users"]).toBe(4);
     expect(m.migrations.auth.count).toBe(5);
+    expect(m.migrations.after).toEqual({ supabase_migrations: m.migrations.supabase_migrations, auth: m.migrations.auth });
+    // synthetic: the 3 trigger-created public users have an auth row; 1 manually inserted public user has none (info only, not zero-gated)
+    expect(m.relationships).toMatchObject({ public_without_auth: 1, auth_without_public: 0 });
 
     const v = node("backup-validate.mjs", [dir]);
     noCanary(v);
@@ -111,6 +114,9 @@ insert into public.enrollments (user_id) select id from public.users limit 2;`;
     expect(r.status, r.stdout).toBe(0);
     expect(r.stdout).toContain("containers with prefix unlock-restore- remaining: 0");
     expect(r.stdout).toContain("info public.users=4, auth.users=3");
+    expect(r.stdout).toContain("check ok   public.users<->auth.users orphan counts == manifest (1/0)");
+    expect(r.stdout).toContain("check ok   manifest table set == restored public+auth table set");
+    expect(r.stdout).toContain("FULL = package restored into a real local Auth schema; hosted GoTrue-version equality and sign-in usability are not verified");
   }, 600000);
 
   it("tampered dump: validate exit 1 hash-mismatch/truncated, restore refuses (FAIL 1)", () => {

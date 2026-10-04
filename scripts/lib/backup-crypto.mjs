@@ -109,7 +109,7 @@ export function encryptFile(master, src, dst, name, chunkSize = DEFAULT_CHUNK) {
   let plainBytes = 0;
   let encBytes = 0;
   try {
-    outFd = openSync(dst, "wx");
+    outFd = openSync(dst, "wx", 0o600); // exclusive + owner-only; NTFS relies on the directory ACLs instead of mode bits
     const put = (b) => {
       writeSync(outFd, b);
       enc.update(b);
@@ -135,9 +135,12 @@ export function encryptFile(master, src, dst, name, chunkSize = DEFAULT_CHUNK) {
     }
     fsyncSync(outFd);
   } catch (e) {
-    if (outFd !== undefined) closeSync(outFd);
-    outFd = undefined;
-    rmSync(dst, { force: true });
+    // Only remove a file THIS call created: if openSync "wx" lost the race (EEXIST) outFd is undefined and dst belongs to someone else.
+    if (outFd !== undefined) {
+      closeSync(outFd);
+      outFd = undefined;
+      rmSync(dst, { force: true });
+    }
     throw e instanceof BackupError ? e : new BackupError("ENCRYPT_FAILED", "could not encrypt artifact");
   } finally {
     closeSync(inFd);
@@ -166,7 +169,7 @@ export function decryptFile(master, src, dst, name) {
     if (chunkSize < MIN_CHUNK || chunkSize > MAX_CHUNK) throw new BackupError("DECRYPT_AUTH_FAILED", "invalid header");
     if (!timingSafeEqual(header.subarray(12, 20), keyIdOf(master))) throw new BackupError("WRONG_KEY", "key does not match this backup");
     const fileKey = hkdf(master, header.subarray(20, 36), "unlock-backup/file-enc/v1", 32);
-    if (dst) outFd = openSync(dst, "wx");
+    if (dst) outFd = openSync(dst, "wx", 0o600);
     let pos = HEADER_LEN;
     for (let index = 0; ; index++) {
       if (pos + NONCE + 4 + TAG > size) throw new BackupError("TRUNCATED_CIPHERTEXT", "ciphertext ends early");
@@ -267,7 +270,7 @@ export function encryptPackage({ srcDir, outDir, keyFile, repoRoot, removePlaint
     if (!existsSync(p) || !statSync(p).isFile()) throw new BackupError("ARTIFACT_MISSING", `${a.file} missing`);
   }
   const madeDir = !existsSync(out);
-  mkdirSync(out, { recursive: true });
+  mkdirSync(out, { recursive: true, mode: 0o700 });
   const created = [];
   try {
     const encArtifacts = [];
@@ -283,7 +286,7 @@ export function encryptPackage({ srcDir, outDir, keyFile, repoRoot, removePlaint
       encryption: { status: "ENCRYPTED", algorithm: ENC_ALGORITHM, format_version: ENC_FORMAT_VERSION, key_id: keyIdOf(master).toString("hex"), chunk_size: chunkSize, artifacts: encArtifacts },
     };
     body.encryption.manifest_hmac_sha256 = manifestMac(master, body);
-    writeFileSync(join(out, MANIFEST_FILE), JSON.stringify(body, null, 2) + "\n", { flag: "wx" });
+    writeFileSync(join(out, MANIFEST_FILE), JSON.stringify(body, null, 2) + "\n", { flag: "wx", mode: 0o600 });
     created.push(join(out, MANIFEST_FILE));
     // re-verify the ciphertext (authenticates every chunk) before anything is allowed to delete plaintext
     for (const e of encArtifacts) {
@@ -322,7 +325,7 @@ export function decryptPackage({ encDir, outDir, keyFile, repoRoot }) {
   if (entries.length === 0 || entries.length !== listed.length) throw new BackupError("MANIFEST_INVALID", "encrypted artifact list does not match artifacts");
   const created = [];
   const madeDir = !existsSync(out);
-  mkdirSync(out, { recursive: true });
+  mkdirSync(out, { recursive: true, mode: 0o700 });
   try {
     for (const en of entries) {
       checkName(en.file);
@@ -333,7 +336,7 @@ export function decryptPackage({ encDir, outDir, keyFile, repoRoot }) {
       created.push(dst);
       if (r.plaintext_sha256 !== a.sha256 || r.plaintext_bytes !== a.bytes) throw new BackupError("PLAINTEXT_HASH_MISMATCH", `${en.file} differs from manifest`);
     }
-    writeFileSync(join(out, MANIFEST_FILE), JSON.stringify({ ...m, encryption: { status: "NONE_UNENCRYPTED_LOCAL" } }, null, 2) + "\n", { flag: "wx" });
+    writeFileSync(join(out, MANIFEST_FILE), JSON.stringify({ ...m, encryption: { status: "NONE_UNENCRYPTED_LOCAL" } }, null, 2) + "\n", { flag: "wx", mode: 0o600 });
   } catch (err) {
     for (const f of created) rmSync(f, { force: true });
     if (madeDir) rmSync(out, { recursive: true, force: true });

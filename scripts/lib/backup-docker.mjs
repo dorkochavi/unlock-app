@@ -4,14 +4,38 @@
  */
 import { spawnSync } from "node:child_process";
 import { dirname, basename } from "node:path";
-import { DEFAULT_IMAGE, assertLocalDockerEndpoint, assertSafeDockerEnv, sanitizedEnv } from "./restore-local.mjs";
-import { BackupError } from "./backup-package.mjs";
+import { DEFAULT_IMAGE, CONTAINER_HARDENING, assertLocalDockerEndpoint, assertSafeDockerEnv, sanitizedEnv } from "./restore-local.mjs";
+import { BackupError, assertSafeMountSource } from "./backup-package.mjs";
 
 export { DEFAULT_IMAGE };
 export const IMAGE_RE = /^(public\.ecr\.aws\/)?supabase\/postgres:[A-Za-z0-9._-]+$/;
 export const imageMajor = (image) => Number(/:(\d+)\./.exec(image)?.[1] ?? NaN);
 
-/** Docker daemon must be the local pipe/socket (the source URL is handed to the daemon via env). */
+/**
+ * Tool containers (psql/pg_dump/pg_restore -l) never run the postgres entrypoint, so they need no capabilities at all.
+ * On POSIX they run as the invoking user so files written to the (0700) bind-mounted output dir are owned by that user
+ * and need no DAC_OVERRIDE. On Windows/Docker Desktop the host user mapping is handled by the VM.
+ */
+export function toolContainerHardening(uid = process.getuid?.(), gid = process.getgid?.()) {
+  const user = Number.isInteger(uid) && Number.isInteger(gid) && uid !== 0 ? ["--user", `${uid}:${gid}`] : [];
+  return [...CONTAINER_HARDENING, ...user];
+}
+
+/**
+ * argv for one source-reading container. The source credentials are passed by NAME only (`-e PGPASSWORD`, value comes
+ * from the docker client's environment), never as an argv value or a URL. `script` is a fixed shell snippet that
+ * relies on the PG* variables (no URL, no password in it).
+ */
+export function buildSourceRunArgs({ containerName, image, network, targetDir, withInput, withMount, envNames, script, hardening = toolContainerHardening() }) {
+  const a = ["run", "--rm", "--pull", "never", "--name", containerName, ...hardening, ...(withInput ? ["-i"] : [])];
+  for (const n of envNames) a.push("-e", n);
+  if (network) a.push("--network", network);
+  if (withMount) a.push("--mount", `type=bind,source=${assertSafeMountSource(targetDir)},target=/out`);
+  a.push(image, "sh", "-c", script);
+  return a;
+}
+
+/** Docker daemon must be the local pipe/socket (the source credentials are handed to the daemon via env). */
 export function assertDockerLocal(env = process.env) {
   try {
     assertSafeDockerEnv(env);
@@ -29,15 +53,15 @@ export function assertImageLocal(image, env = process.env) {
   }
 }
 
-/** `pg_restore -l` of a dump file inside a network-less container with a read-only mount. Returns the TOC text. */
+/** argv of `pg_restore -l` of a dump file in a network-less, capability-less container with a read-only mount. */
+export function buildTocArgs(dumpPath, image = DEFAULT_IMAGE, hardening = toolContainerHardening()) {
+  const dir = assertSafeMountSource(dirname(dumpPath)); // re-check the REAL path, not the string the caller passed
+  return ["run", "--rm", "--pull", "never", "--network", "none", ...hardening, "--mount", `type=bind,source=${dir},target=/in,readonly`, image, "pg_restore", "-l", `/in/${basename(dumpPath)}`];
+}
+
+/** `pg_restore -l` of a dump file. Returns the TOC text. */
 export function readTocViaDocker(dumpPath, image = DEFAULT_IMAGE, env = process.env) {
-  const dir = dirname(dumpPath);
-  if (/[,"\r\n\0]/.test(dir)) throw new Error("unsafe path");
-  const r = spawnSync(
-    "docker",
-    ["run", "--rm", "--pull", "never", "--network", "none", "--mount", `type=bind,source=${dir},target=/in,readonly`, image, "pg_restore", "-l", `/in/${basename(dumpPath)}`],
-    { encoding: "utf8", env: sanitizedEnv(env), maxBuffer: 512 * 1024 * 1024 },
-  );
+  const r = spawnSync("docker", buildTocArgs(dumpPath, image), { encoding: "utf8", env: sanitizedEnv(env), maxBuffer: 512 * 1024 * 1024 });
   if (r.status !== 0) throw new Error("pg_restore -l failed");
   return r.stdout;
 }

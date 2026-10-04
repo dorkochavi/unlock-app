@@ -1,30 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- loosely typed manifest/evidence fixtures for negative tests */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { PGlite } from "@electric-sql/pglite";
 import {
+  FULL_CAVEAT,
   LABELS,
+  VOLATILE_TABLES,
   assertOutputOutsideRepo,
+  assertSafeMountSource,
   buildManifest,
+  buildMigrationStateSql,
+  buildRelationshipSql,
+  checkTableCount,
   classifyPackageRestore,
+  compareTableSets,
   countWithinRange,
   deriveReasons,
   hostFingerprint,
   parseCountOutput,
   parseInfoOutput,
+  parseMigrationState,
+  parseRelationshipCounts,
   parseRoleNames,
   parseSourceUrl,
   parseToc,
   redact,
+  relationshipCheck,
   retentionFor,
+  sourceContainerEnv,
   summarizeToc,
   timestampUtc,
   validatePackage,
 } from "../../../scripts/lib/backup-package.mjs";
-import { classifyResult, makeCounter } from "../../../scripts/lib/restore-local.mjs";
+import { CONTAINER_HARDENING, POSTGRES_ENTRYPOINT_CAPS, TRIGGER_CHECK_SQL, buildRestoreRunArgs, classifyResult, makeCounter } from "../../../scripts/lib/restore-local.mjs";
+import { buildSourceRunArgs, buildTocArgs } from "../../../scripts/lib/backup-docker.mjs";
 
 const REPO = process.cwd();
 const CANARY = "Canary-Pw-9f3a7c1e5b2d";
@@ -172,6 +185,8 @@ const baseEvidence = (): any => ({
   infoPresent: true,
   toc: summarizeToc(parseToc(TOC_FULL)),
   migrations: { supabase_migrations: { count: 15, latest: "20260929020000" }, auth: { count: 75, latest: "20260101000000" } },
+  migrationsAfter: { supabase_migrations: { count: 15, latest: "20260929020000" }, auth: { count: 75, latest: "20260101000000" } },
+  relationships: { public_without_auth: 0, auth_without_public: 0 },
   rowCounts: { public: { "public.users": 2 }, auth: { "auth.users": 2, "auth.schema_migrations": 75 } },
 });
 
@@ -404,5 +419,337 @@ describe("repo hygiene: backup artifacts are never tracked", () => {
 describe("package directory is created only outside the repo (path helper)", () => {
   it("accepts a sibling temp dir", () => {
     expect(() => assertOutputOutsideRepo(join(mk(), "new", "sub"), REPO)).not.toThrow();
+  });
+});
+
+// =====================================================================================================================
+// Slice G review fixes
+// =====================================================================================================================
+const url = (host: string, q = "") => `postgresql://postgres.abc:${CANARY}@${host}:5432/postgres${q}`;
+const hostCode = (u: string, o?: { testMode?: boolean }) => {
+  try {
+    parseSourceUrl(u, o);
+  } catch (e: any) {
+    return e.code as string;
+  }
+  return "ACCEPTED";
+};
+
+describe("S1 hosted-host guard is not string-only", () => {
+  it.each([
+    "localhost.",
+    "127.0.0.1.",
+    "127.1",
+    "0177.0.0.1",
+    "0x7f.0.0.1",
+    "0x7f000001",
+    "2130706433",
+    "10.1",
+    "10.0.0.5.",
+    "169.254.169.254",
+    "8.8.8.8",
+    "1.2.3.4.",
+    "db.abcdefgh.supabase.co%25eth0",
+    "[::1]",
+    "[::ffff:127.0.0.1]",
+    "[::ffff:7f00:1]",
+    "[fd00::1]",
+    "[fc00::1]",
+    "[fe80::1]",
+    "[::]",
+    "db_x.supabase.co",
+    "a..b.co",
+  ])("refuses %s", (h) => {
+    expect(hostCode(url(h))).toMatch(/^SOURCE_(HOST_NOT_ALLOWED|URL_INVALID)$/);
+  });
+  it("accepts a normal hosted hostname, a pooler hostname, a trailing-dot FQDN (normalized) and a global-unicast IPv6 literal", () => {
+    expect(hostCode(url("db.abcdefgh.supabase.co"))).toBe("ACCEPTED");
+    expect(hostCode(url("aws-0-eu-central-1.pooler.supabase.com"))).toBe("ACCEPTED");
+    expect(parseSourceUrl(url("db.abcdefgh.supabase.co.")).host).toBe("db.abcdefgh.supabase.co");
+    expect(hostCode(url("[2a05:d014::1]"))).toBe("ACCEPTED");
+    expect(hostCode(url("1abc.example.com"))).toBe("ACCEPTED");
+  });
+  it("every refusal above is SOURCE_HOST_NOT_ALLOWED (not an accidental parse error) for the named bypass families", () => {
+    for (const h of ["localhost.", "127.1", "0177.0.0.1", "0x7f.0.0.1", "10.1", "[::1]", "[::ffff:127.0.0.1]", "[fd00::1]", "[fe80::1]", "db.abcdefgh.supabase.co%25eth0"]) {
+      expect(hostCode(url(h)), h).toBe("SOURCE_HOST_NOT_ALLOWED");
+    }
+  });
+  it("the trailing-dot strip is applied before the loopback rules and the test-mode name rule", () => {
+    expect(hostCode(url("unlock-bkptest-abc-src."))).toBe("SOURCE_HOST_NOT_ALLOWED"); // hosted mode never accepts test hosts
+    expect(parseSourceUrl("postgres://u:pw1234@unlock-bkptest-abc-src.:5432/postgres", { testMode: true }).host).toBe("unlock-bkptest-abc-src");
+  });
+});
+
+describe("S2 sslmode", () => {
+  it.each(["disable", "allow", "prefer"])("hosted mode refuses sslmode=%s with SOURCE_SSLMODE_WEAK", (m) => {
+    expect(hostCode(url("db.abcdefgh.supabase.co", `?sslmode=${m}`))).toBe("SOURCE_SSLMODE_WEAK");
+  });
+  it.each(["require", "verify-ca", "verify-full"])("hosted mode accepts sslmode=%s and passes it through", (m) => {
+    const src = parseSourceUrl(url("db.abcdefgh.supabase.co", `?sslmode=${m}`));
+    expect(sourceContainerEnv(src).PGSSLMODE).toBe(m);
+  });
+  it("hosted mode with no sslmode passes PGSSLMODE=require; test mode adds nothing it was not given", () => {
+    expect(sourceContainerEnv(parseSourceUrl(url("db.abcdefgh.supabase.co"))).PGSSLMODE).toBe("require");
+    const t = parseSourceUrl("postgres://u:pw1234@unlock-bkptest-abc-src:5432/postgres", { testMode: true });
+    expect(sourceContainerEnv(t, { testMode: true }).PGSSLMODE).toBeUndefined();
+  });
+  it("the CLI refuses a weak sslmode with the stable code and no canary", () => {
+    const out = mk();
+    const r = runCreate(["--label", "daily", "--out", out, "--confirm-read-only-source"], { SUPA_DB_URL: `${HOSTED}?sslmode=disable` });
+    expect([r.status, r.stderr.includes("SOURCE_SSLMODE_WEAK")]).toEqual([1, true]);
+    expect(r.stdout + r.stderr).not.toContain(CANARY);
+    expect(readdirSync(out)).toEqual([]);
+  });
+});
+
+describe("S4 a claimed PARTIAL manifest never becomes FULL_CANDIDATE", () => {
+  it.each([[["X_Y"]], [["UPPER", "has space"]], [[42, null]]])("claimed PARTIAL with only malformed reasons %j => PARTIAL manifest-partial", async (reasons) => {
+    const { d } = makePackage({ mutate: (m) => (m.completeness = { level: "PARTIAL", reasons }) });
+    const r = await validatePackage(d, { readToc: toc(TOC_FULL) });
+    expect([r.level, r.exit, r.reasons]).toEqual(["PARTIAL", 2, ["manifest-partial"]]);
+  });
+  it("a valid claimed reason survives and no extra code is added", async () => {
+    const { d } = makePackage({ mutate: (m) => (m.completeness = { level: "PARTIAL", reasons: ["operator-note"] }) });
+    expect((await validatePackage(d, { readToc: toc(TOC_FULL) })).reasons).toEqual(["operator-note"]);
+  });
+});
+
+describe("S5 plaintext manifest cannot hide tables (table-set cross-check)", () => {
+  it("equal sets pass; a table missing from or extra in the restore fails; empty manifest set fails", () => {
+    expect(compareTableSets(["public.a", "auth.users"], ["auth.users", "public.a"]).ok).toBe(true);
+    expect(compareTableSets(["public.a", "auth.users"], ["public.a"])).toMatchObject({ ok: false, missingFromRestore: ["auth.users"], extraInRestore: [] });
+    expect(compareTableSets(["public.a"], ["public.a", "auth.sessions"])).toMatchObject({ ok: false, extraInRestore: ["auth.sessions"] });
+    expect(compareTableSets([], []).ok).toBe(false);
+  });
+  it("a failed cross-check validation makes the restore FAIL, never FULL", () => {
+    const base = { level: "FULL_CANDIDATE", validations: [{ name: "manifest table set == restored public+auth table set", ok: false }], authRestoredReal: true, triggerPresent: true, skippedCounts: 0 };
+    expect(classifyPackageRestore(base)).toMatchObject({ level: "FAIL", exit: 1 });
+  });
+});
+
+describe("S6 the source URL / password never reach docker argv or the container config", () => {
+  const src = parseSourceUrl(HOSTED);
+  const argvFor = (extra: Record<string, unknown> = {}) =>
+    buildSourceRunArgs({ containerName: "unlock-backup-x", image: "public.ecr.aws/supabase/postgres:17.6.1.166", network: undefined, targetDir: mk(), withInput: false, withMount: true, envNames: Object.keys(sourceContainerEnv(src)), script: "umask 077; pg_dump -w -Fc -f /out/10-full.dump", ...extra });
+  it("env carries the parts, argv carries only variable NAMES", () => {
+    const env = sourceContainerEnv(src);
+    expect(env).toMatchObject({ PGHOST: "db.abcdefgh.supabase.co", PGPORT: "5432", PGUSER: "postgres.abcdefgh", PGPASSWORD: CANARY, PGDATABASE: "postgres", PGSSLMODE: "require" });
+    expect(Object.values(env)).not.toContain(HOSTED);
+    const a: string[] = argvFor();
+    const joined = a.join("\u0001");
+    for (const secret of [CANARY, "postgres.abcdefgh", "abcdefgh", "supabase.co", "postgresql://", HOSTED]) expect(joined, secret).not.toContain(secret);
+    expect(a.filter((_x, i) => a[i - 1] === "-e")).toEqual(Object.keys(env));
+    expect(a).toContain("PGPASSWORD");
+  });
+  it("is hardened (cap-drop ALL, no-new-privileges, memory, pids) and bind-mounts only the output dir", () => {
+    const a: string[] = argvFor();
+    expect(a.join(" ")).toContain("--cap-drop ALL --security-opt no-new-privileges --memory 2g --pids-limit 512");
+    expect(a.some((x) => x.startsWith("type=bind,source=") && x.endsWith(",target=/out"))).toBe(true);
+  });
+  it("the --dry-run plan names env variables only, shows the hardening, and never prints the canary", () => {
+    const out = mk();
+    const r = runCreate(["--label", "daily", "--out", out, "--dry-run"], { SUPA_DB_URL: HOSTED });
+    expect(r.status).toBe(0);
+    const all = r.stdout + r.stderr;
+    expect(all).not.toContain(CANARY);
+    expect(all).not.toContain("UNLOCK_SRC_URL");
+    expect(all).toContain("PGPASSWORD");
+    expect(all).toContain("--cap-drop ALL");
+    expect(all).toContain("PGSSLMODE=require");
+  });
+  it("manifest secrecy still holds (canary is not in any manifest field)", () => {
+    expect(JSON.stringify(makePackage().m)).not.toContain(CANARY);
+  });
+});
+
+describe("S7 the realpath-resolved bind-mount source is re-checked", () => {
+  it("a clean-looking junction/symlink to a directory whose real path contains a comma is refused", () => {
+    const base = mk();
+    const evil = join(base, "a,b");
+    mkdirSync(evil);
+    const link = join(base, "clean");
+    symlinkSync(evil, link, "junction");
+    expect(/[,"\r\n\0]/.test(link)).toBe(false); // the string the caller sees is clean
+    expect(() => assertSafeMountSource(link)).toThrow(/OUTPUT_PATH_UNSAFE/); // docker would receive the resolved path
+    writeFileSync(join(evil, "10-full.dump"), "x");
+    expect(() => buildTocArgs(join(link, "10-full.dump"))).toThrow(/OUTPUT_PATH_UNSAFE/);
+    expect(() => buildSourceRunArgs({ containerName: "unlock-backup-x", image: "i", network: undefined, targetDir: link, withInput: false, withMount: true, envNames: [], script: "true" })).toThrow(/OUTPUT_PATH_UNSAFE/);
+  });
+  it("an ordinary directory resolves and is returned as the mount source", () => {
+    const d = mk();
+    expect(assertSafeMountSource(d)).toMatch(/unlock-bkp-test-/);
+    expect(buildTocArgs(join(d, "10-full.dump")).join(" ")).toContain("--cap-drop ALL");
+  });
+});
+
+describe("S9 container hardening", () => {
+  it("the restore container drops all caps, adds back only the postgres-entrypoint set, and never gains privileges", () => {
+    const a: string[] = buildRestoreRunArgs({ name: "unlock-restore-x", image: "public.ecr.aws/supabase/postgres:17.6.1.166", mountSource: "C:\\x", publish: null });
+    expect(a.join(" ")).toContain(CONTAINER_HARDENING.join(" "));
+    expect(a.filter((_x, i) => a[i - 1] === "--cap-add")).toEqual([...POSTGRES_ENTRYPOINT_CAPS]);
+    expect(a.indexOf("--cap-drop")).toBeLessThan(a.indexOf("--cap-add"));
+    expect(a).toContain("no-new-privileges");
+    expect(a).not.toContain("--privileged");
+    expect(a.join(" ")).toContain("--network none");
+    expect(a.some((x) => x.endsWith(",target=/backup,readonly"))).toBe(true);
+    expect(buildRestoreRunArgs({ name: "unlock-restore-x", image: "i", mountSource: "x", publish: "127.0.0.1:55432:5432" })).not.toContain("--network");
+  });
+});
+
+describe("D1 public.users<->auth.users orphan counts are recorded and must be reproduced exactly", () => {
+  it("manifest records both counts (info only: non-zero is allowed and still FULL_CANDIDATE)", async () => {
+    const ev = baseEvidence();
+    ev.relationships = { public_without_auth: 3, auth_without_public: 0 };
+    const { d, m } = makePackage({ evidence: ev });
+    expect(m.relationships).toMatchObject({ public_without_auth: 3, auth_without_public: 0 });
+    expect(m.completeness).toEqual({ level: "FULL_CANDIDATE", reasons: [] });
+    expect((await validatePackage(d, { readToc: toc(TOC_FULL) })).level).toBe("FULL_CANDIDATE");
+  });
+  it("an unavailable (null/garbled/absent) count => PARTIAL relationship-counts-unavailable, never FULL_CANDIDATE", async () => {
+    for (const rel of [{ public_without_auth: null, auth_without_public: 0 }, { public_without_auth: 0, auth_without_public: null }, null, undefined]) {
+      const ev = baseEvidence();
+      ev.relationships = rel;
+      const { d, m } = makePackage({ evidence: ev });
+      expect(m.completeness.level).toBe("PARTIAL");
+      expect(m.completeness.reasons).toContain("relationship-counts-unavailable");
+      const r = await validatePackage(d, { readToc: toc(TOC_FULL) });
+      expect([r.level, r.exit]).toEqual(["PARTIAL", 2]);
+      expect(r.reasons).toContain("relationship-counts-unavailable");
+    }
+    // a forged FULL_CANDIDATE claim over a missing count is invalid
+    const { d } = makePackage({ mutate: (m) => (m.relationships.public_without_auth = null) });
+    expect((await validatePackage(d, { readToc: toc(TOC_FULL) })).problems).toEqual(["manifest-claim-mismatch"]);
+  });
+  it("parse: missing/garbled lines are null, never 0", () => {
+    expect(parseRelationshipCounts("rel|public_without_auth|3\nrel|auth_without_public|0\n")).toEqual({ public_without_auth: 3, auth_without_public: 0 });
+    expect(parseRelationshipCounts("ERROR: relation does not exist\nrel|public_without_auth|x\n")).toEqual({ public_without_auth: null, auth_without_public: null });
+    expect(buildRelationshipSql()).toMatch(/auth\.users/);
+  });
+  it("restore gate: equal passes; any difference or NaN/null restored fails; unavailable manifest is skipped (PARTIAL), not passed as FULL", () => {
+    const man = { public_without_auth: 3, auth_without_public: 0 };
+    expect(relationshipCheck(man, { public_without_auth: 3, auth_without_public: 0 })).toEqual({ skipped: false, ok: true });
+    expect(relationshipCheck(man, { public_without_auth: 0, auth_without_public: 0 }).ok).toBe(false);
+    expect(relationshipCheck(man, { public_without_auth: 3, auth_without_public: 1 }).ok).toBe(false);
+    expect(relationshipCheck(man, { public_without_auth: NaN, auth_without_public: 0 }).ok).toBe(false);
+    expect(relationshipCheck({ public_without_auth: 0, auth_without_public: 0 }, { public_without_auth: NaN, auth_without_public: NaN }).ok).toBe(false);
+    expect(relationshipCheck({ public_without_auth: null, auth_without_public: 0 }, { public_without_auth: 0, auth_without_public: 0 })).toEqual({ skipped: true, ok: true });
+    expect(relationshipCheck(null, { public_without_auth: 0, auth_without_public: 0 }).skipped).toBe(true);
+    // skipped => the classifier cannot return FULL
+    expect(classifyPackageRestore({ level: "FULL_CANDIDATE", validations: [], authRestoredReal: true, triggerPresent: true, skippedCounts: 1 }).level).toBe("PARTIAL");
+  });
+});
+
+describe("D2 volatile auth tables get a wide window; nothing else does", () => {
+  const dt = ["auth.sessions", "auth.refresh_tokens", "auth.users", "public.users"];
+  it("the volatile allow-list is exactly the churny auth tables and only auth.*", () => {
+    expect([...VOLATILE_TABLES].sort()).toEqual(["auth.audit_log_entries", "auth.flow_state", "auth.mfa_amr_claims", "auth.mfa_challenges", "auth.one_time_tokens", "auth.refresh_tokens", "auth.sessions"]);
+    expect(VOLATILE_TABLES.every((t) => t.startsWith("auth."))).toBe(true);
+    for (const t of ["auth.users", "auth.identities", "auth.schema_migrations", "auth.mfa_factors", "public.users"]) expect(VOLATILE_TABLES).not.toContain(t);
+  });
+  it("volatile: restored within [0,max] passes (even below min) and is flagged volatile; above max, NaN, or no TOC data entry fails", () => {
+    expect(checkTableCount({ table: "auth.sessions", restored: 2, before: 10, after: 12, dataTables: dt })).toMatchObject({ ok: true, volatile: true, range: "[0,12]" });
+    expect(checkTableCount({ table: "auth.sessions", restored: 0, before: 10, after: 12, dataTables: dt }).ok).toBe(true);
+    expect(checkTableCount({ table: "auth.sessions", restored: 13, before: 10, after: 12, dataTables: dt }).ok).toBe(false);
+    expect(checkTableCount({ table: "auth.sessions", restored: NaN, before: 10, after: 12, dataTables: dt }).ok).toBe(false);
+    expect(checkTableCount({ table: "auth.sessions", restored: 5, before: null as any, after: 12, dataTables: dt }).ok).toBe(false);
+    expect(checkTableCount({ table: "auth.sessions", restored: 5, before: 10, after: 12, dataTables: ["auth.users"] }).ok).toBe(false);
+    expect(checkTableCount({ table: "auth.sessions", restored: 5, before: 10, after: 12, dataTables: undefined }).ok).toBe(false);
+  });
+  it("non-volatile tables keep the strict [min,max] gate (no wide window) even when the TOC has them", () => {
+    for (const t of ["auth.users", "public.users", "auth.schema_migrations", "auth.identities"]) {
+      expect(checkTableCount({ table: t, restored: 2, before: 10, after: 12, dataTables: [t] })).toMatchObject({ ok: false, volatile: false, range: "[10,12]" });
+      expect(checkTableCount({ table: t, restored: 0, before: 10, after: 12, dataTables: [t] }).ok).toBe(false);
+      expect(checkTableCount({ table: t, restored: 11, before: 10, after: 12, dataTables: [t] }).ok).toBe(true);
+    }
+  });
+  it("summarizeToc exposes the data-table list used for the TOC requirement", () => {
+    expect(summarizeToc(parseToc(TOC_FULL)).data_tables).toEqual(["auth.schema_migrations", "auth.users", "public.users", "supabase_migrations.schema_migrations"]);
+  });
+});
+
+describe("D3 trigger check is strict (real SQL against PGlite)", () => {
+  const setup = async (variant: string) => {
+    const db = new PGlite();
+    await db.exec(`
+      create schema auth;
+      create table auth.users (id int primary key);
+      create table public.other (id int primary key);
+      create function public.handle_new_auth_user() returns trigger language plpgsql as $f$ begin return new; end $f$;
+      create function public.some_other_fn() returns trigger language plpgsql as $f$ begin return new; end $f$;
+    `);
+    await db.exec(variant);
+    const r = await db.query<{ count: string }>(TRIGGER_CHECK_SQL);
+    await db.close();
+    return Number(r.rows[0].count);
+  };
+  const good = "create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_auth_user();";
+  it("a correct enabled trigger passes (1)", async () => {
+    expect(await setup(good)).toBe(1);
+  }, 60000);
+  it.each([
+    ["disabled (D)", `${good} alter table auth.users disable trigger on_auth_user_created;`],
+    ["replica-only (R)", `${good} alter table auth.users enable replica trigger on_auth_user_created;`],
+    ["always (A)", `${good} alter table auth.users enable always trigger on_auth_user_created;`],
+    ["same name on another table", "create trigger on_auth_user_created after insert on public.other for each row execute function public.handle_new_auth_user();"],
+    ["same name running another function", "create trigger on_auth_user_created after insert on auth.users for each row execute function public.some_other_fn();"],
+    ["different trigger name", "create trigger something_else after insert on auth.users for each row execute function public.handle_new_auth_user();"],
+    ["absent", "select 1;"],
+  ])("does not pass: %s", async (_n, sql) => {
+    expect(await setup(sql)).toBe(0);
+  }, 60000);
+  it("auth.users missing => the query errors (NaN in the script, fails closed)", async () => {
+    const d2 = new PGlite();
+    await d2.exec("create function public.handle_new_auth_user() returns trigger language plpgsql as $f$ begin return new; end $f$;");
+    await expect(d2.query(TRIGGER_CHECK_SQL)).rejects.toThrow();
+    await d2.close();
+  }, 60000);
+  it("the SQL pins every condition", () => {
+    for (const frag of ["tgrelid = 'auth.users'::regclass", "tgenabled = 'O'", "tgfoid = 'public.handle_new_auth_user'::regproc", "not tgisinternal"]) expect(TRIGGER_CHECK_SQL).toContain(frag);
+  });
+});
+
+describe("D4 migration state is re-read after the dump", () => {
+  it("unchanged => no reason; changed count or latest, or an unreadable re-read => PARTIAL migration-state-changed-during-dump", async () => {
+    expect(deriveReasons(baseEvidence())).not.toContain("migration-state-changed-during-dump");
+    const cases: ((e: any) => void)[] = [
+      (e) => (e.migrationsAfter.supabase_migrations = { count: 16, latest: "20260929020000" }),
+      (e) => (e.migrationsAfter.supabase_migrations = { count: 15, latest: "20261001000000" }),
+      (e) => (e.migrationsAfter.auth = { count: 76, latest: "20260101000000" }),
+      (e) => (e.migrationsAfter = { supabase_migrations: null, auth: null }),
+      (e) => (e.migrationsAfter = undefined),
+    ];
+    for (const f of cases) {
+      const ev = baseEvidence();
+      f(ev);
+      expect(deriveReasons(ev)).toContain("migration-state-changed-during-dump");
+      const { d, m } = makePackage({ evidence: ev });
+      expect(m.completeness.level).toBe("PARTIAL");
+      expect(m.completeness.reasons).toContain("migration-state-changed-during-dump");
+      const r = await validatePackage(d, { readToc: toc(TOC_FULL) });
+      expect([r.level, r.exit]).toEqual(["PARTIAL", 2]);
+    }
+  });
+  it("both before and after are recorded in the manifest; a forged unchanged-claim over a changed state is invalid", async () => {
+    const ev = baseEvidence();
+    ev.migrationsAfter.supabase_migrations = { count: 16, latest: "20261001000000" };
+    const { m } = makePackage({ evidence: ev });
+    expect(m.migrations.supabase_migrations).toEqual({ count: 15, latest: "20260929020000" });
+    expect(m.migrations.after.supabase_migrations).toEqual({ count: 16, latest: "20261001000000" });
+    const forged = makePackage({ mutate: (x) => (x.migrations.after.supabase_migrations = { count: 99, latest: "9" }) });
+    expect((await validatePackage(forged.d, { readToc: toc(TOC_FULL) })).problems).toEqual(["manifest-claim-mismatch"]);
+  });
+  it("parse of the re-read query output (null when unreadable) and SQL shape", () => {
+    expect(parseMigrationState("mig_supabase|15|20260929020000\nmig_auth|75|20260101000000\n")).toEqual({ supabase_migrations: { count: 15, latest: "20260929020000" }, auth: { count: 75, latest: "20260101000000" } });
+    expect(parseMigrationState("ERROR: permission denied\n")).toEqual({ supabase_migrations: null, auth: null });
+    expect(buildMigrationStateSql()).toMatch(/supabase_migrations\.schema_migrations[\s\S]*auth\.schema_migrations/);
+  });
+});
+
+describe("D5 FULL output carries the honest caveat", () => {
+  it("RESULT: FULL is followed by the caveat line", () => {
+    const r = classifyPackageRestore({ level: "FULL_CANDIDATE", validations: [{ name: "x", ok: true }], authRestoredReal: true, triggerPresent: true, skippedCounts: 0 });
+    expect(r.lines[0]).toMatch(/^RESULT: FULL/);
+    expect(r.lines.join("\n")).toContain(FULL_CAVEAT);
+    expect(FULL_CAVEAT).toContain("hosted GoTrue-version equality and sign-in usability are not verified");
   });
 });

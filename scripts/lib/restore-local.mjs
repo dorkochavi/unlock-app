@@ -12,6 +12,31 @@ export const DEFAULT_IMAGE = "public.ecr.aws/supabase/postgres:17.6.1.166";
 export const NAME_PREFIX = "unlock-restore-";
 export const EXPECTED = { publicTables: 12, authTables: 26 };
 export const STAGE_SCHEMA = "auth_dump_stage";
+
+/**
+ * Hardening for every container this tooling starts. The postgres entrypoint needs a small capability set to chown the data
+ * dir and drop to the postgres user; everything else is dropped. (Verified by the opt-in e2e, see docs/RESTORE_RUNBOOK.md.)
+ */
+export const CONTAINER_HARDENING = Object.freeze(["--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", "2g", "--pids-limit", "512"]);
+export const POSTGRES_ENTRYPOINT_CAPS = Object.freeze(["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE", "FOWNER"]);
+
+/** argv for the disposable restore container (bind mount is read-only; --network none unless a localhost publish is requested). */
+export function buildRestoreRunArgs({ name, image, mountSource, publish }) {
+  const a = ["run", "-d", "--pull", "never", "--name", name, "--label", "unlock-restore=1", ...CONTAINER_HARDENING, ...POSTGRES_ENTRYPOINT_CAPS.flatMap((c) => ["--cap-add", c]), "-e", "POSTGRES_PASSWORD", "-e", "PGPASSWORD", "--mount", `type=bind,source=${mountSource},target=/backup,readonly`];
+  if (publish) a.push("-p", publish);
+  else a.push("--network", "none");
+  a.push(image);
+  return a;
+}
+
+/**
+ * Strict trigger check (restored DB): exactly one trigger named on_auth_user_created ON auth.users, enabled-origin ("O":
+ * not disabled "D", not replica-only "R", not always "A"), executing public.handle_new_auth_user, and not internal.
+ * A same-named trigger on another table, a disabled/replica trigger or one running another function does not count.
+ * auth.users missing => the query errors => the count is NaN => fails closed.
+ */
+export const TRIGGER_CHECK_SQL =
+  "select count(*) from pg_trigger where tgrelid = 'auth.users'::regclass and tgname = 'on_auth_user_created' and tgenabled = 'O' and tgfoid = 'public.handle_new_auth_user'::regproc and not tgisinternal";
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
