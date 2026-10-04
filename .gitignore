@@ -59,3 +59,17 @@ next-env.d.ts
 /.claude/scheduled_tasks.lock
 
 .vercel
+
+# Backup packages must never be committed (plaintext PII/hashes). Procedure V1 writes them OUTSIDE the repo;
+# these patterns are a second line of defence (guarded by src/infrastructure/postgres/backup-package.test.ts).
+/backups/
+/UNLOCK-backups/
+**/MANIFEST.json
+*.dump
+*.dump.*
+10-full.dump
+20-roles.sql
+30-server-info.txt
+01-schema.sql
+02-data-public.sql
+03-data-auth-migrations.sql

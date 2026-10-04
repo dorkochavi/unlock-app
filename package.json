@@ -14,6 +14,8 @@
     "test:burst": "vitest run --config supabase/vitest.burst.config.mts",
     "test:real-pg": "vitest run --config supabase/vitest.real-pg.config.mts",
     "test:e2e": "playwright test",
+    "backup:create": "node scripts/backup-create.mjs",
+    "backup:validate": "node scripts/backup-validate.mjs",
     "restore:local": "node scripts/restore-local-backup.mjs",
     "bundle:review": "node scripts/create-review-bundle.mjs"
   },
