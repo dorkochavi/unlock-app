@@ -168,11 +168,11 @@ export function validateBackupDir(dir, expect = EXPECTED) {
 }
 
 /**
- * @param {{backupComplete: boolean, validations: {name: string, ok: boolean}[], authBlockCount: number, authPopulated: string[], authRestoredReal?: string[], publicUsers?: number, stagedAuthUsers?: number | null}} o
+ * @param {{backupComplete: boolean, validations: {name: string, ok: boolean}[], authBlockCount: number, authPopulated: string[], authRestoredReal?: string[], publicUsers?: number, stagedAuthUsers?: number | null, legacyLayout?: boolean}} o
  * Result level. FULL only if the backup is complete, every validation passes,
  * and no populated auth table is omitted from the real auth schema.
  */
-export function classifyResult({ backupComplete, validations, authBlockCount, authPopulated, authRestoredReal = [], publicUsers = 0, stagedAuthUsers = null }) {
+export function classifyResult({ backupComplete, validations, authBlockCount, authPopulated, authRestoredReal = [], publicUsers = 0, stagedAuthUsers = null, legacyLayout = false }) {
   const failed = validations.filter((v) => !v.ok).map((v) => v.name);
   // Non-finite counts (e.g. NaN from a failed psql) can never support PARTIAL/FULL.
   if (!Number.isFinite(publicUsers)) failed.push("public.users count unavailable");
@@ -197,6 +197,10 @@ export function classifyResult({ backupComplete, validations, authBlockCount, au
         `omitted populated auth tables: ${omitted.join(", ")}`,
       ],
     };
+  }
+  // The legacy 3-file layout has no auth DDL / GoTrue version / manifest: never FULL, whatever the counts say.
+  if (legacyLayout) {
+    return { level: "PARTIAL", exit: 2, omitted: ["(legacy 3-file layout)"], lines: ["RESULT: PARTIAL (legacy 3-file layout is capped at PARTIAL)", "AUTH NOT RECOVERED (legacy layout carries no Auth DDL or GoTrue version)"] };
   }
   return { level: "FULL", exit: 0, omitted: [], lines: ["RESULT: FULL"] };
 }
