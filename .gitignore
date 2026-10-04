@@ -73,3 +73,7 @@ next-env.d.ts
 01-schema.sql
 02-data-public.sql
 03-data-auth-migrations.sql
+*.enc
+*.key
+*.keyfile
+/UNLOCK-backups-enc/

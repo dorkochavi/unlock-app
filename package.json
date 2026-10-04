@@ -16,6 +16,10 @@
     "test:e2e": "playwright test",
     "backup:create": "node scripts/backup-create.mjs",
     "backup:validate": "node scripts/backup-validate.mjs",
+    "backup:keygen": "node scripts/backup-encrypt.mjs keygen",
+    "backup:encrypt": "node scripts/backup-encrypt.mjs",
+    "backup:decrypt": "node scripts/backup-decrypt.mjs",
+    "backup:retention": "node scripts/backup-retention.mjs",
     "restore:local": "node scripts/restore-local-backup.mjs",
     "bundle:review": "node scripts/create-review-bundle.mjs"
   },

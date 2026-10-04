@@ -36,6 +36,7 @@ import {
   validateBackupDir,
 } from "./lib/restore-local.mjs";
 import { assertDockerLocal, assertImageLocal, readTocViaDocker } from "./lib/backup-docker.mjs";
+import { isEncryptedPackageDir } from "./lib/backup-crypto.mjs";
 import {
   MANIFEST_FILE, ROLES_FILE, DUMP_FILE, classifyPackageRestore, countWithinRange, parseRoleNames, validatePackage,
 } from "./lib/backup-package.mjs";
@@ -84,6 +85,10 @@ try {
 }
 
 const isPackage = existsSync(join(dir, MANIFEST_FILE));
+if (isPackage && isEncryptedPackageDir(dir)) {
+  console.error("restore refused: package is encrypted at rest; run backup:decrypt into a temp dir outside the repo first");
+  process.exit(1);
+}
 function printPackageValidate(r) {
   for (const n of r.notes) out(`note: ${n}`);
   for (const p of r.problems) out(`problem: ${p}`);

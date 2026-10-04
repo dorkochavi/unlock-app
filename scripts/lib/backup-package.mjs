@@ -20,6 +20,9 @@ export const DUMP_SCHEMAS = ["public", "auth", "supabase_migrations"];
 export const COUNT_SCHEMAS = ["public", "auth"];
 export const LEVEL_FULL_CANDIDATE = "FULL_CANDIDATE";
 export const LEVEL_PARTIAL = "PARTIAL";
+export const ENC_ALGORITHM = "AES-256-GCM-CHUNKED";
+export const ENC_FORMAT_VERSION = 1;
+export const ENC_EXT = ".enc";
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 export const isIdent = (s) => IDENT.test(s);
@@ -126,7 +129,7 @@ export function redact(text, secrets) {
 }
 
 // ---------------------------------------------------------------- output path guard
-function realpathLoose(p) {
+export function realpathLoose(p) {
   let cur = resolve(p);
   const rest = [];
   while (!existsSync(cur)) {
@@ -342,6 +345,48 @@ export function buildManifest(m) {
   };
 }
 
+// ---------------------------------------------------------------- encrypted package (key-less check)
+/** Ciphertext files/sizes/sha256 against the manifest. Needs no key; proves nothing about plaintext or the TOC. */
+async function checkEncryptedCiphertext(dir, manifest) {
+  const problems = [];
+  const notes = [];
+  const e = manifest.encryption ?? {};
+  if (e.format_version !== ENC_FORMAT_VERSION || e.algorithm !== ENC_ALGORITHM) {
+    problems.push("wrong-encryption-format");
+    return { problems, notes };
+  }
+  const entries = Array.isArray(e.artifacts) ? e.artifacts : [];
+  const listed = Array.isArray(manifest.artifacts) ? manifest.artifacts : [];
+  if (entries.length === 0 || entries.length !== listed.length || !/^[0-9a-f]{16}$/.test(String(e.key_id ?? "")) || !/^[0-9a-f]{64}$/.test(String(e.manifest_hmac_sha256 ?? ""))) {
+    problems.push("corrupt");
+    notes.push("encryption section malformed");
+    return { problems, notes };
+  }
+  for (const en of entries) {
+    if (!PACKAGE_ARTIFACTS.includes(en?.file) || en.encrypted_file !== en.file + ENC_EXT || !/^[0-9a-f]{64}$/.test(String(en.encrypted_sha256 ?? "")) || !Number.isInteger(en.encrypted_bytes)) {
+      problems.push("corrupt");
+      notes.push("encrypted artifact entry malformed");
+      continue;
+    }
+    const p = join(dir, en.encrypted_file);
+    if (!existsSync(p) || !statSync(p).isFile()) {
+      problems.push("missing");
+      notes.push(`${en.encrypted_file} missing`);
+      continue;
+    }
+    const size = statSync(p).size;
+    if (size < en.encrypted_bytes) {
+      problems.push("truncated");
+      notes.push(`${en.encrypted_file} is ${size} bytes, manifest says ${en.encrypted_bytes}`);
+    } else if (size !== en.encrypted_bytes || (await sha256File(p)) !== en.encrypted_sha256) {
+      problems.push("hash-mismatch");
+      notes.push(`${en.encrypted_file}: sha256/size differs from manifest`);
+    }
+  }
+  for (const f of readdirSync(dir)) if (PACKAGE_ARTIFACTS.includes(f)) notes.push(`plaintext artifact ${f} present beside the encrypted package (remove it after verifying the encrypted copy)`);
+  return { problems, notes };
+}
+
 // ---------------------------------------------------------------- validate
 /**
  * Validate a package directory. Integrity problems (missing/truncated/corrupt/hash-mismatch/
@@ -354,7 +399,7 @@ export async function validatePackage(dir, { readToc = null } = {}) {
   const problems = [];
   const reasons = new Set();
   const notes = [];
-  const result = (level, extra = {}) => ({ level, exit: level === LEVEL_FULL_CANDIDATE ? 0 : level === LEVEL_PARTIAL ? 2 : 1, problems: [...new Set(problems)].sort(), reasons: [...reasons].sort(), notes, manifest: null, toc: null, ...extra });
+  const result = (level, extra = {}) => ({ level, exit: level === LEVEL_FULL_CANDIDATE ? 0 : level === LEVEL_PARTIAL ? 2 : 1, problems: [...new Set(problems)].sort(), reasons: [...reasons].sort(), notes, manifest: null, toc: null, encrypted: false, ...extra });
 
   const mp = join(dir, MANIFEST_FILE);
   if (!existsSync(mp) || !statSync(mp).isFile()) {
@@ -375,6 +420,18 @@ export async function validatePackage(dir, { readToc = null } = {}) {
     problems.push("wrong-manifest-version");
     notes.push(`supported manifest schema_version is ${MANIFEST_SCHEMA_VERSION}`);
     return result("INVALID");
+  }
+  if (manifest.encryption?.status === "ENCRYPTED") {
+    // At-rest encrypted package: verify ciphertext hashes without the key. Never FULL_CANDIDATE: the TOC, the plaintext
+    // hashes and the manifest MAC need the key and a decrypt (backup:decrypt), so the best result here is PARTIAL.
+    const c = await checkEncryptedCiphertext(dir, manifest);
+    problems.push(...c.problems);
+    notes.push(...c.notes);
+    if (problems.length > 0) return result("INVALID", { manifest, encrypted: true });
+    reasons.add("encrypted-requires-decrypt-for-toc");
+    notes.push("ciphertext integrity verified without the key; run backup:decrypt to verify plaintext hashes, the manifest MAC and the TOC");
+    for (const r of Array.isArray(manifest.completeness?.reasons) ? manifest.completeness.reasons : []) if (typeof r === "string" && /^[a-z-]{1,40}$/.test(r)) reasons.add(r);
+    return result(LEVEL_PARTIAL, { manifest, encrypted: true });
   }
   const listed = Array.isArray(manifest.artifacts) ? manifest.artifacts : [];
   const byFile = new Map(listed.map((a) => [a?.file, a]));
