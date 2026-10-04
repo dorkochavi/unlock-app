@@ -202,7 +202,7 @@ reports; only still-open pointers remain:
   2026-10-03, QA-CLEANUP-001; terminal in V1, no un-archive path). QA data is RETAINED as evidence: 1 inert QA learner
   membership (OQ-043 untouched), 7 Attempts, 6 progress rows. No hard delete done or planned (separate human decision).
 - Auth redirect audit (2026-10-04): no app-side open-redirect gap (allowlist-only `next`, fixed-shape `emailRedirectTo`, no server callback/Host use; tests added). Remaining human check: Supabase dashboard URL Configuration (Site URL; Redirect URLs accept `/login?next=...`; no broad wildcards); fails safe, non-blocking. UX note (non-security): `/instructor/courses/new` is not allowlisted for `next` and falls back to `/today`.
-- Pilot-readiness matrix (45 rows: 7 PROVEN_READY, 14 HUMAN_CHECK, 5 EXTERNAL/HOSTED_CHECK, 8 OPEN_DECISION, 1 ENGINEERING_GAP, 10 DEFERRED_NON_BLOCKER): `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-E-pilot-readiness-matrix.md`. Real pilot NOT approved; Content gate unchanged.
+- Pilot-readiness matrix (45 rows: 7 PROVEN_READY, 14 HUMAN_CHECK, 5 EXTERNAL/HOSTED_CHECK, 8 OPEN_DECISION, 1 ENGINEERING_GAP, 10 DEFERRED_NON_BLOCKER): `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-E-pilot-readiness-matrix.md`. The matrix is a frozen historical snapshot (counts as of that Run); later evidence supersedes rows 5 (Auth restore gap: closed), 6 (owner/frequency/RPO/RTO: decided) and 32 (13c: Pilot DR gate SATISFIED) — see Backup/DR V1 above; row 7 (Supabase plan/PITR) remains open. Real pilot NOT approved; Content gate unchanged.
 
 ## Current Human / Manual Actions
 

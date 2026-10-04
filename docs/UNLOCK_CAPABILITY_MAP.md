@@ -269,10 +269,11 @@ Preserved from owners:
 ### 15. Platform / Operations / Observability — M2 · A (minimum)
 - **Owns:** deploy/release, CI, database operations, backup/recovery, runtime visibility.
 - **Proven:** ADR-019 release model (`main` = Production, `v0.1.0`); CI typecheck/lint/unit; hosted migrations aligned;
-  pooler + TLS config; manual logical backup; route handlers log unexpected errors (Vercel function logs).
+  pooler + TLS config; Backup/DR V1 (real Production backup, encrypted, local FULL restore drill 2026-10-04; policy incl.
+  RPO/RTO `docs/BACKUP_DR_POLICY.md`; Pilot DR gate satisfied); route handlers log unexpected errors (Vercel function logs).
 - **Partial:** CI excludes schema suite, build and E2E by design; no required status checks on `main`.
-- **Missing:** runtime error monitoring/alerting (FUB-008), restore drill/RPO/RTO (FUB-009), Vercel failed-build behavior
-  unverified, SMTP/Auth email capacity decision (`PILOT_READINESS.md` §3 item 11).
+- **Missing:** runtime error monitoring/alerting (FUB-008), Supabase plan/PITR verification, drill-cadence approval and
+  hosted DR (FUB-009; offline key custody FUB-048), Vercel failed-build behavior unverified, SMTP/Auth email capacity decision (`PILOT_READINESS.md` §3 item 11).
 - **Pilot needs:** SMTP decision, runtime/error visibility and backup/recovery sanity (`PILOT_READINESS.md` §3 items 11,
   13b, 13c). Advanced observability stays in Roadmap Run 012 (FUB-008/009 cover beyond the minimum).
 - **Mature-only:** staging, automated alerting, scale hardening (Roadmap Run 012).

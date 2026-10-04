@@ -323,6 +323,53 @@ test('WARN: LAST_VERIFIED_HEAD equals current HEAD while RUN_STATUS: COMPLETE', 
 });
 
 // ---------------------------------------------------------------------
+// Plan-corruption guards (repeated close-script pattern)
+// ---------------------------------------------------------------------
+function planCorruptionFixture(runStatus, extraBody) {
+  const dir = mkTempDir();
+  const [c0, c1] = initFixtureRepo(dir, 2);
+  const runId = '2026-01-01-FIXTURE-CORRUPT';
+  writeDocs(dir, {
+    devStatus: `# DEV_STATUS\n\nRUN_ID: ${runId}\n`,
+    plan: planFixture({ runId, startHead: c0, lastVerifiedHead: c1, runStatus }) + extraBody,
+  });
+  writeRunReport(dir, runId);
+  commitFixtureFiles(dir);
+  return dir;
+}
+
+const SLICE_TABLE_PENDING =
+  '| Slice | Scope | Gate | Status |\n|---|---|---|---|\n| A | grounding | AUTO | DONE |\n| B | build | AUTO | PENDING |\n';
+
+test('FAIL: RUN_STATUS COMPLETE while a slice-table row is still PENDING', () => {
+  const dir = planCorruptionFixture('COMPLETE', SLICE_TABLE_PENDING);
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 1, `expected exit 1, got ${status}. stdout:\n${stdout}`);
+  assert.match(stdout, /FAIL: RUN_STATUS: COMPLETE but 1 slice-table row\(s\).*PENDING/);
+});
+
+test('No FAIL: PENDING slice rows are fine while RUN_STATUS is IN_PROGRESS; DONE/BLOCKED rows pass when COMPLETE', () => {
+  const inProgress = planCorruptionFixture('IN_PROGRESS', SLICE_TABLE_PENDING);
+  assert.equal(runVerifier(inProgress).status, 0);
+  const complete = planCorruptionFixture(
+    'COMPLETE',
+    '| A | x | AUTO | DONE (ok) |\n| B | y | HUMAN_BOUNDARY | BLOCKED (human) |\n'
+  );
+  const { status, stdout } = runVerifier(complete);
+  assert.equal(status, 0, `stdout:\n${stdout}`);
+  assert.doesNotMatch(stdout, /PENDING/);
+});
+
+test('WARN: literal "undefined" in the Plan (outside code spans), still PASS; no WARN inside a code span', () => {
+  const bad = planCorruptionFixture('COMPLETE', '# Title undefinedDONE (grounding) |\n');
+  const r = runVerifier(bad);
+  assert.equal(r.status, 0, `expected exit 0 (WARN only). stdout:\n${r.stdout}`);
+  assert.match(r.stdout, /WARN: Literal "undefined" found/);
+  const ok = planCorruptionFixture('COMPLETE', 'Prose mentions `undefined` only in a code span.\n');
+  assert.doesNotMatch(runVerifier(ok).stdout, /Literal "undefined"/);
+});
+
+// ---------------------------------------------------------------------
 // Telemetry attribution sanity (WARN-only)
 // ---------------------------------------------------------------------
 function attributionFixture(commitCount, runId) {

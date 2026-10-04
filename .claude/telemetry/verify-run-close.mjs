@@ -96,6 +96,25 @@ export function hasLegacyFinalHead(content) {
   return !!content && /final\s+head/i.test(content);
 }
 
+// Plan-corruption patterns seen at two consecutive Run closes (a close script
+// wrote the literal "undefined" into the Plan title line and left the slice
+// table PENDING while the Run was declared COMPLETE).
+// - `undefined` outside backtick code spans (WARN: could be legitimate prose);
+// - slice-table rows whose last (status) cell starts with PENDING (FAIL when
+//   RUN_STATUS is COMPLETE: a completed Run has no pending Slice).
+export function planHasUndefinedText(content) {
+  if (!content) return false;
+  const withoutCode = content.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+  return /\bundefined/.test(withoutCode);
+}
+
+export function planPendingSliceRows(content) {
+  if (!content) return [];
+  return content
+    .split(/\r?\n/)
+    .filter((line) => /^\s*\|.*\|\s*PENDING\b[^|]*\|\s*$/.test(line));
+}
+
 function gitRefExists(root, ref) {
   try {
     // The `^{commit}` suffix forces git to verify the object actually
@@ -255,6 +274,12 @@ export function runVerification({ root, preClose }) {
     return { fails, warns };
   }
 
+  if (planHasUndefinedText(plan)) {
+    warns.push(
+      `Literal "undefined" found in ${planPath} (outside code spans) -- likely a corrupted close/patch script; check the title line and slice table.`
+    );
+  }
+
   const runId = extractLabel(plan, 'RUN_ID');
   const runStatus = extractLabel(plan, 'RUN_STATUS');
   const startHead = extractLabel(plan, 'START_HEAD');
@@ -283,6 +308,12 @@ export function runVerification({ root, preClose }) {
   if (runStatus === 'COMPLETE') {
     if (!lastVerifiedHead) {
       fails.push('LAST_VERIFIED_HEAD is missing while RUN_STATUS: COMPLETE.');
+    }
+    const pendingRows = planPendingSliceRows(plan);
+    if (pendingRows.length > 0) {
+      fails.push(
+        `RUN_STATUS: COMPLETE but ${pendingRows.length} slice-table row(s) in ${planPath} are still PENDING.`
+      );
     }
     const reportPath = path.join(root, 'docs', 'RUNS', `${runId}.md`);
     if (!fs.existsSync(reportPath)) {

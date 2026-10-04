@@ -2,7 +2,8 @@
 
 Run: `2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001`
 Status: COMPLETE
-Result: PARTIAL (tooling + synthetic-local FULL drill proven; real hosted FULL_RECOVERY unproven; Pilot DR gate NOT_READY)
+Result: PARTIAL (tooling + synthetic-local FULL drill proven; real hosted FULL_RECOVERY unproven; Pilot DR gate NOT_READY) — as of Run close (historical).
+**Later same day: superseded by §9 Post-close addendum** — the human executed Slice E; real Production backup + local restore drill FULL; Pilot DR gate SATISFIED.
 Baseline (START_HEAD): `b28d04b` (Plan-only identity commit `f895ecb` above it)
 Branch: `feature/run-010-learning-intelligence` (local commits only, not pushed)
 HOSTED_MUTATION: NONE. REMOTE_GIT_MUTATION: NONE. No product semantics changed.
