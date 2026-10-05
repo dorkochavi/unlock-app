@@ -390,7 +390,7 @@ genuinely warranted, no broader stack.
 
 # FUB-009 — Backup / Restore / Disaster Recovery
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` — triage 2026-10-06: `KEEP_DEFERRED` (V1 backup tooling shipped; residuals live in FUB-047/048)
 **Priority:** `MEDIUM`
 **Area:** Post-Pilot / Production Readiness
 
@@ -458,7 +458,7 @@ pilot blocker at current expected pilot load.
 
 # FUB-011 — Abuse / Platform Hardening
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` — triage 2026-10-06: `WATCH` (shared-IP classroom signup burst: watch for signup throttling complaints on the first Pilot class day)
 **Priority:** `LOW`
 **Area:** Post-Pilot / Production Readiness
 
@@ -928,8 +928,8 @@ post-re-publish counts.
 
 # FUB-026 — Today / Answer Round-Trip Reduction
 
-**Status:** `DEFERRED`
-**Priority:** `LOW`
+**Status:** `DEFERRED` — triage 2026-10-06: `PROMOTE_NEXT` candidate for a dedicated Performance Run (Dor's call; speed is a core product principle, hosted p95 3-5 s at 30 learners)
+**Priority:** `MEDIUM`
 **Area:** Performance / Application + Infrastructure
 
 ## Observation
@@ -971,6 +971,46 @@ No Today/Answer query restructuring in Pre-Pilot; the S3 gate passed without it.
 
 Larger cohorts, or pilot latency complaints, or hosted p95 above the S3
 guidance (about 5 s) at the target class size.
+
+## 2026-10-06 Static Perf Audit Addendum (PILOT-FRICTION-PERF-OVERNIGHT-001)
+
+Dor: speed is a core product principle. Read-only audit; nothing implemented; counts are STATIC (code reading), not
+runtime-measured. Facts: no request-level instrumentation exists (only error logging and opt-in pool queue stats); every
+page is client-rendered (JS chunk, then `/api/*` fetch); every API call pays one `auth.getUser()` HTTP round trip (mandated
+by `.claude/rules/auth.md`; local-claims verification is a security decision, not a perf tweak); Vercel and Supabase regions
+are not recorded in the repo.
+
+Top opportunities (P-level = priority, not Plan order):
+
+1. **P0 Answer round trips** (Today ~14 DB RT; Practice answer ~24+): duplicate item read, post-commit feedback read
+   duplicating the correctness read, full `getOrCreateDailyPlanForToday` per Practice call.
+2. **P0/P1 Vercel/Supabase region check.** A Dor-owned dashboard/hosted action (do not touch Production config from an agent);
+   every figure scales with the Vercel-Supabase RTT. Potentially the largest single win.
+3. **P1 Today repeat-open:** four generation-only pre-reads run before the plan-exists check (~9 RT to ~4); same machinery
+   inflates Practice batch (>=14 RT).
+4. **P1 Progress:** two-phase waterfall plus N+1 requests/auth calls; progressive render and/or one aggregate endpoint.
+5. **P1 Practice next-batch prefetch** (only after the last answer is persisted; avoid full-screen spinner) and optimistic
+   Skip advance (needs a product call on failure UX). P2: redundant `router.refresh()` after login/join, `router.prefetch`,
+   skeletons, publish-all serial loop on the instructor page.
+
+Proposed Performance Run outline: P1 instrumentation (Server-Timing, User Timing marks, PGlite statement-count regression
+tests; no behavior change) -> P2 baseline (hosted sample is Dor-owned; confirm region) -> P3 zero-risk reads -> P4 client
+waterfalls -> P5 product/security-gated items (optimistic Skip, plan pre-generation timing, getUser vs local claims) -> P6
+reverify against budgets. Every slice must preserve the Important Constraint above plus Today frozen-plan, Skip no-evidence,
+Manual Practice not resolving Today, and fail-closed authz.
+
+Proposed budgets (**PROPOSAL / NOT APPROVED by Dor**; guesses informed by S3 p95; throttled mobile, warm lambda; re-baseline
+after P1/P2):
+
+| Event | Target | Acceptable | Fail |
+| --- | --- | --- | --- |
+| Tap feedback | <=100ms | <=200ms | >300ms |
+| Route transition (shell) | <=150ms | <=300ms | >500ms |
+| Today repeat / first-of-day | <=500ms / <=1.5s | <=1s / <=3s | >2s / >5s |
+| Answer -> feedback | <=500ms | <=1s | >2s |
+| Feedback -> next question | <=50ms | <=100ms | >200ms |
+| Skip -> next | <=100ms optimistic / <=500ms confirmed | <=800ms | >1.5s |
+| Practice initial / Course nav / Progress (N=3) | <=1s / <=700ms / <=1s | <=2s / <=1.5s / <=2s | >3.5s / >2.5s / >3.5s |
 
 ---
 
@@ -1225,6 +1265,14 @@ preserved here rather than expanding Run010-H further. None of these items block
    two-connection test (`npm run test:real-pg`, `UNLOCK_REAL_PG_URL`, localhost only) 14/14: N1 last-author invariant proven, N2
    no corruption, N3 as above. Evidence: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001-C-revoke-concurrency.md`.
 
+8. **Slice A (`1f534c7`, author self-enroll `OwnCourseActions`) cosmetic/evidence residuals (non-blocking, 2026-10-06):**
+   (a) the existing join route is reused, so a click by an author who is already an active learner POSTs and returns
+   `ALREADY_MEMBER` instead of the UI being idempotent-aware (harmless); (b) no jsdom click test for the component;
+   (c) evidence gap, confirmed by reading: the `revoke-course-author` unit, PGlite and real-PG tests assert last-author and
+   authorization behavior but none asserts that the target's `course_memberships` LEARNER row survives an author revoke
+   (independence holds structurally, since `course_authors` and `course_memberships` are separate tables; add one assertion
+   when the revoke path is next touched).
+
 ## Promotion Trigger
 
 Item 3 requires OQ-047 to be settled first; item 7(b) (HUMAN DECISION) must be settled before `revokeCourseAuthor` is wired to a
@@ -1276,7 +1324,7 @@ Next change to Course join outcomes or ARCHIVED-Course handling (F-04b).
 
 # FUB-047 — Backup/DR V1 Tooling Non-Blocking Review Residuals
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` — triage 2026-10-06: `KEEP_DEFERRED` (non-blocking tooling residuals)
 **Priority:** `LOW`
 **Area:** Backup/DR tooling (`scripts/backup-*.mjs`, `scripts/restore-local-backup.mjs`), `docs/BACKUP_DR_POLICY.md`
 
@@ -1297,7 +1345,7 @@ The first real hosted V1 backup has occurred (2026-10-04; FULL drill, no false F
 
 # FUB-048 — Offline Custody of the Backup Encryption Key
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` — triage 2026-10-06: `KEEP_DEFERRED` (Dor-owned offline custody action; no code)
 **Priority:** `LOW`
 **Area:** Backup/DR operations (`docs/BACKUP_DR_POLICY.md` key custody)
 
@@ -1311,7 +1359,7 @@ Owner decision, or the next key rotation / change of off-device storage.
 
 # FUB-049 — Require Recovery-Specific State for the Password-Reset UI
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` — triage 2026-10-06: `KEEP_DEFERRED` (LOW security finding, not a regression, no Pilot dependency)
 **Priority:** `LOW`
 **Area:** Auth (`src/lib/password-recovery.ts` `hasRecoverySession`, `src/app/login/page.tsx`)
 
@@ -1335,7 +1383,7 @@ Next Auth-hardening pass, or a real issue caused by recovery/session UX.
 
 # FUB-050 — Post-Pilot Learner Data Governance: Ownership, Export, Deletion and Backup Semantics
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` — triage 2026-10-06: `KEEP_DEFERRED` (post-Pilot; revisit before any non-pilot learner onboarding)
 **Priority:** `MEDIUM`
 **Area:** Product / Privacy / Data lifecycle (ADR-021; OQ-027 owns deletion semantics at the platform level)
 
@@ -1359,7 +1407,7 @@ Before any broader-than-Pilot rollout, formal institutional deployment, or Run 0
 
 # FUB-051 — Product Behavior Heatmaps & Interaction Analytics
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` — triage 2026-10-06: `KEEP_DEFERRED` (needs Pilot usage first; privacy/vendor decision required)
 **Priority:** `MEDIUM`
 **Area:** Product analytics / UX / Privacy
 
@@ -1378,6 +1426,60 @@ Do not install analytics or select a vendor. Constraints for any future activati
 ## Promotion Trigger
 
 After real Pilot usage begins, or when product/UX questions require behavioral evidence.
+
+---
+
+# FUB-052 — Pre-Pilot Modern Visual Experience / Design System Refresh
+
+**Status:** `DEFERRED` — PRE-PILOT consideration; not implemented; needs a human design decision (Dor) before any Slice
+**Priority:** `MEDIUM`
+**Area:** UX / visual system (cross-cutting; narrower leftovers stay in FUB-033)
+
+## Observation
+
+Recorded 2026-10-06 from Dor's request for a more modern look and feel before the Pilot. No owner existed for a
+product-wide visual pass (FUB-033 covers only two Course-manage-page leftovers; UX tokens and `docs/UX_SPEC.md` are the
+current baseline). Candidate scope: Hebrew typography, RTL, spacing/rhythm, hierarchy, surfaces/cards, controls,
+learner and instructor navigation, interaction/answer-feedback/loading/empty/error states, motion, mobile-first,
+consistency, accessibility, responsive behavior.
+
+## Do Not Do Yet
+
+No restyling Slice, token rewrite or component-library change until Dor decides direction and scope. Must not change
+learning semantics, answer-integrity behavior or accessibility guarantees.
+
+## Promotion Trigger
+
+Dor decision to run a dedicated Pre-Pilot UX/visual Run (may be sequenced with the Performance Run in FUB-026, since
+loading/skeleton states overlap).
+
+---
+
+# FUB-053 — Topic Duplicate-Name Guard: Application-Only, Race and DB-Constraint Options
+
+**Status:** `DEFERRED` — triage 2026-10-06: `WATCH` (low-volume instructor writes; no DB change without the human gate below)
+**Priority:** `LOW`
+**Area:** Topic model (ADR-018), `src/application/topic`, Postgres
+
+## Observation
+
+Slice B (`21d1f8e`) rejects duplicate ACTIVE Topic names (normalized) per Course on create and rename with 409
+`DUPLICATE_NAME`, at the application level only (no DB constraint). Residuals: (1) check-then-insert race: two concurrent
+requests could both pass and create duplicates; (2) legacy duplicates already in data are untouched; (3) archived Topic
+names are reusable by an active Topic (implemented, conservative; ADR-018 is silent); (4) no unarchive exists, so restore
+collision semantics are undefined.
+
+## Follow-Up Investigation
+
+Options for the race: a partial unique index on `(course_id, lower(btrim(name))) where archived_at is null`, a per-Course
+lock in the write path, or accept the race. Before any index, a Production pre-check is required (Dor-owned hosted read):
+`select course_id, lower(btrim(name)), count(*) from topics where archived_at is null group by 1,2 having count(*)>1`;
+existing duplicates would make the migration fail. Migration is forward-only and must not be applied to hosted by an agent
+(`.claude/rules/postgres.md`). Open decisions are in OQ-049.
+
+## Promotion Trigger
+
+Observed duplicate Topics in Production, concurrent-edit evidence, or any plan to add Topic unarchive.
 
 ---
 
