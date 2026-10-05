@@ -28,6 +28,7 @@ import { getMessages } from "@/messages";
 import { canSelfJoinCourse, type CourseJoinPolicy, type CourseStatus } from "@/domain/course/types";
 import { canOpenAnswerAnalysis } from "@/domain/insights/analysis-entry";
 
+import { OwnCourseActions } from "./own-course-actions";
 import { QuestionRow } from "./question-row";
 
 interface CourseAuthoringDto {
@@ -643,7 +644,9 @@ export default function InstructorCourseManagePage() {
             subtitle={messages.instructor.manage.statusLabel[state.course.status]}
           />
 
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+          <OwnCourseActions courseId={courseId} />
+
+          <div id="course-management" className="grid gap-6 lg:grid-cols-2 lg:items-start">
             <Card as="section">
               <form onSubmit={handleSaveDetails} className="flex flex-col gap-4">
                 <label className="block">

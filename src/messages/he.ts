@@ -146,6 +146,14 @@ export const he = {
       archiveConfirm: "להעביר את הקורס לארכיון? לא ניתן לבטל פעולה זו.",
       archivedNotice: "קורס זה נמצא בארכיון ואינו פעיל עבור לומדים.",
       transitionError: "הפעולה לא הצליחה. נסו לרענן את העמוד.",
+      ownCourse: {
+        manageAction: "לניהול הקורס",
+        learnAction: "ללמוד את הקורס",
+        learning: "פותח את הקורס ללמידה...",
+        notAllowedError: "לא ניתן ללמוד בקורס זה כרגע (ייתכן שהקורס בארכיון).",
+        accessRevokedError: "הגישה שלך כלומד בקורס זה בוטלה.",
+        genericError: "לא ניתן היה לפתוח את הקורס ללמידה. נסו שוב.",
+      },
       shareHeading: "שיתוף קישור הצטרפות",
       shareBody: "לומדים יכולים להצטרף לקורס באמצעות הקישור הבא:",
       shareUnavailableBody:
