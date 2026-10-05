@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // Opt-in synthetic classroom-burst suite (Pre-Pilot S3) — `npm run test:burst`.
@@ -11,5 +12,11 @@ export default defineConfig({
     fileParallelism: false,
     hookTimeout: 60000,
     testTimeout: 180000,
+  },
+  // Same `@/` alias as the root vitest.config.mts (src/ handlers import `@/lib/...`).
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("../src", import.meta.url)),
+    },
   },
 });

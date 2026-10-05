@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // Opt-in real-PostgreSQL concurrency suite (PILOT-HARDENING-EVIDENCE-001 Slice C,
@@ -12,5 +13,11 @@ export default defineConfig({
     fileParallelism: false,
     hookTimeout: 60000,
     testTimeout: 120000,
+  },
+  // Same `@/` alias as the root vitest.config.mts (src/ handlers import `@/lib/...`).
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("../src", import.meta.url)),
+    },
   },
 });

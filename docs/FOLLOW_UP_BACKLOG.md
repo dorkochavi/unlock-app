@@ -1357,6 +1357,30 @@ Before any broader-than-Pilot rollout, formal institutional deployment, or Run 0
 
 ---
 
+# FUB-051 — Product Behavior Heatmaps & Interaction Analytics
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Product analytics / UX / Privacy
+
+## Observation
+
+Goal: understand how learners and instructors actually interact with UNLOCK so future UX/product decisions rest on observed behavior. Candidate signals: click/tap heatmaps, scroll depth, meaningful mouse movement, dead clicks, rage clicks, navigation paths, screen/element engagement, and session replay only if privacy-safe. Standard heatmaps do NOT prove eye gaze; true eye tracking would need a separate evaluation, explicit privacy/consent review and possibly camera/hardware technology.
+
+## Follow-Up Investigation
+
+Compare privacy-safe third-party analytics, session-analytics providers and minimal/self-hosted approaches (relates to OQ-026, analytics provider/event store, and FUB-050 data governance). No vendor is selected.
+
+## Do Not Do Yet
+
+Do not install analytics or select a vendor. Constraints for any future activation: never capture passwords, auth tokens, learner answers or sensitive learning content; redact/disable form-field recording; define retention and access policy first; evaluate privacy/consent/legal requirements; avoid material performance degradation.
+
+## Promotion Trigger
+
+After real Pilot usage begins, or when product/UX questions require behavioral evidence.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

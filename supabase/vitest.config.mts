@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // Separate config, separate command (`npm run test:schema`) — deliberately
@@ -33,5 +34,11 @@ export default defineConfig({
     fileParallelism: false,
     hookTimeout: 30000,
     testTimeout: 30000,
+  },
+  // Same `@/` alias as the root vitest.config.mts (src/ handlers import `@/lib/...`).
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("../src", import.meta.url)),
+    },
   },
 });
