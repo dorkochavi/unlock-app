@@ -83,6 +83,7 @@ High-frequency current ADRs include:
 - ADR-018 — Topic Model V1
 - ADR-019 — Release and Branch Model V1
 - ADR-020 — Course/Topic Practice Semantics V1
+- ADR-021 — Pilot Learner Data Notice V1 (OQ-039 Option C)
 
 ## Scoped Claude Owners
 

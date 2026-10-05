@@ -892,27 +892,6 @@ state.
 
 ---
 
-## OQ-039 — Pilot Content / Data Ownership
-
-Status: OPEN
-
-Decision needed:
-
-For instructor/class pilots, who owns or controls:
-
-- uploaded Materials
-- authored/generated Questions
-- edits
-- learner Attempts
-- aggregate class insights
-- exports
-- deletion requests
-
-This should be resolved before institutional/instructor workflows become
-meaningful product commitments.
-
----
-
 # Platform / Data Lifecycle
 
 ## OQ-025 — RLS and Storage Strategy for V1

@@ -1333,6 +1333,30 @@ Next Auth-hardening pass, or a real issue caused by recovery/session UX.
 
 ---
 
+# FUB-050 — Post-Pilot Learner Data Governance: Ownership, Export, Deletion and Backup Semantics
+
+**Status:** `DEFERRED`
+**Priority:** `MEDIUM`
+**Area:** Product / Privacy / Data lifecycle (ADR-021; OQ-027 owns deletion semantics at the platform level)
+
+## Observation
+
+ADR-021 (OQ-039 Option C) gives the Pilot a notice only. Not defined or built: final data-ownership model (Materials, Questions, edits, Attempts, aggregates), learner export, learner deletion, backup treatment of deletions, formal retention policy, legal privacy notice/pages, and in-product display of the Pilot notice.
+
+## Follow-Up Investigation
+
+Product/legal review; then decide ownership, export/deletion (operator-run vs self-service), backup-deletion semantics, retention, and place the notice in the UI (sign-up/join). Reconcile with OQ-027.
+
+## Do Not Do Yet
+
+Do not promise export/deletion to learners; do not implement without the product/legal decision; do not claim legal ownership.
+
+## Promotion Trigger
+
+Before any broader-than-Pilot rollout, formal institutional deployment, or Run 012 (privacy/legal pages).
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.

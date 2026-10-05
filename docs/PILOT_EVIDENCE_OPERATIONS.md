@@ -108,7 +108,7 @@ every field length-bounded; non-object throws reduced to a type tag.
 Not requested (already tracked or proven): Production env var presence (`DATABASE_SSL_CA`, `DATABASE_POOL_MAX` —
 exercised by S3/S4 hosted evidence); Vercel failed-build behavior (matrix row 37, existing open gate).
 
-## 6. OQ-039 decision packet (not decided here)
+## 6. OQ-039 decision packet (DECIDED 2026-10-05: Option C; canonical record `docs/DECISIONS/021-pilot-learner-data-notice-v1.md`; analysis below kept as history)
 
 **Open question (verbatim scope):** for instructor/class pilots, who owns or controls uploaded Materials,
 authored/generated Questions, edits, learner Attempts, aggregate class insights, exports, and deletion requests — and

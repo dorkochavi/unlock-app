@@ -259,7 +259,7 @@ Preserved from owners:
   disclosure gate; learner-safe content reads (no correct answer); `npm audit` clean (Run 008); security reviews per Run.
 - **Partial:** login page is frameable (framing decision open, Slice B Q6a; see `docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`); session-expiry recovery UX gaps.
 - **Missing:** privacy/legal pages (Roadmap Run 012), data deletion semantics (OQ-027 OPEN), pilot data ownership
-  (OQ-039 OPEN), rate limiting/abuse hardening (FUB-011), F-04b archived-Course decision.
+  (OQ-039 decided Option C, ADR-021; governance FUB-050), rate limiting/abuse hardening (FUB-011), F-04b archived-Course decision.
 - **Pilot needs:** privacy/data-ownership baseline (`PILOT_READINESS.md` §3 item 13d; OQ-039). Map assessment, not in
   §3: the framing decision (Slice B Q6a, archived report). Full privacy/legal pages stay in Roadmap Run 012.
 - **Mature-only:** rate limiting, CSP, RLS if ever adopted (OQ-025).
