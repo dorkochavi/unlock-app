@@ -1,30 +1,32 @@
-# UNLOCK — PILOT-CLOSURE-OVERNIGHT-001 — Pilot closure + safe backlog
+# UNLOCK — PILOT-FRICTION-PERF-OVERNIGHT-001 — Pilot product friction + performance baseline
 
-PLAN_VERSION: 017
-RUN_ID: 2026-10-05-PILOT-CLOSURE-OVERNIGHT-001
-START_HEAD: `36d5b57`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `2d9d3bc`
-STATUS: **COMPLETE** — unattended overnight Run; eligible queue exhausted. No push. Human actions remain (Run report §6).
+PLAN_VERSION: 018
+RUN_ID: 2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001
+START_HEAD: `c584a07`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `c584a07`
+STATUS: **IN PROGRESS** — unattended local overnight Run. No push/deploy/hosted mutation.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Close decision-independent Pilot items (13a review), add a learner password-recovery flow, and triage the backlog without crossing human/hosted/product boundaries.
+Reduce Author→Learner self-enrollment friction, make active Topic names unambiguous per Course, establish an evidence-based performance baseline + budget proposals, record the Pre-Pilot visual follow-up, and triage ≤3 backlog items — without crossing human/hosted/product boundaries.
 
 ## 2. Authority / References
-`CLAUDE.md`, `.claude/rules/*.md`; operating contract and human packets: `docs/PILOT_EVIDENCE_OPERATIONS.md`; Run report `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`.
+`CLAUDE.md`, `.claude/rules/*.md`.
 
 ## 3. Slices
-| Slice | Scope | Status |
-|---|---|---|
-| A | Pilot 13(a) closure review (docs; derivation satisfies, no `today_opened`) | DONE (`93d0ce2`) |
-| B | Password recovery on /login (PKCE; security review, M1/L1 fixed) | DONE (`2d9d3bc`) |
-| C | Backlog triage: 36 items, 0 GREEN_NOW, none promoted/implemented | DONE (docs only) |
-| D | Run close | DONE |
+| Slice | Scope | Gate | Status |
+|---|---|---|---|
+| A | Author → Learner self-enrollment UX (reuse existing join path) | REVIEW_GATE | TODO |
+| B | Duplicate active Topic name safety (local migration only if needed) | REVIEW_GATE | TODO |
+| C | Performance baseline + instant-UX audit (investigation; ≤1 tiny proven fix) | AUTO | TODO |
+| D | Pre-Pilot visual follow-up ownership (docs) | AUTO | TODO |
+| E | Backlog/OQ triage (≤3 candidates) | AUTO | TODO |
+| F | Run close | FINAL_GATE | TODO |
 
 ## 4. Current Status
-Run COMPLETE. Report: `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`. Pushing is a human action.
+Run started.
 
 ## History
 
