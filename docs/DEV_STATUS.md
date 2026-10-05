@@ -1,7 +1,7 @@
 # UNLOCK — Development Status
 
 Status: CURRENT SNAPSHOT
-Updated: 2026-10-06 (v0.3.0 in Production at `5e95240`, verified; password recovery PRODUCTION_E2E_PROVEN; Pilot closure: 13(a)-(d) satisfied, Content gate open, Pilot NOT approved; prior: v0.2.0 in Production; Backup/DR V1 operationally proven on real Production data: encrypted backup + local FULL restore drill, Pilot DR gate SATISFIED; offline key custody FUB-048; real pilot NOT approved)
+Updated: 2026-10-06 (local-only post-v0.3.0 commits `1f534c7` Author self-enroll action, `21d1f8e` duplicate active Topic guard — NOT pushed/deployed; perf audit + FUB-052/053/OQ-049 recorded; v0.3.0 in Production at `5e95240`, verified; password recovery PRODUCTION_E2E_PROVEN; Pilot closure: 13(a)-(d) satisfied, Content gate open, Pilot NOT approved; prior: v0.2.0 in Production; Backup/DR V1 operationally proven on real Production data: encrypted backup + local FULL restore drill, Pilot DR gate SATISFIED; offline key custody FUB-048; real pilot NOT approved)
 
 This file holds CURRENT state only. History lives in `docs/RUNS/**`; current execution in `docs/CHATGPT_PLAN.md`;
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
@@ -21,6 +21,7 @@ deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN
   `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md` (including its "Release close" section: Preview QA, cutover, H.1,
   H.3, rollback caveat). Run 011 not started.
 - Hosted / remote mutation and pushes are human-controlled actions (`CLAUDE.md` §6).
+- Post-release local work (Run 2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001, unpushed, not in Production): instructor course page shows "ללמוד את הקורס"/"לניהול הקורס" (reuses the join route); create/rename Topic rejects normalized-duplicate active names (409 TOPIC_NAME_DUPLICATE; app-level only, race + legacy duplicates open: FUB-053/OQ-049). Speed is a core product principle; static perf audit and proposed (unapproved) budgets live in FUB-026; visual refresh is PRE-PILOT FUB-052.
 - This is NOT a pilot approval (`docs/PILOT_READINESS.md`).
 
 ## Product Direction

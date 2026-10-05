@@ -3,9 +3,9 @@
 PLAN_VERSION: 018
 RUN_ID: 2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001
 START_HEAD: `c584a07`
-RUN_STATUS: IN_PROGRESS
+RUN_STATUS: COMPLETE
 LAST_VERIFIED_HEAD: `c584a07`
-STATUS: **IN PROGRESS** — unattended local overnight Run. No push/deploy/hosted mutation.
+STATUS: **COMPLETE** — unattended local overnight Run. No push. Human actions remain (Run report).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -18,20 +18,21 @@ Reduce Author→Learner self-enrollment friction, make active Topic names unambi
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Author → Learner self-enrollment UX (reuse existing join path) | REVIEW_GATE | TODO |
-| B | Duplicate active Topic name safety (local migration only if needed) | REVIEW_GATE | TODO |
-| C | Performance baseline + instant-UX audit (investigation; ≤1 tiny proven fix) | AUTO | TODO |
-| D | Pre-Pilot visual follow-up ownership (docs) | AUTO | TODO |
-| E | Backlog/OQ triage (≤3 candidates) | AUTO | TODO |
-| F | Run close | FINAL_GATE | TODO |
+| A | Author → Learner self-enrollment UX (reuse existing join path) | REVIEW_GATE | DONE (`1f534c7`) |
+| B | Duplicate active Topic name safety (app guard; no migration) | REVIEW_GATE | DONE (`21d1f8e`) |
+| C | Performance baseline + instant-UX audit (static; nothing implemented) | AUTO | DONE (docs in FUB-026) |
+| D | Pre-Pilot visual follow-up (FUB-052) | AUTO | DONE (`4a983ec`) |
+| E | Backlog/OQ triage | AUTO | DONE (`4a983ec`) |
+| F | Run close | FINAL_GATE | DONE |
 
 ## 4. Current Status
-Run started.
+Run COMPLETE. Report: `docs/RUNS/2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001.md`. Pushing is a human action.
 
 ## History
 
 Reports are the archive:
 
+- PILOT-FRICTION-PERF-OVERNIGHT-001: `docs/RUNS/2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001.md`
 - PILOT-CLOSURE-OVERNIGHT-001: `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`
 - PILOT-MINIMUM-EVIDENCE-PREP-001: `docs/RUNS/2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001.md`
 - BACKUP-DR-V1-IMPLEMENTATION-001: `docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001.md` (+ slice evidence B, F in the same folder)
