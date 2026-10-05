@@ -1309,6 +1309,30 @@ Owner decision, or the next key rotation / change of off-device storage.
 
 ---
 
+# FUB-049 — Require Recovery-Specific State for the Password-Reset UI
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** Auth (`src/lib/password-recovery.ts` `hasRecoverySession`, `src/app/login/page.tsx`)
+
+## Observation
+
+`hasRecoverySession` proves only that some authenticated session exists. An already-authenticated user who manually opens `/login?mode=recovery` (no recovery link) can see the password-update form. Security review 2026-10-05: LOW, not a regression (that user can already call `updateUser` on their own session); non-blocking for the Pilot.
+
+## Follow-Up Investigation
+
+Show the recovery UI only with recovery-specific evidence, e.g. the `PASSWORD_RECOVERY` auth event/state, evidence of a recovery code exchange, or another repository-supported recovery-specific signal. Not chosen yet.
+
+## Do Not Do Yet
+
+Do not weaken the same-origin/PKCE flow and do not invent custom token storage.
+
+## Promotion Trigger
+
+Next Auth-hardening pass, or a real issue caused by recovery/session UX.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.
