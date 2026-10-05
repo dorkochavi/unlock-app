@@ -169,6 +169,7 @@ export const he = {
         addAction: "הוספת נושא",
         adding: "מוסיף...",
         addError: "לא ניתן היה להוסיף את הנושא. נסו שוב.",
+        duplicateNameError: "כבר קיים נושא פעיל בשם הזה בקורס. יש לבחור שם אחר.",
         renameAction: "עריכה",
         renameSave: "שמירה",
         renameCancel: "ביטול",

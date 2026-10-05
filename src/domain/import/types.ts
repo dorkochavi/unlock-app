@@ -33,6 +33,7 @@ import {
   type QuestionType,
 } from "../learning/answer";
 import { MIN_PUBLISHABLE_OPTION_COUNT } from "../question/types";
+import { normalizeTopicName } from "../topic/types";
 
 export { QUESTION_TYPES, MIN_PUBLISHABLE_OPTION_COUNT };
 export type { AnswerOption, QuestionType };
@@ -122,10 +123,6 @@ export type TopicNameResolution =
   | { outcome: "RESOLVED"; topicId: string }
   | { outcome: "NOT_FOUND" }
   | { outcome: "AMBIGUOUS" };
-
-function normalizeTopicName(name: string): string {
-  return name.trim().toLowerCase();
-}
 
 /**
  * Groups Topics by normalized (trimmed, case-insensitive) name once, so

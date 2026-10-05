@@ -17,6 +17,8 @@
  *   checked BEFORE `deps.create`.
  * - `NOT_AUTHORIZED` -> 403, `{error: {code: "NOT_AUTHORIZED"}}`.
  * - `INVALID_NAME` (empty after trim) -> 400, `{error: {code: "INVALID_REQUEST"}}`.
+ * - `DUPLICATE_NAME` (an ACTIVE Topic in this Course already has the same
+ *   trimmed, case-insensitive name) -> 409, `{error: {code: "TOPIC_NAME_DUPLICATE"}}`.
  * - `CREATED` -> 201, `{topic: TopicDto}`.
  * - unexpected thrown error -> 500, `{error: {code: "INTERNAL_ERROR"}}`.
  */
@@ -90,6 +92,9 @@ export async function handleCreateTopic(
 
     case "INVALID_NAME":
       return invalidRequestResponse();
+
+    case "DUPLICATE_NAME":
+      return { status: 409, body: { error: { code: "TOPIC_NAME_DUPLICATE" } } };
 
     case "CREATED":
       return { status: 201, body: { topic: toTopicDto(result.topic) } };

@@ -22,6 +22,7 @@
  * `src/application/course/join-course.ts`'s module doc comment for why.
  */
 import { hasActiveAuthorGrant } from "../../domain/course/types";
+import { normalizeTopicName } from "../../domain/topic/types";
 import type { Topic, TopicRepositories } from "./ports";
 
 export interface RenameTopicCommand {
@@ -35,7 +36,8 @@ export type RenameTopicResult =
   | { outcome: "RENAMED"; topic: Topic }
   | { outcome: "NOT_AUTHORIZED" }
   | { outcome: "TOPIC_NOT_FOUND" }
-  | { outcome: "INVALID_NAME" };
+  | { outcome: "INVALID_NAME" }
+  | { outcome: "DUPLICATE_NAME" };
 
 export async function renameTopic(
   command: RenameTopicCommand,
@@ -57,6 +59,19 @@ export async function renameTopic(
   const topic = await repos.topics.getTopic(command.topicId);
   if (topic === null || topic.courseId !== command.courseId) {
     return { outcome: "TOPIC_NOT_FOUND" };
+  }
+
+  // Duplicate guard: renaming an ACTIVE Topic must not collide (normalized) with
+  // a DIFFERENT active Topic in the same Course. A rename whose normalized name
+  // equals the Topic's own current one creates no new ambiguity (stays allowed,
+  // even for a legacy pre-existing duplicate pair) and skips the check. Archived
+  // Topics neither block nor are checked.
+  const wanted = normalizeTopicName(name);
+  if (topic.archivedAt === null && wanted !== normalizeTopicName(topic.name)) {
+    const active = await repos.topics.listActiveForCourse(command.courseId);
+    if (active.some((t) => t.id !== topic.id && normalizeTopicName(t.name) === wanted)) {
+      return { outcome: "DUPLICATE_NAME" };
+    }
   }
 
   const updated = await repos.topics.renameTopic(command.topicId, name);

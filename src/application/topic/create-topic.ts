@@ -10,6 +10,7 @@
  * `src/application/course/join-course.ts`'s module doc comment for why.
  */
 import { hasActiveAuthorGrant } from "../../domain/course/types";
+import { normalizeTopicName } from "../../domain/topic/types";
 import type { Topic, TopicRepositories } from "./ports";
 
 export interface CreateTopicCommand {
@@ -21,7 +22,8 @@ export interface CreateTopicCommand {
 export type CreateTopicResult =
   | { outcome: "CREATED"; topic: Topic }
   | { outcome: "NOT_AUTHORIZED" }
-  | { outcome: "INVALID_NAME" };
+  | { outcome: "INVALID_NAME" }
+  | { outcome: "DUPLICATE_NAME" };
 
 export async function createTopic(
   command: CreateTopicCommand,
@@ -38,6 +40,16 @@ export async function createTopic(
   const name = command.name.trim();
   if (name.length === 0) {
     return { outcome: "INVALID_NAME" };
+  }
+
+  // Duplicate guard: at most one ACTIVE Topic per normalized name per Course
+  // (same normalization Structured Import resolves with). Archived Topics do
+  // not participate. Application-level check only — see handoff re: the
+  // un-serialized check-then-insert race (no DB constraint, by design).
+  const wanted = normalizeTopicName(name);
+  const active = await repos.topics.listActiveForCourse(command.courseId);
+  if (active.some((t) => normalizeTopicName(t.name) === wanted)) {
+    return { outcome: "DUPLICATE_NAME" };
   }
 
   const topic = await repos.topics.createTopic({ courseId: command.courseId, name });

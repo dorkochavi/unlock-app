@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { renameTopic } from "../rename-topic";
+import { buildTopicNameIndex, resolveTopicByName } from "../../../domain/import/types";
 import { InMemoryTopicDatabase } from "./in-memory-fakes";
 import type { CourseMembership, Topic } from "../ports";
 
@@ -137,5 +138,73 @@ describe("renameTopic", () => {
     );
 
     expect(result).toEqual({ outcome: "INVALID_NAME" });
+  });
+
+  describe("duplicate active name guard", () => {
+    const rename = (db: InMemoryTopicDatabase, topicId: string, name: string, courseId = "course-1") =>
+      renameTopic({ actorUserId: "actor-1", courseId, topicId, name }, db.repos());
+
+    function setup(): InMemoryTopicDatabase {
+      const db = new InMemoryTopicDatabase();
+      seedActor(db, { role: "OWNER" });
+      seedTopic(db, { id: "topic-1", name: "Original" });
+      seedTopic(db, { id: "topic-2", name: "Algebra" });
+      return db;
+    }
+
+    it.each(["Algebra", "algebra", "  ALGEBRA  "])("rejects renaming into a duplicate (%j)", async (name) => {
+      const db = setup();
+      expect(await rename(db, "topic-1", name)).toEqual({ outcome: "DUPLICATE_NAME" });
+      expect((await db.repos().topics.getTopic("topic-1"))?.name).toBe("Original");
+    });
+
+    it("allows renaming a Topic to its own name or a case/whitespace variant of it", async () => {
+      const db = setup();
+      const same = await rename(db, "topic-2", "Algebra");
+      expect(same.outcome).toBe("RENAMED");
+      const variant = await rename(db, "topic-2", "  ALGEBRA ");
+      expect(variant.outcome).toBe("RENAMED");
+      if (variant.outcome === "RENAMED") expect(variant.topic.name).toBe("ALGEBRA");
+    });
+
+    it("allows the same name as a Topic in a different Course", async () => {
+      const db = setup();
+      seedTopic(db, { id: "topic-3", courseId: "course-2", name: "Geometry" });
+      expect((await rename(db, "topic-1", "geometry")).outcome).toBe("RENAMED");
+    });
+
+    it("an archived Topic does not block renaming another Topic to its name (conservative)", async () => {
+      const db = new InMemoryTopicDatabase();
+      seedActor(db, { role: "OWNER" });
+      seedTopic(db, { id: "topic-1", name: "Original" });
+      seedTopic(db, { id: "topic-2", name: "Algebra", archivedAt: new Date("2026-02-01T00:00:00Z") });
+      expect((await rename(db, "topic-1", "algebra")).outcome).toBe("RENAMED");
+    });
+
+    it("a legacy duplicate pair can still be renamed away or touched by a case-only change", async () => {
+      const db = new InMemoryTopicDatabase();
+      seedActor(db, { role: "OWNER" });
+      seedTopic(db, { id: "topic-1", name: "Algebra" });
+      seedTopic(db, { id: "topic-2", name: "algebra " });
+      expect((await rename(db, "topic-1", "ALGEBRA")).outcome).toBe("RENAMED");
+      expect((await rename(db, "topic-1", "Algebra II")).outcome).toBe("RENAMED");
+    });
+
+    it("authorization is checked before the duplicate check", async () => {
+      const db = setup();
+      const result = await renameTopic(
+        { actorUserId: "stranger", courseId: "course-1", topicId: "topic-1", name: "Algebra" },
+        db.repos(),
+      );
+      expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+    });
+
+    it("import name resolution stays unambiguous when authoring goes through the guard", async () => {
+      const db = setup();
+      await rename(db, "topic-1", "ALGEBRA"); // rejected
+      const active = await db.repos().topics.listActiveForCourse("course-1");
+      const index = buildTopicNameIndex(active);
+      expect(resolveTopicByName("  algebra ", index)).toEqual({ outcome: "RESOLVED", topicId: "topic-2" });
+    });
   });
 });

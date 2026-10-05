@@ -129,6 +129,67 @@ describe("createTopic", () => {
     expect(result).toEqual({ outcome: "INVALID_NAME" });
   });
 
+  describe("duplicate active name guard", () => {
+    const seedActive = (db: InMemoryTopicDatabase, courseId = "course-1", archivedAt: Date | null = null) =>
+      db.seedTopic({
+        id: `t-${courseId}-${archivedAt ? "arch" : "act"}`,
+        courseId,
+        name: "Algebra",
+        archivedAt,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+        updatedAt: new Date("2026-01-01T00:00:00Z"),
+      });
+
+    it.each(["Algebra", "algebra", "ALGEBRA", "  Algebra  ", " aLgEbRa\t"])(
+      "rejects %j as a duplicate of an active Topic and creates nothing",
+      async (name) => {
+        const db = new InMemoryTopicDatabase();
+        seedActor(db, { role: "OWNER" });
+        seedActive(db);
+
+        const result = await createTopic({ actorUserId: "actor-1", courseId: "course-1", name }, db.repos());
+
+        expect(result).toEqual({ outcome: "DUPLICATE_NAME" });
+        expect(await db.repos().topics.listActiveForCourse("course-1")).toHaveLength(1);
+      },
+    );
+
+    it("allows the same name in a different Course", async () => {
+      const db = new InMemoryTopicDatabase();
+      seedActor(db, { role: "OWNER" });
+      seedActive(db, "course-2");
+
+      const result = await createTopic(
+        { actorUserId: "actor-1", courseId: "course-1", name: "Algebra" },
+        db.repos(),
+      );
+      expect(result.outcome).toBe("CREATED");
+    });
+
+    it("an archived Topic does not block reuse of its name (conservative; no restore path exists)", async () => {
+      const db = new InMemoryTopicDatabase();
+      seedActor(db, { role: "OWNER" });
+      seedActive(db, "course-1", new Date("2026-02-01T00:00:00Z"));
+
+      const result = await createTopic(
+        { actorUserId: "actor-1", courseId: "course-1", name: "algebra" },
+        db.repos(),
+      );
+      expect(result.outcome).toBe("CREATED");
+    });
+
+    it("does not leak duplicate status to an unauthorized actor", async () => {
+      const db = new InMemoryTopicDatabase();
+      seedActive(db);
+
+      const result = await createTopic(
+        { actorUserId: "stranger-1", courseId: "course-1", name: "Algebra" },
+        db.repos(),
+      );
+      expect(result).toEqual({ outcome: "NOT_AUTHORIZED" });
+    });
+  });
+
   it("trims the name before persisting", async () => {
     const db = new InMemoryTopicDatabase();
     seedActor(db, { role: "OWNER" });

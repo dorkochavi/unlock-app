@@ -95,6 +95,20 @@ describe("handleRenameTopic", () => {
     expect(response.body).toEqual({ error: { code: "TOPIC_NOT_FOUND" } });
   });
 
+  it("DUPLICATE_NAME: 409 TOPIC_NAME_DUPLICATE", async () => {
+    const rename = vi.fn(async (): Promise<RenameTopicResult> => ({ outcome: "DUPLICATE_NAME" }));
+    const response = await handleRenameTopic({
+      authenticate: authenticated(),
+      courseId: COURSE_ID,
+      topicId: TOPIC_ID,
+      body: { name: "Algebra" },
+      rename,
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({ error: { code: "TOPIC_NAME_DUPLICATE" } });
+  });
+
   it("INVALID_NAME: 400 INVALID_REQUEST", async () => {
     const rename = vi.fn(async (): Promise<RenameTopicResult> => ({ outcome: "INVALID_NAME" }));
     const response = await handleRenameTopic({

@@ -75,6 +75,19 @@ describe("handleCreateTopic", () => {
     expect(response.status).toBe(403);
   });
 
+  it("DUPLICATE_NAME: 409 TOPIC_NAME_DUPLICATE", async () => {
+    const create = vi.fn(async (): Promise<CreateTopicResult> => ({ outcome: "DUPLICATE_NAME" }));
+    const response = await handleCreateTopic({
+      authenticate: authenticated(),
+      courseId: COURSE_ID,
+      body: { name: "Algebra" },
+      create,
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({ error: { code: "TOPIC_NAME_DUPLICATE" } });
+  });
+
   it("INVALID_NAME: 400 INVALID_REQUEST", async () => {
     const create = vi.fn(async (): Promise<CreateTopicResult> => ({ outcome: "INVALID_NAME" }));
     const response = await handleCreateTopic({

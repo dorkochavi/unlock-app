@@ -24,3 +24,13 @@ export interface Topic {
   createdAt: Date;
   updatedAt: Date;
 }
+
+/**
+ * The single Topic-name normalization (trim + case-insensitive). Used both by
+ * Structured Import name resolution (`src/domain/import/types.ts`) and by the
+ * create/rename duplicate guard, so "ambiguous on import" and "duplicate on
+ * authoring" can never drift apart.
+ */
+export function normalizeTopicName(name: string): string {
+  return name.trim().toLowerCase();
+}

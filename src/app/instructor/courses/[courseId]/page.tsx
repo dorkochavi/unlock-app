@@ -409,7 +409,11 @@ export default function InstructorCourseManagePage() {
         body: JSON.stringify({ name: newTopicName }),
       });
       if (!response.ok) {
-        setAddTopicError(messages.instructor.manage.topics.addError);
+        setAddTopicError(
+          response.status === 409
+            ? messages.instructor.manage.topics.duplicateNameError
+            : messages.instructor.manage.topics.addError,
+        );
         return;
       }
       const body = (await response.json()) as { topic: TopicDto };
@@ -448,7 +452,11 @@ export default function InstructorCourseManagePage() {
         body: JSON.stringify({ name: renameDraft }),
       });
       if (!response.ok) {
-        setRenameError(messages.instructor.manage.topics.renameError);
+        setRenameError(
+          response.status === 409
+            ? messages.instructor.manage.topics.duplicateNameError
+            : messages.instructor.manage.topics.renameError,
+        );
         return;
       }
       const body = (await response.json()) as { topic: TopicDto };

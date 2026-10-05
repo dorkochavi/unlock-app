@@ -15,6 +15,8 @@
  *   different Course than `courseId` — the cross-Course guard) -> 404,
  *   `{error: {code: "TOPIC_NOT_FOUND"}}`.
  * - `INVALID_NAME` (empty after trim) -> 400, `{error: {code: "INVALID_REQUEST"}}`.
+ * - `DUPLICATE_NAME` (another ACTIVE Topic in this Course already has the
+ *   same trimmed, case-insensitive name) -> 409, `{error: {code: "TOPIC_NAME_DUPLICATE"}}`.
  * - `RENAMED` -> 200, `{topic: TopicDto}`.
  * - unexpected thrown error -> 500, `{error: {code: "INTERNAL_ERROR"}}`.
  */
@@ -106,6 +108,9 @@ export async function handleRenameTopic(
 
     case "INVALID_NAME":
       return invalidRequestResponse();
+
+    case "DUPLICATE_NAME":
+      return { status: 409, body: { error: { code: "TOPIC_NAME_DUPLICATE" } } };
 
     case "RENAMED":
       return { status: 200, body: { topic: toTopicDto(result.topic) } };
