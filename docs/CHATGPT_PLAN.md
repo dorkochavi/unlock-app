@@ -4,7 +4,7 @@ PLAN_VERSION: 018
 RUN_ID: 2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001
 START_HEAD: `c584a07`
 RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `c584a07`
+LAST_VERIFIED_HEAD: `4a983ec`
 STATUS: **COMPLETE** — unattended local overnight Run. No push. Human actions remain (Run report).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
