@@ -1,4 +1,4 @@
-# UNLOCK — VISUAL-SYSTEM-RUN-001 — Audit → design-system foundation → controlled learner rolloutundefinedDONE (audit only; no commit) |undefinedDONE (`b43ebca`) |undefinedDONE (`9c00965`) |undefinedDONE (`ae4d110`) |undefinedDONE (`e0ce88c`) |undefinedDONE (`f50308e`) |undefinedDONE (`2e958a1`) |undefinedDONE (`b1d26e6`) |undefinedDONE (`8d57ea2`) |undefinedDONE (Run close commit; verification in Run report) |
+# UNLOCK — VISUAL-SYSTEM-RUN-001 — Audit → design-system foundation → controlled learner rollout
 
 PLAN_VERSION: 020
 RUN_ID: 2026-10-06-VISUAL-SYSTEM-RUN-001
