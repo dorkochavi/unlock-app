@@ -1,11 +1,11 @@
-# UNLOCK — VISUAL-SYSTEM-RUN-001 — Audit → design-system foundation → controlled learner rollout
+# UNLOCK — VISUAL-SYSTEM-RUN-001 — Audit → design-system foundation → controlled learner rolloutundefinedDONE (audit only; no commit) |undefinedDONE (`b43ebca`) |undefinedDONE (`9c00965`) |undefinedDONE (`ae4d110`) |undefinedDONE (`e0ce88c`) |undefinedDONE (`f50308e`) |undefinedDONE (`2e958a1`) |undefinedDONE (`b1d26e6`) |undefinedDONE (`8d57ea2`) |undefinedDONE (Run close commit; verification in Run report) |
 
 PLAN_VERSION: 020
 RUN_ID: 2026-10-06-VISUAL-SYSTEM-RUN-001
 START_HEAD: `27401cb`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `370d62b`
-STATUS: **IN PROGRESS** — local Run. No push, no deploy, no hosted mutation.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `8d57ea2`
+STATUS: **COMPLETE** — local Run. No push, no deploy, no hosted mutation. Human visual walkthrough required before any push (Run report).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -19,24 +19,25 @@ Human gates (STOP, do not decide alone): new brand/logo/primary-color change, ic
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Current UI audit (compact, P0/P1/P2) | AUTO | PENDING |
-| B | Design token foundation (CSS vars / Tailwind v4 tokens, type scale, radius, controls) | REVIEW_GATE | PENDING |
-| C | Shared primitives (only where repetition justifies) | REVIEW_GATE | PENDING |
-| D | Global shell / navigation (within existing IA) | REVIEW_GATE | PENDING |
-| E | Learner Courses | AUTO | PENDING |
-| F | Today | REVIEW_GATE | PENDING |
-| G | Practice | REVIEW_GATE | PENDING |
-| H | Progress | AUTO | PENDING |
-| I | Login / Join / Author→Learn | AUTO | PENDING |
-| J | Loading/empty/error consistency + Run close | FINAL_GATE | PENDING |
+| A | Current UI audit (compact, P0/P1/P2) | AUTO | DONE (audit only; no commit) |
+| B | Design token foundation (CSS vars / Tailwind v4 tokens, type scale, radius, controls) | REVIEW_GATE | DONE (`b43ebca`) |
+| C | Shared primitives (only where repetition justifies) | REVIEW_GATE | DONE (`9c00965`) |
+| D | Global shell / navigation (within existing IA) | REVIEW_GATE | DONE (`ae4d110`) |
+| E | Learner Courses | AUTO | DONE (`e0ce88c`) |
+| F | Today | REVIEW_GATE | DONE (`f50308e`) |
+| G | Practice | REVIEW_GATE | DONE (`2e958a1`) |
+| H | Progress | AUTO | DONE (`b1d26e6`) |
+| I | Login / Join / Author→Learn | AUTO | DONE (`8d57ea2`) |
+| J | Loading/empty/error consistency + Run close | FINAL_GATE | DONE (Run close commit; verification in Run report) |
 
 ## 4. Current Status
-Run opened. Slice A next.
+Run complete locally. Foundation (tokens + primitives, `docs/UX_SPEC.md` §6) and learner rollout (Courses, Today, Practice, Progress, Login/Join/Author→Learn) done; full unit/typecheck/lint/build green. Human visual walkthrough and the open design decisions are pending (Run report; owner FUB-052). No push.
 
 ## History
 
 Reports are the archive:
 
+- VISUAL-SYSTEM-RUN-001: `docs/RUNS/2026-10-06-VISUAL-SYSTEM-RUN-001.md`
 - PERFORMANCE-RUN-001: `docs/RUNS/2026-10-06-PERFORMANCE-RUN-001.md`
 - PILOT-FRICTION-PERF-OVERNIGHT-001: `docs/RUNS/2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001.md`
 - PILOT-CLOSURE-OVERNIGHT-001: `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`

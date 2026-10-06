@@ -1471,27 +1471,31 @@ After real Pilot usage begins, or when product/UX questions require behavioral e
 
 # FUB-052 — Pre-Pilot Modern Visual Experience / Design System Refresh
 
-**Status:** `DEFERRED` — PRE-PILOT consideration; not implemented; needs a human design decision (Dor) before any Slice
+**Status:** `PARTIAL` — foundation + learner rollout DONE locally (VISUAL-SYSTEM-RUN-001, unpushed); pending Dor's human visual walkthrough. Remaining: instructor surfaces, dark-mode decision, font decision, sign-out placement.
 **Priority:** `MEDIUM`
 **Area:** UX / visual system (cross-cutting; narrower leftovers stay in FUB-033)
 
-## Observation
+## Done (2026-10-06, `docs/RUNS/2026-10-06-VISUAL-SYSTEM-RUN-001.md`)
 
-Recorded 2026-10-06 from Dor's request for a more modern look and feel before the Pilot. No owner existed for a
-product-wide visual pass (FUB-033 covers only two Course-manage-page leftovers; UX tokens and `docs/UX_SPEC.md` are the
-current baseline). Candidate scope: Hebrew typography, RTL, spacing/rhythm, hierarchy, surfaces/cards, controls,
-learner and instructor navigation, interaction/answer-feedback/loading/empty/error states, motion, mobile-first,
-consistency, accessibility, responsive behavior.
+Tokens in `src/app/globals.css` (owner doc: `docs/UX_SPEC.md` §6), primitives (Notice, Field, LinkRow, ProgressBar,
+LearnHeader, icons), shell container, and learner Courses / Today / Practice / Progress / Login / Join / Author→Learn
+presentational refresh. Visual-only; no dependency, no new client component, no semantics/IA change.
 
-## Do Not Do Yet
+## Remaining / Human Decisions (Dor)
 
-No restyling Slice, token rewrite or component-library change until Dor decides direction and scope. Must not change
-learning semantics, answer-integrity behavior or accessibility guarantees.
+- Human visual walkthrough of the learner screens (light + dark, real authenticated data, hover/focus, Author→Learn button).
+- Sign-out placement (PageHeader trailing slot / profile overflow in nav [IA change] / keep).
+- Typeface: keep Segoe-first system stack vs one Hebrew-first webfont via `next/font` (brand + perf tradeoff).
+- Dark mode: keep auto `prefers-color-scheme` vs user toggle; verify dark contrast.
+- Instructor surfaces (instructor IA redesign is a human gate).
 
-## Promotion Trigger
+## Deferred Polish (not promoted)
 
-Dor decision to run a dedicated Pre-Pilot UX/visual Run (may be sequenced with the Performance Run in FUB-026, since
-loading/skeleton states overlap).
+- Instructor raw `<button>`/`<input>` (~12) -> Button/Field; migrate remaining ad-hoc instructor paragraphs to Notice; LinkRow/ListCard for instructor lists.
+- Per-field login error association (aria-describedby per field); join loading skeleton.
+- Dark-mode contrast of amber reinforce tone unverified.
+- Prior RUN010-I primary-soft hover tint on Course cards was dropped (brand-tint hover is optional to restore).
+- OptionButton/ConfidenceChip `aria-pressed` -> radio-group semantics (not changed; behavior-adjacent).
 
 ---
 
