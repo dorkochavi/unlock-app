@@ -13,7 +13,7 @@
  * counts/state) — no new mastery/percentage claim and no heavy accent border.
  */
 import { Card } from "@/components/card";
-import { LinkRow } from "@/components/link-row";
+import { Chevron, LinkRow } from "@/components/link-row";
 import { ProgressBar } from "@/components/progress-bar";
 import { StatusPill } from "@/components/status-pill";
 import { interpolate } from "@/lib/interpolate";
@@ -35,8 +35,11 @@ export function CourseSection({
   return (
     <li>
       <Card as="div" raised className="p-3 sm:p-4">
-        <LinkRow variant="inline" href={`/courses/${id}`} className="min-h-16 items-start">
-          <h2 className="break-words text-title font-bold leading-snug">{title}</h2>
+        <LinkRow variant="inline" href={`/courses/${id}`} showChevron={false} className="min-h-16 items-start">
+          <span className="flex items-start justify-between gap-3">
+            <h2 className="min-w-0 flex-1 break-words text-title font-bold leading-snug">{title}</h2>
+            <Chevron className="mt-1 text-muted" />
+          </span>
 
           {progress.kind === "unavailable" ? (
             <span className="mt-1 block text-secondary font-normal text-muted">{messages.courseUnavailable}</span>
@@ -84,7 +87,7 @@ function CourseActivitySummary({ topics }: { topics: TopicProgressDto[] }) {
 
   return (
     <span className="mt-2 block">
-      <span className="flex flex-wrap items-center gap-2">
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <StatusPill tone="progress">{messages.courseActivityEncouragement}</StatusPill>
         <span className="chip">
           {interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total })}

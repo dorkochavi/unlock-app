@@ -13,10 +13,12 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
+import { setsPadding } from "./card";
+
 const BASE =
   "flex items-center justify-between gap-3 transition duration-150 active:scale-[0.99] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 const VARIANTS = {
-  card: "min-h-16 rounded-card surface-raised p-5 hover:border-primary-soft-border hover:bg-surface-muted active:bg-surface-muted",
+  card: "min-h-16 rounded-card surface-raised hover:border-primary-soft-border hover:bg-surface-muted active:bg-surface-muted",
   inline: "min-h-14 -mx-2 rounded-control px-2 py-3 hover:bg-surface-muted active:bg-surface-muted",
 } as const;
 
@@ -57,7 +59,7 @@ export function LinkRow({
 }: LinkRowProps) {
   return (
     <Link
-      className={`${BASE} ${VARIANTS[variant]} ${accentClassName ?? ""} ${className ?? ""}`}
+      className={`${BASE} ${VARIANTS[variant]} ${variant === "card" && !setsPadding(className) ? "p-5" : ""} ${accentClassName ?? ""} ${className ?? ""}`}
       {...rest}
     >
       <span className="min-w-0 flex-1 break-words font-semibold">{children}</span>

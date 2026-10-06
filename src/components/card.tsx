@@ -26,10 +26,15 @@ type CardProps = {
   children: ReactNode;
 } & Pick<ComponentPropsWithoutRef<"section">, "aria-labelledby" | "aria-label" | "id">;
 
+/** True when a caller's className already sets padding (`p-*`, any breakpoint), so the default `p-5` must not fight it. */
+export function setsPadding(className?: string): boolean {
+  return /(^|s)(?:[w-]+:)*p-/.test(className ?? "");
+}
+
 export function Card({ as: Tag = "section", className, raised, variant, children, ...rest }: CardProps) {
   const resolved: CardVariant = variant ?? (raised ? "raised" : "default");
   return (
-    <Tag className={`${CARD_VARIANTS[resolved]} p-5 ${className ?? ""}`} {...rest}>
+    <Tag className={`${CARD_VARIANTS[resolved]} ${setsPadding(className) ? "" : "p-5"} ${className ?? ""}`} {...rest}>
       {children}
     </Tag>
   );
