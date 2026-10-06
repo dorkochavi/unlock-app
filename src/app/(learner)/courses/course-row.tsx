@@ -8,28 +8,18 @@
  * QA2-B (product-owner Preview QA "Progress needs visual states, not
  * decoration"): the only per-Course visual accent here reuses the
  * already-fetched `role` this list already renders as text — a management
- * (OWNER/INSTRUCTOR) row gets a subtle primary-tinted left border plus a
+ * (OWNER/INSTRUCTOR) row gets a subtle primary-tinted inline-start (logical `border-s-4`) border plus a
  * colored role label; a LEARNER row (no role label to begin with) stays
  * neutral. No new badge/pill is added (this screen should not become a
  * dashboard). The whole card is one real `Link` (no nested interactive
  * controls) — the entire card is the navigation target.
  *
- * RUN010-I (hosted-QA polish): hover/active now use `bg-primary-soft` (the
- * same lavender/indigo tint already used elsewhere, e.g. a selected
- * `ConfidenceChip`) instead of the neutral `bg-surface-muted`, extending this
- * product's one approved brand accent to the card's own interaction states;
- * focus already used `outline-primary`, unchanged. Only the background
- * changes — the existing per-side `border-l-primary` management accent (an
- * explicit `border-left-color`) is left alone so the two never contend for
- * the same CSS property. The author-management entry point itself stays
- * page-level (`page.tsx`'s `PageHeader` trailing `ButtonLink
- * variant="secondary"`, gated on `hasManagementRole` = some Course's
- * `isAuthor`), structurally separate from this card's own whole-card
- * learning-navigation Link, so it cannot compete with it — no per-card
- * management affordance is added here (a new co-author-management UI stays
- * explicitly out of scope, FUB-036).
+ * VISUAL-SYSTEM-RUN-001 E: the card is the shared `LinkRow` primitive
+ * (neutral hover/pressed/focus, replacing the RUN010-I primary-soft hover) and
+ * the management accent is the logical `border-s-4 border-s-primary`. The
+ * author-management entry point stays page-level (`page.tsx`), not per card.
  */
-import Link from "next/link";
+import { LinkRow } from "@/components/link-row";
 
 import type { CourseRole } from "@/domain/course/types";
 
@@ -54,29 +44,17 @@ export function CourseRow({
   const isManaged = course.isAuthor;
   return (
     <li>
-      <Link
+      <LinkRow
         href={`/courses/${course.id}`}
-        className={`flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:bg-primary-soft active:bg-primary-soft active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isManaged ? "border-l-4 border-l-primary" : ""}`}
+        accentClassName={isManaged ? "border-s-4 border-s-primary" : undefined}
       >
-        <span className="min-w-0 break-words font-medium">{course.title}</span>
-        <span className="flex shrink-0 items-center gap-2 text-sm text-muted">
-          {roleLabel ? (
-            <span className={isManaged ? "font-medium text-primary" : undefined}>{roleLabel}</span>
-          ) : null}
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-5 rtl:rotate-180"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m9 6 6 6-6 6" />
-          </svg>
-        </span>
-      </Link>
+        <span className="block text-body font-medium">{course.title}</span>
+        {roleLabel ? (
+          <span className={`mt-1 block text-secondary ${isManaged ? "font-medium text-primary" : "text-muted"}`}>
+            {roleLabel}
+          </span>
+        ) : null}
+      </LinkRow>
     </li>
   );
 }

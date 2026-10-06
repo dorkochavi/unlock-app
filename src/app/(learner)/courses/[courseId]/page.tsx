@@ -6,8 +6,9 @@ import { useParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
-import { LoadingState, StateBlock } from "@/components/state-block";
-import { SkeletonRows } from "@/components/skeleton";
+import { Notice } from "@/components/notice";
+import { Skeleton, SkeletonRows } from "@/components/skeleton";
+import { StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 import type { CourseRole } from "@/domain/course/types";
@@ -141,7 +142,19 @@ export default function CourseViewPage() {
 
   return (
     <>
-      {state.kind === "loading" ? <LoadingState label={messages.courseView.loading} /> : null}
+      {state.kind === "loading" ? (
+        <div role="status">
+          <span className="sr-only">{messages.courseView.loading}</span>
+          <div aria-hidden="true" className="flex flex-col gap-6">
+            <Skeleton className="h-9 w-2/3" />
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+            <Skeleton className="h-40 w-full rounded-card" />
+          </div>
+        </div>
+      ) : null}
 
       {state.kind === "signed-out" ? (
         <StateBlock
@@ -244,7 +257,7 @@ function CourseReady({
             <ButtonLink href="/today" variant="secondary" fullWidth>
               {messages.goToToday}
             </ButtonLink>
-            <p className="text-center text-sm text-muted">{messages.continueInTodayHint}</p>
+            <p className="text-center text-secondary text-muted">{messages.continueInTodayHint}</p>
           </div>
           <CourseTopics courseId={courseId} practiceAvailable={data.practiceAvailable === true} topics={topics} />
         </>
@@ -276,20 +289,20 @@ function CourseTopics({
 
   return (
     <Card>
-      <h2 className="mb-1 text-lg font-semibold">{messages.topicsHeading}</h2>
+      <h2 className="mb-1 text-section font-semibold">{messages.topicsHeading}</h2>
       {topics.kind === "loading" ? (
         <div className="pt-2">
           <SkeletonRows count={3} label={messages.topicsLoading} rowClassName="h-14 w-full" />
         </div>
       ) : null}
       {topics.kind === "error" ? (
-        <p className="pt-2 text-sm text-muted">{messages.topicsError}</p>
+        <Notice tone="error" className="pt-2">{messages.topicsError}</Notice>
       ) : null}
       {topics.kind === "unavailable" ? (
-        <p className="pt-2 text-sm text-muted">{messages.topicsUnavailable}</p>
+        <Notice className="pt-2">{messages.topicsUnavailable}</Notice>
       ) : null}
       {topics.kind === "ready" && topics.topics.length === 0 ? (
-        <p className="pt-2 text-sm text-muted">{messages.topicsEmpty}</p>
+        <Notice className="pt-2">{messages.topicsEmpty}</Notice>
       ) : null}
       {topics.kind === "ready" && topics.topics.length > 0 ? (
         <TopicList

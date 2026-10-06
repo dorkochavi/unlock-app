@@ -8,8 +8,7 @@
  * color; the caller passes `practice` only when the server says the Course is
  * practiceable. There is no separate Topic page.
  */
-import Link from "next/link";
-
+import { LinkRow } from "@/components/link-row";
 import { StatusPill, type StatusTone } from "@/components/status-pill";
 import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
@@ -38,54 +37,38 @@ export function TopicList({
         const practiceable = practice !== undefined && topic.totalCount > 0;
         const content = (
           <>
-            <div className="min-w-0">
-              <p className="break-words font-medium">{topic.name}</p>
-              <p className="text-sm text-muted">
-                {interpolate(messages.coverage, {
-                  attempted: topic.attemptedCount,
-                  total: topic.totalCount,
-                })}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <span className="block text-body font-medium">{topic.name}</span>
+            <span className="mt-1 block text-secondary text-muted">
+              {interpolate(messages.coverage, {
+                attempted: topic.attemptedCount,
+                total: topic.totalCount,
+              })}
+            </span>
+            <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
               <StatusPill tone={TONE_BY_STATE[topic.state]}>
                 {messages.state[topic.state]}
               </StatusPill>
               {practiceable ? (
-                <span className="flex items-center gap-0.5 text-sm font-medium text-primary">
-                  {messages.practiceTopic}
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    className="size-4 rtl:-scale-x-100"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m9 6 6 6-6 6" />
-                  </svg>
-                </span>
+                <span className="text-secondary font-medium text-primary">{messages.practiceTopic}</span>
               ) : null}
-            </div>
+            </span>
           </>
         );
         return (
           <li key={topic.topicId}>
             {practiceable ? (
-              <Link
+              <LinkRow
+                variant="inline"
                 href={`/courses/${practice.courseId}/practice?topic=${topic.topicId}&from=${practice.from}`}
                 aria-label={interpolate(messages.practiceTopicLabel, {
                   name: topic.name,
                   state: messages.state[topic.state],
                 })}
-                className="-mx-2 flex min-h-14 items-center justify-between gap-3 rounded-lg px-2 py-3 transition hover:bg-surface-muted active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {content}
-              </Link>
+              </LinkRow>
             ) : (
-              <div className="flex items-start justify-between gap-3 py-3">{content}</div>
+              <div className="py-3">{content}</div>
             )}
           </li>
         );

@@ -5,7 +5,8 @@ import Link from "next/link";
 
 import { Button, ButtonLink, buttonClasses } from "@/components/button";
 import { PageHeader } from "@/components/page-header";
-import { LoadingState, StateBlock } from "@/components/state-block";
+import { SkeletonRows } from "@/components/skeleton";
+import { StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 
@@ -82,7 +83,7 @@ export default function MyCoursesPage() {
         }
       />
 
-      {state.kind === "loading" ? <LoadingState label={messages.myCourses.loading} /> : null}
+      {state.kind === "loading" ? <SkeletonRows count={3} label={messages.myCourses.loading} rowClassName="h-20 w-full rounded-card" /> : null}
 
       {state.kind === "signed-out" ? (
         <StateBlock
@@ -134,7 +135,7 @@ export default function MyCoursesPage() {
         <footer className="mt-10 text-center">
           <Link
             href="/instructor/courses"
-            className={buttonClasses("tertiary", { className: "text-sm" })}
+            className={buttonClasses("tertiary", { className: "text-secondary" })}
           >
             {messages.myCourses.instructorLink}
           </Link>
