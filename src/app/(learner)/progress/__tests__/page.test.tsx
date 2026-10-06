@@ -47,9 +47,9 @@ describe("courseCardAccentClass (QA2-B)", () => {
   });
 
   it("stays neutral (no color) when there is no real evidence to color-code, but still reserves the accent width (RUN010-I: consistent status-placement)", () => {
-    expect(courseCardAccentClass(readyNoTopics)).toBe("border-l-4 border-l-transparent");
-    expect(courseCardAccentClass(unavailable)).toBe("border-l-4 border-l-transparent");
-    expect(courseCardAccentClass(errored)).toBe("border-l-4 border-l-transparent");
+    expect(courseCardAccentClass(readyNoTopics)).toBe("border-s-4 border-s-transparent");
+    expect(courseCardAccentClass(unavailable)).toBe("border-s-4 border-s-transparent");
+    expect(courseCardAccentClass(errored)).toBe("border-s-4 border-s-transparent");
     // None of these fall back to a real semantic status color.
     expect(courseCardAccentClass(readyNoTopics)).not.toMatch(/state-(solid|reinforce|progress|not-started)/);
   });
@@ -77,6 +77,6 @@ describe("CourseSection markup (QA2-B whole-card navigation)", () => {
     );
     expect(html).toMatch(/hover:bg-surface-muted/);
     expect(html).toMatch(/focus-visible:outline-2/);
-    expect(html).toMatch(/active:scale-\[0\.99\]/);
+    expect(html).toMatch(/active:bg-surface-muted/);
   });
 });

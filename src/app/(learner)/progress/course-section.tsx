@@ -10,13 +10,13 @@
  * decoration"): the whole Course card is one real navigation `Link` (list
  * semantics, no nested interactive controls — the card previously only made
  * its title text clickable) with visible hover/focus/pressed states. The one
- * visual accent this page adds is a left-border tone drawn from the SAME
+ * visual accent this page adds is an inline-start (logical) border tone drawn from the SAME
  * already-computed attempted/not-attempted signal the text already shows
  * (`summarizeCourseActivity`) — never a new derived mastery/qualitative
  * claim, just a visual echo of data already rendered.
  */
-import Link from "next/link";
-
+import { LinkRow } from "@/components/link-row";
+import { StatusPill } from "@/components/status-pill";
 import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 
@@ -34,9 +34,9 @@ import { summarizeCourseActivity, type CourseProgress, type TopicProgressDto } f
 export function courseCardAccentClass(progress: CourseProgress): string {
   if (progress.kind === "ready" && progress.topics.length > 0) {
     const hasActivity = progress.topics.some((topic) => topic.attemptedCount > 0);
-    return hasActivity ? "border-l-4 border-l-state-progress" : "border-l-4 border-l-state-not-started";
+    return hasActivity ? "border-s-4 border-s-state-progress" : "border-s-4 border-s-state-not-started";
   }
-  return "border-l-4 border-l-transparent";
+  return "border-s-4 border-s-transparent";
 }
 
 /**
@@ -44,13 +44,12 @@ export function courseCardAccentClass(progress: CourseProgress): string {
  * `CourseActivitySummary` below is plain text). Hover uses the same
  * `bg-surface-muted` treatment as the Course page's Topic rows (visually
  * related, not copied) instead of a border-color hover, so it never fights
- * the left accent border above.
+ * the accent border above.
  *
- * RUN010-I: a shared `min-h-36` floor plus `flex flex-col` keeps every
- * card's padding and status-block starting position consistent regardless
- * of how much body text a given state renders (a one-line "not started"
- * card no longer looks visually orphaned next to a multi-line activity
- * summary card) — no new color/state, purely a layout floor.
+ * VISUAL-SYSTEM-RUN-001 H: the card is the shared `LinkRow` (accent via the
+ * logical `border-s-4`); a `min-h-24` floor keeps short states (one-line
+ * unavailable/error/no-Topics) from looking orphaned next to activity cards.
+ * The Course title stays an `h2` for heading navigation.
  */
 export function CourseSection({
   id,
@@ -64,28 +63,29 @@ export function CourseSection({
   const messages = getMessages().progress;
   return (
     <li>
-      <Link
+      <LinkRow
         href={`/courses/${id}`}
-        className={`flex min-h-36 flex-col rounded-xl border border-border bg-surface p-5 transition hover:bg-surface-muted active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${courseCardAccentClass(progress)}`}
+        accentClassName={courseCardAccentClass(progress)}
+        className="min-h-24 items-start"
       >
-        <h2 className="mb-1 break-words text-lg font-semibold">{title}</h2>
+        <h2 className="break-words text-section font-semibold">{title}</h2>
 
         {progress.kind === "unavailable" ? (
-          <p className="pt-2 text-sm text-muted">{messages.courseUnavailable}</p>
+          <span className="mt-2 block text-secondary text-muted">{messages.courseUnavailable}</span>
         ) : null}
 
         {progress.kind === "error" ? (
-          <p className="pt-2 text-sm text-muted">{messages.courseError}</p>
+          <span className="mt-2 block text-secondary text-muted">{messages.courseError}</span>
         ) : null}
 
         {progress.kind === "ready" && progress.topics.length === 0 ? (
-          <p className="pt-2 text-sm text-muted">{messages.courseNoTopics}</p>
+          <span className="mt-2 block text-secondary text-muted">{messages.courseNoTopics}</span>
         ) : null}
 
         {progress.kind === "ready" && progress.topics.length > 0 ? (
           <CourseActivitySummary topics={progress.topics} />
         ) : null}
-      </Link>
+      </LinkRow>
     </li>
   );
 }
@@ -101,20 +101,26 @@ function CourseActivitySummary({ topics }: { topics: TopicProgressDto[] }) {
   const summary = summarizeCourseActivity(topics);
 
   if (summary.attempted === 0) {
-    return <p className="pt-2 text-sm text-muted">{messages.courseNotStartedYet}</p>;
+    return (
+      <span className="mt-2 flex">
+        <StatusPill tone="neutral">{messages.courseNotStartedYet}</StatusPill>
+      </span>
+    );
   }
 
   return (
-    <div className="pt-2">
-      <p className="text-sm text-muted">
+    <span className="mt-2 block">
+      <span className="flex">
+        <StatusPill tone="progress">{messages.courseActivityEncouragement}</StatusPill>
+      </span>
+      <span className="mt-2 block text-secondary text-muted">
         {interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total })}
-      </p>
+      </span>
       {summary.topicsWithActivity > 1 ? (
-        <p className="text-sm text-muted">
+        <span className="block text-secondary text-muted">
           {interpolate(messages.courseTopicsTouched, { count: summary.topicsWithActivity })}
-        </p>
+        </span>
       ) : null}
-      <p className="mt-1 text-sm font-medium text-foreground">{messages.courseActivityEncouragement}</p>
-    </div>
+    </span>
   );
 }

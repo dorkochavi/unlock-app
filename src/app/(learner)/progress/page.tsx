@@ -24,7 +24,7 @@
  * decoration"): the whole Course card is now one real navigation `Link`
  * (list semantics, no nested interactive controls — the card previously only
  * made its title text clickable) with visible hover/focus/pressed states.
- * The one visual accent this page adds is a left-border tone drawn from the
+ * The one visual accent this page adds is an inline-start (logical) border tone drawn from the
  * SAME already-computed attempted/not-attempted signal the text above already
  * shows (`summarizeCourseActivity`) — never a new derived mastery/qualitative
  * claim, just a visual echo of data already rendered.
@@ -33,7 +33,8 @@ import { useEffect, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/button";
 import { PageHeader } from "@/components/page-header";
-import { LoadingState, StateBlock } from "@/components/state-block";
+import { SkeletonRows } from "@/components/skeleton";
+import { StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 
@@ -76,7 +77,7 @@ export default function LearnerProgressPage() {
     <>
       <PageHeader title={messages.heading} subtitle={messages.subheading} />
 
-      {state.kind === "loading" ? <LoadingState label={messages.loading} /> : null}
+      {state.kind === "loading" ? <SkeletonRows count={3} label={messages.loading} rowClassName="h-24 w-full rounded-card" /> : null}
 
       {state.kind === "signed-out" ? (
         <StateBlock
@@ -117,7 +118,7 @@ export default function LearnerProgressPage() {
 
       {state.kind === "ready" && state.courses.length > 0 ? (
         <>
-          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
+          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
             {state.courses.map((course) => (
               <CourseSection
                 key={course.id}
