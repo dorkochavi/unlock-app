@@ -33,6 +33,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("fetchPracticeBatch abort signal (Slice E)", () => {
+  it("passes the AbortSignal to fetch and maps an abort to ERROR without throwing", async () => {
+    const controller = new AbortController();
+    const fn = stubFetch(async () => {
+      throw new DOMException("aborted", "AbortError");
+    });
+    const out = await fetchPracticeBatch(COURSE, null, [], controller.signal);
+    expect(out).toEqual({ outcome: "ERROR" });
+    expect((fn.mock.calls[0][1] as RequestInit).signal).toBe(controller.signal);
+    expect((fn.mock.calls[0][1] as RequestInit).method).toBe("GET");
+  });
+});
+
 describe("origin / scope helpers", () => {
   it("only whitelisted origins are honored; anything else is the Course page", () => {
     expect(parsePracticeFrom("progress")).toBe("progress");

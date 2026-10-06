@@ -111,11 +111,13 @@ export async function fetchPracticeBatch(
   courseId: string,
   topicId: string | null,
   skippedQuestionIds: readonly string[],
+  signal?: AbortSignal,
 ): Promise<FetchPracticeBatchOutcome> {
   try {
     const response = await fetch(practiceBatchUrl(courseId, topicId, skippedQuestionIds), {
       method: "GET",
       cache: "no-store",
+      signal,
     });
     if (response.status === 401) return { outcome: "UNAUTHENTICATED" };
     if (response.status === 422) return { outcome: "TIMEZONE_NOT_SET" };

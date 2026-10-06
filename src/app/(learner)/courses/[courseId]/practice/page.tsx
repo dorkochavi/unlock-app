@@ -28,6 +28,8 @@ import type { ConfidenceLevel } from "@/domain/learning/types";
 import { useLearnMode } from "../../../learn-mode";
 import { persistDetectedTimezone } from "../../../today/fetch-today-plan";
 import { QuestionCard } from "../../../today/question-card";
+import { BatchComplete, type MoreStatus } from "./batch-complete";
+import { NextBatchPrefetcher, shouldPrefetchNextBatch } from "./next-batch-prefetch";
 import {
   fetchPracticeBatch,
   parsePracticeFrom,
@@ -88,12 +90,18 @@ async function loadPracticeBatch(
   courseId: string,
   topicId: string | null,
   skipped: readonly string[],
+  signal?: AbortSignal,
 ): Promise<FetchPracticeBatchOutcome> {
-  const first = await fetchPracticeBatch(courseId, topicId, skipped);
+  const first = await fetchPracticeBatch(courseId, topicId, skipped, signal);
   if (first.outcome !== "TIMEZONE_NOT_SET") return first;
   if (!(await persistDetectedTimezone())) return { outcome: "ERROR" };
-  const second = await fetchPracticeBatch(courseId, topicId, skipped);
+  const second = await fetchPracticeBatch(courseId, topicId, skipped, signal);
   return second.outcome === "TIMEZONE_NOT_SET" ? { outcome: "ERROR" } : second;
+}
+
+/** Identity of the selection a prefetched batch is valid for: current batch + skip hints. */
+function nextBatchKey(items: readonly PracticeItemDto[], skipped: readonly string[]): string {
+  return `${items.map((item) => item.questionId).join(",")}|${skipped.join(",")}`;
 }
 
 function runFromBatch(batch: PracticeBatchDto): RunState {
@@ -136,6 +144,12 @@ function PracticeScreen() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   // Skipped Question ids for THIS Practice run only (never persisted).
   const skippedIds = useRef<string[]>([]);
+  // Slice E: next-batch background load (read-only GET; see next-batch-prefetch.ts).
+  const [prefetcher] = useState(() => new NextBatchPrefetcher());
+  const [moreStatus, setMoreStatus] = useState<MoreStatus>("idle");
+  const moreInFlight = useRef(false);
+  const moreSeq = useRef(0);
+  const mounted = useRef(false);
 
   // Learn Mode throughout the Practice screen (UX_SPEC §10).
   useLearnMode(true);
@@ -146,23 +160,63 @@ function PracticeScreen() {
     async function run() {
       const result = await loadPracticeBatch(courseId, topicId, skippedIds.current);
       if (cancelled) return;
+      setMoreStatus("idle");
       setState(viewFromResult(result));
     }
     run();
     return () => {
       cancelled = true;
+      prefetcher.cancel();
+      moreSeq.current += 1;
+      moreInFlight.current = false;
     };
-  }, [courseId, topicId, reloadToken]);
+  }, [courseId, topicId, reloadToken, prefetcher]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      prefetcher.cancel();
+    };
+  }, [prefetcher]);
+
+  // Start the next-batch load only once EVERY item in the current batch is
+  // answered (last answer ACCEPTED, i.e. its Attempt is persisted) or skipped:
+  // selection excludes answered-in-session Questions, so an earlier start could
+  // repeat a just-answered Question or ignore the latest evidence.
+  const lastItemSettled = state.kind === "ready" && shouldPrefetchNextBatch(state.run);
+  const readyItems = state.kind === "ready" ? state.run.items : null;
+  useEffect(() => {
+    if (!lastItemSettled || readyItems === null) return;
+    prefetcher.start(nextBatchKey(readyItems, skippedIds.current), (signal) =>
+      loadPracticeBatch(courseId, topicId, skippedIds.current, signal),
+    );
+  }, [lastItemSettled, readyItems, prefetcher, courseId, topicId]);
 
   const retry = useCallback(() => {
     setState({ kind: "loading" });
     setReloadToken((token) => token + 1);
   }, []);
 
-  function loadMore() {
+  async function loadMore() {
+    if (moreInFlight.current || state.kind !== "ready") return; // double-click guard
+    moreInFlight.current = true;
+    const seq = ++moreSeq.current;
+    setMoreStatus("pending");
+    const skipped = skippedIds.current;
+    const result = await prefetcher.consume(nextBatchKey(state.run.items, skipped), (signal) =>
+      loadPracticeBatch(courseId, topicId, skipped, signal),
+    );
+    if (!mounted.current || seq !== moreSeq.current) return; // unmounted / superseded
+    moreInFlight.current = false;
+    if (result.outcome === "ERROR" || result.outcome === "TIMEZONE_NOT_SET") {
+      // Keep the summary on screen; the same button becomes the retry.
+      setMoreStatus("error");
+      return;
+    }
+    setMoreStatus("idle");
     setNotice(false);
-    setState({ kind: "loading" });
-    setReloadToken((token) => token + 1);
+    setState(viewFromResult(result));
   }
 
   const signInHref = buildSignInHref(practicePath(courseId, topicId, from));
@@ -378,7 +432,8 @@ function PracticeScreen() {
           topicsTouched={new Set(run.topicIdsAnswered).size}
           hasMore={run.hasMore}
           originHref={originHref}
-          from={from}
+          backLabelText={backLabel(from)}
+          moreStatus={moreStatus}
           onMore={loadMore}
         />
       ) : null}
@@ -391,84 +446,6 @@ function PracticeScreen() {
 function backLabel(from: PracticeFrom): string {
   const messages = getMessages().practice;
   return from === "progress" ? messages.backToProgress : messages.backToCourse;
-}
-
-/**
- * UX-03-QA1 Finding 7: a real learning summary from this batch's own answers
- * — questions practiced, how many were correct, and how many Topics were
- * touched (Course Practice only; Topic Practice is trivially always 1) — plus
- * one restrained, non-gamified encouragement line. No score/percentage/streak
- * framing (UX_SPEC §10 remains binding): every number here is a plain count
- * the batch itself already produced, never a derived mastery claim.
- */
-function BatchComplete({
-  answered,
-  skipped,
-  correctCount,
-  topicsTouched,
-  hasMore,
-  originHref,
-  from,
-  onMore,
-}: {
-  answered: number;
-  skipped: number;
-  correctCount: number;
-  topicsTouched: number;
-  hasMore: boolean;
-  originHref: string;
-  from: PracticeFrom;
-  onMore: () => void;
-}) {
-  const messages = getMessages();
-  const titleRef = useRef<HTMLParagraphElement>(null);
-  useEffect(() => {
-    titleRef.current?.focus();
-  }, []);
-  const summary = [
-    answered === 1
-      ? messages.today.completionAnsweredOne
-      : answered > 1
-        ? interpolate(messages.today.completionAnswered, { count: answered })
-        : null,
-    skipped > 0 ? interpolate(messages.today.completionSkipped, { count: skipped }) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const correctLine =
-    answered > 0
-      ? interpolate(messages.practice.batchCorrectSummary, { correct: correctCount, answered })
-      : null;
-  const topicsLine =
-    topicsTouched > 1
-      ? interpolate(messages.practice.batchTopicsTouched, { count: topicsTouched })
-      : null;
-
-  return (
-    <Card className="flex flex-col items-center gap-4 p-6 text-center">
-      <div role="status">
-        <p ref={titleRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
-          {messages.practice.batchCompleteTitle}
-        </p>
-      </div>
-      {summary ? <p className="text-sm text-muted">{summary}</p> : null}
-      {correctLine ? <p className="text-sm text-muted">{correctLine}</p> : null}
-      {topicsLine ? <p className="text-sm text-muted">{topicsLine}</p> : null}
-      {answered > 0 ? (
-        <p className="text-sm font-medium text-foreground">{messages.practice.batchEncouragement}</p>
-      ) : null}
-      <div className="mt-2 flex w-full flex-col gap-2">
-        {hasMore ? (
-          <Button fullWidth onClick={onMore}>
-            {messages.practice.more}
-          </Button>
-        ) : null}
-        <ButtonLink href={originHref} variant={hasMore ? "tertiary" : "secondary"} fullWidth>
-          {backLabel(from)}
-        </ButtonLink>
-      </div>
-    </Card>
-  );
 }
 
 /** Honest, neutral end state — not styled as an error, no primary action. */
