@@ -22,23 +22,28 @@ import type { ComponentProps } from "react";
 export type ButtonVariant = "primary" | "secondary" | "tertiary" | "dangerSecondary" | "dangerTertiary";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-control px-5 text-center font-medium transition active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:active:scale-100 aria-disabled:active:scale-100";
+  "inline-flex items-center justify-center gap-2 rounded-control px-5 text-center font-semibold transition duration-150 active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:active:scale-100 aria-disabled:active:scale-100";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "state-disabled bg-primary text-primary-contrast not-disabled:not-aria-disabled:hover:bg-primary-hover",
-  secondary: "state-disabled border border-border-strong bg-surface text-foreground not-disabled:not-aria-disabled:hover:bg-surface-muted",
-  tertiary: "text-muted disabled:cursor-not-allowed disabled:text-subtle aria-disabled:cursor-not-allowed aria-disabled:text-subtle underline-offset-4 not-disabled:not-aria-disabled:hover:text-foreground not-disabled:not-aria-disabled:hover:underline",
-  dangerSecondary: "state-disabled border border-danger/40 bg-surface text-danger not-disabled:not-aria-disabled:hover:bg-danger-soft",
-  dangerTertiary: "text-danger disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 underline-offset-4 not-disabled:not-aria-disabled:hover:underline",
+  primary:
+    "state-disabled bg-primary text-primary-contrast font-bold shadow-[0_1px_2px_rgb(30_27_75/0.2),0_6px_14px_-6px_var(--primary)] not-disabled:not-aria-disabled:hover:bg-primary-hover",
+  secondary:
+    "state-disabled border border-primary-soft-border bg-primary-soft text-primary-soft-foreground not-disabled:not-aria-disabled:hover:border-primary",
+  tertiary: "text-muted disabled:cursor-not-allowed disabled:text-subtle aria-disabled:cursor-not-allowed aria-disabled:text-subtle underline-offset-4 font-medium not-disabled:not-aria-disabled:hover:text-foreground not-disabled:not-aria-disabled:hover:underline",
+  dangerSecondary: "state-disabled border border-danger/30 bg-danger-soft text-danger not-disabled:not-aria-disabled:hover:border-danger",
+  dangerTertiary: "text-danger font-medium disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 underline-offset-4 not-disabled:not-aria-disabled:hover:underline",
 };
+
+/** md = 44px tap target (dense/secondary); lg = 52px, the screen's main CTA. */
+export type ButtonSize = "md" | "lg";
 
 export function buttonClasses(
   variant: ButtonVariant,
-  options: { fullWidth?: boolean; compact?: boolean; className?: string } = {},
+  options: { fullWidth?: boolean; compact?: boolean; size?: ButtonSize; className?: string } = {},
 ): string {
   return [
     BASE,
-    options.compact ? "min-h-control-compact" : "min-h-control",
+    options.compact ? "min-h-control-compact" : options.size === "lg" ? "min-h-control-lg text-body" : "min-h-control",
     VARIANTS[variant],
     options.fullWidth ? "w-full" : "",
     options.className ?? "",
@@ -52,18 +57,21 @@ type ButtonProps = ComponentProps<"button"> & {
   fullWidth?: boolean;
   /** Shorter control height for dense rows; default is the 44px tap target. */
   compact?: boolean;
+  /** "lg" = 52px primary CTA. */
+  size?: ButtonSize;
 };
 
 export function Button({
   variant = "primary",
   fullWidth,
   compact,
+  size,
   className,
   type = "button",
   ...rest
 }: ButtonProps) {
   return (
-    <button type={type} className={buttonClasses(variant, { fullWidth, compact, className })} {...rest} />
+    <button type={type} className={buttonClasses(variant, { fullWidth, compact, size, className })} {...rest} />
   );
 }
 
@@ -71,14 +79,16 @@ type ButtonLinkProps = ComponentProps<typeof Link> & {
   variant?: ButtonVariant;
   fullWidth?: boolean;
   compact?: boolean;
+  size?: ButtonSize;
 };
 
 export function ButtonLink({
   variant = "primary",
   fullWidth,
   compact,
+  size,
   className,
   ...rest
 }: ButtonLinkProps) {
-  return <Link className={buttonClasses(variant, { fullWidth, compact, className })} {...rest} />;
+  return <Link className={buttonClasses(variant, { fullWidth, compact, size, className })} {...rest} />;
 }

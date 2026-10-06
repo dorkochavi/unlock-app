@@ -2,20 +2,34 @@
  * A card is a real content unit only (docs/UX_SPEC.md §6 item 38) — one
  * Course, one Course's Topic list, the Today summary. Never put a Card inside a Card;
  * use `Row` dividers (or spacing) inside a card instead.
- * `raised` adds the subtle elevation token for one hero/summary card.
+ * Variants: default = white + hairline; `raised` (or `variant="raised"`) adds the
+ * soft 2-layer shadow for a summary card; `hero` is THE deep-indigo surface (one
+ * per screen, white text, carries the primary action); `quiet` is a tinted,
+ * borderless panel for secondary grouping.
  */
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
+
+export type CardVariant = "default" | "raised" | "hero" | "quiet";
+
+const CARD_VARIANTS: Record<CardVariant, string> = {
+  default: "rounded-card border border-border bg-surface",
+  raised: "rounded-card surface-raised",
+  hero: "rounded-surface surface-hero",
+  quiet: "rounded-card bg-surface-muted",
+};
 
 type CardProps = {
   as?: "section" | "div" | "article" | "li";
   className?: string;
   raised?: boolean;
+  variant?: CardVariant;
   children: ReactNode;
 } & Pick<ComponentPropsWithoutRef<"section">, "aria-labelledby" | "aria-label" | "id">;
 
-export function Card({ as: Tag = "section", className, raised, children, ...rest }: CardProps) {
+export function Card({ as: Tag = "section", className, raised, variant, children, ...rest }: CardProps) {
+  const resolved: CardVariant = variant ?? (raised ? "raised" : "default");
   return (
-    <Tag className={`rounded-card border border-border bg-surface p-5 ${raised ? "shadow-raised" : ""} ${className ?? ""}`} {...rest}>
+    <Tag className={`${CARD_VARIANTS[resolved]} p-5 ${className ?? ""}`} {...rest}>
       {children}
     </Tag>
   );

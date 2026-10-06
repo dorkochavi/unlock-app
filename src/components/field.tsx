@@ -39,7 +39,7 @@ export function Field({
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1 block text-secondary font-medium">
+      <label htmlFor={id} className="mb-1.5 block text-secondary font-semibold">
         {label}
       </label>
       {children({ id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined })}

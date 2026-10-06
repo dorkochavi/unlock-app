@@ -37,13 +37,13 @@ export function StateBlock({
     >
       <span
         aria-hidden="true"
-        className={`flex size-12 items-center justify-center rounded-full ${
-          isError ? "bg-danger-soft text-danger" : "bg-surface-muted text-muted"
+        className={`flex size-14 items-center justify-center rounded-full ${
+          isError ? "bg-danger-soft text-danger" : "bg-primary-soft text-primary-soft-foreground"
         }`}
       >
         <ToneIcon tone={isError ? "error" : "info"} className="size-6" />
       </span>
-      <p className={`text-section font-medium ${isError ? "text-danger" : ""}`}>{title}</p>
+      <p className={`text-title font-bold ${isError ? "text-danger" : ""}`}>{title}</p>
       {body ? <p className="text-body text-muted">{body}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>

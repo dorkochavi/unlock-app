@@ -36,9 +36,9 @@ export function LearnHeader({
   return (
     <div className="mb-2 flex items-start justify-between gap-3">
       <div className="min-w-0">
-        {eyebrow ? <p className="text-secondary text-subtle">{eyebrow}</p> : null}
-        <p className="break-words font-medium">{title}</p>
-        {position ? <p className="text-secondary text-muted">{position}</p> : null}
+        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
+        <p className="break-words text-section font-bold">{title}</p>
+        {position ? <p className="text-secondary font-medium text-muted">{position}</p> : null}
       </div>
       {action}
     </div>

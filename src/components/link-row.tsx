@@ -14,10 +14,10 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
 const BASE =
-  "flex items-center justify-between gap-3 transition active:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "flex items-center justify-between gap-3 transition duration-150 active:scale-[0.99] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 const VARIANTS = {
-  card: "min-h-16 rounded-card border border-border bg-surface p-5 hover:bg-surface-muted",
-  inline: "min-h-14 -mx-2 rounded-control px-2 py-3 hover:bg-surface-muted",
+  card: "min-h-16 rounded-card surface-raised p-5 hover:border-primary-soft-border hover:bg-surface-muted active:bg-surface-muted",
+  inline: "min-h-14 -mx-2 rounded-control px-2 py-3 hover:bg-surface-muted active:bg-surface-muted",
 } as const;
 
 export function Chevron({ className }: { className?: string }) {
@@ -28,7 +28,7 @@ export function Chevron({ className }: { className?: string }) {
       className={`size-5 shrink-0 rtl:rotate-180 ${className ?? ""}`}
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -60,9 +60,9 @@ export function LinkRow({
       className={`${BASE} ${VARIANTS[variant]} ${accentClassName ?? ""} ${className ?? ""}`}
       {...rest}
     >
-      <span className="min-w-0 flex-1 break-words">{children}</span>
+      <span className="min-w-0 flex-1 break-words font-semibold">{children}</span>
       {trailing || showChevron ? (
-        <span className="flex shrink-0 items-center gap-2 text-secondary text-muted">
+        <span className="flex shrink-0 items-center gap-2 text-secondary font-medium text-muted">
           {trailing}
           {showChevron ? <Chevron /> : null}
         </span>

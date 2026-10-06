@@ -7,69 +7,95 @@
  * this file. One primary brand color; everything else is neutral or a status
  * role. `danger` is for real errors/destructive actions only — an ordinary
  * wrong answer is learning feedback, not an error.
+ *
+ * Direction B "Soft Premium Canvas": violet-tinted canvas, white raised
+ * surfaces with hairline + soft shadow, ONE deep-indigo hero surface per screen.
  */
 :root {
-  --background: #ffffff;
-  --foreground: #18181b;
+  --background: #f6f5fb;
+  --foreground: #17162b;
   --surface: #ffffff;
-  --surface-muted: #f4f4f5;
-  --border: #e4e4e7;
-  --border-strong: #d4d4d8;
-  --muted: #52525b;
-  --subtle: #686872; /* >=5.0:1 on surface-muted (was 4.4:1) */
+  --surface-muted: #efeef7;
+  --border: rgb(23 22 43 / 0.1); /* hairline */
+  --border-strong: rgb(23 22 43 / 0.3);
+  --field-border: rgb(23 22 43 / 0.46); /* form-control edge, ~3:1 on surface */
+  --muted: #55536b;
+  --subtle: #66647e; /* >=4.5:1 on surface-muted */
 
   --primary: #4338ca;
   --primary-hover: #3730a3;
   --primary-contrast: #ffffff;
-  --primary-soft: #eef2ff;
+  --primary-soft: #ebeaff;
   --primary-soft-foreground: #3730a3;
+  --primary-soft-border: rgb(67 56 202 / 0.22);
+  --primary-ring: rgb(67 56 202 / 0.28);
 
-  --state-solid-soft: #ecfdf5;
-  --state-solid: #047857;
-  --state-reinforce-soft: #fffbeb;
-  --state-reinforce: #b45309;
-  --state-progress-soft: #eef2ff;
-  --state-progress: #4338ca;
-  --state-not-started-soft: #f4f4f5;
-  --state-not-started: #52525b;
+  /* Deep-indigo hero surface pair (text on it: --hero-foreground / --hero-muted). */
+  --hero: #2e2a8f;
+  --hero-to: #3a33b0;
+  --hero-foreground: #ffffff;
+  --hero-muted: #d5d4f6;
+  --hero-soft: rgb(255 255 255 / 0.14);
 
-  --danger: #b91c1c;
-  --danger-soft: #fef2f2;
+  --state-solid-soft: #e4f6ed;
+  --state-solid: #046c4e;
+  --state-reinforce-soft: #fff1d6;
+  --state-reinforce: #92400e;
+  --state-progress-soft: #ebeaff;
+  --state-progress: #3730a3;
+  --state-not-started-soft: #e9e8f2;
+  --state-not-started: #55536b;
+
+  --danger: #b42318;
+  --danger-soft: #fdeaec;
 
   --ring: var(--primary);
-  --elevation-raised: 0 1px 2px 0 rgb(24 24 27 / 0.06), 0 1px 3px 0 rgb(24 24 27 / 0.08);
+  --elevation-raised: 0 1px 2px rgb(30 27 75 / 0.06), 0 8px 24px -12px rgb(30 27 75 / 0.14);
+  --elevation-hero: 0 2px 4px rgb(46 42 143 / 0.18), 0 18px 36px -16px rgb(46 42 143 / 0.5);
+  --elevation-float: 0 -1px 0 rgb(30 27 75 / 0.04), 0 10px 30px -8px rgb(30 27 75 / 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0b0f;
-    --foreground: #ededf0;
-    --surface: #131318;
-    --surface-muted: #1c1c22;
-    --border: #27272f;
-    --border-strong: #3a3a44;
-    --muted: #a1a1aa;
-    --subtle: #8b8b95;
+    --background: #0d0c19;
+    --foreground: #ecebf7;
+    --surface: #181730;
+    --surface-muted: #221f40;
+    --border: rgb(236 235 247 / 0.12);
+    --border-strong: rgb(236 235 247 / 0.34);
+    --field-border: rgb(236 235 247 / 0.5);
+    --muted: #b0aec8;
+    --subtle: #9a98b6;
 
-    --primary: #818cf8;
-    --primary-hover: #a5b4fc;
-    --primary-contrast: #0b0b0f;
-    --primary-soft: #1e1b4b;
-    --primary-soft-foreground: #c7d2fe;
+    --primary: #8f97ff;
+    --primary-hover: #aab0ff;
+    --primary-contrast: #0d0c19;
+    --primary-soft: #26235a;
+    --primary-soft-foreground: #d3d6ff;
+    --primary-soft-border: rgb(143 151 255 / 0.4);
+    --primary-ring: rgb(143 151 255 / 0.4);
 
-    --state-solid-soft: #052e1f;
+    --hero: #35309c;
+    --hero-to: #4a42c4;
+    --hero-foreground: #ffffff;
+    --hero-muted: #d8d7f7;
+    --hero-soft: rgb(255 255 255 / 0.16);
+
+    --state-solid-soft: #0f2f27;
     --state-solid: #6ee7b7;
-    --state-reinforce-soft: #3a2506;
+    --state-reinforce-soft: #3a2a0a;
     --state-reinforce: #fcd34d;
-    --state-progress-soft: #1e1b4b;
-    --state-progress: #c7d2fe;
-    --state-not-started-soft: #1c1c22;
-    --state-not-started: #a1a1aa;
+    --state-progress-soft: #26235a;
+    --state-progress: #c7cbff;
+    --state-not-started-soft: #26233f;
+    --state-not-started: #b0aec8;
 
-    --danger: #fca5a5;
-    --danger-soft: #3b0d0d;
+    --danger: #ffa8a8;
+    --danger-soft: #3d1420;
 
-    --elevation-raised: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 24px -12px rgb(0 0 0 / 0.6);
+    --elevation-hero: 0 2px 4px rgb(0 0 0 / 0.4), 0 18px 36px -16px rgb(0 0 0 / 0.7);
+    --elevation-float: 0 -1px 0 rgb(255 255 255 / 0.05), 0 10px 30px -8px rgb(0 0 0 / 0.7);
   }
 }
 
@@ -80,6 +106,7 @@
   --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-field-border: var(--field-border);
   --color-muted: var(--muted);
   --color-subtle: var(--subtle);
   --color-primary: var(--primary);
@@ -87,6 +114,13 @@
   --color-primary-contrast: var(--primary-contrast);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-primary-soft-border: var(--primary-soft-border);
+  --color-primary-ring: var(--primary-ring);
+  --color-hero: var(--hero);
+  --color-hero-to: var(--hero-to);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-soft: var(--hero-soft);
   --color-state-solid: var(--state-solid);
   --color-state-solid-soft: var(--state-solid-soft);
   --color-state-reinforce: var(--state-reinforce);
@@ -97,27 +131,34 @@
   --color-state-not-started-soft: var(--state-not-started-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
-  --font-sans: "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
+  --font-sans: var(--font-heebo), "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
   --shadow-raised: var(--elevation-raised);
+  --shadow-hero: var(--elevation-hero);
+  --shadow-float: var(--elevation-float);
   --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
 }
 
 /*
  * Non-color tokens (docs/UX_SPEC.md §6). Plain `@theme` so Tailwind emits the
- * utilities: rounded-control/card/surface, text-page/title/section/body/
+ * utilities: rounded-field/control/card/surface, text-page/title/section/body/
  * secondary/meta.
  */
 @theme {
-  --radius-control: 0.625rem;
-  --radius-card: 0.875rem;
-  --radius-surface: 1.25rem;
+  --radius-field: 0.875rem; /* inputs: 14px */
+  --radius-control: 1rem; /* buttons / option rows: 16px */
+  --radius-card: 1.25rem; /* cards: 20px */
+  --radius-surface: 1.5rem; /* hero / sheets: 24px */
 
-  --text-page: 1.75rem;
-  --text-page--line-height: 1.3;
-  --text-title: 1.375rem;
-  --text-title--line-height: 1.4;
+  /* Hebrew display type: heavy weight, tight leading, no tracking. */
+  --text-page: 1.875rem;
+  --text-page--line-height: 1.2;
+  --text-page--font-weight: 800;
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.25;
+  --text-title--font-weight: 700;
   --text-section: 1.125rem;
-  --text-section--line-height: 1.45;
+  --text-section--line-height: 1.35;
+  --text-section--font-weight: 700;
   --text-body: 1rem;
   --text-body--line-height: 1.6;
   --text-secondary: 0.9375rem;
@@ -129,21 +170,63 @@
 :root {
   --control-height: 2.75rem; /* 44px minimum tap target */
   --control-height-compact: 2.25rem;
+  --control-height-lg: 3.25rem; /* 52px primary CTA */
   --container-max: 42rem;
   --container-max-lg: 48rem;
   --gutter: 1rem;
   --gutter-sm: 1.5rem;
 }
 
-/* min-h-control / min-h-control-compact; h-control for fixed-height controls. */
+/* min-h-control / min-h-control-compact / min-h-control-lg; h-control for fixed-height controls. */
 @utility min-h-control {
   min-height: var(--control-height);
 }
 @utility min-h-control-compact {
   min-height: var(--control-height-compact);
 }
+@utility min-h-control-lg {
+  min-height: var(--control-height-lg);
+}
 @utility h-control {
   height: var(--control-height);
+}
+
+/*
+ * Surfaces. `surface-raised`: white card, hairline + soft 2-layer shadow.
+ * `surface-hero`: THE one deep-indigo surface per screen (white text).
+ */
+@utility surface-raised {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--elevation-raised);
+}
+@utility surface-hero {
+  background-color: var(--hero);
+  background-image: linear-gradient(145deg, var(--hero), var(--hero-to));
+  color: var(--hero-foreground);
+  box-shadow: var(--elevation-hero);
+}
+
+/* Small label above a title. No uppercase/letter-spacing (Hebrew). */
+@utility eyebrow {
+  font-size: var(--text-meta);
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--subtle);
+}
+
+/* Pill meta chip (role, count, time). Neutral by default; combine with bg-*/text-* to tone. */
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  font-weight: 600;
+  background-color: var(--surface-muted);
+  color: var(--muted);
 }
 
 /*
@@ -171,10 +254,11 @@
   &:disabled,
   &[aria-disabled="true"] {
     background-color: var(--surface-muted);
-    border-color: var(--border);
+    border-color: transparent;
     color: var(--subtle);
     cursor: not-allowed;
     box-shadow: none;
+    background-image: none;
   }
 }
 
@@ -183,6 +267,13 @@
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+  }
+
+  /* Hebrew display type takes no letter-spacing. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: 0;
   }
 }
 

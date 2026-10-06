@@ -10,8 +10,8 @@ import type { ReactNode } from "react";
 import { ToneIcon, type NoticeTone } from "./icons";
 
 const TONES: Record<NoticeTone, string> = {
-  error: "text-danger",
-  success: "text-state-solid",
+  error: "rounded-control bg-danger-soft px-3 py-2 text-danger",
+  success: "rounded-control bg-state-solid-soft px-3 py-2 text-state-solid",
   info: "text-muted",
 };
 
