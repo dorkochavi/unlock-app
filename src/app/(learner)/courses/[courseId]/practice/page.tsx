@@ -387,6 +387,8 @@ function PracticeScreen() {
               ? 0
               : (run.stage === "feedback" ? run.index + 1 : run.index) / total
         }
+        segments={total}
+        className="mb-6"
       />
 
       {notice ? (

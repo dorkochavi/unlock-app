@@ -32,14 +32,22 @@
 import { useEffect, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/button";
+import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
-import { SkeletonRows } from "@/components/skeleton";
+import { ProgressBar } from "@/components/progress-bar";
+import { Skeleton } from "@/components/skeleton";
 import { StateBlock } from "@/components/state-block";
+import { interpolate } from "@/lib/interpolate";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 
 import { CourseSection } from "./course-section";
-import { loadProgress, type ProgressLoadResult } from "./load-progress";
+import {
+  loadProgress,
+  type LearnerTopicState,
+  type ProgressCourse,
+  type ProgressLoadResult,
+} from "./load-progress";
 
 type ViewState =
   | { kind: "loading" }
@@ -77,7 +85,7 @@ export default function LearnerProgressPage() {
     <>
       <PageHeader title={messages.heading} subtitle={messages.subheading} />
 
-      {state.kind === "loading" ? <SkeletonRows count={3} label={messages.loading} rowClassName="h-24 w-full rounded-card" /> : null}
+      {state.kind === "loading" ? <ProgressLoading label={messages.loading} /> : null}
 
       {state.kind === "signed-out" ? (
         <StateBlock
@@ -118,6 +126,7 @@ export default function LearnerProgressPage() {
 
       {state.kind === "ready" && state.courses.length > 0 ? (
         <>
+          <ProgressOverview courses={state.courses} />
           <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
             {state.courses.map((course) => (
               <CourseSection
@@ -136,5 +145,80 @@ export default function LearnerProgressPage() {
         </>
       ) : null}
     </>
+  );
+}
+
+const STATE_ORDER: readonly LearnerTopicState[] = ["SOLID", "IN_PROGRESS", "NEEDS_REINFORCEMENT", "NOT_STARTED"];
+
+/**
+ * Overview hero built ONLY from the already-loaded Topic rows (existing counts):
+ * total attempted/total Questions across ready Courses + how many Topics sit in
+ * each existing state. Hidden when no Course has Topics (nothing real to show).
+ */
+function ProgressOverview({ courses }: { courses: ProgressCourse[] }) {
+  const messages = getMessages().progress;
+  let attempted = 0;
+  let total = 0;
+  const byState: Record<LearnerTopicState, number> = {
+    SOLID: 0,
+    IN_PROGRESS: 0,
+    NEEDS_REINFORCEMENT: 0,
+    NOT_STARTED: 0,
+  };
+  let topicCount = 0;
+  for (const course of courses) {
+    if (course.progress.kind !== "ready") continue;
+    for (const topic of course.progress.topics) {
+      attempted += topic.attemptedCount;
+      total += topic.totalCount;
+      byState[topic.state] += 1;
+      topicCount += 1;
+    }
+  }
+  if (topicCount === 0 || total === 0) return null;
+
+  return (
+    <Card variant="hero" className="mb-6 p-6 sm:p-8">
+      <p className="text-[1.375rem] font-extrabold leading-tight sm:text-[1.625rem]">
+        {interpolate(messages.coverage, { attempted, total })}
+      </p>
+      <ProgressBar
+        fraction={attempted / total}
+        size="lg"
+        tone="hero"
+        className="mb-0 mt-4"
+      />
+      <p className="mt-4 flex flex-wrap gap-2">
+        {STATE_ORDER.filter((key) => byState[key] > 0).map((key) => (
+          <span key={key} className="chip bg-hero-soft text-hero-foreground">
+            {byState[key]} · {messages.state[key]}
+          </span>
+        ))}
+      </p>
+    </Card>
+  );
+}
+
+/** Loading skeleton shaped like the page (overview hero + course cards), announced once. */
+function ProgressLoading({ label }: { label: string }) {
+  return (
+    <div role="status">
+      <span className="sr-only">{label}</span>
+      <div aria-hidden="true">
+        <Skeleton className="mb-6 h-36 w-full rounded-surface" />
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {[0, 1].map((index) => (
+            <div key={index} className="rounded-card surface-raised p-4">
+              <Skeleton className="h-6 w-1/2" />
+              <Skeleton className="mt-3 h-5 w-3/4" />
+              <div className="mt-4 space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

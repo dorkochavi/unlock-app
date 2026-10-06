@@ -3,54 +3,25 @@
  * 10/11). Split out of `page.tsx` because a Next.js `page.tsx` may only
  * export the framework's own reserved names (`default`, `metadata`, ...) —
  * any other named export fails Next's generated route-type check — and this
- * component needs to be independently importable for QA2-B's targeted markup
- * test.
+ * component needs to be independently importable for a targeted markup test.
  *
- * QA2-B (product-owner Preview QA "Progress needs visual states, not
- * decoration"): the whole Course card is one real navigation `Link` (list
- * semantics, no nested interactive controls — the card previously only made
- * its title text clickable) with visible hover/focus/pressed states. The one
- * visual accent this page adds is an inline-start (logical) border tone drawn from the SAME
- * already-computed attempted/not-attempted signal the text already shows
- * (`summarizeCourseActivity`) — never a new derived mastery/qualitative
- * claim, just a visual echo of data already rendered.
+ * Soft Premium Canvas redesign (visual only): one raised card per Course. The
+ * header is the ONE real navigation `Link` to the Course page (no nested
+ * interactive controls anywhere in the card); below it the same informational
+ * `TopicList` the Course page uses shows each Topic's state pill + coverage bar.
+ * Every figure/label is already-loaded data (`summarizeCourseActivity`, Topic
+ * counts/state) — no new mastery/percentage claim and no heavy accent border.
  */
+import { Card } from "@/components/card";
 import { LinkRow } from "@/components/link-row";
+import { ProgressBar } from "@/components/progress-bar";
 import { StatusPill } from "@/components/status-pill";
 import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 
+import { TopicList } from "../topic-list";
 import { summarizeCourseActivity, type CourseProgress, type TopicProgressDto } from "./load-progress";
 
-/**
- * The only per-Course visual state this page infers — reusing the exact
- * boolean the text summary already branches on (`summarizeCourseActivity` /
- * `courseNotStartedYet`), never a new aggregate mastery label. `unavailable`
- * / `error` / no-Topics cases get a transparent accent (RUN010-I: same
- * reserved 4px width, no color) — there is no real evidence to color-code
- * for them, but every card still aligns its content at an identical
- * x-offset (consistent card status-placement).
- */
-export function courseCardAccentClass(progress: CourseProgress): string {
-  if (progress.kind === "ready" && progress.topics.length > 0) {
-    const hasActivity = progress.topics.some((topic) => topic.attemptedCount > 0);
-    return hasActivity ? "border-s-4 border-s-state-progress" : "border-s-4 border-s-state-not-started";
-  }
-  return "border-s-4 border-s-transparent";
-}
-
-/**
- * The entire card is one real `Link` (no nested interactive controls —
- * `CourseActivitySummary` below is plain text). Hover uses the same
- * `bg-surface-muted` treatment as the Course page's Topic rows (visually
- * related, not copied) instead of a border-color hover, so it never fights
- * the accent border above.
- *
- * VISUAL-SYSTEM-RUN-001 H: the card is the shared `LinkRow` (accent via the
- * logical `border-s-4`); a `min-h-24` floor keeps short states (one-line
- * unavailable/error/no-Topics) from looking orphaned next to activity cards.
- * The Course title stays an `h2` for heading navigation.
- */
 export function CourseSection({
   id,
   title,
@@ -63,39 +34,42 @@ export function CourseSection({
   const messages = getMessages().progress;
   return (
     <li>
-      <LinkRow
-        href={`/courses/${id}`}
-        accentClassName={courseCardAccentClass(progress)}
-        className="min-h-24 items-start"
-      >
-        <h2 className="break-words text-section font-semibold">{title}</h2>
+      <Card as="div" raised className="p-3 sm:p-4">
+        <LinkRow variant="inline" href={`/courses/${id}`} className="min-h-16 items-start">
+          <h2 className="break-words text-title font-bold leading-snug">{title}</h2>
 
-        {progress.kind === "unavailable" ? (
-          <span className="mt-2 block text-secondary text-muted">{messages.courseUnavailable}</span>
-        ) : null}
+          {progress.kind === "unavailable" ? (
+            <span className="mt-1 block text-secondary font-normal text-muted">{messages.courseUnavailable}</span>
+          ) : null}
 
-        {progress.kind === "error" ? (
-          <span className="mt-2 block text-secondary text-muted">{messages.courseError}</span>
-        ) : null}
+          {progress.kind === "error" ? (
+            <span className="mt-1 block text-secondary font-normal text-muted">{messages.courseError}</span>
+          ) : null}
 
-        {progress.kind === "ready" && progress.topics.length === 0 ? (
-          <span className="mt-2 block text-secondary text-muted">{messages.courseNoTopics}</span>
+          {progress.kind === "ready" && progress.topics.length === 0 ? (
+            <span className="mt-1 block text-secondary font-normal text-muted">{messages.courseNoTopics}</span>
+          ) : null}
+
+          {progress.kind === "ready" && progress.topics.length > 0 ? (
+            <CourseActivitySummary topics={progress.topics} />
+          ) : null}
+        </LinkRow>
+
+        {progress.kind === "ready" && progress.topics.length > 0 ? (
+          <CourseCoverageBar topics={progress.topics} />
         ) : null}
 
         {progress.kind === "ready" && progress.topics.length > 0 ? (
-          <CourseActivitySummary topics={progress.topics} />
+          <div className="mt-3 border-t border-border pt-1">
+            <TopicList topics={progress.topics} />
+          </div>
         ) : null}
-      </LinkRow>
+      </Card>
     </li>
   );
 }
 
-/**
- * UX-03-QA1 Finding 10: real activity, visible immediately; no mastery claim
- * (see `summarizeCourseActivity`'s own doc comment for why no aggregate
- * qualitative state is computed here). Topic-level detail lives on the
- * Course page, reached via this same card's Link above.
- */
+/** Real activity only (no aggregate mastery label): status pill + count chips + one coverage bar. */
 function CourseActivitySummary({ topics }: { topics: TopicProgressDto[] }) {
   const messages = getMessages().progress;
   const summary = summarizeCourseActivity(topics);
@@ -110,17 +84,24 @@ function CourseActivitySummary({ topics }: { topics: TopicProgressDto[] }) {
 
   return (
     <span className="mt-2 block">
-      <span className="flex">
+      <span className="flex flex-wrap items-center gap-2">
         <StatusPill tone="progress">{messages.courseActivityEncouragement}</StatusPill>
-      </span>
-      <span className="mt-2 block text-secondary text-muted">
-        {interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total })}
-      </span>
-      {summary.topicsWithActivity > 1 ? (
-        <span className="block text-secondary text-muted">
-          {interpolate(messages.courseTopicsTouched, { count: summary.topicsWithActivity })}
+        <span className="chip">
+          {interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total })}
         </span>
-      ) : null}
+        {summary.topicsWithActivity > 1 ? (
+          <span className="chip">
+            {interpolate(messages.courseTopicsTouched, { count: summary.topicsWithActivity })}
+          </span>
+        ) : null}
+      </span>
     </span>
   );
+}
+
+/** Course-wide coverage bar (attempted / total from the same counts), full card width below the header link. */
+function CourseCoverageBar({ topics }: { topics: TopicProgressDto[] }) {
+  const summary = summarizeCourseActivity(topics);
+  if (summary.attempted === 0 || summary.total === 0) return null;
+  return <ProgressBar fraction={summary.attempted / summary.total} className="mb-0 mt-1 h-2" />;
 }
