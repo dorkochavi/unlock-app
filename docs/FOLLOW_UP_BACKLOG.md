@@ -1012,6 +1012,44 @@ after P1/P2):
 | Skip -> next | <=100ms optimistic / <=500ms confirmed | <=800ms | >1.5s |
 | Practice initial / Course nav / Progress (N=3) | <=1s / <=700ms / <=1s | <=2s / <=1.5s / <=2s | >3.5s / >2.5s / >3.5s |
 
+## 2026-10-06 PERFORMANCE-RUN-001 Addendum (local, unpushed, NOT deployed)
+
+Owner of all performance work remains FUB-026. Counts below are measured on PGlite via the statement counter
+(`supabase/tests/postgres/statement-counter.ts`): they prove statement count/order, NOT network latency or pool queueing.
+
+**HUMAN-REPORTED operational context:** Vercel Function Region was `iad1`; Supabase is `eu-central-1` (Frankfurt). Dor
+changed the Vercel Function Region toward Frankfurt on 2026-10-06. It takes effect only on a NEW deployment, which has NOT
+been performed. **Post-region performance is NOT measured; no latency improvement is claimed.** Required hosted sequence
+(Dor-owned): deploy -> verify Function region -> smoke -> measure (read `Server-Timing`) -> compare against the historical
+baseline (Today p95 ~4.85s, Answer p95 ~3.18s at pool=5 / 30 learners).
+
+Done locally:
+- Instrumentation (`c247288`): `Server-Timing` header (`auth`, `uc`, `content`, `db`, `dbn` statement count, `dbwait`, `total`) on
+  8 routes (Today GET, Today answer/skip, Practice GET/answer, topic-progress, context, courses/mine); no SQL/ids/answers;
+  `SERVER_TIMING=off` disables. Header exposes coarse timings + one count to the client.
+- Today repeat open (`82a9069`): 8 statements/5 pool calls -> 3 plain reads (timezone, plan, items; no transaction). Generation
+  pre-reads (memberships, course statuses, exam dates) only fed generation; existing frozen plans were never filtered by them.
+  Practice callers benefit too. Miss path unchanged.
+- Practice continuity (`370d62b`): next batch is fetched in the background only after the last answer is ACCEPTED (or last item
+  skipped); inline pending/error on the "more" button; no full-screen loader. Pre-last-answer prefetch REJECTED (selection
+  excludes persisted session attempts; would risk repeats/stale evidence). Residual: a held prefetch (<=5 min) can miss answers
+  made in another tab/Today (selection quality only).
+
+Audited, intentionally NOT changed:
+- Today answer 14 statements (replay 8); Practice answer 17 (replay 12). No exact duplicates: outer/inner item reads differ
+  (advisory vs under-lock authoritative); grading read vs feedback read differ (explanation, replay). Proposals needing approval:
+  (A) carry feedback fields in the grading read (-1 statement/checkout, ~7%; widens grading port + shared result);
+  (B) one connection for Practice pre-reads; (C) single read-model query for Practice pre-checks (6 -> ~2 RT). Parallelizing
+  pre-tx reads is NOT recommended at pool=5 (more checkouts, unauthorized-user work). Larger levers: region alignment and the
+  per-request `auth.getUser()` RTT (auth.md decision).
+- Progress: loader already `Promise.all`s per-course requests (mine, then N in parallel). Remaining cost is N+1 requests and
+  N+1 `getUser` calls; a single aggregate endpoint needs its own plan + security/DB review. Optional: progressive render.
+- `router.refresh()` after login/join (4 sites): probably redundant (no middleware, no cookie-reading server components) but
+  unproven by tests (node vitest, no jsdom; golden-path E2E needs hosted fixtures). Kept.
+
+Budgets: the table in the 2026-10-06 audit addendum above is **PROPOSED — HUMAN APPROVAL REQUIRED**; nothing here canonizes
+thresholds. Re-baseline from `Server-Timing` after the deploy sequence.
+
 ---
 
 # FUB-029 — Publish Validates Persisted State (Save Draft Before Publish)

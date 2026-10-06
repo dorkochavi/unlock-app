@@ -22,6 +22,7 @@ deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN
   H.3, rollback caveat). Run 011 not started.
 - Hosted / remote mutation and pushes are human-controlled actions (`CLAUDE.md` §6).
 - Post-release local work (Run 2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001, unpushed, not in Production): instructor course page shows "ללמוד את הקורס"/"לניהול הקורס" (reuses the join route); create/rename Topic rejects normalized-duplicate active names (409 TOPIC_NAME_DUPLICATE; app-level only, archived-name reuse + unarchive-block decided, race WATCH: FUB-053). Speed is a core product principle; static perf audit and proposed (unapproved) budgets live in FUB-026; visual refresh is PRE-PILOT FUB-052.
+- PERFORMANCE-RUN-001 (local, unpushed, NOT deployed): `Server-Timing` instrumentation on 8 routes (`c247288`); Today repeat open 8 stmts -> 3 plain reads (`82a9069`); Practice next-batch background fetch after last answer accepted (`370d62b`). Answer-path/Progress/refresh audited, no change. Vercel Function Region change (human-reported, not deployed): post-region latency NOT measured. Details + proposed (unapproved) budgets: FUB-026.
 - This is NOT a pilot approval (`docs/PILOT_READINESS.md`).
 
 ## Product Direction
