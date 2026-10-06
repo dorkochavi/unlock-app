@@ -1,13 +1,18 @@
 /**
  * Shared non-content states for learner pages: loading, signed-out, error,
- * empty. A real error uses `tone="error"`; empty and signed-out are neutral.
- * An optional single action keeps "one primary CTA per state" (UX_SPEC §1.8).
+ * empty. A real error uses `tone="error"` (role="alert"); empty and signed-out
+ * are neutral. Each tone carries a decorative icon so state is never conveyed
+ * by color alone. An optional single action keeps "one primary CTA per state"
+ * (UX_SPEC §1.8). Callers pass client-safe copy only; this component adds no
+ * technical detail.
  */
 import type { ReactNode } from "react";
 
+import { ToneIcon } from "./icons";
+
 export function LoadingState({ label }: { label: string }) {
   return (
-    <p role="status" className="py-12 text-center text-muted">
+    <p role="status" className="py-12 text-center text-secondary text-muted">
       {label}
     </p>
   );
@@ -24,13 +29,22 @@ export function StateBlock({
   action?: ReactNode;
   tone?: "neutral" | "error";
 }) {
+  const isError = tone === "error";
   return (
     <div
-      role={tone === "error" ? "alert" : undefined}
+      role={isError ? "alert" : undefined}
       className="mx-auto flex max-w-md flex-col items-center gap-3 py-12 text-center"
     >
-      <p className={`text-lg font-medium ${tone === "error" ? "text-danger" : ""}`}>{title}</p>
-      {body ? <p className="text-muted">{body}</p> : null}
+      <span
+        aria-hidden="true"
+        className={`flex size-12 items-center justify-center rounded-full ${
+          isError ? "bg-danger-soft text-danger" : "bg-surface-muted text-muted"
+        }`}
+      >
+        <ToneIcon tone={isError ? "error" : "info"} className="size-6" />
+      </span>
+      <p className={`text-section font-medium ${isError ? "text-danger" : ""}`}>{title}</p>
+      {body ? <p className="text-body text-muted">{body}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );

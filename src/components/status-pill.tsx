@@ -17,7 +17,7 @@ const TONES: Record<StatusTone, string> = {
 export function StatusPill({ tone, children }: { tone: StatusTone; children: ReactNode }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-sm font-medium ${TONES[tone]}`}
+      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-meta font-medium ${TONES[tone]}`}
     >
       {children}
     </span>
