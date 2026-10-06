@@ -17,7 +17,7 @@
  * page in this app leaves RTL to the browser rather than hand-coding it.
  *
  * Run UX-01 UX-1: one functional icon per tab (UX_SPEC §6 item 41) and an
- * active state carried by more than color alone (weight + indicator bar).
+ * active state carried by more than color alone (bold weight + tinted pill).
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,7 +42,7 @@ const ICON_PATHS: Record<LearnerNavLabelKey, string> = {
   progress: "M5 20v-6m7 6V9m7 11V4",
 };
 
-function NavIcon({ labelKey }: { labelKey: LearnerNavLabelKey }) {
+function NavIcon({ labelKey, active }: { labelKey: LearnerNavLabelKey; active: boolean }) {
   return (
     <svg
       aria-hidden="true"
@@ -50,7 +50,7 @@ function NavIcon({ labelKey }: { labelKey: LearnerNavLabelKey }) {
       className="size-6"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={active ? 2.25 : 1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -69,10 +69,12 @@ export function LearnerNav() {
 
   return (
     <nav
-      className="sticky bottom-0 z-10 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="pointer-events-none sticky bottom-0 z-10 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)]"
       aria-label={messages.shell.navLabel}
     >
-      <div className="page-container flex">
+      {/* Floating pill (DESIGN-REFRESH-002 D): inset from the edges, capped width
+          so on desktop it reads as a centered dock, not a stretched mobile bar. */}
+      <div className="pointer-events-auto mx-auto flex max-w-md gap-1 rounded-[1.75rem] border border-border bg-surface/95 p-1.5 shadow-float backdrop-blur">
         {LEARNER_NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (
@@ -80,17 +82,13 @@ export function LearnerNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-meta transition-colors focus-visible:-outline-offset-2 ${
-                active ? "font-semibold text-primary" : "font-medium text-muted hover:text-foreground"
+              className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-3xl px-2 py-1.5 text-meta transition duration-150 active:scale-95 motion-reduce:active:scale-100 focus-visible:-outline-offset-2 ${
+                active
+                  ? "bg-primary-soft font-bold text-primary-soft-foreground"
+                  : "font-medium text-muted hover:bg-surface-muted hover:text-foreground"
               }`}
             >
-              {active ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-6 -top-px h-0.5 rounded-full bg-primary"
-                />
-              ) : null}
-              <NavIcon labelKey={item.labelKey} />
+              <NavIcon labelKey={item.labelKey} active={active} />
               {messages.shell.nav[item.labelKey]}
             </Link>
           );

@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Button, ButtonLink, buttonClasses } from "@/components/button";
-import { PageHeader } from "@/components/page-header";
-import { SkeletonRows } from "@/components/skeleton";
+import { Skeleton } from "@/components/skeleton";
 import { StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
@@ -72,18 +71,31 @@ export default function MyCoursesPage() {
 
   return (
     <>
-      <PageHeader
-        title={messages.myCourses.heading}
-        trailing={
-          hasManagementRole ? (
-            <ButtonLink href="/instructor/courses" variant="secondary">
-              {messages.myCourses.instructorLink}
-            </ButtonLink>
-          ) : undefined
-        }
-      />
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <h1 className="min-w-0 break-words text-page font-extrabold">{messages.myCourses.heading}</h1>
+        {hasManagementRole ? (
+          <ButtonLink href="/instructor/courses" variant="secondary" className="px-4 text-secondary">
+            {messages.myCourses.instructorLink}
+          </ButtonLink>
+        ) : null}
+      </header>
 
-      {state.kind === "loading" ? <SkeletonRows count={3} label={messages.myCourses.loading} rowClassName="h-20 w-full rounded-card" /> : null}
+      {state.kind === "loading" ? (
+        <div role="status">
+          <span className="sr-only">{messages.myCourses.loading}</span>
+          <ul aria-hidden="true" className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {[0, 1, 2].map((index) => (
+              <li key={index} className="flex min-h-24 items-center gap-4 rounded-card surface-raised p-4">
+                <Skeleton className="size-12 shrink-0" />
+                <div className="flex flex-1 flex-col gap-2">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {state.kind === "signed-out" ? (
         <StateBlock

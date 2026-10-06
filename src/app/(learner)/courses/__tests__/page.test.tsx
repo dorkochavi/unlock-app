@@ -9,9 +9,9 @@
  * - the whole card is ONE real `<a>` (semantic navigation) with no nested
  *   interactive element inside it;
  * - the card shows a visible hover/focus/pressed treatment;
- * - the subtle course-level accent only appears for a management
- *   (OWNER/INSTRUCTOR) role, reusing data already fetched/rendered — no new
- *   badge is added, and a LEARNER row (no role label) stays neutral.
+ * - the authored-vs-learning distinction is driven by the independent
+ *   `isAuthor` signal (exposed as `data-course-kind`), never by `role`;
+ *   the role label renders as a chip only when one is supplied.
  */
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -40,35 +40,29 @@ describe("CourseRow markup (QA2-B whole-card navigation)", () => {
     expect(html).toMatch(/focus-visible:outline-2/);
   });
 
-  // RUN010-H.2: the accent is now driven by the independent `isAuthor`
+  // RUN010-H.2: the kind is driven by the independent `isAuthor`
   // course_authors signal, not `MANAGEMENT_ROLES.includes(role)` — proven
-  // here with an author-only fixture (role: null) getting the accent too.
-  it("adds the subtle management accent only when isAuthor is true, never for a plain LEARNER", () => {
-    const owner = renderToStaticMarkup(
-      <CourseRow course={{ id: "c1", title: "Algebra", role: "OWNER", isAuthor: true }} roleLabel="בעלים" />,
-    );
-    const instructor = renderToStaticMarkup(
-      <CourseRow course={{ id: "c2", title: "Algebra", role: "INSTRUCTOR", isAuthor: true }} roleLabel="מרצה" />,
-    );
-    const learner = renderToStaticMarkup(
-      <CourseRow course={{ id: "c3", title: "Algebra", role: "LEARNER", isAuthor: false }} roleLabel="" />,
-    );
-    const authorOnly = renderToStaticMarkup(
-      <CourseRow course={{ id: "c4", title: "Algebra", role: null, isAuthor: true }} roleLabel="" />,
-    );
+  // here with an author-only fixture (role: null) being authored too.
+  it("marks a course authored only when isAuthor is true, never for a plain LEARNER", () => {
+    const render = (role: "OWNER" | "INSTRUCTOR" | "LEARNER" | null, isAuthor: boolean) =>
+      renderToStaticMarkup(
+        <CourseRow course={{ id: "c1", title: "Algebra", role, isAuthor }} roleLabel="" />,
+      );
 
-    expect(owner).toContain("border-s-4");
-    expect(owner).toContain("border-s-primary");
-    expect(instructor).toContain("border-s-primary");
-    expect(learner).not.toContain("border-s-primary");
-    expect(authorOnly).toContain("border-s-primary");
+    expect(render("OWNER", true)).toContain('data-course-kind="authored"');
+    expect(render("INSTRUCTOR", true)).toContain('data-course-kind="authored"');
+    expect(render(null, true)).toContain('data-course-kind="authored"');
+    expect(render("LEARNER", false)).toContain('data-course-kind="learning"');
   });
 
-  it("does not add a new badge/pill element — the role label stays a plain span", () => {
-    const html = renderToStaticMarkup(
+  it("renders the role label as text when supplied and omits it when empty", () => {
+    const withLabel = renderToStaticMarkup(
       <CourseRow course={{ id: "c1", title: "Algebra", role: "OWNER", isAuthor: true }} roleLabel="בעלים" />,
     );
-    expect(html).toContain("בעלים");
-    expect(html).not.toMatch(/rounded-full/);
+    const without = renderToStaticMarkup(
+      <CourseRow course={{ id: "c4", title: "Algebra", role: null, isAuthor: true }} roleLabel="" />,
+    );
+    expect(withLabel).toContain("בעלים");
+    expect(without).not.toContain("בעלים");
   });
 });

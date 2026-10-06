@@ -3,21 +3,15 @@
  * Next.js `page.tsx` may only export the framework's own reserved names
  * (`default`, `metadata`, ...) — any other named export fails Next's
  * generated route-type check — and this component needs to be independently
- * importable for QA2-B's targeted markup test.
+ * importable for its targeted markup test.
  *
- * QA2-B (product-owner Preview QA "Progress needs visual states, not
- * decoration"): the only per-Course visual accent here reuses the
- * already-fetched `role` this list already renders as text — a management
- * (OWNER/INSTRUCTOR) row gets a subtle primary-tinted inline-start (logical `border-s-4`) border plus a
- * colored role label; a LEARNER row (no role label to begin with) stays
- * neutral. No new badge/pill is added (this screen should not become a
- * dashboard). The whole card is one real `Link` (no nested interactive
- * controls) — the entire card is the navigation target.
- *
- * VISUAL-SYSTEM-RUN-001 E: the card is the shared `LinkRow` primitive
- * (neutral hover/pressed/focus, replacing the RUN010-I primary-soft hover) and
- * the management accent is the logical `border-s-4 border-s-primary`. The
- * author-management entry point stays page-level (`page.tsx`), not per card.
+ * The whole card is one real `Link` (no nested interactive controls) — the
+ * entire card is the navigation target (QA2-B). Composition (DESIGN-REFRESH-002
+ * Slice D): a leading initial tile + bold title + role chip, built only from
+ * fields the DTO already has (`title`, `role`, `isAuthor`). Authored courses
+ * (`isAuthor`, RUN010-H.2) get a primary-tinted tile and chip; learning
+ * courses a neutral one. The kind is exposed as `data-course-kind`. The
+ * author-management entry point stays page-level (`page.tsx`).
  */
 import { LinkRow } from "@/components/link-row";
 
@@ -34,6 +28,12 @@ export interface MyCourseDto {
 
 export const MANAGEMENT_ROLES: readonly CourseRole[] = ["OWNER", "INSTRUCTOR"];
 
+/** First letter/digit of the title, for the decorative leading tile. */
+function titleInitial(title: string): string {
+  const match = title.trim().match(/[\p{L}\p{N}]/u);
+  return match ? match[0].toLocaleUpperCase() : "•";
+}
+
 export function CourseRow({
   course,
   roleLabel,
@@ -43,17 +43,34 @@ export function CourseRow({
 }) {
   const isManaged = course.isAuthor;
   return (
-    <li>
+    <li className="flex">
       <LinkRow
         href={`/courses/${course.id}`}
-        accentClassName={isManaged ? "border-s-4 border-s-primary" : undefined}
+        data-course-kind={isManaged ? "authored" : "learning"}
+        className="min-h-24 w-full gap-3 p-4"
       >
-        <span className="block text-body font-medium">{course.title}</span>
-        {roleLabel ? (
-          <span className={`mt-1 block text-secondary ${isManaged ? "font-medium text-primary" : "text-muted"}`}>
-            {roleLabel}
+        <span className="flex items-center gap-4">
+          <span
+            aria-hidden="true"
+            className={`flex size-12 shrink-0 items-center justify-center rounded-control text-section font-extrabold ${
+              isManaged ? "bg-primary text-primary-contrast" : "bg-primary-soft text-primary-soft-foreground"
+            }`}
+          >
+            {titleInitial(course.title)}
           </span>
-        ) : null}
+          <span className="min-w-0 flex-1">
+            <span className="block break-words text-section font-bold">{course.title}</span>
+            {roleLabel ? (
+              <span
+                className={`chip mt-1.5 ${
+                  isManaged ? "bg-primary-soft text-primary-soft-foreground" : ""
+                }`}
+              >
+                {roleLabel}
+              </span>
+            ) : null}
+          </span>
+        </span>
       </LinkRow>
     </li>
   );

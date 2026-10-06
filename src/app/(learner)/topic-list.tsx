@@ -4,11 +4,12 @@
  *
  * Rows are informational by default. With `practice` (Run UX-02, UX_SPEC §10)
  * each Topic that has published Questions becomes ONE accessible link to Topic
- * Practice — name, coverage, state pill and a trailing "תרגול" in the primary
+ * Practice — name, coverage, state pill, a thin coverage bar and a quiet trailing "תרגול" in the primary
  * color; the caller passes `practice` only when the server says the Course is
  * practiceable. There is no separate Topic page.
  */
 import { LinkRow } from "@/components/link-row";
+import { ProgressBar } from "@/components/progress-bar";
 import { StatusPill, type StatusTone } from "@/components/status-pill";
 import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
@@ -35,24 +36,21 @@ export function TopicList({
     <ul className="divide-y divide-border">
       {topics.map((topic) => {
         const practiceable = practice !== undefined && topic.totalCount > 0;
+        const fraction = topic.totalCount > 0 ? topic.attemptedCount / topic.totalCount : 0;
         const content = (
-          <>
-            <span className="block text-body font-medium">{topic.name}</span>
-            <span className="mt-1 block text-secondary text-muted">
+          <span className="block">
+            <span className="flex items-start justify-between gap-3">
+              <span className="min-w-0 flex-1 break-words text-body font-semibold">{topic.name}</span>
+              <StatusPill tone={TONE_BY_STATE[topic.state]}>{messages.state[topic.state]}</StatusPill>
+            </span>
+            <span className="mt-1 block text-secondary font-normal text-muted">
               {interpolate(messages.coverage, {
                 attempted: topic.attemptedCount,
                 total: topic.totalCount,
               })}
             </span>
-            <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <StatusPill tone={TONE_BY_STATE[topic.state]}>
-                {messages.state[topic.state]}
-              </StatusPill>
-              {practiceable ? (
-                <span className="text-secondary font-medium text-primary">{messages.practiceTopic}</span>
-              ) : null}
-            </span>
-          </>
+            <ProgressBar fraction={fraction} className="mt-2 h-1.5" />
+          </span>
         );
         return (
           <li key={topic.topicId}>
@@ -64,11 +62,12 @@ export function TopicList({
                   name: topic.name,
                   state: messages.state[topic.state],
                 })}
+                trailing={<span className="hidden text-meta font-medium text-subtle sm:inline">{messages.practiceTopic}</span>}
               >
                 {content}
               </LinkRow>
             ) : (
-              <div className="py-3">{content}</div>
+              <div className="-mx-2 min-h-14 px-2 py-3">{content}</div>
             )}
           </li>
         );

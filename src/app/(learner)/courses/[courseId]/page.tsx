@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+import Link from "next/link";
+
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
-import { PageHeader } from "@/components/page-header";
 import { Notice } from "@/components/notice";
 import { Skeleton, SkeletonRows } from "@/components/skeleton";
 import { StateBlock } from "@/components/state-block";
@@ -145,13 +146,18 @@ export default function CourseViewPage() {
       {state.kind === "loading" ? (
         <div role="status">
           <span className="sr-only">{messages.courseView.loading}</span>
-          <div aria-hidden="true" className="flex flex-col gap-6">
-            <Skeleton className="h-9 w-2/3" />
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+          <div aria-hidden="true" className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4 rounded-surface bg-surface-muted p-6">
+              <Skeleton className="h-5 w-24 rounded-full" />
+              <Skeleton className="h-9 w-2/3" />
+              <Skeleton className="mt-2 h-13 w-full" />
             </div>
-            <Skeleton className="h-40 w-full rounded-card" />
+            <div className="flex flex-col gap-3 rounded-card surface-raised p-5">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
           </div>
         </div>
       ) : null}
@@ -239,33 +245,45 @@ function CourseReady({
   const messages = getMessages().courseView;
   const isLearner = data.membership !== null && data.membership.role === "LEARNER";
 
+  const heroAction =
+    "inline-flex min-h-control-lg w-full sm:flex-1 items-center justify-center rounded-control bg-hero-foreground px-5 text-center text-body font-bold text-hero transition duration-150 hover:opacity-90 active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hero-foreground";
+  const heroQuiet =
+    "inline-flex min-h-control w-full sm:flex-1 sm:min-h-control-lg items-center justify-center rounded-control bg-hero-soft px-5 text-center font-semibold text-hero-foreground transition duration-150 hover:bg-white/25 active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hero-foreground";
+
   return (
     <>
-      <PageHeader
-        title={data.course.title}
-        subtitle={data.membership !== null ? messages.roleLabel[data.membership.role] : undefined}
-      />
+      <Card variant="hero" as="section" className="mb-6 p-6 sm:p-8">
+        {data.membership !== null ? (
+          <span className="chip bg-hero-soft text-hero-foreground">{messages.roleLabel[data.membership.role]}</span>
+        ) : null}
+        <h1 className="mt-3 break-words text-page font-extrabold">{data.course.title}</h1>
+
+        {isLearner ? (
+          <div className="mt-6">
+            <div className="flex flex-col gap-2.5 sm:flex-row">
+              {data.practiceAvailable === true ? (
+                <Link href={`/courses/${courseId}/practice?from=course`} className={heroAction}>
+                  {messages.practiceAction}
+                </Link>
+              ) : null}
+              <Link href="/today" className={data.practiceAvailable === true ? heroQuiet : heroAction}>
+                {messages.goToToday}
+              </Link>
+            </div>
+            <p className="mt-3 text-center text-secondary text-hero-muted sm:text-start">{messages.continueInTodayHint}</p>
+          </div>
+        ) : (
+          <div className="mt-6 sm:max-w-xs">
+            <Link href={`/instructor/courses/${courseId}`} className={heroAction}>
+              {messages.manageCourse}
+            </Link>
+          </div>
+        )}
+      </Card>
 
       {isLearner ? (
-        <>
-          <div className="mb-8 flex flex-col gap-2">
-            {data.practiceAvailable === true ? (
-              <ButtonLink href={`/courses/${courseId}/practice?from=course`} fullWidth>
-                {messages.practiceAction}
-              </ButtonLink>
-            ) : null}
-            <ButtonLink href="/today" variant="secondary" fullWidth>
-              {messages.goToToday}
-            </ButtonLink>
-            <p className="text-center text-secondary text-muted">{messages.continueInTodayHint}</p>
-          </div>
-          <CourseTopics courseId={courseId} practiceAvailable={data.practiceAvailable === true} topics={topics} />
-        </>
-      ) : (
-        <ButtonLink href={`/instructor/courses/${courseId}`} fullWidth>
-          {messages.manageCourse}
-        </ButtonLink>
-      )}
+        <CourseTopics courseId={courseId} practiceAvailable={data.practiceAvailable === true} topics={topics} />
+      ) : null}
     </>
   );
 }
@@ -288,8 +306,8 @@ function CourseTopics({
   const messages = getMessages().courseView;
 
   return (
-    <Card>
-      <h2 className="mb-1 text-section font-semibold">{messages.topicsHeading}</h2>
+    <Card variant="raised" className="p-4 sm:p-5">
+      <h2 className="mb-1 px-1 text-section font-bold">{messages.topicsHeading}</h2>
       {topics.kind === "loading" ? (
         <div className="pt-2">
           <SkeletonRows count={3} label={messages.topicsLoading} rowClassName="h-14 w-full" />

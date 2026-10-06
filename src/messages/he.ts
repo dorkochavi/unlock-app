@@ -76,7 +76,7 @@ export const he = {
     roleLabel: {
       OWNER: "בעלים",
       INSTRUCTOR: "מרצה",
-      LEARNER: "",
+      LEARNER: "לומד/ת",
     },
     instructorLink: "ניהול קורסים כמרצה",
   },

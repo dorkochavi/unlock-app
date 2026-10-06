@@ -215,7 +215,7 @@
   color: var(--subtle);
 }
 
-/* Pill meta chip (role, count, time). Neutral by default; combine with bg-*/text-* to tone. */
+/* Pill meta chip (role, count, time). Neutral by default; combine with bg and text color utilities to tone. */
 @utility chip {
   display: inline-flex;
   align-items: center;
