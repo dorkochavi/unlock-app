@@ -1466,8 +1466,7 @@ loading/skeleton states overlap).
 Slice B (`21d1f8e`) rejects duplicate ACTIVE Topic names (normalized) per Course on create and rename with 409
 `DUPLICATE_NAME`, at the application level only (no DB constraint). Residuals: (1) check-then-insert race: two concurrent
 requests could both pass and create duplicates; (2) legacy duplicates already in data are untouched; (3) archived Topic
-names are reusable by an active Topic (implemented, conservative; ADR-018 is silent); (4) no unarchive exists, so restore
-collision semantics are undefined.
+names are reusable by an active Topic (decided); (4) no unarchive exists.
 
 ## Follow-Up Investigation
 
@@ -1475,11 +1474,17 @@ Options for the race: a partial unique index on `(course_id, lower(btrim(name)))
 lock in the write path, or accept the race. Before any index, a Production pre-check is required (Dor-owned hosted read):
 `select course_id, lower(btrim(name)), count(*) from topics where archived_at is null group by 1,2 having count(*)>1`;
 existing duplicates would make the migration fail. Migration is forward-only and must not be applied to hosted by an agent
-(`.claude/rules/postgres.md`). Open decisions are in OQ-049.
+(`.claude/rules/postgres.md`). No open decision remains.
+
+## Decision (Dor, 2026-10-06; former OQ-049, resolved)
+
+1. An archived Topic name MAY be reused by an active Topic in the same Course (matches `21d1f8e`).
+2. A future Unarchive must be BLOCKED if an active Topic with the same normalized name exists; the user resolves it by renaming or archiving one Topic. No auto-merge, no auto-rename.
+3. The concurrent create/rename race stays WATCH / deferred. No DB unique index and no migration now.
 
 ## Promotion Trigger
 
-Observed duplicate Topics in Production, concurrent-edit evidence, or any plan to add Topic unarchive.
+Observed duplicate Topics in Production, concurrent-edit evidence, higher-volume concurrent instructor authoring, or the introduction of an Unarchive flow.
 
 ---
 

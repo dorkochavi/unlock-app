@@ -892,24 +892,6 @@ state.
 
 ---
 
-## OQ-049 — Topic Duplicate-Name Semantics and DB Constraint
-
-Status: OPEN
-
-Source: Slice B (`21d1f8e`) of PILOT-FRICTION-PERF-OVERNIGHT-001; technical residuals in `docs/FOLLOW_UP_BACKLOG.md` FUB-053.
-ADR-018 does not decide these; current behavior is an application-level guard only.
-
-Decision needed:
-
-- May an archived Topic's name be reused by an active Topic (implemented: yes, conservative)?
-- If Topic unarchive is ever added, what happens on a name collision (reject, rename, merge)? No unarchive exists today.
-- Enforce uniqueness in the DB (partial unique index after a Dor-run Production pre-check for existing duplicates), use a
-  per-Course lock, or accept the check-then-insert race?
-
-Resolve before: any Topic unarchive feature or Topic-uniqueness migration.
-
----
-
 # Platform / Data Lifecycle
 
 ## OQ-025 — RLS and Storage Strategy for V1
