@@ -70,6 +70,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
+import { ToneIcon } from "@/components/icons";
+import { Notice } from "@/components/notice";
 import { getMessages } from "@/messages";
 import type { ConfidenceLevel } from "@/domain/learning/types";
 import type { AnswerFeedback } from "./select-displayed-item";
@@ -228,11 +230,11 @@ export function QuestionCard({
 
   return (
     <div>
-      {actionLabel !== null ? <p className="mb-2 text-sm text-subtle">{actionLabel}</p> : null}
+      {actionLabel !== null ? <p className="mb-2 text-secondary text-muted">{actionLabel}</p> : null}
       <h2
         ref={promptRef}
         tabIndex={-1}
-        className="mb-6 break-words text-xl font-semibold leading-relaxed focus:outline-none"
+        className="mb-6 break-words text-section font-semibold leading-relaxed focus:outline-none sm:text-title"
       >
         {item.prompt}
       </h2>
@@ -249,7 +251,7 @@ export function QuestionCard({
         ) : null}
       </div>
 
-      {isMultiple ? <p className="mb-3 text-sm text-muted">{messages.multipleHint}</p> : null}
+      {isMultiple ? <p className="mb-3 text-secondary text-muted">{messages.multipleHint}</p> : null}
 
       <ul className="flex flex-col gap-3">
         {shuffledOptions.map((option) => {
@@ -273,8 +275,8 @@ export function QuestionCard({
 
       {feedback === null ? (
         <div className="mt-4">
-          <p className="mb-2 text-sm text-muted">{messages.confidenceLabel}</p>
-          <div className="flex gap-2">
+          <p className="mb-2 text-secondary text-muted">{messages.confidenceLabel}</p>
+          <div className="flex flex-wrap gap-3">
             <ConfidenceChip
               label={messages.confidenceSure}
               selected={confidence === SURE_CONFIDENCE_LEVEL}
@@ -292,9 +294,9 @@ export function QuestionCard({
       ) : null}
 
       {submitError ? (
-        <p role="alert" className="mt-4 text-sm font-medium text-danger">
+        <Notice tone="error" role="alert" className="mt-4 font-medium">
           {submitError}
-        </p>
+        </Notice>
       ) : null}
 
       {/* Mobile: the action bar sticks to the viewport bottom (the nav is hidden
@@ -412,13 +414,13 @@ export function QuestionOption({
       onClick={onToggle}
       disabled={locked}
       aria-pressed={selected}
-      className={`flex min-h-12 w-full items-start gap-3 rounded-xl border px-4 py-3 text-start text-base leading-relaxed transition enabled:active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default ${
+      className={`flex min-h-12 w-full items-start gap-3 rounded-card border px-4 py-3 text-start text-body transition-colors enabled:active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default ${
         stateStyles !== null
           ? stateStyles.border
           : selected
-            ? "border-primary bg-primary-soft"
+            ? "border-primary bg-primary-soft ring-1 ring-primary"
             : "border-border bg-surface enabled:hover:border-border-strong"
-      } ${dimmed ? "opacity-60" : ""}`}
+      } ${dimmed ? "state-disabled" : ""}`}
     >
       <span
         aria-hidden="true"
@@ -440,7 +442,7 @@ export function QuestionOption({
       <span className="min-w-0 break-words">
         {content}
         {stateLabel !== null ? (
-          <span className="ms-2 inline-block text-sm font-medium text-muted">
+          <span className="ms-2 inline-block text-secondary font-medium text-muted">
             {stateLabel}
           </span>
         ) : null}
@@ -471,10 +473,10 @@ function ConfidenceChip({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
-      className={`rounded-full border px-4 py-1.5 text-sm font-medium transition disabled:cursor-default disabled:opacity-60 ${
+      className={`min-h-control rounded-full border px-5 text-secondary font-medium transition-colors disabled:cursor-default ${
         selected
-          ? "border-primary bg-primary-soft text-primary"
-          : "border-border bg-surface text-muted enabled:hover:border-border-strong"
+          ? "border-primary bg-primary-soft text-primary ring-1 ring-primary"
+          : "state-disabled border-border bg-surface text-muted enabled:hover:border-border-strong"
       }`}
     >
       {label}
@@ -494,31 +496,24 @@ function FeedbackBlock({
   return (
     <div className="flex flex-col gap-3">
       {isCorrect ? (
-        <div className="flex items-center gap-2 rounded-xl bg-state-solid-soft p-4 text-state-solid">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-5 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m5 12.5 4.5 4.5L19 7.5" />
-          </svg>
-          <p className="font-semibold">{messages.correct}</p>
+        <div className="flex items-center gap-3 rounded-card bg-state-solid-soft p-4 text-state-solid">
+          <ToneIcon tone="success" className="size-6 shrink-0" />
+          <p className="text-section font-semibold">{messages.correct}</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-surface-muted p-4">
-          <p className="font-semibold">{messages.incorrect}</p>
-          <p className="mt-1 text-sm text-muted">{messages.incorrectBody}</p>
+        /* Learning feedback, never an error: amber reinforce tokens + icon + text. */
+        <div className="flex items-start gap-3 rounded-card bg-state-reinforce-soft p-4">
+          <ToneIcon tone="info" className="mt-1 size-6 shrink-0 text-state-reinforce" />
+          <div className="min-w-0">
+            <p className="text-section font-semibold text-state-reinforce">{messages.incorrect}</p>
+            <p className="mt-1 text-body text-muted">{messages.incorrectBody}</p>
+          </div>
         </div>
       )}
       {explanation !== null ? (
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="mb-1 text-sm font-semibold text-subtle">{messages.explanationHeading}</p>
-          <p className="text-sm leading-relaxed text-foreground">{explanation}</p>
+        <div className="rounded-card border border-border bg-surface p-4">
+          <p className="mb-2 text-secondary font-semibold text-muted">{messages.explanationHeading}</p>
+          <p className="text-body text-foreground">{explanation}</p>
         </div>
       ) : null}
     </div>

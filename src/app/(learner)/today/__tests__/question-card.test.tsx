@@ -24,6 +24,7 @@
  * state) to prove each visual treatment without adding a jsdom/interaction
  * harness for a single presentation-layer Slice.
  */
+import { getMessages } from "@/messages";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
@@ -118,7 +119,7 @@ describe("QuestionOption visual states (QA2-A: no color-only correctness, no pun
         onToggle={() => {}}
       />,
     );
-    expect(html).toContain("opacity-60");
+    expect(html).toContain("state-disabled");
     expect(html).not.toContain("בחרת");
     expect(html).not.toContain("התשובה הנכונה");
   });
@@ -292,5 +293,21 @@ describe("QuestionCard post-submit structure (QA2-A)", () => {
     expect(html).toContain("שליחה");
     expect(html).toContain("דלג");
     expect(html).not.toContain("המשך");
+  });
+});
+
+describe("QuestionCard incorrect feedback block", () => {
+  it("pairs an icon with the incorrect label and stays amber, never danger", () => {
+    const html = renderCard({
+      itemId: "i",
+      isCorrect: false,
+      correctOptionIds: ["opt-4"],
+      explanation: null,
+    });
+    const status = html.slice(html.indexOf('role="status"'), html.indexOf("<ul"));
+    expect(status).toContain("<svg");
+    expect(status).toContain(getMessages().today.incorrect);
+    expect(status).toContain("state-reinforce");
+    expect(status).not.toMatch(/danger/);
   });
 });

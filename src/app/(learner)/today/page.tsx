@@ -4,8 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
+import { ToneIcon } from "@/components/icons";
+import { ExitIcon, LearnHeader } from "@/components/learn-header";
+import { Notice } from "@/components/notice";
 import { PageHeader } from "@/components/page-header";
-import { LoadingState, StateBlock } from "@/components/state-block";
+import { ProgressBar } from "@/components/progress-bar";
+import { SkeletonRows } from "@/components/skeleton";
+import { StateBlock } from "@/components/state-block";
 import { interpolate } from "@/lib/interpolate";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
@@ -182,7 +187,9 @@ export default function TodayPage() {
       {learnMode ? null : <PageHeader title={messages.today.heading} />}
 
       {state.kind === "loading" || state.kind === "settingUpTimezone" ? (
-        <LoadingState
+        <SkeletonRows
+          count={1}
+          rowClassName="h-56 w-full"
           label={
             state.kind === "settingUpTimezone"
               ? messages.today.settingUpTimezone
@@ -259,10 +266,10 @@ function TodayLanding({
         : interpolate(messages.landingContinueTitle, { remaining, total });
 
   return (
-    <Card className="flex flex-col gap-4 p-6">
+    <Card raised className="flex flex-col gap-5 p-6">
       <div>
-        <p className="text-xl font-semibold">{title}</p>
-        <p className="mt-2 text-muted">
+        <p className="text-title font-semibold">{title}</p>
+        <p className="mt-2 text-body text-muted">
           {total === 1 ? messages.landingBodyOne : interpolate(messages.landingBody, { total })}
         </p>
       </div>
@@ -307,30 +314,20 @@ function TodayComplete({
     .join(" · ");
 
   return (
-    <Card className="flex flex-col items-center gap-4 p-6 text-center">
+    <Card raised className="flex flex-col items-center gap-4 p-6 text-center">
       <span
         aria-hidden="true"
         className="flex size-12 items-center justify-center rounded-full bg-state-solid-soft text-state-solid"
       >
-        <svg
-          viewBox="0 0 24 24"
-          className="size-6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m5 12.5 4.5 4.5L19 7.5" />
-        </svg>
+        <ToneIcon tone="success" className="size-6" />
       </span>
       <div role="status">
-        <p ref={titleRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+        <p ref={titleRef} tabIndex={-1} className="text-title font-semibold focus:outline-none">
           {messages.completionTitle}
         </p>
-        <p className="mt-2 text-muted">{messages.completionBody}</p>
+        <p className="mt-2 text-body text-muted">{messages.completionBody}</p>
       </div>
-      {summary ? <p className="text-sm text-muted">{summary}</p> : null}
+      {summary ? <p className="text-secondary text-muted">{summary}</p> : null}
       <div className="mt-2 flex w-full flex-col gap-2">
         <ButtonLink href="/courses" fullWidth>
           {messages.completionContinue}
@@ -527,39 +524,27 @@ function TodayPlanView({
   return (
     <div className="mx-auto w-full max-w-xl">
       {/* Learn Mode context bar: minimal chrome (UX_SPEC §5 item 24). */}
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-medium">{messages.today.heading}</p>
-          <p className="text-sm text-muted">
-            {interpolate(messages.today.questionPosition, { current: position, total })}
-          </p>
-        </div>
-        <Button variant="tertiary" onClick={exitLearnMode} disabled={pending} className="-me-3">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
+      <LearnHeader
+        title={messages.today.heading}
+        position={interpolate(messages.today.questionPosition, { current: position, total })}
+        action={
+          <Button
+            variant="tertiary"
+            onClick={exitLearnMode}
+            disabled={pending}
+            className="-me-3 shrink-0"
           >
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
-          {messages.today.exitLearn}
-        </Button>
-      </div>
-      <div aria-hidden="true" className="mb-8 h-1 overflow-hidden rounded-full bg-surface-muted">
-        <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{ width: `${(resolvedCount / total) * 100}%` }}
-        />
-      </div>
+            <ExitIcon />
+            {messages.today.exitLearn}
+          </Button>
+        }
+      />
+      <ProgressBar fraction={resolvedCount / total} />
 
       {alreadyResolvedNotice ? (
-        <p role="status" className="mb-4 text-sm text-muted">
+        <Notice tone="info" role="status" className="mb-4">
           {messages.today.alreadyResolvedError}
-        </p>
+        </Notice>
       ) : null}
 
       <QuestionCard
