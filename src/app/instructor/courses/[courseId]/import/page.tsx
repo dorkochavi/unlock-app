@@ -292,7 +292,7 @@ export default function InstructorImportPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:max-w-4xl">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:max-w-4xl">
       {state.kind === "loading" ? <LoadingState label={messages.instructor.manage.loading} /> : null}
 
       {state.kind === "signed-out" ? (
@@ -334,7 +334,7 @@ export default function InstructorImportPage() {
             {messages.importQuestions.backToCourse}
           </Link>
 
-          <h1 className="text-2xl font-semibold tracking-tight">{messages.importQuestions.heading}</h1>
+          <h1 className="text-page font-extrabold">{messages.importQuestions.heading}</h1>
 
           {state.courseStatus === "ARCHIVED" ? (
             <p className="rounded-lg border border-border p-3 text-sm text-muted">

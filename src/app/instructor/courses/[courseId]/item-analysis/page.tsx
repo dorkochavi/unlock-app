@@ -163,7 +163,7 @@ export default function InstructorItemAnalysisPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pt-6">
       {state.kind === "loading" ? <LoadingState label={loadingMessage} /> : null}
 
       {state.kind === "signed-out" ? (
@@ -217,7 +217,7 @@ export default function InstructorItemAnalysisPage() {
           </Link>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">{messages.heading}</h1>
+            <h1 className="text-page font-extrabold">{messages.heading}</h1>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted">
                 {interpolate(messages.lastUpdated, {

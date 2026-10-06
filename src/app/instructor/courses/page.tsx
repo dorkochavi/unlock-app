@@ -12,9 +12,9 @@
  * surface" principle rather than pre-fetching authoring data for every row.
  */
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 import { Button, ButtonLink } from "@/components/button";
+import { LinkRow } from "@/components/link-row";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
@@ -88,7 +88,7 @@ export default function InstructorCoursesPage() {
   }, [retryCount]);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:max-w-3xl">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:max-w-4xl">
       <PageHeader
         title={messages.instructor.courses.heading}
         trailing={
@@ -137,17 +137,12 @@ export default function InstructorCoursesPage() {
       ) : null}
 
       {state.kind === "ready" && state.courses.length > 0 ? (
-        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
           {state.courses.map((course) => (
-            <li key={course.id}>
-              <Link
-                href={`/instructor/courses/${course.id}`}
-                className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-5 transition hover:border-border-strong active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                <span className="min-w-0 truncate font-medium" title={course.title}>
-                  {course.title}
-                </span>
-              </Link>
+            <li key={course.id} className="flex">
+              <LinkRow href={`/instructor/courses/${course.id}`} className="w-full">
+                {course.title}
+              </LinkRow>
             </li>
           ))}
         </ul>

@@ -136,6 +136,9 @@ export const he = {
         AUTHORIZED_ONLY: "באישור בלבד",
         OPEN: "פתוח להצטרפות חופשית",
       },
+      detailsHeading: "פרטי הקורס",
+      lifecycleHeading: "פרסום",
+      dangerZoneHeading: "אזור רגיש",
       publishAction: "פרסום הקורס",
       publishing: "מפרסם...",
       publishHint:

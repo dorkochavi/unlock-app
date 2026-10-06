@@ -177,16 +177,17 @@ export default function LoginPage() {
           : messages.auth.signUpSubmit;
 
   return (
-    <main className="page-container flex flex-1 items-center justify-center py-8 sm:py-12">
+    <main className="page-container flex flex-1 flex-col items-center justify-center py-8 sm:py-12">
       <div className="w-full max-w-sm">
-        <h1 className="mb-6 text-center text-title font-semibold">{heading}</h1>
-        <Card as="section">
+        <p className="mb-6 text-center text-page font-extrabold text-primary">{messages.shell.heading}</p>
+        <Card as="section" variant="raised" className="p-6">
+          <h1 className="mb-5 text-title font-bold">{heading}</h1>
           {isRecovery && recoveryState === "checking" ? (
             <Notice tone="info">{messages.auth.recoveryChecking}</Notice>
           ) : isRecovery && recoveryState === "invalid" ? (
             <div className="flex flex-col gap-4">
               <Notice tone="error">{messages.auth.recoveryInvalidLink}</Notice>
-              <Button onClick={() => goTo("forgot")} fullWidth>
+              <Button onClick={() => goTo("forgot")} fullWidth size="lg">
                 {messages.auth.recoveryRequestNewLink}
               </Button>
             </div>
@@ -244,14 +245,14 @@ export default function LoginPage() {
               {error ? <Notice tone="error">{error}</Notice> : null}
               {info ? <Notice tone="success">{info}</Notice> : null}
 
-              <Button type="submit" disabled={pending} fullWidth>
+              <Button type="submit" disabled={pending} fullWidth size="lg" className="mt-1">
                 {submitLabel}
               </Button>
             </form>
           )}
         </Card>
 
-        <div className="mt-4 flex flex-col gap-1">
+        <div className="mt-3 flex flex-col items-center gap-1">
           {mode === "sign-in" ? (
             <Button variant="tertiary" onClick={() => goTo("forgot")} fullWidth>
               {messages.auth.forgotPassword}

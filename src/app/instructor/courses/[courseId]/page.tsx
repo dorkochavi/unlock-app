@@ -20,7 +20,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { Input, Label, Select } from "@/components/input";
-import { PageHeader } from "@/components/page-header";
+import { Notice } from "@/components/notice";
 import { SkeletonRows } from "@/components/skeleton";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { interpolate } from "@/lib/interpolate";
@@ -603,7 +603,7 @@ export default function InstructorCourseManagePage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:max-w-4xl">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:max-w-4xl">
       {state.kind === "loading" ? <LoadingState label={messages.instructor.manage.loading} /> : null}
 
       {state.kind === "signed-out" ? (
@@ -647,15 +647,19 @@ export default function InstructorCourseManagePage() {
 
       {state.kind === "ready" ? (
         <div className="flex flex-col gap-6">
-          <PageHeader
-            title={state.course.title}
-            subtitle={messages.instructor.manage.statusLabel[state.course.status]}
-          />
+          <Card variant="hero" as="section" className="flex flex-col gap-5 p-6 sm:p-8">
+            <div className="flex flex-col items-start gap-3">
+              <span className="chip bg-hero-soft text-hero-foreground">
+                {messages.instructor.manage.statusLabel[state.course.status]}
+              </span>
+              <h1 className="break-words text-page font-extrabold">{state.course.title}</h1>
+            </div>
+            <OwnCourseActions courseId={courseId} />
+          </Card>
 
-          <OwnCourseActions courseId={courseId} />
-
-          <div id="course-management" className="grid gap-6 lg:grid-cols-2 lg:items-start">
+          <div id="course-management" className="grid grid-cols-1 gap-6 scroll-mt-4 lg:grid-cols-2 lg:items-start">
             <Card as="section">
+              <h2 className="mb-4 text-section">{messages.instructor.manage.detailsHeading}</h2>
               <form onSubmit={handleSaveDetails} className="flex flex-col gap-4">
                 <label className="block">
                   <Label>{messages.instructor.manage.titleLabel}</Label>
@@ -681,7 +685,7 @@ export default function InstructorCourseManagePage() {
                       <button
                         type="button"
                         onClick={() => setExamDateDraft("")}
-                        className="shrink-0 text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+                        className="min-h-control shrink-0 rounded-full px-3 text-secondary font-medium text-subtle underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                       >
                         {messages.instructor.manage.clearExamDate}
                       </button>
@@ -689,9 +693,9 @@ export default function InstructorCourseManagePage() {
                   </div>
                 </label>
 
-                {detailsError ? <p className="text-sm text-danger">{detailsError}</p> : null}
+                {detailsError ? <Notice tone="error">{detailsError}</Notice> : null}
                 {!detailsError && detailsSavedAt !== null ? (
-                  <p className="text-sm text-state-solid">{messages.instructor.manage.saveSuccess}</p>
+                  <Notice tone="success">{messages.instructor.manage.saveSuccess}</Notice>
                 ) : null}
 
                 <div>
@@ -721,13 +725,17 @@ export default function InstructorCourseManagePage() {
                   <option value="OPEN">{messages.instructor.manage.joinPolicyOption.OPEN}</option>
                 </Select>
               </label>
-              {joinPolicyError ? <p className="mt-3 text-sm text-danger">{joinPolicyError}</p> : null}
+              {joinPolicyError ? (
+                <Notice tone="error" className="mt-3">
+                  {joinPolicyError}
+                </Notice>
+              ) : null}
             </Card>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-          <Card as="section">
-            <h2 className="mb-3 text-lg font-semibold">{messages.instructor.manage.topics.heading}</h2>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:items-start">
+          <Card as="section" className="lg:col-span-2">
+            <h2 className="mb-4 text-section">{messages.instructor.manage.topics.heading}</h2>
 
             {topicsState.kind === "loading" ? (
               <SkeletonRows count={2} label={messages.instructor.manage.topics.loading} rowClassName="h-11 w-full" />
@@ -735,7 +743,7 @@ export default function InstructorCourseManagePage() {
 
             {topicsState.kind === "error" ? (
               <div className="flex flex-col items-start gap-2">
-                <p className="text-sm text-danger">{messages.instructor.manage.topics.genericError}</p>
+                <Notice tone="error">{messages.instructor.manage.topics.genericError}</Notice>
                 <Button variant="secondary" onClick={() => setTopicsRetryCount((count) => count + 1)}>
                   {messages.instructor.manage.retry}
                 </Button>
@@ -745,13 +753,13 @@ export default function InstructorCourseManagePage() {
             {topicsState.kind === "ready" ? (
               <>
                 {topicsState.topics.length === 0 ? (
-                  <p className="mb-3 text-sm text-muted">{messages.instructor.manage.topics.emptyTitle}</p>
+                  <p className="mb-3 text-secondary text-muted">{messages.instructor.manage.topics.emptyTitle}</p>
                 ) : (
                   <ul className="mb-4 flex flex-col gap-2">
                     {topicsState.topics.map((topic) => (
                       <li
                         key={topic.id}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                        className="flex min-h-12 items-center justify-between gap-2 rounded-control bg-surface-muted px-3 py-1"
                       >
                         {editingTopicId === topic.id ? (
                           <>
@@ -759,7 +767,7 @@ export default function InstructorCourseManagePage() {
                               type="text"
                               value={renameDraft}
                               onChange={(event) => setRenameDraft(event.target.value)}
-                              className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                              className="min-h-control min-w-0 flex-1 rounded-field border border-field-border bg-surface px-3 py-1 text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               autoFocus
                             />
                             <div className="flex shrink-0 gap-2">
@@ -767,14 +775,14 @@ export default function InstructorCourseManagePage() {
                                 type="button"
                                 onClick={() => handleSaveRename(topic.id)}
                                 disabled={savingTopicId === topic.id}
-                                className="text-sm font-medium text-foreground disabled:opacity-50"
+                                className="min-h-control rounded-full px-2 text-secondary font-semibold text-primary-soft-foreground disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               >
                                 {messages.instructor.manage.topics.renameSave}
                               </button>
                               <button
                                 type="button"
                                 onClick={handleCancelRename}
-                                className="text-sm text-subtle"
+                                className="min-h-control rounded-full px-2 text-secondary text-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               >
                                 {messages.instructor.manage.topics.renameCancel}
                               </button>
@@ -782,14 +790,14 @@ export default function InstructorCourseManagePage() {
                           </>
                         ) : (
                           <>
-                            <span className="min-w-0 truncate text-sm" title={topic.name}>
+                            <span className="min-w-0 truncate text-secondary font-medium" title={topic.name}>
                               {topic.name}
                             </span>
-                            <div className="flex shrink-0 gap-3">
+                            <div className="flex shrink-0 gap-1">
                               <button
                                 type="button"
                                 onClick={() => handleStartRename(topic)}
-                                className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+                                className="min-h-control rounded-full px-2 text-secondary text-subtle underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               >
                                 {messages.instructor.manage.topics.renameAction}
                               </button>
@@ -797,7 +805,7 @@ export default function InstructorCourseManagePage() {
                                 type="button"
                                 onClick={() => handleArchiveTopic(topic.id)}
                                 disabled={archivingTopicId === topic.id}
-                                className="text-sm text-danger underline-offset-4 hover:underline disabled:opacity-50"
+                                className="min-h-control rounded-full px-2 text-secondary text-danger underline-offset-4 hover:underline disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               >
                                 {archivingTopicId === topic.id
                                   ? messages.instructor.manage.topics.archiving
@@ -811,8 +819,8 @@ export default function InstructorCourseManagePage() {
                   </ul>
                 )}
 
-                {renameError ? <p className="mb-2 text-sm text-danger">{renameError}</p> : null}
-                {archiveTopicError ? <p className="mb-2 text-sm text-danger">{archiveTopicError}</p> : null}
+                {renameError ? <Notice tone="error" className="mb-2">{renameError}</Notice> : null}
+                {archiveTopicError ? <Notice tone="error" className="mb-2">{archiveTopicError}</Notice> : null}
 
                 <form onSubmit={handleAddTopic} className="flex gap-2">
                   <Input
@@ -820,33 +828,33 @@ export default function InstructorCourseManagePage() {
                     value={newTopicName}
                     onChange={(event) => setNewTopicName(event.target.value)}
                     placeholder={messages.instructor.manage.topics.addPlaceholder}
-                    className="min-w-0 flex-1 text-sm"
+                    className="min-w-0 flex-1"
                     required
                   />
                   <Button variant="secondary" type="submit" disabled={addingTopic} className="shrink-0">
                     {addingTopic ? messages.instructor.manage.topics.adding : messages.instructor.manage.topics.addAction}
                   </Button>
                 </form>
-                {addTopicError ? <p className="mt-2 text-sm text-danger">{addTopicError}</p> : null}
+                {addTopicError ? <Notice tone="error" className="mt-2">{addTopicError}</Notice> : null}
               </>
             ) : null}
           </Card>
 
-          <Card as="section">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">{messages.instructor.manage.questions.heading}</h2>
-              <div className="flex shrink-0 items-center gap-4">
+          <Card as="section" className="lg:col-span-3">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <h2 className="text-section">{messages.instructor.manage.questions.heading}</h2>
+              <div className="flex flex-wrap items-center gap-x-1">
                 {canOpenAnswerAnalysis(state.course.status) ? (
                   <Link
                     href={`/instructor/courses/${courseId}/item-analysis`}
-                    className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                    className="inline-flex min-h-control items-center rounded-full px-3 text-secondary font-semibold text-primary-soft-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                   >
                     {messages.instructor.manage.questions.itemAnalysisAction}
                   </Link>
                 ) : null}
                 <Link
                   href={`/instructor/courses/${courseId}/import`}
-                  className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
+                  className="inline-flex min-h-control items-center rounded-full px-3 text-secondary text-subtle underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   {messages.instructor.manage.questions.importAction}
                 </Link>
@@ -863,7 +871,7 @@ export default function InstructorCourseManagePage() {
 
             {questionsState.kind === "error" ? (
               <div className="flex flex-col items-start gap-2">
-                <p className="text-sm text-danger">{messages.instructor.manage.questions.genericError}</p>
+                <Notice tone="error">{messages.instructor.manage.questions.genericError}</Notice>
                 <Button variant="secondary" onClick={() => setQuestionsRetryCount((count) => count + 1)}>
                   {messages.instructor.manage.retry}
                 </Button>
@@ -873,7 +881,7 @@ export default function InstructorCourseManagePage() {
             {questionsState.kind === "ready" ? (
               <>
                 {questionsState.questions.length === 0 ? (
-                  <p className="mb-3 text-sm text-muted">{messages.instructor.manage.questions.emptyTitle}</p>
+                  <p className="mb-3 text-secondary text-muted">{messages.instructor.manage.questions.emptyTitle}</p>
                 ) : (
                   <ul className="mb-4 divide-y divide-border">
                     {questionsState.questions.map((question) => {
@@ -905,7 +913,7 @@ export default function InstructorCourseManagePage() {
                   </ul>
                 )}
 
-                {createQuestionError ? <p className="mb-2 text-sm text-danger">{createQuestionError}</p> : null}
+                {createQuestionError ? <Notice tone="error" className="mb-2">{createQuestionError}</Notice> : null}
 
                 <div className="flex flex-wrap items-center gap-3">
                   <Button
@@ -938,7 +946,7 @@ export default function InstructorCourseManagePage() {
                   ) : null}
                 </div>
                 {bulkPublishResult !== null ? (
-                  <p className="mt-2 text-sm text-muted" role="status">
+                  <p className="mt-2 text-secondary text-muted" role="status">
                     {bulkPublishResult.failed > 0
                       ? interpolate(messages.instructor.manage.questions.bulkPublishSummaryWithFailures, {
                           published: bulkPublishResult.published,
@@ -954,53 +962,49 @@ export default function InstructorCourseManagePage() {
           </Card>
           </div>
 
-          <Card as="section">
-            {transitionError ? <p className="mb-3 text-sm text-danger">{transitionError}</p> : null}
+          {transitionError ? <Notice tone="error">{transitionError}</Notice> : null}
 
-            {state.course.status === "ARCHIVED" ? (
-              <p className="text-sm text-muted">{messages.instructor.manage.archivedNotice}</p>
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                {state.course.status === "DRAFT" ? (
-                  <Button onClick={handlePublish} disabled={publishing}>
-                    {publishing ? messages.instructor.manage.publishing : messages.instructor.manage.publishAction}
-                  </Button>
-                ) : null}
-                <Button variant="dangerSecondary" onClick={handleArchive} disabled={archiving}>
-                  {archiving ? messages.instructor.manage.archiving : messages.instructor.manage.archiveAction}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+          {state.course.status === "DRAFT" ||
+          (state.course.status !== "ARCHIVED" && questionsState.kind === "ready" && questionsState.questions.length > 0) ? (
+            <Card as="section">
+              <h2 className="mb-3 text-section">{messages.instructor.manage.lifecycleHeading}</h2>
+              {state.course.status === "DRAFT" ? (
+                <Button size="lg" onClick={handlePublish} disabled={publishing} fullWidth className="sm:w-auto">
+                  {publishing ? messages.instructor.manage.publishing : messages.instructor.manage.publishAction}
                 </Button>
-              </div>
-            )}
-            {state.course.status !== "ARCHIVED" && questionsState.kind === "ready" && questionsState.questions.length > 0 ? (
-              <p className="mt-3 text-sm text-subtle">
-                {messages.instructor.manage.questionPublishSummary
-                  .replace(
-                    "{published}",
-                    String(questionsState.questions.filter((q) => q.state !== "DRAFT_ONLY").length),
-                  )
-                  .replace("{total}", String(questionsState.questions.length))}
-              </p>
-            ) : null}
-            {state.course.status === "DRAFT" ? (
-              <p className="mt-1 text-sm text-subtle">{messages.instructor.manage.publishHint}</p>
-            ) : null}
-          </Card>
+              ) : null}
+              {questionsState.kind === "ready" && questionsState.questions.length > 0 ? (
+                <p className="mt-3 text-secondary text-subtle">
+                  {messages.instructor.manage.questionPublishSummary
+                    .replace(
+                      "{published}",
+                      String(questionsState.questions.filter((q) => q.state !== "DRAFT_ONLY").length),
+                    )
+                    .replace("{total}", String(questionsState.questions.length))}
+                </p>
+              ) : null}
+              {state.course.status === "DRAFT" ? (
+                <p className="mt-1 text-secondary text-subtle">{messages.instructor.manage.publishHint}</p>
+              ) : null}
+            </Card>
+          ) : null}
 
           {state.course.status === "PUBLISHED" && !canSelfJoinCourse(state.course) ? (
             // Same rule the join API enforces: a link to an AUTHORIZED_ONLY
             // Course would reject ordinary learners, so do not offer it.
             <Card as="section">
-              <h2 className="mb-2 text-lg font-semibold">{messages.instructor.manage.shareHeading}</h2>
-              <p className="text-sm text-muted">{messages.instructor.manage.shareUnavailableBody}</p>
+              <h2 className="mb-2 text-section">{messages.instructor.manage.shareHeading}</h2>
+              <p className="text-secondary text-muted">{messages.instructor.manage.shareUnavailableBody}</p>
             </Card>
           ) : null}
 
           {canSelfJoinCourse(state.course) ? (
             <Card as="section">
-              <h2 className="mb-2 text-lg font-semibold">{messages.instructor.manage.shareHeading}</h2>
-              <p className="mb-3 text-sm text-muted">{messages.instructor.manage.shareBody}</p>
+              <h2 className="mb-2 text-section">{messages.instructor.manage.shareHeading}</h2>
+              <p className="mb-3 text-secondary text-muted">{messages.instructor.manage.shareBody}</p>
               <div className="flex flex-wrap items-center gap-3">
-                <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-muted px-3 py-2 text-sm">
+                <code dir="ltr" className="block min-h-control min-w-0 flex-1 basis-48 truncate rounded-control bg-surface-muted px-3 py-2.5 text-secondary leading-6">
                   {typeof window !== "undefined" ? `${window.location.origin}/join/${state.course.id}` : `/join/${state.course.id}`}
                 </code>
                 <Button
@@ -1019,6 +1023,29 @@ export default function InstructorCourseManagePage() {
               </div>
             </Card>
           ) : null}
+          </div>
+
+          {/* Danger zone: de-emphasised, quiet danger-tonal action; confirmation (window.confirm) unchanged. */}
+          <section
+            aria-labelledby="danger-zone-heading"
+            className="rounded-card border border-danger/25 p-5"
+          >
+            <h2 id="danger-zone-heading" className="mb-3 text-section text-danger">
+              {messages.instructor.manage.dangerZoneHeading}
+            </h2>
+            {state.course.status === "ARCHIVED" ? (
+              <p className="text-secondary text-muted">{messages.instructor.manage.archivedNotice}</p>
+            ) : (
+              <Button
+                variant="dangerTertiary"
+                className="border border-danger/30 px-5"
+                onClick={handleArchive}
+                disabled={archiving}
+              >
+                {archiving ? messages.instructor.manage.archiving : messages.instructor.manage.archiveAction}
+              </Button>
+            )}
+          </section>
         </div>
       ) : null}
     </main>

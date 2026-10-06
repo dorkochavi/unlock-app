@@ -139,9 +139,14 @@ export default function JoinCoursePage() {
   }
 
   return (
-    <main className="page-container flex flex-1 items-center justify-center py-8 sm:py-12">
+    <main className="page-container flex flex-1 flex-col items-center justify-center py-8 sm:py-12">
       <div className="w-full max-w-sm text-center">
-        <h1 className="mb-6 text-title font-semibold">{messages.join.heading}</h1>
+        <p className={`text-title font-extrabold text-primary ${state.kind === "ready" ? "mb-5" : "mb-2"}`}>
+          {messages.shell.heading}
+        </p>
+        {state.kind === "ready" ? null : (
+          <h1 className="mb-2 text-section font-semibold">{messages.join.heading}</h1>
+        )}
 
         {state.kind === "loading" ? <LoadingState label={messages.join.loading} /> : null}
 
@@ -176,16 +181,24 @@ export default function JoinCoursePage() {
         ) : null}
 
         {state.kind === "ready" ? (
-          <Card as="section" className="flex flex-col gap-5">
-            <p className="text-section font-semibold break-words">{state.title}</p>
+          <Card variant="hero" as="section" className="flex flex-col gap-5 p-6 text-start sm:p-8">
+            <div className="flex flex-col gap-2">
+              <h1 className="text-secondary font-semibold text-hero-muted">{messages.join.heading}</h1>
+              <p className="text-title font-extrabold break-words">{state.title}</p>
+            </div>
             {state.joinError ? (
               <Notice tone="error" className="text-start">
                 {messages.join.joinErrorTitle}
               </Notice>
             ) : null}
-            <Button onClick={handleJoin} disabled={joining} fullWidth>
+            <button
+              type="button"
+              onClick={handleJoin}
+              disabled={joining}
+              className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-white px-6 text-body font-bold text-hero shadow-[0_6px_16px_-8px_rgb(0_0_0/0.5)] transition duration-150 hover:bg-hero-muted active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-wait disabled:opacity-75 disabled:hover:bg-white disabled:active:scale-100"
+            >
               {joining ? messages.join.joining : messages.join.joinAction}
-            </Button>
+            </button>
           </Card>
         ) : null}
       </div>

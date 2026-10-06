@@ -35,11 +35,14 @@ export default function InstructorLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="flex items-center justify-between gap-4 border-b border-border px-6 py-4">
-        <Link href="/courses" className="text-sm font-medium text-subtle transition hover:text-foreground">
+      <header className="mx-auto flex min-h-14 w-full max-w-2xl items-center justify-between gap-3 px-4 pt-1 sm:px-6 lg:max-w-4xl">
+        <Link
+          href="/courses"
+          className="inline-flex min-h-control items-center rounded-full px-1 text-secondary font-semibold text-primary-soft-foreground transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
           {messages.instructor.backToMyCourses}
         </Link>
-        <Button variant="tertiary" className="text-sm" onClick={handleSignOut}>
+        <Button variant="tertiary" className="-me-2 rounded-full px-3 text-secondary" onClick={handleSignOut}>
           {messages.shell.signOut}
         </Button>
       </header>

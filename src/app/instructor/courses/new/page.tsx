@@ -85,10 +85,10 @@ export default function NewInstructorCoursePage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">{messages.instructor.newCourse.heading}</h1>
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pt-6">
+      <h1 className="mb-5 text-page font-extrabold">{messages.instructor.newCourse.heading}</h1>
 
-      <Card as="section">
+      <Card as="section" variant="raised">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label className="block">
             <Label>{messages.instructor.newCourse.titleLabel}</Label>
