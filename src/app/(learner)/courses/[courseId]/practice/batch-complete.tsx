@@ -10,6 +10,8 @@ import { useEffect, useRef } from "react";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
+import { ToneIcon } from "@/components/icons";
+import { Notice } from "@/components/notice";
 import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 
@@ -62,22 +64,23 @@ export function BatchComplete({
   const pending = moreStatus === "pending";
 
   return (
-    <Card className="flex flex-col items-center gap-4 p-6 text-center">
+    <Card raised className="flex flex-col items-center gap-4 p-6 text-center">
+      <span
+        aria-hidden="true"
+        className="flex size-12 items-center justify-center rounded-full bg-state-solid-soft text-state-solid"
+      >
+        <ToneIcon tone="success" className="size-6" />
+      </span>
       <div role="status">
-        <p ref={titleRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+        <p ref={titleRef} tabIndex={-1} className="text-title font-semibold focus:outline-none">
           {messages.practice.batchCompleteTitle}
         </p>
       </div>
-      {summary ? <p className="text-sm text-muted">{summary}</p> : null}
-      {correctLine ? <p className="text-sm text-muted">{correctLine}</p> : null}
-      {topicsLine ? <p className="text-sm text-muted">{topicsLine}</p> : null}
+      {summary ? <p className="text-secondary text-muted">{summary}</p> : null}
+      {correctLine ? <p className="text-secondary text-muted">{correctLine}</p> : null}
+      {topicsLine ? <p className="text-secondary text-muted">{topicsLine}</p> : null}
       {answered > 0 ? (
-        <p className="text-sm font-medium text-foreground">{messages.practice.batchEncouragement}</p>
-      ) : null}
-      {moreStatus === "error" ? (
-        <p role="alert" className="text-sm text-danger">
-          {messages.practice.genericErrorTitle}
-        </p>
+        <p className="text-secondary font-medium text-foreground">{messages.practice.batchEncouragement}</p>
       ) : null}
       <div className="mt-2 flex w-full flex-col gap-2">
         {hasMore ? (
@@ -88,6 +91,11 @@ export function BatchComplete({
                 ? messages.practice.retry
                 : messages.practice.more}
           </Button>
+        ) : null}
+        {moreStatus === "error" ? (
+          <Notice tone="error" role="alert" className="justify-center">
+            {messages.practice.genericErrorTitle}
+          </Notice>
         ) : null}
         <ButtonLink href={originHref} variant={hasMore ? "tertiary" : "secondary"} fullWidth>
           {backLabelText}

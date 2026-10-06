@@ -18,7 +18,12 @@ import { useParams, useSearchParams } from "next/navigation";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
-import { LoadingState, StateBlock } from "@/components/state-block";
+import { ToneIcon } from "@/components/icons";
+import { ExitIcon, LearnHeader } from "@/components/learn-header";
+import { Notice } from "@/components/notice";
+import { ProgressBar } from "@/components/progress-bar";
+import { Skeleton } from "@/components/skeleton";
+import { StateBlock } from "@/components/state-block";
 import { interpolate } from "@/lib/interpolate";
 import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
@@ -123,7 +128,7 @@ function runFromBatch(batch: PracticeBatchDto): RunState {
 
 export default function PracticePage() {
   return (
-    <Suspense fallback={<LoadingState label={getMessages().practice.loading} />}>
+    <Suspense fallback={<PracticeLoading label={getMessages().practice.loading} />}>
       <PracticeScreen />
     </Suspense>
   );
@@ -222,7 +227,7 @@ function PracticeScreen() {
   const signInHref = buildSignInHref(practicePath(courseId, topicId, from));
 
   if (state.kind === "loading") {
-    return <LoadingState label={messages.practice.loading} />;
+    return <PracticeLoading label={messages.practice.loading} />;
   }
   if (state.kind === "signed-out") {
     return (
@@ -358,48 +363,36 @@ function PracticeScreen() {
 
   return (
     <div className="mx-auto w-full max-w-xl">
-      {/* Learn Mode context bar: scope (Course or Topic) + progress, minimal chrome. */}
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-subtle">{scopeLabel}</p>
-          <p className="break-words font-medium">{run.scope.title}</p>
-          {run.stage === "question" || run.stage === "feedback" ? (
-            <p className="text-sm text-muted">
-              {interpolate(messages.today.questionPosition, { current: position, total })}
-            </p>
-          ) : null}
-        </div>
-        <ButtonLink href={originHref} variant="tertiary" className="-me-3 shrink-0">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-          >
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
-          {messages.today.exitLearn}
-        </ButtonLink>
-      </div>
-      <div aria-hidden="true" className="mb-8 h-1 overflow-hidden rounded-full bg-surface-muted">
-        <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{
-            width:
-              run.stage === "batchComplete"
-                ? "100%"
-                : `${total === 0 ? 0 : ((run.stage === "feedback" ? run.index + 1 : run.index) / total) * 100}%`,
-          }}
-        />
-      </div>
+      {/* Learn Mode context bar: scope (Course or Topic) + progress, same as Today. */}
+      <LearnHeader
+        eyebrow={scopeLabel}
+        title={run.scope.title}
+        position={
+          run.stage === "question" || run.stage === "feedback"
+            ? interpolate(messages.today.questionPosition, { current: position, total })
+            : undefined
+        }
+        action={
+          <ButtonLink href={originHref} variant="tertiary" className="-me-3 shrink-0">
+            <ExitIcon />
+            {messages.today.exitLearn}
+          </ButtonLink>
+        }
+      />
+      <ProgressBar
+        fraction={
+          run.stage === "batchComplete"
+            ? 1
+            : total === 0
+              ? 0
+              : (run.stage === "feedback" ? run.index + 1 : run.index) / total
+        }
+      />
 
       {notice ? (
-        <p role="status" className="mb-4 text-sm text-muted">
+        <Notice tone="info" role="status" className="mb-4">
           {messages.practice.questionUnavailable}
-        </p>
+        </Notice>
       ) : null}
 
       {run.stage === "question" || run.stage === "feedback" ? (
@@ -443,6 +436,31 @@ function PracticeScreen() {
   );
 }
 
+/** Shaped placeholder (header + progress + question card) so the screen does not jump when the batch arrives. */
+function PracticeLoading({ label }: { label: string }) {
+  return (
+    <div role="status" className="mx-auto w-full max-w-xl">
+      <span className="sr-only">{label}</span>
+      <div aria-hidden="true">
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-5 w-2/3" />
+          </div>
+          <Skeleton className="h-control w-24 shrink-0" />
+        </div>
+        <ProgressBar fraction={0} />
+        <Skeleton className="mb-3 h-7 w-full" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-control w-full" />
+          <Skeleton className="h-control w-full" />
+          <Skeleton className="h-control w-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function backLabel(from: PracticeFrom): string {
   const messages = getMessages().practice;
   return from === "progress" ? messages.backToProgress : messages.backToCourse;
@@ -456,12 +474,18 @@ function NoMore({ originHref, from }: { originHref: string; from: PracticeFrom }
     titleRef.current?.focus();
   }, []);
   return (
-    <Card className="flex flex-col items-center gap-4 p-6 text-center">
+    <Card raised className="flex flex-col items-center gap-4 p-6 text-center">
+      <span
+        aria-hidden="true"
+        className="flex size-12 items-center justify-center rounded-full bg-surface-muted text-muted"
+      >
+        <ToneIcon tone="info" className="size-6" />
+      </span>
       <div role="status">
-        <p ref={titleRef} tabIndex={-1} className="text-xl font-semibold focus:outline-none">
+        <p ref={titleRef} tabIndex={-1} className="text-title font-semibold focus:outline-none">
           {messages.noMoreTitle}
         </p>
-        <p className="mt-2 text-muted">{messages.noMoreBody}</p>
+        <p className="mt-2 text-body text-muted">{messages.noMoreBody}</p>
       </div>
       <ButtonLink href={originHref} variant="secondary" fullWidth>
         {backLabel(from)}
