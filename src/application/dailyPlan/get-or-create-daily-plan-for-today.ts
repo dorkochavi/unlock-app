@@ -75,29 +75,23 @@
  * check) — rather than an unchecked cast to the branded `IanaTimezone`
  * type.
  *
- * ## Same-day resume: membership lookup is NOT skipped, by design
+ * ## Same-day resume: generation-only inputs are NOT gathered (PERF Slice B)
  *
- * `plannedForDate` (needed to even ask "does a plan already exist for
- * today") can only be computed AFTER timezone resolution, so the timezone
- * read can never be avoided. Given `plannedForDate`, THIS function still
- * unconditionally resolves active memberships and calls
- * `generateDailyPlanForResolvedInputs` on every call, even when a plan for
- * that day already exists and the internal core's own `findByKey`
- * short-circuit (`generate-daily-plan-for-resolved-inputs.ts`) will return
- * immediately without generating anything. **Consequence, stated
- * explicitly**: a same-day resume call still performs one
- * `listActiveForUser` read that turns out to be unnecessary. This is a
- * deliberate choice, not an oversight — the only way to avoid it cleanly
- * would be either a new non-transactional `DailyPlanRepository` read port
- * outside `DailyPlanUnitOfWork` (not authorized by this slice), or a
- * second, separate `runInTransaction` call made JUST to check existence
- * before the membership read (which would open two transactions per
- * resume instead of one — a net loss, and exactly the "duplicating
- * repository access/transaction logic" this slice was told to avoid).
- * One extra indexed, non-transactional read per resume is judged an
- * acceptable, cheap cost against that alternative; this may be revisited
- * if `listActiveForUser` ever becomes expensive or membership lists grow
- * large.
+ * `plannedForDate` can only be computed AFTER timezone resolution, so the
+ * timezone read is always required. Given `plannedForDate`, this function
+ * first checks whether the learner's persisted (frozen) plan for that local
+ * day already exists, and if so returns it immediately, WITHOUT reading
+ * memberships, Course statuses or exam dates. This is semantics-preserving:
+ * those reads only ever fed `eligibleCourseIds`/`examDatesByCourseId`, which
+ * `generateDailyPlanForResolvedInputs` consults only AFTER its own
+ * `findByKey` miss — an existing plan was always returned as-is (frozen,
+ * ADR-016 §2), never filtered by current membership/Course status. The plan
+ * read is keyed by the authenticated `command.userId` only. The check uses
+ * `ports.dailyPlanReader` (non-transactional, read-only) when supplied,
+ * otherwise a short read transaction through the unit of work. On a miss the
+ * existing flow runs unchanged, and the generation core's own in-transaction
+ * `findByKey` + race-free `createIfNotExists` still decide the winner, so
+ * the first-generation concurrency behavior is unchanged.
  */
 import { parseIanaTimezone } from "../../domain/user/timezone";
 import { deriveLocalDateString } from "../../domain/user/local-date";
@@ -107,7 +101,7 @@ import {
   generateDailyPlanForResolvedInputs,
   type DailyPlanGenerationContext,
 } from "./generate-daily-plan-for-resolved-inputs";
-import type { DailyPlan, DailyPlanUnitOfWork } from "./ports";
+import type { DailyPlan, DailyPlanRepository, DailyPlanUnitOfWork } from "./ports";
 
 export interface GetOrCreateDailyPlanForTodayCommand {
   userId: string;
@@ -134,6 +128,12 @@ export interface GetOrCreateDailyPlanForTodayPorts {
    */
   courses: CourseRepository;
   dailyPlanUnitOfWork: DailyPlanUnitOfWork;
+  /**
+   * Optional non-transactional read-only plan lookup for the same-day
+   * resume fast path. When absent, a short read transaction through
+   * `dailyPlanUnitOfWork` is used instead.
+   */
+  dailyPlanReader?: Pick<DailyPlanRepository, "findByKey">;
 }
 
 export type GetOrCreateDailyPlanForTodayResult =
@@ -156,6 +156,18 @@ export async function getOrCreateDailyPlanForToday(
 
   const timezone = parseIanaTimezone(userRecord.timezone);
   const plannedForDate = deriveLocalDateString(command.now, timezone);
+
+  // Same-day resume fast path (see module doc comment): an existing frozen
+  // plan is returned without any generation-only read.
+  const key = { userId: command.userId, plannedForDate };
+  const existingPlan = ports.dailyPlanReader
+    ? await ports.dailyPlanReader.findByKey(key)
+    : await ports.dailyPlanUnitOfWork.runInTransaction((repos) =>
+        repos.dailyPlans.findByKey(key),
+      );
+  if (existingPlan !== null) {
+    return { outcome: "READY", plan: existingPlan };
+  }
 
   // LEARNER-only (see module doc comment). `listActiveForUser` already
   // excludes revoked/archived memberships (ADR-015 §7/§9) — this file adds

@@ -28,6 +28,7 @@ import type {
 } from "../../application/dailyPlan/get-or-create-daily-plan-for-today";
 import { PostgresCourseMembershipRepository } from "../postgres/course-membership-repository";
 import { PostgresCourseRepository } from "../postgres/course-repository";
+import { PostgresDailyPlanRepository } from "../postgres/daily-plan-repository";
 import { PostgresDailyPlanUnitOfWork } from "../postgres/daily-plan-unit-of-work";
 import { PostgresUserRepository } from "../postgres/user-repository";
 import type { ConnectionProvider } from "../postgres/connection-provider";
@@ -68,5 +69,6 @@ export function createProductionDailyPlanPorts(
     courseMemberships: new PostgresCourseMembershipRepository(nonTransactionalDb),
     courses: new PostgresCourseRepository(nonTransactionalDb),
     dailyPlanUnitOfWork: new PostgresDailyPlanUnitOfWork(connectionProvider),
+    dailyPlanReader: new PostgresDailyPlanRepository(nonTransactionalDb),
   };
 }

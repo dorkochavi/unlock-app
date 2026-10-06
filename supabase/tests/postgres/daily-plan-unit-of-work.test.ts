@@ -34,6 +34,8 @@ import { PostgresDailyPlanUnitOfWork } from "../../../src/infrastructure/postgre
 import type { SqlExecutor } from "../../../src/infrastructure/postgres/sql-executor";
 import { PostgresUserQuestionProgressRepository } from "../../../src/infrastructure/postgres/progress-repository";
 import { PostgresUserRepository } from "../../../src/infrastructure/postgres/user-repository";
+import { PostgresDailyPlanRepository } from "../../../src/infrastructure/postgres/daily-plan-repository";
+import { createStatementCounter } from "./statement-counter";
 import {
   createTestDb,
   insertCourse,
@@ -584,4 +586,53 @@ describe("getOrCreateDailyPlanForToday — real Postgres generation path", () =>
       expect(Number(progressCount.rows[0].count)).toBe(0);
     });
   });
+});
+
+describe("getOrCreateDailyPlanForToday — repeat-open statement counts (PERF Slice B)", () => {
+  async function seed() {
+    const userId = await insertUser(db);
+    await setUserTimezone(db, userId, "Asia/Jerusalem");
+    const courseId = await insertCourse(db, userId);
+    await insertCourseMembership(db, { userId, courseId, role: "LEARNER" });
+    const questionA = await insertQuestion(db, courseId);
+    const versionA = await insertQuestionVersion(db, questionA);
+    await setCurrentVersion(db, questionA, versionA);
+    await seedDueProgress(db, userId, questionA);
+    return { userId, courseId };
+  }
+
+  function countedPorts(withReader: boolean) {
+    const counter = createStatementCounter();
+    const pool = counter.wrapExecutor(db as unknown as SqlExecutor);
+    const provider = counter.wrapProvider(pgliteConnectionProvider(db));
+    const ports = {
+      users: new PostgresUserRepository(pool),
+      courseMemberships: new PostgresCourseMembershipRepository(pool),
+      courses: new PostgresCourseRepository(pool),
+      dailyPlanUnitOfWork: new PostgresDailyPlanUnitOfWork(provider),
+      ...(withReader ? { dailyPlanReader: new PostgresDailyPlanRepository(pool) } : {}),
+    };
+    return { counter, ports };
+  }
+
+  it.each([true, false])(
+    "repeat open of an existing plan (production reader=%s) issues no membership/status/exam-date/progress reads; returns the same plan",
+    async (withReader) => {
+      const { userId } = await seed();
+      const now = new Date("2026-01-10T10:00:00Z");
+      const { counter, ports } = countedPorts(withReader);
+
+      const first = await getOrCreateDailyPlanForToday({ userId, now }, makeSettings(), ports);
+      counter.reset();
+      const second = await getOrCreateDailyPlanForToday({ userId, now }, makeSettings(), ports);
+
+      expect(second).toEqual(first);
+      // Before this slice a repeat open cost 8 statements (timezone, memberships,
+      // statuses, exam dates, begin, plan, items, commit). Now: timezone + plan + items
+      // (reader) or timezone + begin/plan/items/commit (UoW fallback).
+      expect(counter.total).toBe(withReader ? 3 : 5);
+      expect(counter.byVerb.insert).toBe(0);
+      expect(counter.byVerb.update).toBe(0);
+    },
+  );
 });

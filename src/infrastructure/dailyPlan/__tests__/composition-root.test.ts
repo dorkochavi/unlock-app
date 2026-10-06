@@ -5,6 +5,7 @@ import { InMemoryDailyPlanDatabase } from "../../../application/dailyPlan/__test
 import { InMemoryUserDatabase } from "../../../application/user/__tests__/in-memory-fakes";
 import { getOrCreateDailyPlanForToday } from "../../../application/dailyPlan/get-or-create-daily-plan-for-today";
 import { PostgresCourseMembershipRepository } from "../../postgres/course-membership-repository";
+import { PostgresDailyPlanRepository } from "../../postgres/daily-plan-repository";
 import { PostgresDailyPlanUnitOfWork } from "../../postgres/daily-plan-unit-of-work";
 import { PostgresUserRepository } from "../../postgres/user-repository";
 import { TsFsrsMemoryScheduler } from "../../learning/fsrs/ts-fsrs-memory-scheduler";
@@ -122,5 +123,6 @@ describe("createProductionDailyPlanPorts", () => {
     expect(ports.users).toBeInstanceOf(PostgresUserRepository);
     expect(ports.courseMemberships).toBeInstanceOf(PostgresCourseMembershipRepository);
     expect(ports.dailyPlanUnitOfWork).toBeInstanceOf(PostgresDailyPlanUnitOfWork);
+    expect(ports.dailyPlanReader).toBeInstanceOf(PostgresDailyPlanRepository);
   });
 });

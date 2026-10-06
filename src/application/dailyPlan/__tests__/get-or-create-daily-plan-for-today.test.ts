@@ -762,4 +762,221 @@ describe("getOrCreateDailyPlanForToday", () => {
       ]);
     }
   });
+
+  describe("same-day resume fast path (PERF Slice B)", () => {
+    function setup(opts: { withReader: boolean }) {
+      const users = new InMemoryUserDatabase();
+      users.seedUser(USER_ID, "UTC");
+      const courses = new InMemoryCourseDatabase();
+      courses.seedMembership(makeMembership({ courseId: "course-a", role: "LEARNER" }));
+      const dailyPlans = new InMemoryDailyPlanDatabase();
+      dailyPlans.seedProgress("course-a", makeProgress({ questionId: "question-a" }));
+      dailyPlans.setCurrentVersion("question-a", "qv-a");
+
+      const calls = { findTimezone: 0, listActiveForUser: 0, listStatuses: 0, listExamDates: 0, readerFindByKey: 0 };
+      const baseUsers = users.repo();
+      const baseMemberships = courses.repos().memberships;
+      const baseCourses = courses.repos().courses;
+      const ports = {
+        users: {
+          ...baseUsers,
+          findTimezone: async (id: string) => {
+            calls.findTimezone++;
+            return baseUsers.findTimezone(id);
+          },
+        },
+        courseMemberships: {
+          ...baseMemberships,
+          listActiveForUser: async (id: string) => {
+            calls.listActiveForUser++;
+            return baseMemberships.listActiveForUser(id);
+          },
+        },
+        courses: {
+          ...baseCourses,
+          listStatuses: async (ids: string[]) => {
+            calls.listStatuses++;
+            return baseCourses.listStatuses(ids);
+          },
+          listExamDates: async (ids: string[]) => {
+            calls.listExamDates++;
+            return baseCourses.listExamDates(ids);
+          },
+        },
+        dailyPlanUnitOfWork: dailyPlans,
+        ...(opts.withReader
+          ? {
+              dailyPlanReader: {
+                findByKey: async (key: { userId: string; plannedForDate: string }) => {
+                  calls.readerFindByKey++;
+                  return dailyPlans.runInTransaction((r) => r.dailyPlans.findByKey(key));
+                },
+              },
+            }
+          : {}),
+      };
+      const reset = () => {
+        for (const k of Object.keys(calls) as Array<keyof typeof calls>) calls[k] = 0;
+      };
+      return { users, courses, dailyPlans, ports, calls, reset };
+    }
+
+    it.each([{ withReader: true }, { withReader: false }])(
+      "1. existing plan (reader=$withReader): resume performs NO membership/status/exam-date reads, no generation reads, and returns the same frozen plan",
+      async ({ withReader }) => {
+        const { dailyPlans, ports, calls, reset } = setup({ withReader });
+        const first = await getOrCreateDailyPlanForToday(
+          { userId: USER_ID, now: new Date("2026-01-10T08:00:00.000Z") },
+          makeSettings(),
+          ports,
+        );
+        // Miss path still performs the full generation-input gathering.
+        expect(calls.listActiveForUser).toBe(1);
+        expect(calls.listStatuses).toBe(1);
+        expect(calls.listExamDates).toBe(1);
+        const listForUserAfterFirst = dailyPlans.listForUserCallCount;
+        reset();
+
+        const second = await getOrCreateDailyPlanForToday(
+          { userId: USER_ID, now: new Date("2026-01-10T20:00:00.000Z") },
+          makeSettings(),
+          ports,
+        );
+
+        expect(calls.findTimezone).toBe(1);
+        expect(calls.listActiveForUser).toBe(0);
+        expect(calls.listStatuses).toBe(0);
+        expect(calls.listExamDates).toBe(0);
+        expect(dailyPlans.listForUserCallCount).toBe(listForUserAfterFirst);
+        expect(first.outcome).toBe("READY");
+        expect(second).toEqual(first);
+      },
+    );
+
+    it("2. missing plan still generates correctly (reader reports miss, then generation proceeds)", async () => {
+      const { ports, calls } = setup({ withReader: true });
+      const result = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T08:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(calls.readerFindByKey).toBe(1);
+      expect(result.outcome).toBe("READY");
+      if (result.outcome === "READY") {
+        expect(result.plan.items.map((i) => i.questionId)).toEqual(["question-a"]);
+      }
+    });
+
+    it("3. USER_NOT_FOUND / TIMEZONE_NOT_SET still fail closed before any plan read", async () => {
+      const { users, ports, calls } = setup({ withReader: true });
+      const missing = await getOrCreateDailyPlanForToday(
+        { userId: "ghost", now: new Date("2026-01-10T08:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(missing).toEqual({ outcome: "USER_NOT_FOUND" });
+      users.seedUser("tz-null", null);
+      const noTz = await getOrCreateDailyPlanForToday(
+        { userId: "tz-null", now: new Date("2026-01-10T08:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(noTz).toEqual({ outcome: "TIMEZONE_NOT_SET" });
+      expect(calls.readerFindByKey).toBe(0);
+    });
+
+    it("3b. a user only ever loads their OWN plan: another user's existing plan is not returned", async () => {
+      const { users, ports } = setup({ withReader: true });
+      await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T08:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      users.seedUser("user-2", "UTC");
+      const other = await getOrCreateDailyPlanForToday(
+        { userId: "user-2", now: new Date("2026-01-10T09:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(other.outcome).toBe("READY");
+      if (other.outcome === "READY") {
+        expect(other.plan.userId).toBe("user-2");
+        expect(other.plan.items).toEqual([]);
+      }
+    });
+
+    it("4. timezone boundary: a NEW local day generates after local midnight; each day reloads its own plan without generation reads", async () => {
+      const { users, ports, calls, reset } = setup({ withReader: true });
+      users.seedUser(USER_ID, "Asia/Jerusalem");
+      // 21:30Z = 23:30 Jerusalem (Jan 10); 22:30Z = 00:30 Jerusalem (Jan 11).
+      const beforeMidnight = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T21:30:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      const afterMidnight = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T22:30:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(beforeMidnight.outcome === "READY" && beforeMidnight.plan.plannedForDate).toBe("2026-01-10");
+      expect(afterMidnight.outcome === "READY" && afterMidnight.plan.plannedForDate).toBe("2026-01-11");
+      reset();
+      const reloadDay1 = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T21:45:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      const reloadDay2 = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T23:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(reloadDay1).toEqual(beforeMidnight);
+      expect(reloadDay2).toEqual(afterMidnight);
+      expect(calls.listActiveForUser).toBe(0);
+    });
+
+    it("5. frozen: archiving the Course / revoking the membership AFTER generation does not change the returned plan (same as pre-change behavior: existing plan returned as-is)", async () => {
+      const { courses, ports } = setup({ withReader: true });
+      const first = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T08:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      courses.seedCourse("course-a", "AUTHORIZED_ONLY", "T", "ARCHIVED");
+      courses.seedMembership(
+        makeMembership({ courseId: "course-a", revokedAt: new Date("2026-01-10T09:00:00.000Z") }),
+      );
+      const second = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T10:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(second).toEqual(first);
+      if (second.outcome === "READY") expect(second.plan.items).toHaveLength(1);
+    });
+
+    it("6. concurrent first-generation race unchanged: reader misses, generation core's createIfNotExists returns the winner", async () => {
+      const { dailyPlans, ports } = setup({ withReader: true });
+      const winner = {
+        id: "winner-plan",
+        userId: USER_ID,
+        plannedForDate: "2026-01-10",
+        status: "prepared",
+        engineVersion: "other",
+        generatedAt: new Date("2026-01-10T07:00:00.000Z"),
+        startedAt: null,
+        completedAt: null,
+        items: [],
+      };
+      dailyPlans.seedConcurrentWinner({ userId: USER_ID, plannedForDate: "2026-01-10" }, winner);
+      const result = await getOrCreateDailyPlanForToday(
+        { userId: USER_ID, now: new Date("2026-01-10T08:00:00.000Z") },
+        makeSettings(),
+        ports,
+      );
+      expect(result).toEqual({ outcome: "READY", plan: winner });
+    });
+  });
 });
