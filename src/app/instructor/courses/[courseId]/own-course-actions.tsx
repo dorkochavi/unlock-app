@@ -18,6 +18,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button, ButtonLink } from "@/components/button";
+import { Notice } from "@/components/notice";
 import { getMessages } from "@/messages";
 
 export type LearnOwnCourseOutcome =
@@ -62,19 +63,15 @@ export function OwnCourseActionsView({
   const messages = getMessages().instructor.manage.ownCourse;
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-3">
-        <ButtonLink href={manageHref} variant="secondary">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <ButtonLink href={manageHref} variant="secondary" className="w-full sm:w-auto">
           {messages.manageAction}
         </ButtonLink>
-        <Button onClick={onLearn} disabled={learning}>
+        <Button onClick={onLearn} disabled={learning} className="w-full sm:w-auto">
           {learning ? messages.learning : messages.learnAction}
         </Button>
       </div>
-      {errorMessage ? (
-        <p className="text-sm text-danger" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
+      {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
     </div>
   );
 }

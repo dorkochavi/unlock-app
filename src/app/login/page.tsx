@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Input, Label } from "@/components/input";
+import { Field } from "@/components/field";
+import { Input } from "@/components/input";
+import { Notice } from "@/components/notice";
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
 import { getMessages } from "@/messages";
 import { buildSignUpEmailRedirectTo } from "@/lib/auth-redirect";
@@ -175,65 +177,72 @@ export default function LoginPage() {
           : messages.auth.signUpSubmit;
 
   return (
-    <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
+    <main className="page-container flex flex-1 items-center justify-center py-8 sm:py-12">
       <div className="w-full max-w-sm">
-        <h1 className="mb-6 text-center text-2xl font-semibold tracking-tight">{heading}</h1>
+        <h1 className="mb-6 text-center text-title font-semibold">{heading}</h1>
         <Card as="section">
           {isRecovery && recoveryState === "checking" ? (
-            <p className="text-sm text-muted">{messages.auth.recoveryChecking}</p>
+            <Notice tone="info">{messages.auth.recoveryChecking}</Notice>
           ) : isRecovery && recoveryState === "invalid" ? (
             <div className="flex flex-col gap-4">
-              <p className="text-sm text-danger">{messages.auth.recoveryInvalidLink}</p>
+              <Notice tone="error">{messages.auth.recoveryInvalidLink}</Notice>
               <Button onClick={() => goTo("forgot")} fullWidth>
                 {messages.auth.recoveryRequestNewLink}
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {isForgot ? <p className="text-sm text-muted">{messages.auth.forgotIntro}</p> : null}
+              {isForgot ? <p className="text-secondary text-muted">{messages.auth.forgotIntro}</p> : null}
               {!isRecovery ? (
-                <label className="block">
-                  <Label>{messages.auth.emailLabel}</Label>
-                  <Input
-                    type="email"
-                    required
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </label>
+                <Field id="login-email" label={messages.auth.emailLabel}>
+                  {(controlProps) => (
+                    <Input
+                      {...controlProps}
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  )}
+                </Field>
               ) : null}
               {!isForgot ? (
-                <label className="block">
-                  <Label>
-                    {isRecovery ? messages.auth.newPasswordLabel : messages.auth.passwordLabel}
-                  </Label>
-                  <Input
-                    type="password"
-                    required
-                    minLength={6}
-                    autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                </label>
+                <Field
+                  id="login-password"
+                  label={isRecovery ? messages.auth.newPasswordLabel : messages.auth.passwordLabel}
+                >
+                  {(controlProps) => (
+                    <Input
+                      {...controlProps}
+                      type="password"
+                      required
+                      minLength={6}
+                      autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  )}
+                </Field>
               ) : null}
               {isRecovery ? (
-                <label className="block">
-                  <Label>{messages.auth.confirmPasswordLabel}</Label>
-                  <Input
-                    type="password"
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                  />
-                </label>
+                <Field id="login-confirm-password" label={messages.auth.confirmPasswordLabel}>
+                  {(controlProps) => (
+                    <Input
+                      {...controlProps}
+                      type="password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                    />
+                  )}
+                </Field>
               ) : null}
 
-              {error ? <p className="text-sm text-danger">{error}</p> : null}
-              {info ? <p className="text-sm text-state-solid">{info}</p> : null}
+              {error ? <Notice tone="error">{error}</Notice> : null}
+              {info ? <Notice tone="success">{info}</Notice> : null}
 
               <Button type="submit" disabled={pending} fullWidth>
                 {submitLabel}
@@ -242,26 +251,27 @@ export default function LoginPage() {
           )}
         </Card>
 
-        {mode === "sign-in" ? (
-          <Button variant="tertiary" onClick={() => goTo("forgot")} fullWidth className="mt-4">
-            {messages.auth.forgotPassword}
-          </Button>
-        ) : null}
-        {isForgot || (isRecovery && recoveryState === "invalid") ? (
-          <Button variant="tertiary" onClick={() => goTo("sign-in")} fullWidth className="mt-4">
-            {messages.auth.backToSignIn}
-          </Button>
-        ) : null}
-        {mode === "sign-in" || mode === "sign-up" ? (
-          <Button
-            variant="tertiary"
-            onClick={() => goTo(mode === "sign-in" ? "sign-up" : "sign-in")}
-            fullWidth
-            className="mt-4"
-          >
-            {mode === "sign-in" ? messages.auth.switchToSignUp : messages.auth.switchToSignIn}
-          </Button>
-        ) : null}
+        <div className="mt-4 flex flex-col gap-1">
+          {mode === "sign-in" ? (
+            <Button variant="tertiary" onClick={() => goTo("forgot")} fullWidth>
+              {messages.auth.forgotPassword}
+            </Button>
+          ) : null}
+          {isForgot || (isRecovery && recoveryState === "invalid") ? (
+            <Button variant="tertiary" onClick={() => goTo("sign-in")} fullWidth>
+              {messages.auth.backToSignIn}
+            </Button>
+          ) : null}
+          {mode === "sign-in" || mode === "sign-up" ? (
+            <Button
+              variant="tertiary"
+              onClick={() => goTo(mode === "sign-in" ? "sign-up" : "sign-in")}
+              fullWidth
+            >
+              {mode === "sign-in" ? messages.auth.switchToSignUp : messages.auth.switchToSignIn}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </main>
   );

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Notice } from "@/components/notice";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { getMessages } from "@/messages";
 
@@ -138,9 +139,9 @@ export default function JoinCoursePage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
+    <main className="page-container flex flex-1 items-center justify-center py-8 sm:py-12">
       <div className="w-full max-w-sm text-center">
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight">{messages.join.heading}</h1>
+        <h1 className="mb-6 text-title font-semibold">{messages.join.heading}</h1>
 
         {state.kind === "loading" ? <LoadingState label={messages.join.loading} /> : null}
 
@@ -175,9 +176,13 @@ export default function JoinCoursePage() {
         ) : null}
 
         {state.kind === "ready" ? (
-          <Card as="section">
-            <p className="mb-6 text-lg font-medium">{state.title}</p>
-            {state.joinError ? <p className="mb-4 text-sm text-danger">{messages.join.joinErrorTitle}</p> : null}
+          <Card as="section" className="flex flex-col gap-5">
+            <p className="text-section font-semibold break-words">{state.title}</p>
+            {state.joinError ? (
+              <Notice tone="error" className="text-start">
+                {messages.join.joinErrorTitle}
+              </Notice>
+            ) : null}
             <Button onClick={handleJoin} disabled={joining} fullWidth>
               {joining ? messages.join.joining : messages.join.joinAction}
             </Button>
