@@ -21,25 +21,30 @@ import { createSupabaseServerClient } from "@/infrastructure/supabase/server-cli
 
 import { handleGetMyCourses } from "./handle-get-my-courses";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
-export async function GET(): Promise<Response> {
+export function GET(...args: Parameters<typeof getImpl>): Promise<Response> {
+  return withServerTiming(() => getImpl(...args));
+}
+
+async function getImpl(): Promise<Response> {
   try {
     const supabase = await createSupabaseServerClient();
 
     const { status, body } = await handleGetMyCourses({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: () => timeStage("auth", () => requireAuthenticatedUser(supabase)),
       listCourses: (actorUserId) => {
         // Reached ONLY for an already-authenticated request — see this
         // file's own module doc comment.
         const pool = getPool();
-        return listMyCourses(
+        return timeStage("uc", () => listMyCourses(
           { actorUserId },
           {
             memberships: new PostgresCourseMembershipRepository(pool),
             authors: new PostgresCourseAuthorRepository(pool),
             courses: new PostgresCourseRepository(pool),
           },
-        );
+        ));
       },
     });
 

@@ -33,8 +33,13 @@ import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/r
 
 import { handleSubmitPracticeAnswer } from "./handle-submit-practice-answer";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
-export async function POST(
+export function POST(...args: Parameters<typeof postImpl>): Promise<Response> {
+  return withServerTiming(() => postImpl(...args));
+}
+
+async function postImpl(
   request: Request,
   { params }: { params: Promise<{ courseId: string }> },
 ): Promise<Response> {
@@ -46,7 +51,7 @@ export async function POST(
 
     let authResult: RequireAuthenticatedUserResult;
     try {
-      authResult = await requireAuthenticatedUser(supabase);
+      authResult = await timeStage("auth", () => requireAuthenticatedUser(supabase));
     } catch (error) {
       logUnexpectedError("POST /api/courses/:courseId/practice/answer: error during authentication", error);
       return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
@@ -71,17 +76,17 @@ export async function POST(
         // Reached ONLY for an authenticated, well-formed request.
         const pool = getPool();
         const ports = createProductionPracticePorts(pool, new PgConnectionProvider(pool));
-        return submitPracticeAnswer(
+        return timeStage("uc", () => submitPracticeAnswer(
           command,
           createProductionPracticeSettings(),
           createProductionSubmitAnswerContext(now),
           ports,
-        );
+        ));
       },
       getFeedbackContent: (questionVersionId) => {
         const pool = getPool();
-        return new PostgresAnswerFeedbackContentRepository(pool).findByVersionId(
-          questionVersionId,
+        return timeStage("content", () =>
+          new PostgresAnswerFeedbackContentRepository(pool).findByVersionId(questionVersionId),
         );
       },
     });

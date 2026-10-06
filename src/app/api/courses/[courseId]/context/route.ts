@@ -21,8 +21,13 @@ import { createSupabaseServerClient } from "@/infrastructure/supabase/server-cli
 
 import { handleGetCourseContext } from "./handle-get-course-context";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
-export async function GET(
+export function GET(...args: Parameters<typeof getImpl>): Promise<Response> {
+  return withServerTiming(() => getImpl(...args));
+}
+
+async function getImpl(
   _request: Request,
   { params }: { params: Promise<{ courseId: string }> },
 ): Promise<Response> {
@@ -31,17 +36,17 @@ export async function GET(
     const supabase = await createSupabaseServerClient();
 
     const { status, body } = await handleGetCourseContext({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: () => timeStage("auth", () => requireAuthenticatedUser(supabase)),
       courseId,
       getContext: (command) => {
         // Reached ONLY for an already-authenticated request with a
         // well-formed courseId — see this file's own module doc comment.
         const pool = getPool();
-        return getCourseContextForLearner(command, {
+        return timeStage("uc", () => getCourseContextForLearner(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
           authors: new PostgresCourseAuthorRepository(pool),
           courses: new PostgresCourseRepository(pool),
-        });
+        }));
       },
     });
 

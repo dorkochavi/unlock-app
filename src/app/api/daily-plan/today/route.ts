@@ -70,15 +70,20 @@ import { createSupabaseServerClient } from "@/infrastructure/supabase/server-cli
 
 import { handleGetDailyPlanToday } from "./handle-get-daily-plan-today";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
-export async function GET(): Promise<Response> {
+export function GET(...args: Parameters<typeof getImpl>): Promise<Response> {
+  return withServerTiming(() => getImpl(...args));
+}
+
+async function getImpl(): Promise<Response> {
   const now = new Date();
 
   try {
     const supabase = await createSupabaseServerClient();
 
     const { status, body } = await handleGetDailyPlanToday({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: () => timeStage("auth", () => requireAuthenticatedUser(supabase)),
       now,
       generateDailyPlan: async (command) => {
         // Reached ONLY for an already-authenticated request — see this
@@ -87,7 +92,7 @@ export async function GET(): Promise<Response> {
         const connectionProvider = new PgConnectionProvider(pool);
         const ports = createProductionDailyPlanPorts(pool, connectionProvider);
         const settings = createProductionDailyPlanGenerationSettings();
-        return getOrCreateDailyPlanForToday(command, settings, ports);
+        return timeStage("uc", () => getOrCreateDailyPlanForToday(command, settings, ports));
       },
       loadLearnerQuestionContent: async (questionVersionIds) => {
         // Reached ONLY when handleGetDailyPlanToday has a READY plan with
@@ -95,7 +100,7 @@ export async function GET(): Promise<Response> {
         // request, same as generateDailyPlan above.
         const pool = getPool();
         const repository = new PostgresLearnerQuestionContentRepository(pool);
-        return repository.findManyByVersionIds(questionVersionIds);
+        return timeStage("content", () => repository.findManyByVersionIds(questionVersionIds));
       },
     });
 

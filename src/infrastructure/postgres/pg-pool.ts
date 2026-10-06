@@ -85,6 +85,7 @@ import {
   resolvePoolMax,
 } from "./pg-pool-config";
 import { resolvePoolConnectionSettings } from "./pg-ssl-config";
+import { instrumentPoolForTiming } from "./pool-timing";
 
 declare global {
   var __unlockPgPool: Pool | undefined;
@@ -120,6 +121,7 @@ export function getPool(): Pool {
     DATABASE_SSL_CA_FILE: process.env.DATABASE_SSL_CA_FILE,
   });
   pool = new Pool({ connectionString, ssl, max: resolvePoolMax(process.env.DATABASE_POOL_MAX) });
+  instrumentPoolForTiming(pool);
   if (isPoolStatsLoggingEnabled(process.env.DATABASE_POOL_LOG_STATS)) {
     attachPoolStatsLogging(pool);
   }

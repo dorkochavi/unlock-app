@@ -27,8 +27,13 @@ import { createSupabaseServerClient } from "@/infrastructure/supabase/server-cli
 
 import { handleGetPractice } from "./handle-get-practice";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
-export async function GET(
+export function GET(...args: Parameters<typeof getImpl>): Promise<Response> {
+  return withServerTiming(() => getImpl(...args));
+}
+
+async function getImpl(
   request: Request,
   { params }: { params: Promise<{ courseId: string }> },
 ): Promise<Response> {
@@ -40,7 +45,7 @@ export async function GET(
     const searchParams = new URL(request.url).searchParams;
 
     const { status, body } = await handleGetPractice({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: () => timeStage("auth", () => requireAuthenticatedUser(supabase)),
       courseId,
       topicIdParam: searchParams.get("topicId"),
       skipParams: searchParams.getAll("skip"),
@@ -49,7 +54,7 @@ export async function GET(
         // Reached ONLY for an authenticated, well-formed request.
         const pool = getPool();
         const ports = createProductionPracticePorts(pool, new PgConnectionProvider(pool));
-        return selectPracticeBatch(command, createProductionPracticeSettings(), ports);
+        return timeStage("uc", () => selectPracticeBatch(command, createProductionPracticeSettings(), ports));
       },
     });
 

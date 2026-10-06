@@ -34,8 +34,13 @@ import { createSupabaseServerClient } from "@/infrastructure/supabase/server-cli
 
 import { handleSkipDailyPlanItem } from "./handle-skip-daily-plan-item";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
-export async function POST(
+export function POST(...args: Parameters<typeof postImpl>): Promise<Response> {
+  return withServerTiming(() => postImpl(...args));
+}
+
+async function postImpl(
   _request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ): Promise<Response> {
@@ -46,17 +51,17 @@ export async function POST(
     const supabase = await createSupabaseServerClient();
 
     const { status, body } = await handleSkipDailyPlanItem({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: () => timeStage("auth", () => requireAuthenticatedUser(supabase)),
       itemId,
       now,
       skip: (command) => {
         // Reached ONLY for an already-authenticated request — see this
         // file's own module doc comment.
         const pool = getPool();
-        return skipDailyPlanItem(command, {
+        return timeStage("uc", () => skipDailyPlanItem(command, {
           dailyPlanItems: new PostgresDailyPlanRepository(pool),
           memberships: new PostgresCourseMembershipRepository(pool),
-        });
+        }));
       },
     });
 

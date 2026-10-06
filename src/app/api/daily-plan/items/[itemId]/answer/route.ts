@@ -43,8 +43,13 @@ import type { RequireAuthenticatedUserResult } from "@/infrastructure/supabase/r
 
 import { handleSubmitDailyPlanItemAnswer } from "./handle-submit-daily-plan-item-answer";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
-export async function POST(
+export function POST(...args: Parameters<typeof postImpl>): Promise<Response> {
+  return withServerTiming(() => postImpl(...args));
+}
+
+async function postImpl(
   request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ): Promise<Response> {
@@ -57,7 +62,7 @@ export async function POST(
     // Auth before body parsing (Run 008 S1.E).
     let authResult: RequireAuthenticatedUserResult;
     try {
-      authResult = await requireAuthenticatedUser(supabase);
+      authResult = await timeStage("auth", () => requireAuthenticatedUser(supabase));
     } catch (error) {
       logUnexpectedError("POST /api/daily-plan/items/:itemId/answer: unexpected error during authentication", error);
       return NextResponse.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 });
@@ -85,7 +90,7 @@ export async function POST(
         // see this file's own module doc comment.
         const pool = getPool();
         const connectionProvider = new PgConnectionProvider(pool);
-        return submitDailyPlanItemAnswer(
+        return timeStage("uc", () => submitDailyPlanItemAnswer(
           {
             ...command,
             // Not yet exposed by any UI feature in this slice — see this
@@ -102,14 +107,14 @@ export async function POST(
             context: createProductionSubmitAnswerContext(now),
             uow: new PostgresUnitOfWork(connectionProvider),
           },
-        );
+        ));
       },
       getFeedbackContent: (questionVersionId) => {
         // Reached only after `submit` above returned ACCEPTED — same lazy
         // pool-access discipline as `submit`'s own closure.
         const pool = getPool();
-        return new PostgresAnswerFeedbackContentRepository(pool).findByVersionId(
-          questionVersionId,
+        return timeStage("content", () =>
+          new PostgresAnswerFeedbackContentRepository(pool).findByVersionId(questionVersionId),
         );
       },
     });

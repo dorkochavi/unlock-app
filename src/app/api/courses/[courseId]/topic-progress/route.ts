@@ -28,10 +28,15 @@ import { PostgresLearnerTopicProgressRepository } from "@/infrastructure/postgre
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 import { logUnexpectedError } from "@/lib/ops-log";
+import { timeStage, withServerTiming } from "@/lib/server-timing";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-export async function GET(
+export function GET(...args: Parameters<typeof getImpl>): Promise<Response> {
+  return withServerTiming(() => getImpl(...args));
+}
+
+async function getImpl(
   _request: Request,
   { params }: { params: Promise<{ courseId: string }> },
 ): Promise<Response> {
@@ -40,15 +45,15 @@ export async function GET(
     const supabase = await createSupabaseServerClient();
 
     const { status, body } = await handleGetCourseTopicProgress({
-      authenticate: () => requireAuthenticatedUser(supabase),
+      authenticate: () => timeStage("auth", () => requireAuthenticatedUser(supabase)),
       courseId,
       getTopicProgress: (command) => {
         const pool = getPool();
-        return getCourseTopicProgress(command, {
+        return timeStage("uc", () => getCourseTopicProgress(command, {
           memberships: new PostgresCourseMembershipRepository(pool),
           courses: new PostgresCourseRepository(pool),
           topicProgress: new PostgresLearnerTopicProgressRepository(pool),
-        });
+        }));
       },
     });
 
