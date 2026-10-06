@@ -4,10 +4,9 @@
  * The shared learner `<main>` landmark, split out of `layout.tsx` only
  * because its max-width must react to Learn Mode (client state):
  * Learn Mode keeps the existing constrained reading width (UX_SPEC §5 item
- * 24 — unchanged), while Browse Mode widens modestly on desktop (UX_SPEC
- * §11 item 4 — "mobile-first does not mean mobile-stretched-to-desktop";
- * restrained on purpose, since instructor/authoring surfaces may
- * appropriately be wider than learner learning surfaces, not learner ones).
+ * 24 — unchanged), and Browse Mode now share the single `page-container`
+ * width/gutter token (also used by the nav and utility bar); only the top
+ * spacing differs, because the utility bar is hidden in Learn Mode.
  *
  * No-flash guarantee: this depends on `useLearnMode` always flipping the
  * shared context from a `useLayoutEffect` (never a passive effect) — React
@@ -24,8 +23,9 @@ export function LearnerMain({ children }: { children: ReactNode }) {
 
   return (
     <main
-      className={`mx-auto flex w-full flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10 ${
-        learnMode ? "max-w-2xl" : "max-w-2xl lg:max-w-3xl"
+      className={`page-container flex flex-1 flex-col pb-10 ${
+        // The utility bar above already supplies top spacing in Browse Mode.
+        learnMode ? "pt-6 sm:pt-10" : "pt-2 sm:pt-4"
       }`}
     >
       {children}

@@ -72,7 +72,7 @@ export function LearnerNav() {
       className="sticky bottom-0 z-10 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
       aria-label={messages.shell.navLabel}
     >
-      <div className="mx-auto flex max-w-2xl lg:max-w-3xl">
+      <div className="page-container flex">
         {LEARNER_NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (
@@ -80,14 +80,14 @@ export function LearnerNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-xs transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${
+              className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-meta transition-colors focus-visible:-outline-offset-2 ${
                 active ? "font-semibold text-primary" : "font-medium text-muted hover:text-foreground"
               }`}
             >
               {active ? (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary"
+                  className="absolute inset-x-6 -top-px h-0.5 rounded-full bg-primary"
                 />
               ) : null}
               <NavIcon labelKey={item.labelKey} />

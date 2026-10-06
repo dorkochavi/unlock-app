@@ -48,8 +48,8 @@ export function LearnerUtilityBar() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl justify-end px-4 pt-3 sm:max-w-3xl sm:px-6">
-      <Button variant="tertiary" className="text-sm" onClick={handleSignOut}>
+    <div className="page-container flex justify-end pt-1">
+      <Button variant="tertiary" className="-me-3 text-secondary" onClick={handleSignOut}>
         {messages.shell.signOut}
       </Button>
     </div>
