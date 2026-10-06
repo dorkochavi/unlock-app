@@ -1050,6 +1050,8 @@ Audited, intentionally NOT changed:
 Budgets: the table in the 2026-10-06 audit addendum above is **PROPOSED — HUMAN APPROVAL REQUIRED**; nothing here canonizes
 thresholds. Re-baseline from `Server-Timing` after the deploy sequence.
 
+**Production evidence (HUMAN-REPORTED, 2026-10-06):** region aligned (fra1) and Performance Run 001 deployed; single-user samples and WATCH note (Today repeat `auth` variability) are in `docs/RUNS/2026-10-06-PERFORMANCE-RUN-001.md` (Production Evidence Addendum). Post-region status above is superseded by it; no latency causality split is claimed; budgets still PROPOSED. Multi-user load re-baseline remains open.
+
 ---
 
 # FUB-029 — Publish Validates Persisted State (Save Draft Before Publish)
