@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/button";
@@ -9,7 +10,7 @@ import { ExitIcon, LearnHeader } from "@/components/learn-header";
 import { Notice } from "@/components/notice";
 import { PageHeader } from "@/components/page-header";
 import { ProgressBar } from "@/components/progress-bar";
-import { SkeletonRows } from "@/components/skeleton";
+import { Skeleton } from "@/components/skeleton";
 import { StateBlock } from "@/components/state-block";
 import { interpolate } from "@/lib/interpolate";
 import { buildSignInHref } from "@/lib/safe-redirect";
@@ -187,9 +188,7 @@ export default function TodayPage() {
       {learnMode ? null : <PageHeader title={messages.today.heading} />}
 
       {state.kind === "loading" || state.kind === "settingUpTimezone" ? (
-        <SkeletonRows
-          count={1}
-          rowClassName="h-56 w-full"
+        <TodayLoading
           label={
             state.kind === "settingUpTimezone"
               ? messages.today.settingUpTimezone
@@ -236,19 +235,144 @@ export default function TodayPage() {
   );
 }
 
+/** "YYYY-MM-DD" learner-local plan date -> "יום רביעי, 7 באוקטובר"; null when unparseable. */
+function formatPlanDate(plannedForDate: string | undefined): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(plannedForDate ?? "");
+  if (match === null) return null;
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("he-IL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function SmallCheckIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={3}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+/**
+ * Today's queue: the plan's own items in plan order with their selection
+ * reason and status (presentation only — uses only fields the DTO carries; no
+ * ranking, no new fetch). The first pending item is marked "next".
+ */
+function TodayQueue({ items }: { items: DailyPlanItemDto[] }) {
+  const messages = getMessages().today;
+  const ordered = [...items].sort((a, b) => a.position - b.position);
+  const nextId = ordered.find((item) => item.status === "pending")?.id ?? null;
+
+  return (
+    <section aria-labelledby="today-queue-heading" className="mt-6">
+      <h2 id="today-queue-heading" className="mb-3 text-section font-bold">
+        {messages.itemsHeading}
+      </h2>
+      <ol className="grid gap-3 sm:grid-cols-2">
+        {ordered.map((item, index) => {
+          const pending = item.status === "pending";
+          const reason =
+            messages.actionType[item.actionType as keyof typeof messages.actionType] ?? null;
+          const statusLabel =
+            messages.status[item.status as keyof typeof messages.status] ?? null;
+          const isNext = item.id === nextId;
+          return (
+            <li
+              key={item.id}
+              className={`flex items-start gap-3 rounded-card p-4 ${
+                isNext ? "surface-raised ring-2 ring-primary-soft-border" : "border border-border bg-surface"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`flex size-9 shrink-0 items-center justify-center rounded-xl text-secondary font-bold ${
+                  item.status === "completed"
+                    ? "bg-state-solid-soft text-state-solid"
+                    : pending
+                      ? "bg-primary-soft text-primary-soft-foreground"
+                      : "bg-surface-muted text-muted"
+                }`}
+              >
+                {item.status === "completed" ? <SmallCheckIcon /> : index + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {reason !== null ? <span className="chip">{reason}</span> : null}
+                  {isNext ? (
+                    <span className="chip bg-primary-soft text-primary-soft-foreground">
+                      {messages.queueNext}
+                    </span>
+                  ) : null}
+                  {!pending && statusLabel !== null ? (
+                    <span
+                      className={`chip ${
+                        item.status === "completed" ? "bg-state-solid-soft text-state-solid" : ""
+                      }`}
+                    >
+                      {statusLabel}
+                    </span>
+                  ) : null}
+                </div>
+                <p
+                  className={`mt-1.5 line-clamp-2 break-words text-secondary ${
+                    pending ? "text-foreground" : "text-muted"
+                  }`}
+                >
+                  {item.prompt}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+/** Loading skeleton shaped like the Today home (hero + queue), announced once. */
+function TodayLoading({ label }: { label: string }) {
+  return (
+    <div role="status">
+      <span className="sr-only">{label}</span>
+      <div aria-hidden="true">
+        <Skeleton className="h-64 w-full rounded-surface md:h-52" />
+        <Skeleton className="mb-3 mt-6 h-6 w-32" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[0, 1, 2, 3].map((index) => (
+            <Skeleton key={index} className="h-24 w-full rounded-card" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Today landing (Run UX-01 UX-1, docs/UX_SPEC.md §2 items 13–14): answers
- * "what should I do now?" with one primary CTA before the question flow.
- * Uses only the plan's own item counts.
+ * "where am I / what do I do / how far / what's next" with one hero surface and
+ * one primary CTA before the question flow. Uses only the plan's own data.
  */
 function TodayLanding({
-  total,
-  resolved,
+  plan,
+  items,
   focusOnMount,
   onStart,
 }: {
-  total: number;
-  resolved: number;
+  plan: DailyPlanDto;
+  items: DailyPlanItemDto[];
   focusOnMount: boolean;
   onStart: () => void;
 }) {
@@ -257,7 +381,10 @@ function TodayLanding({
   useEffect(() => {
     if (focusOnMount) startRef.current?.focus();
   }, [focusOnMount]);
+  const total = items.length;
+  const resolved = items.filter((item) => item.status !== "pending").length;
   const remaining = total - resolved;
+  const date = formatPlanDate(plan.plannedForDate);
   const title =
     resolved === 0
       ? messages.landingStartTitle
@@ -266,24 +393,51 @@ function TodayLanding({
         : interpolate(messages.landingContinueTitle, { remaining, total });
 
   return (
-    <Card raised className="flex flex-col gap-5 p-6">
-      <div>
-        <p className="text-title font-semibold">{title}</p>
-        <p className="mt-2 text-body text-muted">
-          {total === 1 ? messages.landingBodyOne : interpolate(messages.landingBody, { total })}
-        </p>
-      </div>
-      <Button ref={startRef} fullWidth onClick={onStart}>
-        {resolved === 0 ? messages.startAction : messages.continueLearning}
-      </Button>
-    </Card>
+    <>
+      <Card
+        variant="hero"
+        className="flex flex-col gap-6 p-6 sm:p-8 md:flex-row md:items-center md:justify-between md:gap-10"
+      >
+        <div className="min-w-0 flex-1">
+          {date !== null ? <p className="text-meta font-semibold text-hero-muted">{date}</p> : null}
+          <p className="mt-1 break-words text-[1.625rem] font-extrabold leading-tight sm:text-[1.875rem]">
+            {title}
+          </p>
+          <p className="mt-2 text-body text-hero-muted">
+            {total === 1 ? messages.landingBodyOne : interpolate(messages.landingBody, { total })}
+          </p>
+          <div className="mt-5">
+            <ProgressBar
+              fraction={total === 0 ? 0 : resolved / total}
+              segments={total}
+              size="lg"
+              tone="hero"
+              className="mb-2"
+            />
+            <p className="text-secondary font-semibold text-hero-muted">
+              {interpolate(messages.landingProgress, { resolved, total })}
+            </p>
+          </div>
+        </div>
+        <button
+          ref={startRef}
+          type="button"
+          onClick={onStart}
+          className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-white px-6 text-body font-bold text-hero shadow-[0_6px_16px_-8px_rgb(0_0_0/0.5)] transition duration-150 hover:bg-hero-muted active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:w-60 md:shrink-0"
+        >
+          {resolved === 0 ? messages.startAction : messages.continueLearning}
+        </button>
+      </Card>
+      <TodayQueue items={items} />
+    </>
   );
 }
 
 /**
  * Today Complete (docs/UX_SPEC.md §2 items 15–18): a success state, not an
  * empty state. The summary uses only the plan's own item statuses — no
- * correctness counts or other metrics the DTO does not carry.
+ * correctness counts or other metrics the DTO does not carry. Calm, no
+ * celebration effects.
  *
  * TEMPORARY BRIDGE (UX_SPEC §9): "המשך ללמוד" routes to `/courses` until
  * Course Practice exists (UX-3); it must be replaced then, not extended.
@@ -309,34 +463,56 @@ function TodayComplete({
         ? interpolate(messages.completionAnswered, { count: answered })
         : null,
     skipped > 0 ? interpolate(messages.completionSkipped, { count: skipped }) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  ].filter((part): part is string => Boolean(part));
 
   return (
-    <Card raised className="flex flex-col items-center gap-4 p-6 text-center">
-      <span
-        aria-hidden="true"
-        className="flex size-12 items-center justify-center rounded-full bg-state-solid-soft text-state-solid"
+    <>
+      <Card
+        variant="hero"
+        className="flex flex-col items-center gap-5 p-7 text-center sm:p-10"
       >
-        <ToneIcon tone="success" className="size-6" />
-      </span>
-      <div role="status">
-        <p ref={titleRef} tabIndex={-1} className="text-title font-semibold focus:outline-none">
-          {messages.completionTitle}
-        </p>
-        <p className="mt-2 text-body text-muted">{messages.completionBody}</p>
-      </div>
-      {summary ? <p className="text-secondary text-muted">{summary}</p> : null}
-      <div className="mt-2 flex w-full flex-col gap-2">
-        <ButtonLink href="/courses" fullWidth>
-          {messages.completionContinue}
-        </ButtonLink>
-        <ButtonLink href="/progress" variant="tertiary" fullWidth>
-          {messages.completionViewProgress}
-        </ButtonLink>
-      </div>
-    </Card>
+        <span
+          aria-hidden="true"
+          className="flex size-14 items-center justify-center rounded-full bg-hero-soft text-hero-foreground"
+        >
+          <ToneIcon tone="success" className="size-7" />
+        </span>
+        <div role="status">
+          <p
+            ref={titleRef}
+            tabIndex={-1}
+            className="text-[1.625rem] font-extrabold leading-tight focus:outline-none sm:text-[1.875rem]"
+          >
+            {messages.completionTitle}
+          </p>
+          <p className="mt-2 text-body text-hero-muted">{messages.completionBody}</p>
+        </div>
+        {summary.length > 0 ? (
+          <p className="flex flex-wrap justify-center gap-2">
+            {summary.map((part) => (
+              <span key={part} className="chip bg-hero-soft text-hero-foreground">
+                {part}
+              </span>
+            ))}
+          </p>
+        ) : null}
+        <div className="mt-1 flex w-full flex-col gap-2 sm:max-w-xs">
+          <Link
+            href="/courses"
+            className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-white px-6 text-body font-bold text-hero shadow-[0_6px_16px_-8px_rgb(0_0_0/0.5)] transition duration-150 hover:bg-hero-muted active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            {messages.completionContinue}
+          </Link>
+          <Link
+            href="/progress"
+            className="inline-flex min-h-control w-full items-center justify-center rounded-control px-5 font-semibold text-hero-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            {messages.completionViewProgress}
+          </Link>
+        </div>
+      </Card>
+      <TodayQueue items={items} />
+    </>
   );
 }
 
@@ -415,8 +591,8 @@ function TodayPlanView({
   if (!started) {
     return (
       <TodayLanding
-        total={total}
-        resolved={resolvedCount}
+        plan={plan}
+        items={items}
         focusOnMount={exited}
         onStart={() => setStarted(true)}
       />
@@ -539,7 +715,7 @@ function TodayPlanView({
           </Button>
         }
       />
-      <ProgressBar fraction={resolvedCount / total} />
+      <ProgressBar fraction={resolvedCount / total} segments={total} className="mb-6" />
 
       {alreadyResolvedNotice ? (
         <Notice tone="info" role="status" className="mb-4">

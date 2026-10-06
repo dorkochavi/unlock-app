@@ -27,8 +27,8 @@
  * (start / next question); after a submit, focus moves to "המשך" and the
  * feedback is announced from a persistent `role="status"` region.
  *
- * QA2-A: post-submit order is Question -> feedback/explanation -> annotated
- * answer options -> sticky Continue. Feedback always renders in normal
+ * DESIGN-REFRESH-002 E: post-submit order is Question -> annotated options -> feedback/explanation ->
+ * sticky Continue (options stay put). Feedback always renders in normal
  * document flow (never a floating/translucent overlay above the options) so
  * it cannot cover the answer choices; the Continue CTA is instead stabilized
  * independently via the sticky action bar below. Every state pairs color with
@@ -230,31 +230,27 @@ export function QuestionCard({
 
   return (
     <div>
-      {actionLabel !== null ? <p className="mb-2 text-secondary text-muted">{actionLabel}</p> : null}
+      {actionLabel !== null ? (
+        <p className="mb-3">
+          <span className="chip bg-primary-soft text-primary-soft-foreground">{actionLabel}</span>
+        </p>
+      ) : null}
       <h2
         ref={promptRef}
         tabIndex={-1}
-        className="mb-6 break-words text-section font-semibold leading-relaxed focus:outline-none sm:text-title"
+        className="mb-6 break-words text-[1.375rem] font-bold leading-[1.55] focus:outline-none sm:text-[1.5rem]"
       >
         {item.prompt}
       </h2>
 
-      {/* Desired structure after submit (docs/UX_SPEC.md §11-§12, Visual Contract):
-          Question -> feedback/explanation -> annotated answer options -> sticky Continue.
-          Feedback renders in normal document flow, ABOVE the options, never as a
-          floating/translucent overlay on top of them — the CTA is stabilized via the
-          sticky action bar below, independently of the learning content. Persistent
-          live region so the feedback is announced when it appears. */}
-      <div ref={feedbackRef} role="status" className={feedback !== null ? "mb-6" : undefined}>
-        {feedback !== null ? (
-          <FeedbackBlock isCorrect={feedback.isCorrect} explanation={feedback.explanation} />
-        ) : null}
-      </div>
-
       {isMultiple ? <p className="mb-3 text-secondary text-muted">{messages.multipleHint}</p> : null}
 
+      {/* Options stay in place pre/post answer (no layout jump): post-submit the
+          verdict + explanation render AFTER them, in normal flow (never an
+          overlay), and the sticky action bar below keeps Continue in a stable
+          place. */}
       <ul className="flex flex-col gap-3">
-        {shuffledOptions.map((option) => {
+        {shuffledOptions.map((option, index) => {
           const isSelected = selected.includes(option.id);
           const optionState = optionFeedbackState(option.id, isSelected, feedback);
           return (
@@ -266,6 +262,7 @@ export function QuestionCard({
                 locked={locked}
                 dimmed={feedback !== null && optionState === null}
                 state={optionState}
+                marker={OPTION_MARKERS[index]}
                 onToggle={() => toggleOption(option.id)}
               />
             </li>
@@ -273,10 +270,17 @@ export function QuestionCard({
         })}
       </ul>
 
+      {/* Persistent live region so the feedback is announced when it appears. */}
+      <div ref={feedbackRef} role="status" className={feedback !== null ? "mt-5" : undefined}>
+        {feedback !== null ? (
+          <FeedbackBlock isCorrect={feedback.isCorrect} explanation={feedback.explanation} />
+        ) : null}
+      </div>
+
       {feedback === null ? (
-        <div className="mt-4">
-          <p className="mb-2 text-secondary text-muted">{messages.confidenceLabel}</p>
-          <div className="flex flex-wrap gap-3">
+        <div role="group" aria-label={messages.confidenceLabel} className="mt-5">
+          <p className="mb-2 text-secondary font-medium text-muted">{messages.confidenceLabel}</p>
+          <div className="grid grid-cols-2 gap-1 rounded-control bg-surface-muted p-1">
             <ConfidenceChip
               label={messages.confidenceSure}
               selected={confidence === SURE_CONFIDENCE_LEVEL}
@@ -301,28 +305,25 @@ export function QuestionCard({
 
       {/* Mobile: the action bar sticks to the viewport bottom (the nav is hidden
           in Learn Mode), keeping the primary action in a stable place. */}
-      <div className="sticky bottom-0 -mx-4 mt-6 flex flex-col gap-2 border-t border-border bg-background/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <div className="sticky bottom-0 -mx-4 mt-6 flex items-center gap-3 border-t border-border bg-background/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         {feedback === null ? (
           <>
-            <Button fullWidth onClick={handleSubmit} disabled={selected.length === 0 || busy}>
+            <Button
+              size="lg"
+              className="min-w-0 flex-1"
+              onClick={handleSubmit}
+              disabled={selected.length === 0 || busy}
+            >
               {submitting ? messages.submitting : messages.submit}
             </Button>
             {/* RUN010-I: Skip is not an answer and must not compete with
-                Submit — a locally-sized, self-centered secondary target
-                (Button's own min-h-11/px-5 base already meets a WCAG-reasonable
-                touch-target size), deliberately NOT full-width so it never
-                reads as an alternative primary action. */}
-            <Button
-              variant="tertiary"
-              className="self-center"
-              onClick={handleSkipClick}
-              disabled={busy}
-            >
+                Submit — a quiet text button (44px target), never full-width. */}
+            <Button variant="tertiary" className="shrink-0" onClick={handleSkipClick} disabled={busy}>
               {skipping ? messages.skipping : messages.skip}
             </Button>
           </>
         ) : (
-          <Button ref={continueRef} fullWidth onClick={onContinue}>
+          <Button ref={continueRef} size="lg" fullWidth onClick={onContinue}>
             {messages.continueAction}
           </Button>
         )}
@@ -331,26 +332,26 @@ export function QuestionCard({
   );
 }
 
-/** Pre-submit (`state === null`) styling is unchanged from before Finding 3. */
+/** Hebrew letter markers shown in each option's tile (presentational only, by display position). */
+const OPTION_MARKERS = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח"];
+
 const OPTION_STATE_STYLES: Record<
   Exclude<OptionFeedbackState, null>,
   { border: string; indicator: string }
 > = {
   selectedCorrect: {
-    border: "border-state-solid bg-state-solid-soft",
-    indicator: "border-state-solid bg-state-solid text-primary-contrast",
+    border: "border-state-solid bg-state-solid-soft ring-2 ring-state-solid",
+    indicator: "bg-state-solid text-primary-contrast",
   },
   selectedIncorrect: {
-    border: "border-state-reinforce bg-state-reinforce-soft",
-    indicator: "border-state-reinforce bg-state-reinforce text-primary-contrast",
+    border: "border-state-reinforce bg-state-reinforce-soft ring-2 ring-state-reinforce",
+    indicator: "bg-state-reinforce text-primary-contrast",
   },
   missedCorrect: {
-    // RUN010-I: correctness is never color-only, and a missed-correct answer
-    // gets the same light positive-green treatment as selectedCorrect (a
-    // colored border alone was not a sufficiently explicit positive signal),
-    // plus a check icon below alongside its existing text label.
+    // RUN010-I: correctness is never color-only; a missed-correct answer gets
+    // the same positive treatment as selectedCorrect plus an icon + text label.
     border: "border-state-solid bg-state-solid-soft",
-    indicator: "border-state-solid text-state-solid",
+    indicator: "bg-state-solid text-primary-contrast",
   },
 };
 
@@ -358,7 +359,7 @@ function CheckIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="size-3.5"
+      className="size-4"
       fill="none"
       stroke="currentColor"
       strokeWidth={3}
@@ -374,7 +375,7 @@ function XIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="size-3"
+      className="size-3.5"
       fill="none"
       stroke="currentColor"
       strokeWidth={3}
@@ -393,6 +394,7 @@ export function QuestionOption({
   locked,
   dimmed,
   state,
+  marker,
   onToggle,
 }: {
   content: string;
@@ -402,11 +404,15 @@ export function QuestionOption({
   dimmed: boolean;
   /** UX-03-QA1 Finding 3: post-submit correctness state, or null pre-submit/not relevant. */
   state: OptionFeedbackState;
+  /** Optional decorative letter shown in the tile while the option is neither selected nor annotated. */
+  marker?: string;
   onToggle: () => void;
 }) {
   const messages = getMessages().today;
   const stateStyles = state !== null ? OPTION_STATE_STYLES[state] : null;
   const stateLabel = state !== null ? messages.optionState[state] : null;
+  const showCheck =
+    state === "selectedCorrect" || state === "missedCorrect" || (state === null && selected);
 
   return (
     <button
@@ -414,35 +420,36 @@ export function QuestionOption({
       onClick={onToggle}
       disabled={locked}
       aria-pressed={selected}
-      className={`flex min-h-12 w-full items-start gap-3 rounded-card border px-4 py-3 text-start text-body transition-colors enabled:active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default ${
+      className={`flex min-h-14 w-full items-center gap-3 rounded-control border-2 px-4 py-3 text-start text-body font-medium leading-snug transition duration-150 enabled:active:scale-[0.99] motion-reduce:enabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default ${
         stateStyles !== null
           ? stateStyles.border
           : selected
-            ? "border-primary bg-primary-soft ring-1 ring-primary"
-            : "border-border bg-surface enabled:hover:border-border-strong"
+            ? "border-primary bg-primary-soft ring-2 ring-primary"
+            : "border-border bg-surface shadow-raised enabled:hover:border-primary-soft-border enabled:hover:bg-primary-soft"
       } ${dimmed ? "state-disabled" : ""}`}
     >
       <span
         aria-hidden="true"
-        className={`mt-1 flex size-5 shrink-0 items-center justify-center border-2 ${
-          multiple ? "rounded-md" : "rounded-full"
+        className={`flex size-8 shrink-0 items-center justify-center text-secondary font-bold ${
+          multiple ? "rounded-lg" : "rounded-full"
         } ${
           stateStyles !== null
             ? stateStyles.indicator
             : selected
-              ? "border-primary bg-primary text-primary-contrast"
-              : "border-border-strong"
+              ? "bg-primary text-primary-contrast"
+              : "bg-surface-muted text-muted"
         }`}
       >
-        {state === "selectedCorrect" || state === "missedCorrect" || (state === null && selected) ? (
-          <CheckIcon />
-        ) : null}
-        {state === "selectedIncorrect" ? <XIcon /> : null}
+        {showCheck ? <CheckIcon /> : state === "selectedIncorrect" ? <XIcon /> : (marker ?? null)}
       </span>
-      <span className="min-w-0 break-words">
+      <span className="min-w-0 flex-1 break-words">
         {content}
         {stateLabel !== null ? (
-          <span className="ms-2 inline-block text-secondary font-medium text-muted">
+          <span
+            className={`mt-0.5 block text-secondary font-bold ${
+              state === "selectedIncorrect" ? "text-state-reinforce" : "text-state-solid"
+            }`}
+          >
             {stateLabel}
           </span>
         ) : null}
@@ -453,8 +460,9 @@ export function QuestionOption({
 
 /**
  * RUN010-G / OQ-014: pre-submit, optional confidence toggle. Presentational
- * only — a plain aria-pressed toggle button, not a radio group, since either
- * chip (or neither) is a valid, honest state (no forced choice).
+ * only — a plain aria-pressed toggle button (one segment of a two-segment
+ * control), not a radio group, since either segment (or neither) is a valid,
+ * honest state (no forced choice).
  */
 function ConfidenceChip({
   label,
@@ -473,10 +481,10 @@ function ConfidenceChip({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
-      className={`min-h-control rounded-full border px-5 text-secondary font-medium transition-colors disabled:cursor-default ${
+      className={`min-h-11 min-w-0 rounded-[0.75rem] px-3 text-secondary font-semibold transition duration-150 disabled:cursor-default ${
         selected
-          ? "border-primary bg-primary-soft text-primary ring-1 ring-primary"
-          : "state-disabled border-border bg-surface text-muted enabled:hover:border-border-strong"
+          ? "bg-surface text-primary-soft-foreground shadow-raised ring-2 ring-primary"
+          : "text-muted enabled:hover:text-foreground"
       }`}
     >
       {label}
@@ -497,23 +505,35 @@ function FeedbackBlock({
     <div className="flex flex-col gap-3">
       {isCorrect ? (
         <div className="flex items-center gap-3 rounded-card bg-state-solid-soft p-4 text-state-solid">
-          <ToneIcon tone="success" className="size-6 shrink-0" />
-          <p className="text-section font-semibold">{messages.correct}</p>
+          <span
+            aria-hidden="true"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-state-solid text-primary-contrast"
+          >
+            <ToneIcon tone="success" className="size-5" />
+          </span>
+          <p className="text-title font-extrabold">{messages.correct}</p>
         </div>
       ) : (
         /* Learning feedback, never an error: amber reinforce tokens + icon + text. */
         <div className="flex items-start gap-3 rounded-card bg-state-reinforce-soft p-4">
-          <ToneIcon tone="info" className="mt-1 size-6 shrink-0 text-state-reinforce" />
+          <span
+            aria-hidden="true"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-state-reinforce text-primary-contrast"
+          >
+            <ToneIcon tone="info" className="size-5" />
+          </span>
           <div className="min-w-0">
-            <p className="text-section font-semibold text-state-reinforce">{messages.incorrect}</p>
-            <p className="mt-1 text-body text-muted">{messages.incorrectBody}</p>
+            <p className="text-title font-extrabold text-state-reinforce">{messages.incorrect}</p>
+            <p className="mt-1 text-secondary text-foreground">{messages.incorrectBody}</p>
           </div>
         </div>
       )}
       {explanation !== null ? (
-        <div className="rounded-card border border-border bg-surface p-4">
-          <p className="mb-2 text-secondary font-semibold text-muted">{messages.explanationHeading}</p>
-          <p className="text-body text-foreground">{explanation}</p>
+        <div className="rounded-card border border-primary-soft-border bg-primary-soft p-4">
+          <p className="mb-1.5 text-secondary font-bold text-primary-soft-foreground">
+            {messages.explanationHeading}
+          </p>
+          <p className="text-body leading-relaxed text-foreground">{explanation}</p>
         </div>
       ) : null}
     </div>

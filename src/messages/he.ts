@@ -409,6 +409,8 @@ export const he = {
     startAction: "התחל ללמוד",
     continueLearning: "המשך ללמוד",
     itemsHeading: "פריטים להיום",
+    landingProgress: "{resolved} מתוך {total} הושלמו",
+    queueNext: "הבא בתור",
     statusLabel: "סטטוס",
     actionType: {
       REVIEW_DUE: "חזרה מתוזמנת",

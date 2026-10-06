@@ -1,8 +1,9 @@
 /**
- * Learn Mode context bar shared by Today and Practice: start-side text block
- * (optional eyebrow, title, optional position line) and an end-side exit
- * action supplied by the caller (a `Button` or `ButtonLink`; use `tertiary`
- * with `className="-me-3 shrink-0"` and `<ExitIcon />` as today).
+ * Learn Mode context bar shared by Today and Practice: a slim top bar with the
+ * start-side text block (optional eyebrow, title, and a prominent position
+ * line such as "שאלה 1 מתוך 2") and an end-side exit action supplied by the
+ * caller (a `Button` or `ButtonLink`; use `tertiary` with
+ * `className="-me-3 shrink-0"` and `<ExitIcon />`).
  */
 import type { ReactNode } from "react";
 
@@ -34,11 +35,17 @@ export function LearnHeader({
   action: ReactNode;
 }) {
   return (
-    <div className="mb-2 flex items-start justify-between gap-3">
+    <div className="mb-3 flex items-center justify-between gap-3">
       <div className="min-w-0">
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-        <p className="break-words text-section font-bold">{title}</p>
-        {position ? <p className="text-secondary font-medium text-muted">{position}</p> : null}
+        <p
+          className={`break-words ${
+            position ? "text-secondary font-medium text-muted" : "text-section font-extrabold leading-tight"
+          }`}
+        >
+          {title}
+        </p>
+        {position ? <p className="text-section font-extrabold leading-tight">{position}</p> : null}
       </div>
       {action}
     </div>

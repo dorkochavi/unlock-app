@@ -5,8 +5,8 @@
  * from the actual output markup, the acceptance criteria that matter for
  * this Slice:
  *
- * - post-submit structural order: feedback/explanation appears BEFORE the
- *   answer options in document order, in normal flow (never a
+ * - post-submit structural order: feedback/explanation appears AFTER the
+ *   answer options in document order (options stay in place), in normal flow (never a
  *   floating/translucent overlay on top of them);
  * - the sticky Continue action is present and is the only action once
  *   feedback exists (no competing primary action);
@@ -238,7 +238,7 @@ describe("QuestionCard confidence toggle (RUN010-G / OQ-014)", () => {
 });
 
 describe("QuestionCard post-submit structure (QA2-A)", () => {
-  it("correct submission: feedback in normal flow BEFORE options, sticky Continue only", () => {
+  it("correct submission: feedback in normal flow AFTER options, sticky Continue only", () => {
     const feedback: AnswerFeedback = {
       itemId: "item-1",
       isCorrect: true,
@@ -251,10 +251,10 @@ describe("QuestionCard post-submit structure (QA2-A)", () => {
     const optionsIndex = html.indexOf("<ul");
     expect(feedbackIndex).toBeGreaterThan(-1);
     expect(optionsIndex).toBeGreaterThan(-1);
-    expect(feedbackIndex).toBeLessThan(optionsIndex);
+    expect(feedbackIndex).toBeGreaterThan(optionsIndex);
 
     // Feedback is in normal document flow, not a fixed/absolute overlay.
-    const statusRegionMarkup = html.slice(feedbackIndex - 50, optionsIndex);
+    const statusRegionMarkup = html.slice(feedbackIndex - 50);
     expect(statusRegionMarkup).not.toMatch(/class="[^"]*\babsolute\b/);
     expect(statusRegionMarkup).not.toMatch(/class="[^"]*\bfixed\b/);
     expect(html).toContain("2 + 2 equals 4 by definition of addition.");
@@ -265,7 +265,7 @@ describe("QuestionCard post-submit structure (QA2-A)", () => {
     expect(html).not.toContain("דלג");
   });
 
-  it("incorrect submission (with a missed-correct option): feedback before options, calm tone", () => {
+  it("incorrect submission (with a missed-correct option): feedback after options, calm tone", () => {
     const feedback: AnswerFeedback = {
       itemId: "item-1",
       isCorrect: false,
@@ -276,7 +276,7 @@ describe("QuestionCard post-submit structure (QA2-A)", () => {
 
     const feedbackIndex = html.indexOf('role="status"');
     const optionsIndex = html.indexOf("<ul");
-    expect(feedbackIndex).toBeLessThan(optionsIndex);
+    expect(feedbackIndex).toBeGreaterThan(optionsIndex);
 
     // Missed-correct option (opt-4, not selected by this render) is marked explicitly.
     expect(html).toContain("התשובה הנכונה");
@@ -304,7 +304,7 @@ describe("QuestionCard incorrect feedback block", () => {
       correctOptionIds: ["opt-4"],
       explanation: null,
     });
-    const status = html.slice(html.indexOf('role="status"'), html.indexOf("<ul"));
+    const status = html.slice(html.indexOf('role="status"'));
     expect(status).toContain("<svg");
     expect(status).toContain(getMessages().today.incorrect);
     expect(status).toContain("state-reinforce");
