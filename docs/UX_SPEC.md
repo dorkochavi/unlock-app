@@ -86,7 +86,8 @@ Deferred or temporary items are collected in [§9](#9-temporary-bridges-and-defe
 42. Progress indicators are subtle; avoid large gamified meters unless later evidence justifies them.
 43. Foundation tokens (owner: `src/app/globals.css`; additive; color tokens have light + dark values; muted/subtle text >= 4.5:1 on background/surface/surface-muted):
     - Radius: `rounded-control` (inputs/buttons), `rounded-card` (cards/rows), `rounded-surface` (large panels); chips stay `rounded-full`.
-    - Elevation: one subtle `shadow-raised`; separation is otherwise by border.
+    - Surfaces (DESIGN-REFRESH-OVERNIGHT-002, direction "Soft Premium Canvas"): tinted canvas (`--background`), raised white surfaces (`surface-raised`: hairline + soft shadow), ONE deep-indigo hero surface (`surface-hero`) per screen carrying the primary action, tonal state panels; shadows `shadow-raised` / `shadow-hero` / `shadow-float`. Radii: field 14 / control 16 / card 20 / surface 24px.
+    - Typeface: Heebo variable (`next/font/google`, hebrew + latin subsets, ~42KB) with the previous Segoe/Arial stack as fallback; headings 700-800, zero letter-spacing.
     - Controls: `min-h-control` (44px tap target), `min-h-control-compact`, `h-control`.
     - Type roles: `text-page`, `text-title`, `text-section`, `text-body` (16px), `text-secondary` (15px), `text-meta` (13px), each with Hebrew-friendly line height; body default line-height 1.6.
     - Focus: one global `:focus-visible` ring (`--ring` = primary) in `@layer base`.

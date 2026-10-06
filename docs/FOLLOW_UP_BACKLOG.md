@@ -1471,7 +1471,7 @@ After real Pilot usage begins, or when product/UX questions require behavioral e
 
 # FUB-052 — Pre-Pilot Modern Visual Experience / Design System Refresh
 
-**Status:** `PARTIAL` — foundation + learner rollout DONE locally (VISUAL-SYSTEM-RUN-001, unpushed); pending Dor's human visual walkthrough. Remaining: instructor surfaces, dark-mode decision, font decision, sign-out placement.
+**Status:** `PARTIAL` — foundation + learner rollout (VISUAL-SYSTEM-RUN-001) and the visible art-direction refresh incl. Heebo, shell/nav, anchored sign-out and Instructor course-management surfaces (DESIGN-REFRESH-OVERNIGHT-002) DONE locally, unpushed; pending Dor's human visual walkthrough. Remaining: Dor's decisions (font keep, learner chip copy, desktop layout, dark toggle), instructor question-editor page, illustration language.
 **Priority:** `MEDIUM`
 **Area:** UX / visual system (cross-cutting; narrower leftovers stay in FUB-033)
 
@@ -1488,6 +1488,10 @@ presentational refresh. Visual-only; no dependency, no new client component, no 
 - Typeface: keep Segoe-first system stack vs one Hebrew-first webfont via `next/font` (brand + perf tradeoff).
 - Dark mode: keep auto `prefers-color-scheme` vs user toggle; verify dark contrast.
 - Instructor surfaces (instructor IA redesign is a human gate).
+
+## Done (2026-10-07, `docs/RUNS/2026-10-07-DESIGN-REFRESH-OVERNIGHT-002.md`)
+
+Market research -> direction "Soft Premium Canvas": tinted canvas, indigo hero surface, raised cards, chips, Heebo (reversible in `layout.tsx` + `--font-sans`), floating bottom nav, Today hero home, tactile question options + tonal feedback, Practice end-of-batch hero, Progress overview, Login/Join, Instructor course management. Dark mode still follows OS (no toggle).
 
 ## Deferred Polish (not promoted)
 

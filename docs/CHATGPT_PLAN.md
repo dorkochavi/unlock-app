@@ -3,9 +3,9 @@
 PLAN_VERSION: 021
 RUN_ID: 2026-10-07-DESIGN-REFRESH-OVERNIGHT-002
 START_HEAD: `71801eb`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `71801eb`
-STATUS: **IN PROGRESS** — local Run. No push, no deploy, no hosted mutation.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `34c74f0`
+STATUS: **COMPLETE** — local Run. No push, no deploy, no hosted mutation. Human visual walkthrough required before any push (Run report).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -20,17 +20,18 @@ Invariants: visual-only. No change to learning/Attempt/scheduler/frozen-Today/Pr
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Preview harness (fixture-rendered, uncommitted) + baseline screenshots | AUTO | PENDING |
-| B | Market research + reference snapshots + synthesis | AUTO | PENDING |
-| C | Three directions + autonomous choice; foundation (tokens/type/surfaces/primitives) | REVIEW_GATE | PENDING |
-| D | Courses + shell/bottom nav | REVIEW_GATE | PENDING |
-| E | Today home + question experience | REVIEW_GATE | PENDING |
-| F | Practice + Progress | REVIEW_GATE | PENDING |
-| G | Login/Join + Instructor course page | REVIEW_GATE | PENDING |
-| H | States, dark mode pass, self-review pass, full verification, Run close | FINAL_GATE | PENDING |
+| A | Preview harness (fixture-rendered, uncommitted) + baseline screenshots | AUTO | DONE |
+| B | Market research + reference snapshots + synthesis | AUTO | DONE |
+| C | Three directions + autonomous choice; foundation (tokens/type/surfaces/primitives) | REVIEW_GATE | DONE |
+| D | Courses + shell/bottom nav | REVIEW_GATE | DONE |
+| E | Today home + question experience | REVIEW_GATE | DONE |
+| F | Practice + Progress | REVIEW_GATE | DONE |
+| G | Login/Join + Instructor course page | REVIEW_GATE | DONE |
+| H | States, dark mode pass, self-review pass, full verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
+- DESIGN-REFRESH-OVERNIGHT-002: `docs/RUNS/2026-10-07-DESIGN-REFRESH-OVERNIGHT-002.md`
 - VISUAL-SYSTEM-RUN-001: `docs/RUNS/2026-10-06-VISUAL-SYSTEM-RUN-001.md`
 - PERFORMANCE-RUN-001: `docs/RUNS/2026-10-06-PERFORMANCE-RUN-001.md`
 - PILOT-FRICTION-PERF-OVERNIGHT-001: `docs/RUNS/2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001.md`
