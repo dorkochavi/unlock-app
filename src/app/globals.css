@@ -16,7 +16,7 @@
   --border: #e4e4e7;
   --border-strong: #d4d4d8;
   --muted: #52525b;
-  --subtle: #71717a;
+  --subtle: #686872; /* >=5.0:1 on surface-muted (was 4.4:1) */
 
   --primary: #4338ca;
   --primary-hover: #3730a3;
@@ -35,6 +35,9 @@
 
   --danger: #b91c1c;
   --danger-soft: #fef2f2;
+
+  --ring: var(--primary);
+  --elevation-raised: 0 1px 2px 0 rgb(24 24 27 / 0.06), 0 1px 3px 0 rgb(24 24 27 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -65,6 +68,8 @@
 
     --danger: #fca5a5;
     --danger-soft: #3b0d0d;
+
+    --elevation-raised: 0 1px 2px 0 rgb(0 0 0 / 0.4);
   }
 }
 
@@ -93,13 +98,99 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --font-sans: "Segoe UI", "Arial Hebrew", "Noto Sans Hebrew", Arial, sans-serif;
+  --shadow-raised: var(--elevation-raised);
   --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+}
+
+/*
+ * Non-color tokens (docs/UX_SPEC.md §6). Plain `@theme` so Tailwind emits the
+ * utilities: rounded-control/card/surface, text-page/title/section/body/
+ * secondary/meta.
+ */
+@theme {
+  --radius-control: 0.625rem;
+  --radius-card: 0.875rem;
+  --radius-surface: 1.25rem;
+
+  --text-page: 1.75rem;
+  --text-page--line-height: 1.3;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.4;
+  --text-section: 1.125rem;
+  --text-section--line-height: 1.45;
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-secondary: 0.9375rem;
+  --text-secondary--line-height: 1.55;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.5;
+}
+
+:root {
+  --control-height: 2.75rem; /* 44px minimum tap target */
+  --control-height-compact: 2.25rem;
+  --container-max: 42rem;
+  --container-max-lg: 48rem;
+  --gutter: 1rem;
+  --gutter-sm: 1.5rem;
+}
+
+/* min-h-control / min-h-control-compact; h-control for fixed-height controls. */
+@utility min-h-control {
+  min-height: var(--control-height);
+}
+@utility min-h-control-compact {
+  min-height: var(--control-height-compact);
+}
+@utility h-control {
+  height: var(--control-height);
+}
+
+/*
+ * Shared page container: max width + horizontal gutter, RTL-safe (logical
+ * padding). Shell/nav/utility bar should all use this one utility.
+ */
+@utility page-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--container-max);
+  padding-inline: var(--gutter);
+  @media (width >= 40rem) {
+    padding-inline: var(--gutter-sm);
+  }
+  @media (width >= 64rem) {
+    max-width: var(--container-max-lg);
+  }
+}
+
+/*
+ * Disabled treatment: legible (muted text on a muted surface), not bare
+ * opacity. Applies to native :disabled and aria-disabled="true".
+ */
+@utility state-disabled {
+  &:disabled,
+  &[aria-disabled="true"] {
+    background-color: var(--surface-muted);
+    border-color: var(--border);
+    color: var(--subtle);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+}
+
+/* One global keyboard focus ring. In @layer base so component utilities can still override. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  line-height: 1.6;
 }
 
 /*

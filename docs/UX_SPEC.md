@@ -84,6 +84,14 @@ Deferred or temporary items are collected in [§9](#9-temporary-bridges-and-defe
 40. Question typography is visually stronger than surrounding UI metadata.
 41. Icons are functional, not decorative; avoid icon clutter.
 42. Progress indicators are subtle; avoid large gamified meters unless later evidence justifies them.
+43. Foundation tokens (owner: `src/app/globals.css`; additive; color tokens have light + dark values; muted/subtle text >= 4.5:1 on background/surface/surface-muted):
+    - Radius: `rounded-control` (inputs/buttons), `rounded-card` (cards/rows), `rounded-surface` (large panels); chips stay `rounded-full`.
+    - Elevation: one subtle `shadow-raised`; separation is otherwise by border.
+    - Controls: `min-h-control` (44px tap target), `min-h-control-compact`, `h-control`.
+    - Type roles: `text-page`, `text-title`, `text-section`, `text-body` (16px), `text-secondary` (15px), `text-meta` (13px), each with Hebrew-friendly line height; body default line-height 1.6.
+    - Focus: one global `:focus-visible` ring (`--ring` = primary) in `@layer base`.
+    - Disabled: `state-disabled` utility (muted surface + `subtle` text, not bare opacity).
+    - Layout: `page-container` (max width + logical gutter; `--container-max`, `--gutter`).
 
 ## 7. Component / Implementation Principles
 
