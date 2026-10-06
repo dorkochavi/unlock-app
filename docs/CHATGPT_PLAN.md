@@ -1,32 +1,34 @@
-# UNLOCK — PILOT-FRICTION-PERF-OVERNIGHT-001 — Pilot product friction + performance baseline
+# UNLOCK — PERFORMANCE-RUN-001 — Instrument → reduce round trips → remove blocking UX
 
-PLAN_VERSION: 018
-RUN_ID: 2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001
-START_HEAD: `c584a07`
-RUN_STATUS: COMPLETE
+PLAN_VERSION: 019
+RUN_ID: 2026-10-06-PERFORMANCE-RUN-001
+START_HEAD: `e261f65`
+RUN_STATUS: IN_PROGRESS
 LAST_VERIFIED_HEAD: `4a983ec`
-STATUS: **COMPLETE** — unattended local overnight Run. No push. Human actions remain (Run report).
+STATUS: **IN_PROGRESS** — long autonomous LOCAL Run. No push, no deploy, no hosted mutation.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Reduce Author→Learner self-enrollment friction, make active Topic names unambiguous per Course, establish an evidence-based performance baseline + budget proposals, record the Pre-Pilot visual follow-up, and triage ≤3 backlog items — without crossing human/hosted/product boundaries.
+UNLOCK should feel instant: reduce "time until the user can continue". Measure/prove structural waste → smallest correct change → verify → re-measure. Learning evidence integrity (Attempt immutability, idempotency, frozen Today, scheduler/evidence rules, authorization) is never traded for speed.
 
 ## 2. Authority / References
-`CLAUDE.md`, `.claude/rules/*.md`.
+`CLAUDE.md`, `.claude/rules/*.md`. Owner of performance backlog: FUB-026 (do not duplicate; FUB-052 visual redesign OUT OF SCOPE; FUB-053 WATCH; OQ-049 closed).
+Human-reported context: Vercel Function Region was changed (iad1 → Frankfurt-aligned) 2026-10-06; NOT deployed; post-region latency NOT measured.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Author → Learner self-enrollment UX (reuse existing join path) | REVIEW_GATE | DONE (`1f534c7`) |
-| B | Duplicate active Topic name safety (app guard; no migration) | REVIEW_GATE | DONE (`21d1f8e`) |
-| C | Performance baseline + instant-UX audit (static; nothing implemented) | AUTO | DONE (docs in FUB-026) |
-| D | Pre-Pilot visual follow-up (FUB-052) | AUTO | DONE (`4a983ec`) |
-| E | Backlog/OQ triage | AUTO | DONE (`4a983ec`) |
-| F | Run close | FINAL_GATE | DONE |
+| A | Lightweight timing/instrumentation foundation (no vendor) | REVIEW_GATE | PENDING |
+| B | Today repeat-open round-trip reduction | REVIEW_GATE | PENDING |
+| C | Answer-path (Today + Practice) round-trip audit; one safe reduction or proposal | REVIEW_GATE | PENDING |
+| D | Progress N+1 / waterfall | REVIEW_GATE | PENDING |
+| E | Practice continuity / next-batch UX | REVIEW_GATE | PENDING |
+| F | Proven-redundant client refreshes | AUTO | PENDING |
+| G | Proposed budgets + Run close | FINAL_GATE | PENDING |
 
 ## 4. Current Status
-Run COMPLETE. Report: `docs/RUNS/2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001.md`. Pushing is a human action.
+Run started. Pushing/deploying are human actions.
 
 ## History
 
@@ -34,16 +36,4 @@ Reports are the archive:
 
 - PILOT-FRICTION-PERF-OVERNIGHT-001: `docs/RUNS/2026-10-06-PILOT-FRICTION-PERF-OVERNIGHT-001.md`
 - PILOT-CLOSURE-OVERNIGHT-001: `docs/RUNS/2026-10-05-PILOT-CLOSURE-OVERNIGHT-001.md`
-- PILOT-MINIMUM-EVIDENCE-PREP-001: `docs/RUNS/2026-10-04-PILOT-MINIMUM-EVIDENCE-PREP-001.md`
-- BACKUP-DR-V1-IMPLEMENTATION-001: `docs/RUNS/2026-10-04-BACKUP-DR-V1-IMPLEMENTATION-001.md` (+ slice evidence B, F in the same folder)
-- AUTH-RESTORE-HARDENING-001: `docs/RUNS/2026-10-04-AUTH-RESTORE-HARDENING-001.md` (+ slice evidence B, D in the same folder)
-- PILOT-HARDENING-EVIDENCE-001: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001.md`
-- PILOT-HARDENING-EVIDENCE-001: `docs/RUNS/2026-10-04-PILOT-HARDENING-EVIDENCE-001.md` (+ slice evidence B-E in the same folder)
-- QA-CLEANUP-001: `docs/RUNS/2026-10-03-QA-CLEANUP-001.md`
-- POST-RUN010-PRODUCT-FIX-001 (incl. "Release close", v0.2.0): `docs/RUNS/2026-10-03-POST-RUN010-PRODUCT-FIX-001.md`
-- GOVERNANCE-RECONCILE-001: `docs/RUNS/2026-09-29-GOVERNANCE-RECONCILE-001.md`
-- DEVOS-V1.3 Consolidation: `docs/RUNS/2026-09-29-DEVOS-V1.3-CONSOLIDATION.md`
-- Run010 Learning Intelligence: `docs/RUNS/2026-09-28-RUN-010-LEARNING-INTELLIGENCE.md`
-- DevOS Micro-Optimization: `docs/RUNS/2026-09-28-DEVOS-MICRO-OPT-001.md`
-- UX-03-QA2: `docs/RUNS/2026-09-28-UX-03-QA2.md`; UX-03-QA1: `docs/RUNS/2026-09-27-UX-03-QA1.md`; UX-03: `docs/RUNS/2026-09-27-UX-03.md`; UX-02: `docs/RUNS/2026-09-27-UX-02.md`
-- Slice B Pilot Readiness Verification: `docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`
+- (earlier Runs: see `docs/RUNS/**`)
