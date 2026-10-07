@@ -603,7 +603,7 @@ export default function InstructorCourseManagePage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:max-w-4xl">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:max-w-5xl xl:max-w-6xl">
       {state.kind === "loading" ? <LoadingState label={messages.instructor.manage.loading} /> : null}
 
       {state.kind === "signed-out" ? (
@@ -647,7 +647,7 @@ export default function InstructorCourseManagePage() {
 
       {state.kind === "ready" ? (
         <div className="flex flex-col gap-6">
-          <Card variant="tint" as="section" className="flex flex-col gap-5 p-6 sm:p-8">
+          <Card variant="tint" as="section" className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
             <div className="flex flex-col items-start gap-3">
               <span className="chip">
                 {messages.instructor.manage.statusLabel[state.course.status]}
@@ -657,10 +657,15 @@ export default function InstructorCourseManagePage() {
             <OwnCourseActions courseId={courseId} />
           </Card>
 
-          <div id="course-management" className="grid grid-cols-1 gap-6 scroll-mt-4 lg:grid-cols-2 lg:items-start">
+          <div
+            id="course-management"
+            className="grid grid-cols-1 gap-6 scroll-mt-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_20rem]"
+          >
+            <div className="flex min-w-0 flex-col gap-6">
             <Card as="section">
               <h2 className="mb-4 text-section">{messages.instructor.manage.detailsHeading}</h2>
               <form onSubmit={handleSaveDetails} className="flex flex-col gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <Label>{messages.instructor.manage.titleLabel}</Label>
                   <Input
@@ -692,6 +697,7 @@ export default function InstructorCourseManagePage() {
                     ) : null}
                   </div>
                 </label>
+                </div>
 
                 {detailsError ? <Notice tone="error">{detailsError}</Notice> : null}
                 {!detailsError && detailsSavedAt !== null ? (
@@ -711,30 +717,7 @@ export default function InstructorCourseManagePage() {
               </form>
             </Card>
 
-            <Card as="section">
-              <label className="block">
-                <Label>{messages.instructor.manage.joinPolicyLabel}</Label>
-                <Select
-                  value={state.course.joinPolicy}
-                  disabled={savingJoinPolicy || state.course.status === "ARCHIVED"}
-                  onChange={(event) => handleJoinPolicyChange(event.target.value as CourseJoinPolicy)}
-                >
-                  <option value="AUTHORIZED_ONLY">
-                    {messages.instructor.manage.joinPolicyOption.AUTHORIZED_ONLY}
-                  </option>
-                  <option value="OPEN">{messages.instructor.manage.joinPolicyOption.OPEN}</option>
-                </Select>
-              </label>
-              {joinPolicyError ? (
-                <Notice tone="error" className="mt-3">
-                  {joinPolicyError}
-                </Notice>
-              ) : null}
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:items-start">
-          <Card as="section" className="lg:col-span-2">
+          <Card as="section">
             <h2 className="mb-4 text-section">{messages.instructor.manage.topics.heading}</h2>
 
             {topicsState.kind === "loading" ? (
@@ -755,7 +738,7 @@ export default function InstructorCourseManagePage() {
                 {topicsState.topics.length === 0 ? (
                   <p className="mb-3 text-secondary text-muted">{messages.instructor.manage.topics.emptyTitle}</p>
                 ) : (
-                  <ul className="mb-4 flex flex-col gap-2">
+                  <ul className="mb-4 grid grid-cols-1 gap-2 xl:grid-cols-2">
                     {topicsState.topics.map((topic) => (
                       <li
                         key={topic.id}
@@ -840,7 +823,7 @@ export default function InstructorCourseManagePage() {
             ) : null}
           </Card>
 
-          <Card as="section" className="lg:col-span-3">
+          <Card as="section">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
               <h2 className="text-section">{messages.instructor.manage.questions.heading}</h2>
               <div className="flex flex-wrap items-center gap-x-1">
@@ -960,11 +943,11 @@ export default function InstructorCourseManagePage() {
               </>
             ) : null}
           </Card>
-          </div>
+            </div>
 
+            <div className="flex min-w-0 flex-col gap-6 lg:[@media(min-height:760px)]:sticky lg:[@media(min-height:760px)]:top-4">
           {transitionError ? <Notice tone="error">{transitionError}</Notice> : null}
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
           {state.course.status === "DRAFT" ||
           (state.course.status !== "ARCHIVED" && questionsState.kind === "ready" && questionsState.questions.length > 0) ? (
             <Card as="section">
@@ -1023,7 +1006,27 @@ export default function InstructorCourseManagePage() {
               </div>
             </Card>
           ) : null}
-          </div>
+
+            <Card as="section">
+              <label className="block">
+                <Label>{messages.instructor.manage.joinPolicyLabel}</Label>
+                <Select
+                  value={state.course.joinPolicy}
+                  disabled={savingJoinPolicy || state.course.status === "ARCHIVED"}
+                  onChange={(event) => handleJoinPolicyChange(event.target.value as CourseJoinPolicy)}
+                >
+                  <option value="AUTHORIZED_ONLY">
+                    {messages.instructor.manage.joinPolicyOption.AUTHORIZED_ONLY}
+                  </option>
+                  <option value="OPEN">{messages.instructor.manage.joinPolicyOption.OPEN}</option>
+                </Select>
+              </label>
+              {joinPolicyError ? (
+                <Notice tone="error" className="mt-3">
+                  {joinPolicyError}
+                </Notice>
+              ) : null}
+            </Card>
 
           {/* Danger zone: de-emphasised, quiet danger-tonal action; confirmation (window.confirm) unchanged. */}
           <section
@@ -1046,6 +1049,8 @@ export default function InstructorCourseManagePage() {
               </Button>
             )}
           </section>
+            </div>
+          </div>
         </div>
       ) : null}
     </main>

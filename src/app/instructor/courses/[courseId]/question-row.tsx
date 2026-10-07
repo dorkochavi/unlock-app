@@ -74,11 +74,11 @@ export function QuestionRow({
           />
         </label>
       ) : null}
-      <div className="min-w-0 flex-1 py-1.5">
-        <p className="line-clamp-2 break-words text-body font-medium" title={displayPrompt}>
+      <div className="min-w-0 flex-1 py-1.5 xl:flex xl:items-center xl:gap-6">
+        <p className="line-clamp-2 break-words text-body font-medium xl:min-w-0 xl:flex-1" title={displayPrompt}>
           {displayPrompt}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        <div className="mt-1.5 flex flex-wrap items-center gap-2 xl:mt-0 xl:w-60 xl:shrink-0 xl:flex-col xl:items-start xl:gap-1.5">
           <StatusPill tone={TONE_BY_QUESTION_STATE[state]}>{stateLabel}</StatusPill>
           <span className="chip max-w-full truncate" title={topicLabel}>
             {topicLabel}

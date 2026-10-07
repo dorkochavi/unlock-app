@@ -17,7 +17,7 @@
  * `/courses`) just to sign out.
  */
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/button";
 import { createSupabaseBrowserClient } from "@/infrastructure/supabase/browser-client";
@@ -26,6 +26,9 @@ import { getMessages } from "@/messages";
 export default function InstructorLayout({ children }: { children: React.ReactNode }) {
   const messages = getMessages();
   const router = useRouter();
+  // Presentation only: the course-management page uses a wider desktop canvas; align the top bar to it.
+  const pathname = usePathname() ?? "";
+  const wideHeader = /^\/instructor\/courses\/(?!new\/?$)[^/]+\/?$/.test(pathname);
 
   async function handleSignOut() {
     const supabase = createSupabaseBrowserClient();
@@ -35,7 +38,9 @@ export default function InstructorLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="mx-auto flex min-h-14 w-full max-w-2xl items-center justify-between gap-3 px-4 pt-1 sm:px-6 lg:max-w-4xl">
+      <header className={`mx-auto flex min-h-14 w-full max-w-2xl items-center justify-between gap-3 px-4 pt-1 sm:px-6 ${
+          wideHeader ? "lg:max-w-5xl xl:max-w-6xl" : "lg:max-w-4xl"
+        }`}>
         <Link
           href="/courses"
           className="inline-flex min-h-control items-center rounded-full px-1 text-secondary font-semibold text-primary-soft-foreground transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
