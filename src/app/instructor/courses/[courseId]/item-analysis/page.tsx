@@ -18,6 +18,7 @@ import { useParams } from "next/navigation";
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 
 type Band = "MOSTLY_CORRECT" | "MIXED" | "MOSTLY_INCORRECT";
@@ -169,7 +170,11 @@ export default function InstructorItemAnalysisPage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.signedOutAction}</ButtonLink>}
+          action={
+            <ButtonLink href={buildSignInHref(`/instructor/courses/${courseId}/item-analysis`)}>
+              {messages.signedOutAction}
+            </ButtonLink>
+          }
         />
       ) : null}
 

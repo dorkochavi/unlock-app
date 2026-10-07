@@ -72,9 +72,10 @@ export function publishNotReadyMessage(
 export async function createEmptyQuestion(
   courseId: string,
   fetchFn: typeof fetch = fetch,
-): Promise<{ outcome: "CREATED"; questionId: string } | { outcome: "ERROR" }> {
+): Promise<{ outcome: "CREATED"; questionId: string } | { outcome: "UNAUTHENTICATED" } | { outcome: "ERROR" }> {
   try {
     const response = await fetchFn(`/api/courses/${courseId}/questions`, { method: "POST" });
+    if (response.status === 401) return { outcome: "UNAUTHENTICATED" };
     if (!response.ok) return { outcome: "ERROR" };
     const body = (await response.json()) as { question?: { id?: string } };
     if (!body.question?.id) return { outcome: "ERROR" };

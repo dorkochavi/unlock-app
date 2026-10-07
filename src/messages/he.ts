@@ -82,6 +82,12 @@ export const he = {
   },
   instructor: {
     backToMyCourses: "חזרה לקורסים שלי",
+    // FUB-044: inline recovery when a mutation returns 401 (page + draft stay mounted).
+    sessionExpired: {
+      title: "החיבור שלך פג",
+      body: "השינויים האחרונים עדיין לא נשמרו. התחבר מחדש ואז חזור לכאן ונסה שוב.",
+      action: "התחברות מחדש",
+    },
     courses: {
       heading: "ניהול קורסים",
       loading: "טוען את הקורסים שלך...",

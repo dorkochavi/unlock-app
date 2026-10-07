@@ -35,7 +35,7 @@ describe("buildSignUpEmailRedirectTo", () => {
     "/join/x",
     `/join/${COURSE}\n`,
     "/today\n",
-    "/instructor/courses/new",
+    "/instructor/courses/new/extra", // FUB-044: `/instructor/courses/new` itself is now allowlisted (see safe-redirect.test.ts)
     `/join/${COURSE}?next=//evil.example.com`,
     "javascript:alert(1)",
   ])("never emits an unvalidated next (%j)", (raw) => {

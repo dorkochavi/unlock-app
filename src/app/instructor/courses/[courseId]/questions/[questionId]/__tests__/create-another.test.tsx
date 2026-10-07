@@ -170,3 +170,15 @@ describe("publishNotReadyMessage (Hebrew publish-readiness mapping)", () => {
     );
   });
 });
+
+describe("createEmptyQuestion — 401 (FUB-044)", () => {
+  it("reports UNAUTHENTICATED (single request, no replay) while other failures stay ERROR", async () => {
+    const unauth = vi.fn(async () => new Response("{}", { status: 401 }));
+    expect(await createEmptyQuestion("c", unauth as unknown as typeof fetch)).toEqual({
+      outcome: "UNAUTHENTICATED",
+    });
+    expect(unauth).toHaveBeenCalledTimes(1);
+    const forbidden = vi.fn(async () => new Response("{}", { status: 403 }));
+    expect(await createEmptyQuestion("c", forbidden as unknown as typeof fetch)).toEqual({ outcome: "ERROR" });
+  });
+});

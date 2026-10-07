@@ -17,6 +17,7 @@ import { Button, ButtonLink } from "@/components/button";
 import { LinkRow } from "@/components/link-row";
 import { PageHeader } from "@/components/page-header";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
 import type { CourseRole } from "@/domain/course/types";
 
@@ -106,7 +107,11 @@ export default function InstructorCoursesPage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.instructor.courses.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.instructor.courses.signedOutAction}</ButtonLink>}
+          action={
+            <ButtonLink href={buildSignInHref("/instructor/courses")}>
+              {messages.instructor.courses.signedOutAction}
+            </ButtonLink>
+          }
         />
       ) : null}
 

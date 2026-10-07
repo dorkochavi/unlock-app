@@ -28,6 +28,9 @@ import { getMessages } from "@/messages";
 import { canSelfJoinCourse, type CourseJoinPolicy, type CourseStatus } from "@/domain/course/types";
 import { canOpenAnswerAnalysis } from "@/domain/insights/analysis-entry";
 
+import { buildSignInHref } from "@/lib/safe-redirect";
+import { InstructorSessionExpiredNotice } from "../../session-expired-notice";
+import { publishQuestionsSequentially } from "./bulk-publish";
 import { OwnCourseActions } from "./own-course-actions";
 import { QuestionRow } from "./question-row";
 
@@ -187,6 +190,8 @@ export default function InstructorCourseManagePage() {
   const courseId = String(params.courseId);
 
   const [state, setState] = useState<ViewState>({ kind: "loading" });
+  // FUB-044: a mutation returned 401 — inline recovery notice; drafts stay mounted, nothing is replayed.
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
   const [titleDraft, setTitleDraft] = useState("");
@@ -352,29 +357,19 @@ export default function InstructorCourseManagePage() {
     if (bulkPublishing || selectedQuestionIds.size === 0) return;
     setBulkPublishing(true);
     setBulkPublishResult(null);
+    setSessionExpired(false);
     const ids = [...selectedQuestionIds];
-    let published = 0;
-    let failed = 0;
-    // Sequential, not Promise.all: each call is its own independent,
-    // already-transactional publish (publishQuestion) — sequencing here is
-    // only to keep server load bounded for a bulk instructor action, not a
-    // correctness requirement.
-    for (const id of ids) {
-      try {
-        const response = await fetch(`/api/courses/${courseId}/questions/${id}/publish`, {
-          method: "POST",
-        });
-        if (response.ok) {
-          published++;
-        } else {
-          failed++;
-        }
-      } catch {
-        failed++;
-      }
+    // Sequential (see publishQuestionsSequentially); the first 401 stops the loop.
+    const { published, failed, sessionExpired: expired } = await publishQuestionsSequentially(courseId, ids);
+    setBulkPublishing(false);
+    if (expired) {
+      // No refetch (it would 401 too and replace the list); the selection is kept
+      // and nothing resumes after sign-in — the Instructor retries explicitly.
+      setSessionExpired(true);
+      setBulkPublishResult(published > 0 || failed > 0 ? { published, failed } : null);
+      return;
     }
     setBulkPublishResult({ published, failed });
-    setBulkPublishing(false);
     setQuestionsRetryCount((count) => count + 1);
   }
 
@@ -383,7 +378,12 @@ export default function InstructorCourseManagePage() {
     setCreatingQuestion(true);
     setCreateQuestionError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/questions`, { method: "POST" });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setCreateQuestionError(messages.instructor.manage.questions.createError);
         return;
@@ -403,11 +403,16 @@ export default function InstructorCourseManagePage() {
     setAddingTopic(true);
     setAddTopicError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/topics`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newTopicName }),
       });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setAddTopicError(
           response.status === 409
@@ -446,11 +451,16 @@ export default function InstructorCourseManagePage() {
     setSavingTopicId(topicId);
     setRenameError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/topics/${topicId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: renameDraft }),
       });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setRenameError(
           response.status === 409
@@ -479,9 +489,14 @@ export default function InstructorCourseManagePage() {
     setArchivingTopicId(topicId);
     setArchiveTopicError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/topics/${topicId}/archive`, {
         method: "POST",
       });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setArchiveTopicError(messages.instructor.manage.topics.archiveError);
         return;
@@ -504,6 +519,7 @@ export default function InstructorCourseManagePage() {
     setSavingDetails(true);
     setDetailsError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/manage`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -512,6 +528,10 @@ export default function InstructorCourseManagePage() {
           examDate: examDateDraft === "" ? null : examDateDraft,
         }),
       });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setDetailsError(messages.instructor.manage.saveError);
         return;
@@ -533,11 +553,16 @@ export default function InstructorCourseManagePage() {
     setSavingJoinPolicy(true);
     setJoinPolicyError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/join-policy`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ joinPolicy }),
       });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setJoinPolicyError(messages.instructor.manage.saveError);
         return;
@@ -557,7 +582,12 @@ export default function InstructorCourseManagePage() {
     setPublishing(true);
     setTransitionError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/publish`, { method: "POST" });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setTransitionError(messages.instructor.manage.transitionError);
         return;
@@ -577,7 +607,12 @@ export default function InstructorCourseManagePage() {
     setArchiving(true);
     setTransitionError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/archive`, { method: "POST" });
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
       if (!response.ok) {
         setTransitionError(messages.instructor.manage.transitionError);
         return;
@@ -609,7 +644,7 @@ export default function InstructorCourseManagePage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.instructor.manage.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.instructor.manage.signedOutAction}</ButtonLink>}
+          action={<ButtonLink href={buildSignInHref(`/instructor/courses/${courseId}`)}>{messages.instructor.manage.signedOutAction}</ButtonLink>}
         />
       ) : null}
 
@@ -647,6 +682,9 @@ export default function InstructorCourseManagePage() {
 
       {state.kind === "ready" ? (
         <div className="flex flex-col gap-6">
+          {sessionExpired ? (
+            <InstructorSessionExpiredNotice signInHref={buildSignInHref(`/instructor/courses/${courseId}`)} />
+          ) : null}
           <Card variant="tint" as="section" className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
             <div className="flex flex-col items-start gap-3">
               <span className="chip">

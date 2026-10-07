@@ -28,7 +28,9 @@ import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { Input, Label, Select, Textarea } from "@/components/input";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
+import { InstructorSessionExpiredNotice } from "../../../../session-expired-notice";
 import type { CourseStatus } from "@/domain/course/types";
 
 import { CreateAnotherAction } from "./create-another-action";
@@ -197,6 +199,8 @@ export default function InstructorQuestionEditorPage() {
   const router = useRouter();
 
   const [state, setState] = useState<ViewState>({ kind: "loading" });
+  // FUB-044: a mutation returned 401 — inline recovery notice; the draft stays mounted, nothing is replayed.
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
   const [topicIdDraft, setTopicIdDraft] = useState<string>("");
@@ -340,7 +344,13 @@ export default function InstructorQuestionEditorPage() {
     if (creatingAnother) return;
     setCreatingAnother(true);
     setCreateAnotherError(null);
+    setSessionExpired(false);
     const result = await createEmptyQuestion(courseId);
+    if (result.outcome === "UNAUTHENTICATED") {
+      setSessionExpired(true);
+      setCreatingAnother(false);
+      return;
+    }
     if (result.outcome === "CREATED") {
       // Stay "creating" while navigating; the load effect resets it for the new question.
       router.push(`/instructor/courses/${courseId}/questions/${result.questionId}`);
@@ -358,6 +368,7 @@ export default function InstructorQuestionEditorPage() {
     // Captured before the request so edits made while saving stay "dirty".
     const submitted = currentValues();
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/questions/${questionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -370,6 +381,11 @@ export default function InstructorQuestionEditorPage() {
           explanation: explanationDraft.trim() === "" ? null : explanationDraft,
         }),
       });
+
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
 
       if (!response.ok) {
         if (response.status === 409) {
@@ -409,9 +425,15 @@ export default function InstructorQuestionEditorPage() {
     setPublishing(true);
     setPublishError(null);
     try {
+      setSessionExpired(false);
       const response = await fetch(`/api/courses/${courseId}/questions/${questionId}/publish`, {
         method: "POST",
       });
+
+      if (response.status === 401) {
+        setSessionExpired(true);
+        return;
+      }
 
       if (!response.ok) {
         if (response.status === 409) {
@@ -463,7 +485,11 @@ export default function InstructorQuestionEditorPage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.questionEditor.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.questionEditor.signedOutAction}</ButtonLink>}
+          action={
+            <ButtonLink href={buildSignInHref(`/instructor/courses/${courseId}/questions/${questionId}`)}>
+              {messages.questionEditor.signedOutAction}
+            </ButtonLink>
+          }
         />
       ) : null}
 
@@ -492,6 +518,11 @@ export default function InstructorQuestionEditorPage() {
 
       {state.kind === "ready" ? (
         <div className="flex flex-col gap-4">
+          {sessionExpired ? (
+            <InstructorSessionExpiredNotice
+              signInHref={buildSignInHref(`/instructor/courses/${courseId}/questions/${questionId}`)}
+            />
+          ) : null}
           <Link
             href={`/instructor/courses/${courseId}`}
             className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"

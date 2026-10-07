@@ -21,8 +21,14 @@ const ID = "[0-9a-fA-F-]{1,64}";
 const FROM = "from=(?:course|progress)";
 const TOPIC = `topic=${ID}`;
 const PRACTICE_PATH = `courses\\/${ID}\\/practice(?:\\?(?:${TOPIC}(?:&${FROM})?|${FROM}(?:&${TOPIC})?))?`;
+//
+// FUB-044 Instructor 401 recovery: the six Instructor PAGES an Instructor can sign
+// back in to, as exact paths — no query string, no trailing slash, no wildcard,
+// never a mutation route. Each is a GET page that re-authorizes server-side on
+// load (401/403/404 states). `new` cannot match the hex-only id charset.
+const INSTRUCTOR_PATH = `instructor\\/courses(?:\\/new|\\/${ID}(?:\\/import|\\/item-analysis|\\/questions\\/${ID})?)?`;
 const SAFE_NEXT_PATTERN = new RegExp(
-  `^\\/(today|courses|progress|courses\\/${ID}|join\\/${ID}|${PRACTICE_PATH})$`,
+  `^\\/(today|courses|progress|courses\\/${ID}|join\\/${ID}|${PRACTICE_PATH}|${INSTRUCTOR_PATH})$`,
 );
 const DEFAULT_NEXT_PATH = "/today";
 

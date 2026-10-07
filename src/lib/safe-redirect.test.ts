@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSignInHref, resolveSafeNextPath } from "./safe-redirect";
+import { buildSignInHref, resolveNextPathFromSearch, resolveSafeNextPath } from "./safe-redirect";
 
 describe("resolveSafeNextPath", () => {
   it("allows the exact internal /today destination", () => {
@@ -138,5 +138,64 @@ describe("resolveSafeNextPath / resolveNextPathFromSearch — additional open-re
     }
     // Duplicate next: URLSearchParams.get returns the first (safe) value; the malicious second is never read.
     expect(new URLSearchParams("?next=%2Ftoday&next=https%3A%2F%2Fevil.example.com%2F").get("next")).toBe("/today");
+  });
+});
+
+describe("Instructor next allowlist (FUB-044 Instructor 401 recovery)", () => {
+  const ID = "3f5b1c2a-3d9e-4b7a-9c1e-2a8f7b6d5e4f";
+  const Q = "9a8b7c6d-1e2f-4a3b-8c4d-5e6f7a8b9c0d";
+  const ALLOWED = [
+    "/instructor/courses",
+    "/instructor/courses/new",
+    `/instructor/courses/${ID}`,
+    `/instructor/courses/${ID}/import`,
+    `/instructor/courses/${ID}/item-analysis`,
+    `/instructor/courses/${ID}/questions/${Q}`,
+  ];
+
+  it.each(ALLOWED)("accepts the exact page %s", (path) => {
+    expect(resolveSafeNextPath(path)).toBe(path);
+  });
+
+  it.each(ALLOWED)("%s round-trips through buildSignInHref + resolveNextPathFromSearch", (path) => {
+    const href = buildSignInHref(path);
+    expect(href).toBe(`/login?next=${encodeURIComponent(path)}`);
+    expect(resolveNextPathFromSearch(href.slice(href.indexOf("?")))).toBe(path);
+  });
+
+  it.each([
+    "/instructor",
+    "/instructor/",
+    "/instructor/courses/",
+    "/instructor/courses/new/",
+    `/instructor/courses/${ID}/`,
+    `/instructor/courses/${ID}/publish`,
+    `/instructor/courses/${ID}/questions`,
+    `/instructor/courses/${ID}/questions/`,
+    `/instructor/courses/${ID}/questions/${Q}/publish`,
+    `/instructor/courses/${ID}/import/preview`,
+    "/instructor/courses/not-a-uuid!",
+    "/instructor/courses/zzz",
+    "/instructor/courses/new/extra",
+    `/instructor/courses/${ID}?x=1`,
+    `/instructor/courses?x=1`,
+    `/instructor/courses/${ID}/import?next=/today`,
+    `/instructor/courses/${ID}#frag`,
+    `/instructor/courses/${ID}/../../x`,
+    "/instructor/courses/%2e%2e/x",
+    `/instructor/courses/${ID}%2Fimport`,
+    "//instructor/courses",
+    "/instructor//courses",
+    "/instructor/courses//new",
+    "/INSTRUCTOR/courses",
+    "https://evil.example.com/instructor/courses",
+    "/instructor/courses/\evil",
+  ])("rejects %s and falls back to /today", (path) => {
+    expect(resolveSafeNextPath(path)).toBe("/today");
+    expect(buildSignInHref(path)).toBe("/login");
+  });
+
+  it("does not let `new` act as a Course id", () => {
+    expect(resolveSafeNextPath("/instructor/courses/new/import")).toBe("/today");
   });
 });

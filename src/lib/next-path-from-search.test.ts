@@ -33,7 +33,7 @@ describe("resolveNextPathFromSearch", () => {
     "javascript:alert(1)",
     "/\\evil.example.com",
     "/admin",
-    "/instructor/courses/new",
+    "/instructor/courses/new/extra", // FUB-044: `/instructor/courses/new` itself is now allowlisted (see safe-redirect.test.ts)
     `/join/${COURSE_ID}/../../admin`,
     `/join/${COURSE_ID}?x=https://evil.example.com`,
     `/join/${COURSE_ID}#frag`,

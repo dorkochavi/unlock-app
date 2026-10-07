@@ -26,7 +26,9 @@ import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
 import { Label, Select, Textarea } from "@/components/input";
 import { LoadingState, StateBlock } from "@/components/state-block";
+import { buildSignInHref } from "@/lib/safe-redirect";
 import { getMessages } from "@/messages";
+import { InstructorSessionExpiredNotice } from "../../../session-expired-notice";
 import type { CourseStatus } from "@/domain/course/types";
 
 type ImportFormat = "JSON" | "CSV";
@@ -130,6 +132,8 @@ export default function InstructorImportPage() {
   const courseId = String(params.courseId);
 
   const [state, setState] = useState<ViewState>({ kind: "loading" });
+  // FUB-044: preview/confirm returned 401 — inline recovery notice; source and preview stay mounted.
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
   const [format, setFormat] = useState<ImportFormat>("JSON");
@@ -195,6 +199,7 @@ export default function InstructorImportPage() {
 
   async function handlePreview() {
     if (previewState.kind === "loading") return;
+    setSessionExpired(false);
     setPreviewState({ kind: "loading" });
     setConfirmState({ kind: "idle" });
     try {
@@ -203,6 +208,13 @@ export default function InstructorImportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format, sourceText }),
       });
+
+      if (response.status === 401) {
+        // Session expired: keep the pasted source; the Instructor retries after signing in.
+        setSessionExpired(true);
+        setPreviewState({ kind: "idle" });
+        return;
+      }
 
       if (!response.ok) {
         if (response.status === 413) {
@@ -237,6 +249,7 @@ export default function InstructorImportPage() {
   async function handleConfirm() {
     if (previewState.kind !== "ready" || previewState.preview.invalidCount > 0) return;
     if (confirmState.kind === "loading") return;
+    setSessionExpired(false);
     setConfirmState({ kind: "loading" });
     try {
       const response = await fetch(`/api/courses/${courseId}/import/confirm`, {
@@ -247,7 +260,9 @@ export default function InstructorImportPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          setConfirmState({ kind: "error", message: messages.importQuestions.signedOutTitle });
+          // Nothing was imported; keep the preview so the Instructor can confirm again after signing in.
+          setSessionExpired(true);
+          setConfirmState({ kind: "idle" });
           return;
         }
         if (response.status === 403) {
@@ -298,7 +313,11 @@ export default function InstructorImportPage() {
       {state.kind === "signed-out" ? (
         <StateBlock
           title={messages.importQuestions.signedOutTitle}
-          action={<ButtonLink href="/login">{messages.importQuestions.signedOutAction}</ButtonLink>}
+          action={
+            <ButtonLink href={buildSignInHref(`/instructor/courses/${courseId}/import`)}>
+              {messages.importQuestions.signedOutAction}
+            </ButtonLink>
+          }
         />
       ) : null}
 
@@ -327,6 +346,9 @@ export default function InstructorImportPage() {
 
       {state.kind === "ready" ? (
         <div className="flex flex-col gap-4">
+          {sessionExpired ? (
+            <InstructorSessionExpiredNotice signInHref={buildSignInHref(`/instructor/courses/${courseId}/import`)} />
+          ) : null}
           <Link
             href={`/instructor/courses/${courseId}`}
             className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
