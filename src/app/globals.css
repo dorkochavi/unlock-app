@@ -286,6 +286,15 @@
   }
 }
 
+/*
+ * Focus/scroll clearance (WCAG 2.4.11): the learner shell has sticky bottom UI (the nav pill, and
+ * Today's question action bar on mobile). Reserve that height at the scrolling root so keyboard
+ * focus scrolls a control clear of it. Keep >= the taller of the two bars (~5.5rem).
+ */
+html {
+  scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
