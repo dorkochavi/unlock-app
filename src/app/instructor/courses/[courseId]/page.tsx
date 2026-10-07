@@ -945,7 +945,7 @@ export default function InstructorCourseManagePage() {
           </Card>
             </div>
 
-            <div className="flex min-w-0 flex-col gap-6 lg:[@media(min-height:760px)]:sticky lg:[@media(min-height:760px)]:top-4">
+            <div className="flex min-w-0 flex-col gap-6">
           {transitionError ? <Notice tone="error">{transitionError}</Notice> : null}
 
           {state.course.status === "DRAFT" ||
