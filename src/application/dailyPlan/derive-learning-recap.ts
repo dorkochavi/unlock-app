@@ -25,7 +25,7 @@
  * - Topic groups use only answered items with a non-null, non-archived topic
  *   name (null/archived topics still count in the totals above, but form no
  *   group and are not named).
- *   - strongTopics  = groups with answered > 0 and every answer correct.
+ *   - strongTopics  = groups where every answer given today was correct (may be just one answer; says nothing about unasked/skipped questions).
  *   - revisitTopics = groups with at least one incorrect answer.
  *   - topicsWorked  = number of such groups.
  *   Lists are sorted by first-answered order (stable, deterministic); the UI

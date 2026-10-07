@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/button";
 import { ExitIcon, LearnHeader } from "@/components/learn-header";
@@ -284,6 +284,8 @@ function TodayPlanView({
   // from the existing GET /today after the LAST resolution and when leaving
   // Learn Mode; a reload gets it straight from the initial GET.
   const [recap, setRecap] = useState<TodayLearningRecap | undefined>(plan.learningRecap);
+  // Latest-wins guard: only the newest recap request may write the recap.
+  const recapRequestRef = useRef(0);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [alreadyResolvedNotice, setAlreadyResolvedNotice] = useState(false);
@@ -344,10 +346,14 @@ function TodayPlanView({
     }
   }
 
-  /** Re-read the recap via the existing GET /today (no new endpoint); failures keep what is shown. */
+  /** Re-read the recap via the existing GET /today (no new endpoint); latest request wins; failure clears it. */
   async function refreshRecap() {
+    const request = ++recapRequestRef.current;
     const refreshed = await fetchTodayPlan();
-    if (refreshed.outcome === "READY") setRecap(refreshed.plan.learningRecap);
+    if (request !== recapRequestRef.current) return;
+    // A failed/non-READY refresh clears the recap rather than leaving a stale one
+    // beside newer item counts.
+    setRecap(refreshed.outcome === "READY" ? refreshed.plan.learningRecap : undefined);
   }
 
   function exitLearnMode() {
@@ -383,6 +389,7 @@ function TodayPlanView({
       const refreshed = await fetchTodayPlan();
       if (refreshed.outcome === "READY") {
         setItems(refreshed.plan.items);
+        recapRequestRef.current += 1;
         setRecap(refreshed.plan.learningRecap);
       } else if (refreshed.outcome === "UNAUTHENTICATED") {
         onUnauthenticated();
@@ -422,6 +429,7 @@ function TodayPlanView({
       const refreshed = await fetchTodayPlan();
       if (refreshed.outcome === "READY") {
         setItems(refreshed.plan.items);
+        recapRequestRef.current += 1;
         setRecap(refreshed.plan.learningRecap);
       } else if (refreshed.outcome === "UNAUTHENTICATED") {
         onUnauthenticated();

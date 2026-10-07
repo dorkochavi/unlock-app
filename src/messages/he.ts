@@ -430,7 +430,7 @@ export const he = {
       correctOfAnswered: "{correct} מתוך {answered} נכונות",
       topicsWorked: "עבדת על {count} נושאים",
       topicsWorkedOne: "עבדת על נושא אחד",
-      strongHeading: "ענית נכון על הכול ב:",
+      strongHeading: "ענית נכון ב:",
       revisitHeading: "כדאי לחזור על:",
       topicsMore: "ועוד {count}",
       sureIncorrectOne: "בשאלה אחת היית בטוח/ה אבל התשובה הייתה שגויה",

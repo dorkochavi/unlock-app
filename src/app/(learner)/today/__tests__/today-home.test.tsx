@@ -118,7 +118,7 @@ describe("done state", () => {
     expect(html).toContain("סיכום הלמידה שלך היום");
     expect(html).toContain("2 מתוך 3 נכונות");
     expect(html).toContain("עבדת על 3 נושאים");
-    expect(html).toContain("ענית נכון על הכול ב:");
+    expect(html).toContain("ענית נכון ב:");
     expect(html).toContain("מטריצות");
     expect(html).toContain("כדאי לחזור על:");
     expect(html).toContain("Gauss");
@@ -128,10 +128,19 @@ describe("done state", () => {
     expect(html).toContain("לצפייה בהתקדמות");
   });
 
+  it("single-answer strong topic: shown under the scoped heading, no 'everything' claim; lists are labelled", () => {
+    const html = complete([item(1, "completed"), item(2, "skipped")], recap({ answered: 1, correct: 1, incorrect: 0, strongTopics: ["מטריצות"], topicsWorked: 1 }));
+    expect(html).toContain("ענית נכון ב:");
+    expect(html).toContain("מטריצות");
+    expect(html).not.toContain("הכול");
+    expect(html).toContain('aria-labelledby="today-recap-strong"');
+    expect(html).toContain('id="today-recap-strong"');
+  });
+
   it("hides every empty section (no empty headings) and omits the surface without answers", () => {
     const only = complete(items, recap({ correct: 3, incorrect: 0 }));
     expect(only).toContain("סיכום הלמידה שלך היום");
-    expect(only).not.toContain("ענית נכון על הכול ב:");
+    expect(only).not.toContain("ענית נכון ב:");
     expect(only).not.toContain("כדאי לחזור על:");
     expect(only).not.toContain("עבדת על");
     expect(only).not.toContain("בטוח/ה");

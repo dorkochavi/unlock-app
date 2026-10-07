@@ -44,12 +44,14 @@ function QuietLine({ children }: { children: string }) {
   return <p className="mt-4 px-1 text-secondary text-muted">{children}</p>;
 }
 
-function TopicList({ heading, names }: { heading: string; names: string[] }) {
+function TopicList({ id, heading, names }: { id: string; heading: string; names: string[] }) {
   const { shown, moreLabel } = capTopics(names);
   return (
     <div className="mt-4">
-      <p className="eyebrow">{heading}</p>
-      <ul className="mt-2 flex flex-wrap gap-2">
+      <p id={id} className="eyebrow">
+        {heading}
+      </p>
+      <ul aria-labelledby={id} className="mt-2 flex flex-wrap gap-2">
         {shown.map((name, index) => (
           <li
             key={`${index}-${name}`}
@@ -88,10 +90,10 @@ function LearningRecapSurface({ recap }: { recap: TodayLearningRecap }) {
         <p className="mt-1 text-secondary text-muted">{overviewLines.join(" · ")}</p>
       ) : null}
       {recap.strongTopics.length > 0 ? (
-        <TopicList heading={messages.strongHeading} names={recap.strongTopics} />
+        <TopicList id="today-recap-strong" heading={messages.strongHeading} names={recap.strongTopics} />
       ) : null}
       {recap.revisitTopics.length > 0 ? (
-        <TopicList heading={messages.revisitHeading} names={recap.revisitTopics} />
+        <TopicList id="today-recap-revisit" heading={messages.revisitHeading} names={recap.revisitTopics} />
       ) : null}
       {insight !== null ? <p className="mt-4 text-secondary text-muted">{insight}</p> : null}
     </Card>
