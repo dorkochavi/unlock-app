@@ -5,7 +5,7 @@ RUN_ID: 2026-10-07-TODAY-LEARNING-RECAP-004
 START_HEAD: `64b3219`
 RUN_STATUS: COMPLETE
 LAST_VERIFIED_HEAD: `259426b`
-STATUS: **COMPLETE** — local Run. No push, no deploy, no hosted mutation. Dor reviews the recap with real learning activity before any push (Run report).
+STATUS: **COMPLETE** — Run closed; its work (with the preceding visual Runs) is released: `main` == `origin/main` == `9fcafd2`, deployed to Production, Production smoke and Learning Recap verification PASS [HUMAN_REPORTED 2026-10-07]. No newer release tag (latest `v0.3.0`). No active Run.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 

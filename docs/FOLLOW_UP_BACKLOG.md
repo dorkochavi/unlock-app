@@ -1012,7 +1012,7 @@ after P1/P2):
 | Skip -> next | <=100ms optimistic / <=500ms confirmed | <=800ms | >1.5s |
 | Practice initial / Course nav / Progress (N=3) | <=1s / <=700ms / <=1s | <=2s / <=1.5s / <=2s | >3.5s / >2.5s / >3.5s |
 
-## 2026-10-06 PERFORMANCE-RUN-001 Addendum (local, unpushed, NOT deployed)
+## 2026-10-06 PERFORMANCE-RUN-001 Addendum (written local at Run close; deployed to Production at `155dff7` [HUMAN_REPORTED 2026-10-06], see Production evidence below)
 
 Owner of all performance work remains FUB-026. Counts below are measured on PGlite via the statement counter
 (`supabase/tests/postgres/statement-counter.ts`): they prove statement count/order, NOT network latency or pool queueing.
@@ -1471,7 +1471,7 @@ After real Pilot usage begins, or when product/UX questions require behavioral e
 
 # FUB-052 — Pre-Pilot Modern Visual Experience / Design System Refresh
 
-**Status:** `PARTIAL` — foundation + learner rollout (VISUAL-SYSTEM-RUN-001) and the visible art-direction refresh incl. Heebo, shell/nav, anchored sign-out and Instructor course-management surfaces (DESIGN-REFRESH-OVERNIGHT-002) and the human-reviewed polish (VISUAL-POLISH-RUN-003: Today composition/feedback, Progress, Course hero, Instructor desktop, hero restraint; Heebo kept, queue prompts removed) DONE locally, unpushed; pending Dor's final walkthrough. Remaining narrow residuals: instructor question-editor visual rollout, dark-mode toggle (product decision), illustration language, iOS safe-area real-device check.
+**Status:** `PARTIAL` — foundation + learner rollout (VISUAL-SYSTEM-RUN-001) and the visible art-direction refresh incl. Heebo, shell/nav, anchored sign-out and Instructor course-management surfaces (DESIGN-REFRESH-OVERNIGHT-002) and the human-reviewed polish (VISUAL-POLISH-RUN-003: Today composition/feedback, Progress, Course hero, Instructor desktop, hero restraint; Heebo kept, queue prompts removed) DONE and released in `9fcafd2` [HUMAN_REPORTED 2026-10-07; Dor's walkthrough completed]. Remaining narrow residuals: instructor question-editor visual rollout, dark-mode toggle (product decision), illustration language, iOS safe-area real-device check.
 **Priority:** `MEDIUM`
 **Area:** UX / visual system (cross-cutting; narrower leftovers stay in FUB-033)
 
@@ -1483,7 +1483,7 @@ presentational refresh. Visual-only; no dependency, no new client component, no 
 
 ## Remaining / Human Decisions (Dor)
 
-- Human visual walkthrough of the learner screens (light + dark, real authenticated data, hover/focus, Author→Learn button).
+- Human visual walkthrough of the learner screens: DONE by Dor before the 2026-10-07 release [HUMAN_REPORTED]. (Typeface decided: Heebo kept; sign-out anchored in the header; dark mode remains OS-following, toggle undecided — items below are the original Run-001 list.)
 - Sign-out placement (PageHeader trailing slot / profile overflow in nav [IA change] / keep).
 - Typeface: keep Segoe-first system stack vs one Hebrew-first webfont via `next/font` (brand + perf tradeoff).
 - Dark mode: keep auto `prefers-color-scheme` vs user toggle; verify dark contrast.
