@@ -3,8 +3,9 @@
 PLAN_VERSION: 024
 RUN_ID: 2026-10-08-Q3-A11Y-NIGHT-001
 START_HEAD: `0ac70d1`
-RUN_STATUS: IN_PROGRESS
-STATUS: **IN PROGRESS** — bounded autonomous Run N0 → N1 → N2 → N3 → STOP. Local only: no push/merge/deploy/tag/hosted mutation/migration/dependency change.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `08364ca`
+STATUS: **COMPLETE** — bounded autonomous Run N0 → N1 → N2 → N3 closed; STOP. Local only (unpushed, undeployed): no push/merge/deploy/tag/hosted mutation/migration/dependency change.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -22,13 +23,13 @@ Out of scope (remain P3/WATCH/HUMAN): Q3-F3 headings, Q3-F4 small Instructor tar
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
 | N0 | Run setup: Plan identity + run-local mocked browser probe | AUTO | DONE |
-| N1 | Q3-A sticky focus clearance (CSS-only) | REVIEW_GATE | PENDING |
-| N2 | Q3-B instructor option accessible names | REVIEW_GATE | PENDING |
-| N3 | Governance + Run close | FINAL_GATE | PENDING |
+| N1 | Q3-A sticky focus clearance (CSS-only) | REVIEW_GATE | DONE |
+| N2 | Q3-B instructor option accessible names | REVIEW_GATE | DONE |
+| N3 | Governance + Run close | FINAL_GATE | DONE |
 
 ## History
 
-- TODAY-LEARNING-RECAP-004 (Plan body replaced at this Run open): `docs/RUNS/2026-10-07-TODAY-LEARNING-RECAP-004.md`
+- Q3-A11Y-NIGHT-001: `docs/RUNS/2026-10-08-Q3-A11Y-NIGHT-001.md`
 - TODAY-LEARNING-RECAP-004: `docs/RUNS/2026-10-07-TODAY-LEARNING-RECAP-004.md`
 - VISUAL-POLISH-RUN-003: `docs/RUNS/2026-10-07-VISUAL-POLISH-RUN-003.md`
 - DESIGN-REFRESH-OVERNIGHT-002: `docs/RUNS/2026-10-07-DESIGN-REFRESH-OVERNIGHT-002.md`
