@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   KEY_POSITION_RUN_LENGTH,
+  MAX_LINT_OPTIONS,
+
   MIN_SET_SIZE,
   lintQuestionBatch,
   lintQuestionItem,
@@ -13,6 +15,7 @@ import {
   summarizeLintIssues,
   type QuestionLintIssue,
 } from "../question-lint";
+
 import { comparisonKey, duplicateKey, stripHebrewPrefixes } from "../text-normalize";
 
 type Opt = { id: string; content: string };
@@ -428,5 +431,114 @@ describe("normalization helpers", () => {
     expect(stripHebrewPrefixes("התאית")).toBe("תאית");
     expect(stripHebrewPrefixes("שלא")).toBe("שלא");
     expect(stripHebrewPrefixes("hello")).toBe("hello");
+  });
+});
+
+describe("hardening after review", () => {
+  it("1. ReDoS: long punctuation / quote runs complete quickly", () => {
+    for (const bad of ["!".repeat(40000) + "a", "a" + "'".repeat(40000) + "b", "-".repeat(40000) + "x" + "\"".repeat(40000)]) {
+      const t0 = performance.now();
+      lintQuestionItem(item({ prompt: bad, answerOptions: opts([bad, "other", "third", "fourth"]) }));
+      expect(performance.now() - t0).toBeLessThan(1000);
+    }
+  });
+
+  it("2. 200000 options: no throw, OPTIONS_TOO_MANY, bounded time; cap boundary", () => {
+    const many = Array.from({ length: 200000 }, (_, i) => ({ id: `o${i}`, content: `option ${i}` }));
+    const t0 = performance.now();
+    const r = lintQuestionItem(item({ answerOptions: many, correctOptionIds: ["o1"] }));
+    expect(performance.now() - t0).toBeLessThan(2000);
+    expect(r.find((i) => i.code === "OPTIONS_TOO_MANY")?.severity).toBe("ERROR");
+    expect(() => lintQuestionBatch([item({ answerOptions: many })])).not.toThrow();
+    const atCap = Array.from({ length: MAX_LINT_OPTIONS }, (_, i) => ({ id: `o${i}`, content: `option ${i}` }));
+    expect(codes(lintQuestionItem(item({ answerOptions: atCap, correctOptionIds: ["o1"] })))).not.toContain("OPTIONS_TOO_MANY");
+    const over = [...atCap, { id: "extra", content: "option extra" }];
+    expect(lint({ answerOptions: over, correctOptionIds: ["o1"] })).toContain("OPTIONS_TOO_MANY");
+  });
+
+  it("3. totality: throwing getter, throwing Proxy, cyclic object", () => {
+    const getter = {
+      get prompt(): string {
+        throw new Error("boom");
+      },
+    };
+    const proxy = new Proxy({}, { get() { throw new Error("boom"); }, has() { throw new Error("boom"); } });
+    const cyc: Record<string, unknown> = { questionType: "SINGLE_CHOICE", prompt: "Cyclic item prompt here ok?" };
+    cyc.self = cyc;
+    cyc.answerOptions = [cyc, cyc];
+    cyc.correctOptionIds = [cyc];
+    expect(codes(lintQuestionItem(getter))).toEqual(["INPUT_UNREADABLE"]);
+    expect(codes(lintQuestionItem(proxy))).toEqual(["INPUT_UNREADABLE"]);
+    expect(() => lintQuestionItem(cyc)).not.toThrow();
+    const throwingElementList = new Proxy([EN_CLEAN, EN_CLEAN], {
+      get(t, k, r) {
+        if (k === "1") throw new Error("boom");
+        return Reflect.get(t, k, r);
+      },
+    });
+    const batch = lintQuestionBatch([EN_CLEAN, getter, proxy, EN_CLEAN]);
+    const unreadable = batch.filter((i) => i.code === "INPUT_UNREADABLE").map((i) => i.itemIndex);
+    expect(unreadable).toEqual([1, 2]);
+    expect(() => lintQuestionSet([EN_CLEAN, getter, proxy])).not.toThrow();
+    expect(() => lintQuestionBatch(throwingElementList)).not.toThrow();
+    expect(lintQuestionBatch(throwingElementList).filter((i) => i.code === "INPUT_UNREADABLE").map((i) => i.itemIndex)).toEqual([1]);
+    const revoked = Proxy.revocable([], {});
+    revoked.revoke();
+    expect(() => lintQuestionBatch(revoked.proxy)).not.toThrow();
+    expect(() => lintQuestionSet(revoked.proxy)).not.toThrow();
+    // unreadable elements are skipped by set checks (no stem duplicate between two unreadable items)
+    const setIssues = lintQuestionSet([getter, getter, ...setOf(BALANCED)]);
+    expect(codes(setIssues)).not.toContain("DUPLICATE_STEM_EXACT");
+  });
+
+  it("4. MULTIPLE_CHOICE with every option correct is CORRECT_COUNT_INVALID", () => {
+    const mc = { questionType: "MULTIPLE_CHOICE" };
+    expect(lint({ ...mc, answerOptions: opts(["One option", "Two option"]), correctOptionIds: ["A", "B"] })).toContain("CORRECT_COUNT_INVALID");
+    expect(lint({ ...mc, correctOptionIds: ["A", "B"] })).not.toContain("CORRECT_COUNT_INVALID");
+    expect(lint({ ...mc, correctOptionIds: ["A", "B", "C", "D"] })).toContain("CORRECT_COUNT_INVALID");
+  });
+
+  it("5. punctuation-only options and stems never become normalized duplicates", () => {
+    expect(lint({ answerOptions: opts(["?", "!", "Binary heap", "Sorted array"]) })).not.toContain("OPTION_DUPLICATE_NORMALIZED");
+    expect(lint({ answerOptions: opts(["?", "!", "Binary heap", "Sorted array"]) })).not.toContain("OPTION_EMPTY");
+    const s = setOf(BALANCED);
+    s[0] = { ...s[0], prompt: "?" };
+    s[1] = { ...s[1], prompt: "!" };
+    const c = codes(lintQuestionSet(s));
+    expect(c).not.toContain("DUPLICATE_STEM_NORMALIZED");
+    expect(c).not.toContain("NEAR_DUPLICATE_STEM");
+  });
+
+  it("6. SET_KEY_LENGTH_BIAS needs >= MIN_SET_SIZE eligible items", () => {
+    const biased = (i: number): Item => setItem(i, 2, { answerOptions: opts(["short", "tiny", "a much longer option here", "mini"]) });
+    const seven = Array.from({ length: 8 }, (_, i) => (i === 7 ? setItem(i, 2, { questionType: "MULTIPLE_CHOICE", correctOptionIds: ["A", "B"] }) : biased(i)));
+    expect(codes(lintQuestionSet(seven))).not.toContain("SET_KEY_LENGTH_BIAS");
+    const eight = Array.from({ length: 8 }, (_, i) => biased(i));
+    expect(codes(lintQuestionSet(eight))).toContain("SET_KEY_LENGTH_BIAS");
+  });
+
+  it("7. optionIds are content-blind: unsafe ids become positional markers", () => {
+    const hostile = "Secret answer text ".repeat(500);
+    const r = lintQuestionItem(
+      item({ answerOptions: [{ id: hostile, content: " " }, { id: "B", content: "x option" }, { id: "C", content: "y option" }, { id: "D", content: "z option" }], correctOptionIds: ["B"] }),
+    );
+    const e = r.find((i) => i.code === "OPTION_EMPTY");
+    expect(e?.optionIds).toEqual(["#0"]);
+    expect(e?.optionPositions).toEqual([0]);
+    expect(JSON.stringify(r)).not.toContain("Secret");
+    const ok = lintQuestionItem(item({ answerOptions: opts(["Hash table", " ", "Binary heap", "Sorted array"]) }));
+    expect(ok.find((i) => i.code === "OPTION_EMPTY")?.optionPositions).toEqual([1]);
+    const long = lintQuestionItem(item({ answerOptions: [{ id: "ABCDEFGHI", content: "" }, { id: "B", content: "x option" }] }));
+    expect(long.find((i) => i.code === "OPTION_EMPTY")?.optionIds).toEqual(["#0"]);
+  });
+
+  it("8. zero-width / bidi / format-only text counts as empty", () => {
+    const invisible = "​‏‪⁠﻿­";
+    expect(lint({ prompt: invisible })).toContain("STEM_EMPTY");
+    expect(lint({ answerOptions: opts(["Hash table", invisible, "Binary heap", "Sorted array"]) })).toContain("OPTION_EMPTY");
+    const s = setOf(BALANCED);
+    s[0] = { ...s[0], prompt: invisible };
+    s[1] = { ...s[1], prompt: invisible + " " };
+    expect(codes(lintQuestionSet(s))).not.toContain("DUPLICATE_STEM_EXACT");
   });
 });

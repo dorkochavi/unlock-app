@@ -12,7 +12,7 @@
  * All thresholds below are PRODUCT-DESIGN DEFAULTS, NOT research-backed. They are
  * named constants to be tuned against a Golden Dataset and instructor feedback.
  *
- * Implemented ITEM ERRORS: STEM_EMPTY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE,
+ * Implemented ITEM ERRORS: INPUT_UNREADABLE, OPTIONS_TOO_MANY, STEM_EMPTY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE,
  *   OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_COUNT_INVALID, CORRECT_ID_UNKNOWN.
  * Implemented ITEM WARNINGS: STEM_TOO_SHORT, STEM_NEGATIVE_WORDING, OPTION_ALL_OF_ABOVE,
  *   OPTION_NONE_OF_ABOVE, OPTION_ABSOLUTE_TERM, KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE,
@@ -34,6 +34,7 @@ import {
   comparisonKey,
   containsTerm,
   duplicateKey,
+  isBlank,
   jaccard,
   measureLength,
   similarityTokenSet,
@@ -52,8 +53,13 @@ export interface QuestionLintIssue {
   itemIndex?: number;
   /** Set-scope issues: affected item indexes (ascending). */
   itemIndexes?: number[];
-  /** Affected option ids in option order. */
+  /**
+   * Affected option ids in option order. An id is echoed only if it matches /^[A-Za-z0-9]{1,8}$/;
+   * otherwise the positional marker "#<position>" is substituted (content-blind).
+   */
   optionIds?: string[];
+  /** 0-based positions of the affected options, parallel to optionIds. */
+  optionPositions?: number[];
   /** Numbers only; never authored text. */
   metrics?: Record<string, number>;
 }
@@ -84,6 +90,13 @@ export const KEY_POSITION_RUN_LENGTH = 4;
 export const SET_KEY_LENGTH_BIAS_SHARE = 0.5;
 export const STEM_TEMPLATE_TOKEN_COUNT = 3;
 export const STEM_TEMPLATE_SHARE = 0.4;
+/** Above this option count only the cheap structural checks run (OPTIONS_TOO_MANY). */
+export const MAX_LINT_OPTIONS = 50;
+/** SET_KEY_LENGTH_BIAS needs at least this many eligible items (else it is statistically meaningless). */
+export const SET_KEY_LENGTH_BIAS_MIN_ELIGIBLE = MIN_SET_SIZE;
+/** Upper bound on correctOptionIds entries read per item. */
+const MAX_CORRECT_READ = 1000;
+const SAFE_ID = /^[A-Za-z0-9]{1,8}$/;
 
 // ---- Seed term lists (to be curated; comparison-normalized at module init) ----
 const norm = (terms: readonly string[]): string[] => terms.map((t) => comparisonKey(t));
@@ -114,9 +127,12 @@ interface SafeOption {
   content: string;
 }
 interface SafeItem {
+  unreadable: boolean;
   questionType: string;
   prompt: string;
+  /** At most MAX_LINT_OPTIONS + 1 options are copied; see optionCount for the true length. */
   options: SafeOption[];
+  optionCount: number;
   correct: string[];
   explanation: string | null;
 }
@@ -127,23 +143,45 @@ function str(v: unknown): string {
   return "";
 }
 
+function emptyItem(unreadable: boolean): SafeItem {
+  return { unreadable, questionType: "", prompt: "", options: [], optionCount: 0, correct: [], explanation: null };
+}
+
+/** Total: never throws (throwing getters / Proxies yield an unreadable item). */
 function sanitize(raw: unknown): SafeItem {
-  const o = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
-  const opts: SafeOption[] = [];
-  if (Array.isArray(o.answerOptions)) {
-    for (const x of o.answerOptions) {
-      const e = (typeof x === "object" && x !== null ? x : {}) as Record<string, unknown>;
-      opts.push({ id: str(e.id), content: str(e.content) });
+  try {
+    const o = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+    const opts: SafeOption[] = [];
+    let optionCount = 0;
+    const ao = o.answerOptions;
+    if (Array.isArray(ao)) {
+      optionCount = ao.length;
+      const take = Math.min(optionCount, MAX_LINT_OPTIONS + 1);
+      for (let i = 0; i < take; i += 1) {
+        const x: unknown = ao[i];
+        const e = (typeof x === "object" && x !== null ? x : {}) as Record<string, unknown>;
+        opts.push({ id: str(e.id), content: str(e.content) });
+      }
     }
+    const correct: string[] = [];
+    const co = o.correctOptionIds;
+    if (Array.isArray(co)) {
+      const take = Math.min(co.length, MAX_CORRECT_READ);
+      for (let i = 0; i < take; i += 1) correct.push(str(co[i]));
+    }
+    const expl = o.explanation;
+    return {
+      unreadable: false,
+      questionType: str(o.questionType),
+      prompt: str(o.prompt),
+      options: opts,
+      optionCount,
+      correct,
+      explanation: typeof expl === "string" ? expl : null,
+    };
+  } catch {
+    return emptyItem(true);
   }
-  const correct = Array.isArray(o.correctOptionIds) ? o.correctOptionIds.map(str) : [];
-  return {
-    questionType: str(o.questionType),
-    prompt: str(o.prompt),
-    options: opts,
-    correct,
-    explanation: typeof o.explanation === "string" ? o.explanation : null,
-  };
 }
 
 function issue(
@@ -155,13 +193,21 @@ function issue(
   return { code, severity, scope, ...extra };
 }
 
+/** Content-blind option references: safe ids echoed, others replaced by "#<position>". */
+function optRefs(idx: ReadonlyArray<number>, ids: ReadonlyArray<string>): { optionIds: string[]; optionPositions: number[] } {
+  return {
+    optionIds: idx.map((i) => (SAFE_ID.test(ids[i]) ? ids[i] : `#${i}`)),
+    optionPositions: idx.slice(),
+  };
+}
+
 function round3(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
 /** Resolved single key (SINGLE_CHOICE, exactly one distinct correct id matching an option). */
 function singleKeyIndex(item: SafeItem): number {
-  if (item.questionType !== "SINGLE_CHOICE") return -1;
+  if (item.unreadable || item.optionCount > MAX_LINT_OPTIONS || item.questionType !== "SINGLE_CHOICE") return -1;
   const distinct = Array.from(new Set(item.correct));
   if (distinct.length !== 1) return -1;
   const matches: number[] = [];
@@ -180,6 +226,11 @@ function contentTokenKeys(text: string): Set<string> {
   return out;
 }
 
+/** A duplicate key that collapsed to nothing (punctuation-only text) must not group: null. */
+function nonEmptyKey(k: string): string | null {
+  return k.length > 0 ? k : null;
+}
+
 /** Groups indexes by key, returning groups of size >= 2 in first-occurrence order. */
 function groupDuplicates(keys: ReadonlyArray<string | null>): number[][] {
   const map = new Map<string, number[]>();
@@ -196,33 +247,42 @@ function groupDuplicates(keys: ReadonlyArray<string | null>): number[][] {
 export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   const item = sanitize(input);
   const out: QuestionLintIssue[] = [];
-  const ids = item.options.map((o) => o.id);
-  const trimmed = item.options.map((o) => o.content.trim());
-  const nonEmpty = (i: number): boolean => trimmed[i].length > 0;
+  if (item.unreadable) return [issue("INPUT_UNREADABLE", "ERROR", "ITEM")];
 
   // ---- ERRORS ----
-  if (item.prompt.trim().length === 0) out.push(issue("STEM_EMPTY", "ERROR", "ITEM"));
+  if (isBlank(item.prompt)) out.push(issue("STEM_EMPTY", "ERROR", "ITEM"));
+
+  if (item.optionCount > MAX_LINT_OPTIONS) {
+    // Cap: skip all per-option and pairwise checks (bounded work for hostile input).
+    out.push(issue("OPTIONS_TOO_MANY", "ERROR", "ITEM", { metrics: { optionCount: item.optionCount, maximum: MAX_LINT_OPTIONS } }));
+    return out;
+  }
+
+  const ids = item.options.map((o) => o.id);
+  const trimmed = item.options.map((o) => o.content.trim());
+  const blank = item.options.map((o) => isBlank(o.content));
+  const nonEmpty = (i: number): boolean => !blank[i];
 
   if (item.options.length < MIN_OPTION_COUNT) {
     out.push(issue("OPTIONS_TOO_FEW", "ERROR", "ITEM", { metrics: { optionCount: item.options.length, minimum: MIN_OPTION_COUNT } }));
   }
 
-  const emptyIds = ids.filter((_, i) => !nonEmpty(i));
-  if (emptyIds.length > 0) out.push(issue("OPTION_EMPTY", "ERROR", "ITEM", { optionIds: emptyIds }));
+  const emptyIdx = ids.map((_, i) => i).filter((i) => !nonEmpty(i));
+  if (emptyIdx.length > 0) out.push(issue("OPTION_EMPTY", "ERROR", "ITEM", optRefs(emptyIdx, ids)));
 
   const dupIdIdx = groupDuplicates(ids).flat().sort((a, b) => a - b);
   if (dupIdIdx.length > 0) {
-    out.push(issue("OPTION_ID_DUPLICATE", "ERROR", "ITEM", { optionIds: dupIdIdx.map((i) => ids[i]) }));
+    out.push(issue("OPTION_ID_DUPLICATE", "ERROR", "ITEM", optRefs(dupIdIdx, ids)));
   }
 
   const exactGroups = groupDuplicates(trimmed.map((t, i) => (nonEmpty(i) ? t : null)));
   const exactIdx = exactGroups.flat().sort((a, b) => a - b);
   if (exactIdx.length > 0) {
-    out.push(issue("OPTION_DUPLICATE_EXACT", "ERROR", "ITEM", { optionIds: exactIdx.map((i) => ids[i]), metrics: { groupCount: exactGroups.length } }));
+    out.push(issue("OPTION_DUPLICATE_EXACT", "ERROR", "ITEM", { ...optRefs(exactIdx, ids), metrics: { groupCount: exactGroups.length } }));
   }
 
   // Normalized duplicates: equal duplicate-key but not identical after trim. Pairs already exact are excluded.
-  const normGroups = groupDuplicates(trimmed.map((t, i) => (nonEmpty(i) ? duplicateKey(t) : null)))
+  const normGroups = groupDuplicates(trimmed.map((t, i) => (nonEmpty(i) ? nonEmptyKey(duplicateKey(t)) : null)))
     .map((g) => {
       const firstOfText = new Map<string, number>();
       for (const i of g) if (!firstOfText.has(trimmed[i])) firstOfText.set(trimmed[i], i);
@@ -232,19 +292,20 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
     .filter((g) => g.length > 0);
   const normIdx = normGroups.flat().sort((a, b) => a - b);
   if (normIdx.length > 0) {
-    out.push(issue("OPTION_DUPLICATE_NORMALIZED", "ERROR", "ITEM", { optionIds: normIdx.map((i) => ids[i]), metrics: { groupCount: normGroups.length } }));
+    out.push(issue("OPTION_DUPLICATE_NORMALIZED", "ERROR", "ITEM", { ...optRefs(normIdx, ids), metrics: { groupCount: normGroups.length } }));
   }
 
   const distinctCorrect = Array.from(new Set(item.correct));
   const count = distinctCorrect.length;
   if (
     (item.questionType === "SINGLE_CHOICE" && count !== 1) ||
-    (item.questionType === "MULTIPLE_CHOICE" && count < 1)
+    (item.questionType === "MULTIPLE_CHOICE" && (count < 1 || count >= item.options.length))
   ) {
     out.push(issue("CORRECT_COUNT_INVALID", "ERROR", "ITEM", { metrics: { correctCount: count } }));
   }
 
-  const unknown = distinctCorrect.filter((c) => !ids.includes(c));
+  const idSet = new Set(ids);
+  const unknown = distinctCorrect.filter((c) => !idSet.has(c));
   if (unknown.length > 0) out.push(issue("CORRECT_ID_UNKNOWN", "ERROR", "ITEM", { metrics: { unknownCount: unknown.length } }));
 
   // ---- WARNINGS ----
@@ -272,25 +333,29 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
       if (ABSOLUTE_TERMS.some((t) => containsTerm(toks, t))) absIdx.push(i);
     }
   });
-  if (allIdx.length > 0) out.push(issue("OPTION_ALL_OF_ABOVE", "WARNING", "ITEM", { optionIds: allIdx.map((i) => ids[i]) }));
-  if (noneIdx.length > 0) out.push(issue("OPTION_NONE_OF_ABOVE", "WARNING", "ITEM", { optionIds: noneIdx.map((i) => ids[i]) }));
-  if (absIdx.length > 0) out.push(issue("OPTION_ABSOLUTE_TERM", "WARNING", "ITEM", { optionIds: absIdx.map((i) => ids[i]) }));
+  if (allIdx.length > 0) out.push(issue("OPTION_ALL_OF_ABOVE", "WARNING", "ITEM", optRefs(allIdx, ids)));
+  if (noneIdx.length > 0) out.push(issue("OPTION_NONE_OF_ABOVE", "WARNING", "ITEM", optRefs(noneIdx, ids)));
+  if (absIdx.length > 0) out.push(issue("OPTION_ABSOLUTE_TERM", "WARNING", "ITEM", optRefs(absIdx, ids)));
 
   const lengths = item.options.map((o) => measureLength(o.content));
 
   const keyIdx = singleKeyIndex(item);
   if (keyIdx >= 0 && item.options.length >= 2) {
-    const others = lengths.filter((_, i) => i !== keyIdx);
-    const nextLongest = Math.max(...others);
+    let nextLongest = 0;
+    for (let i = 0; i < lengths.length; i += 1) if (i !== keyIdx && lengths[i] > nextLongest) nextLongest = lengths[i];
     if (nextLongest > 0 && lengths[keyIdx] >= KEY_LONGEST_RATIO * nextLongest && lengths[keyIdx] - nextLongest >= KEY_LONGEST_MIN_CHAR_DIFF) {
-      out.push(issue("KEY_LONGEST_OPTION", "WARNING", "ITEM", { optionIds: [ids[keyIdx]], metrics: { ratio: round3(lengths[keyIdx] / nextLongest) } }));
+      out.push(issue("KEY_LONGEST_OPTION", "WARNING", "ITEM", { ...optRefs([keyIdx], ids), metrics: { ratio: round3(lengths[keyIdx] / nextLongest) } }));
     }
   }
 
   const nonEmptyLens = lengths.filter((_, i) => nonEmpty(i));
   if (nonEmptyLens.length >= 2) {
-    const max = Math.max(...nonEmptyLens);
-    const min = Math.min(...nonEmptyLens);
+    let max = -Infinity;
+    let min = Infinity;
+    for (const l of nonEmptyLens) {
+      if (l > max) max = l;
+      if (l < min) min = l;
+    }
     if (min > 0 && max / min >= LENGTH_IMBALANCE_RATIO && max - min >= LENGTH_IMBALANCE_MIN_CHAR_DIFF) {
       out.push(issue("OPTION_LENGTH_IMBALANCE", "WARNING", "ITEM", { metrics: { ratio: round3(max / min), charDifference: max - min } }));
     }
@@ -303,9 +368,10 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
       for (const k of contentTokenKeys(o.content)) if (stemKeys.has(k)) n += 1;
       return n;
     });
-    const maxOther = Math.max(...overlaps.filter((_, i) => i !== keyIdx));
+    let maxOther = 0;
+    for (let i = 0; i < overlaps.length; i += 1) if (i !== keyIdx && overlaps[i] > maxOther) maxOther = overlaps[i];
     if (overlaps[keyIdx] >= KEY_STEM_OVERLAP_MIN_TOKENS && overlaps[keyIdx] > maxOther) {
-      out.push(issue("KEY_STEM_LEXICAL_OVERLAP", "WARNING", "ITEM", { optionIds: [ids[keyIdx]], metrics: { keyOverlap: overlaps[keyIdx], maxDistractorOverlap: maxOther } }));
+      out.push(issue("KEY_STEM_LEXICAL_OVERLAP", "WARNING", "ITEM", { ...optRefs([keyIdx], ids), metrics: { keyOverlap: overlaps[keyIdx], maxDistractorOverlap: maxOther } }));
     }
   }
 
@@ -329,7 +395,7 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   }
   if (overlapIdx.size > 0) {
     out.push(issue("OPTION_OVERLAP_HIGH", "WARNING", "ITEM", {
-      optionIds: Array.from(overlapIdx).sort((a, b) => a - b).map((i) => ids[i]),
+      ...optRefs(Array.from(overlapIdx).sort((a, b) => a - b), ids),
       metrics: { pairCount, maxSimilarity: round3(maxSim) },
     }));
   }
@@ -338,7 +404,7 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   item.options.forEach((opt, i) => {
     if (opt.content.length > 0 && /^\s|\s$|\s{2,}|[\p{Cc}​-‏‪-‮⁦-⁩]/u.test(opt.content)) wsIdx.push(i);
   });
-  if (wsIdx.length > 0) out.push(issue("OPTION_WHITESPACE_ANOMALY", "WARNING", "ITEM", { optionIds: wsIdx.map((i) => ids[i]) }));
+  if (wsIdx.length > 0) out.push(issue("OPTION_WHITESPACE_ANOMALY", "WARNING", "ITEM", optRefs(wsIdx, ids)));
 
   if (item.explanation === null || item.explanation.trim().length === 0) {
     out.push(issue("EXPLANATION_MISSING", "WARNING", "ITEM"));
@@ -347,9 +413,28 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   return out;
 }
 
+/** Total list reader: an unreadable element becomes an empty, unreadable item that set checks skip. */
+function sanitizeList(inputs: unknown): SafeItem[] {
+  const items: SafeItem[] = [];
+  try {
+    if (!Array.isArray(inputs)) return items;
+    const len = inputs.length;
+    for (let i = 0; i < len; i += 1) {
+      try {
+        items.push(sanitize(inputs[i]));
+      } catch {
+        items.push(emptyItem(true));
+      }
+    }
+  } catch {
+    return [];
+  }
+  return items;
+}
+
 /** Lint a set (SET-scope issues only, deterministic order). Pass item-level results via lintQuestionBatch. */
 export function lintQuestionSet(inputs: unknown): QuestionLintIssue[] {
-  const items = (Array.isArray(inputs) ? inputs : []).map(sanitize);
+  const items = sanitizeList(inputs);
   const n = items.length;
   const out: QuestionLintIssue[] = [];
   const small = n < MIN_SET_SIZE;
@@ -358,10 +443,11 @@ export function lintQuestionSet(inputs: unknown): QuestionLintIssue[] {
 
   // Stem duplicates.
   const trimmedPrompts = items.map((it) => it.prompt.trim());
-  const exactGroups = groupDuplicates(trimmedPrompts.map((p) => (p.length > 0 ? p : null)));
+  const promptBlank = items.map((it) => isBlank(it.prompt));
+  const exactGroups = groupDuplicates(trimmedPrompts.map((p, i) => (promptBlank[i] ? null : p)));
   for (const g of exactGroups) out.push(issue("DUPLICATE_STEM_EXACT", "WARNING", "SET", { itemIndexes: g, metrics: { itemCount: g.length } }));
 
-  const dupKeys = trimmedPrompts.map((p) => (p.length > 0 ? duplicateKey(p) : null));
+  const dupKeys = trimmedPrompts.map((p, i) => (promptBlank[i] ? null : nonEmptyKey(duplicateKey(p))));
   for (const g of groupDuplicates(dupKeys)) {
     if (new Set(g.map((i) => trimmedPrompts[i])).size > 1) {
       out.push(issue("DUPLICATE_STEM_NORMALIZED", "WARNING", "SET", { itemIndexes: g, metrics: { itemCount: g.length } }));
@@ -434,7 +520,7 @@ export function lintQuestionSet(inputs: unknown): QuestionLintIssue[] {
     const lens = it.options.map((o) => measureLength(o.content));
     if (lens.every((l, i) => i === ki || lens[ki] > l)) longest.push(index);
   });
-  if (eligible > 0 && longest.length / eligible >= SET_KEY_LENGTH_BIAS_SHARE) {
+  if (eligible >= SET_KEY_LENGTH_BIAS_MIN_ELIGIBLE && longest.length / eligible >= SET_KEY_LENGTH_BIAS_SHARE) {
     out.push(issue("SET_KEY_LENGTH_BIAS", "WARNING", "SET", { itemIndexes: longest, metrics: { count: longest.length, eligible } }));
   }
 
@@ -458,9 +544,25 @@ export function lintQuestionSet(inputs: unknown): QuestionLintIssue[] {
   return out;
 }
 
+const UNREADABLE_ELEMENT: unknown = new Proxy({}, { get() { throw new Error("unreadable"); } });
+
 /** Convenience: item issues (tagged with itemIndex, in item order) followed by set issues. */
 export function lintQuestionBatch(inputs: unknown): QuestionLintIssue[] {
-  const list = Array.isArray(inputs) ? inputs : [];
+  let list: unknown[] = [];
+  try {
+    if (Array.isArray(inputs)) {
+      const len = inputs.length;
+      for (let i = 0; i < len; i += 1) {
+        try {
+          list.push(inputs[i]);
+        } catch {
+          list.push(UNREADABLE_ELEMENT);
+        }
+      }
+    }
+  } catch {
+    list = [];
+  }
   const out: QuestionLintIssue[] = [];
   list.forEach((it, itemIndex) => {
     for (const i of lintQuestionItem(it)) out.push({ ...i, itemIndex });

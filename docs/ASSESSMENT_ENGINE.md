@@ -334,6 +334,8 @@ Thresholds are **product-design defaults, NOT research-backed**; no verified num
 
 | Code | Severity | Detectability | Rule | Threshold | Rationale |
 |---|---|---|---|---|---|
+| INPUT_UNREADABLE | ERROR | DET | Item input cannot be read safely (throwing getter/Proxy); lint never throws | read failure | Totality of the linter; other checks are skipped for that item. |
+| OPTIONS_TOO_MANY | ERROR | DET | Option count exceeds the lint cap; per-option and pairwise checks are skipped | > 50 (MAX_LINT_OPTIONS, product default) | Bounds work on hostile input. |
 | STEM_EMPTY | ERROR | DET | Prompt is empty after trim | length = 0 | Unanswerable item. |
 | OPTIONS_TOO_FEW | ERROR | DET | Fewer than the minimum options | < 2 (MIN_PUBLISHABLE_OPTION_COUNT as repo defines; reconcile) | Not a choice item. |
 | OPTION_EMPTY | ERROR | DET | An option is empty after trim | length = 0; detail = option ids | Blank option. |
@@ -409,7 +411,7 @@ All thresholds are **product-design defaults, NOT research-backed**.
 
 ### 11.2 Final code list (for the linter implementer)
 
-The authoritative machine-readable list: all codes in 10.3 (scope ITEM) and 11.1 (scope SET) above. ERRORs: STEM_EMPTY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE, OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_COUNT_INVALID, CORRECT_ID_UNKNOWN (all ITEM). Every other code is WARNING. META checks are no-ops when their metadata is absent.
+The authoritative machine-readable list: all codes in 10.3 (scope ITEM) and 11.1 (scope SET) above. ERRORs: INPUT_UNREADABLE, OPTIONS_TOO_MANY, STEM_EMPTY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE, OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_COUNT_INVALID, CORRECT_ID_UNKNOWN (all ITEM). Every other code is WARNING. META checks are no-ops when their metadata is absent.
 
 ## 12. Knowledge Map
 

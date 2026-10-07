@@ -15,7 +15,8 @@ export const PREFIX_STRIP_MIN_REMAINDER = 3;
 /** Product-default maximum number of prefix letters stripped from one token. */
 export const PREFIX_STRIP_MAX_LETTERS = 3;
 
-const BIDI_AND_ZERO_WIDTH = /[​-‏‪-‮⁦-⁩]/g;
+// Zero-width, bidi and other invisible format characters (incl. soft hyphen, ALM, word joiner, BOM).
+const BIDI_AND_ZERO_WIDTH = /[­؜​-‏‪-‮⁠-⁤⁦-⁩﻿]/g;
 // Niqqud + cantillation U+0591-U+05C7, keeping maqaf U+05BE; geresh/gershayim (U+05F3/4) are outside the range.
 const NIQQUD = /[֑-ֽֿ-ׇ]/g;
 const FINAL_LETTERS: Readonly<Record<string, string>> = {
@@ -60,21 +61,43 @@ export function comparisonKey(text: unknown): string {
   return s.toLowerCase();
 }
 
-/** Duplicate key: comparison key plus step 8 (terminal punctuation stripped). */
+const TERMINAL_PUNCT = new Set([".", ",", ";", ":", "!", "?", "…", "'", '"', "-"]);
+const QUOTE_DASH = new Set(["'", '"', "-"]);
+
+/** Linear trailing trim of whitespace + terminal punctuation (no backtracking regex). */
+function trimTerminal(s: string): string {
+  let end = s.length;
+  while (end > 0 && (TERMINAL_PUNCT.has(s[end - 1]) || /\s/.test(s[end - 1]))) end -= 1;
+  return s.slice(0, end);
+}
+
+/** Duplicate key: comparison key plus step 8 (terminal punctuation stripped). May be empty for punctuation-only text. */
 export function duplicateKey(text: unknown): string {
-  return comparisonKey(text)
-    .replace(/[\s.,;:!?…'"-]+$/u, "")
-    .trim();
+  return trimTerminal(comparisonKey(text)).trim();
+}
+
+/** Linear strip of leading/trailing quote/hyphen characters. */
+function trimQuoteDash(s: string): string {
+  let start = 0;
+  let end = s.length;
+  while (start < end && QUOTE_DASH.has(s[start])) start += 1;
+  while (end > start && QUOTE_DASH.has(s[end - 1])) end -= 1;
+  return s.slice(start, end);
 }
 
 /** Tokens of the comparison key (split on whitespace/punctuation; keeps inner apostrophe/quote/hyphen). */
 export function tokenize(text: unknown): string[] {
   const out: string[] = [];
   for (const raw of comparisonKey(text).split(/[^\p{L}\p{N}\p{M}'"-]+/u)) {
-    const token = raw.replace(/^['"-]+|['"-]+$/g, "");
+    const token = trimQuoteDash(raw);
     if (token.length > 0) out.push(token);
   }
   return out;
+}
+
+/** True when text has no visible content (empty after removing whitespace and zero-width/bidi/format characters). */
+export function isBlank(text: unknown): boolean {
+  return collapseWhitespace(text).length === 0;
 }
 
 /**
