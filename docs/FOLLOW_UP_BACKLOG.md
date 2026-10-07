@@ -1348,6 +1348,10 @@ Pilot UX / Readiness decision; none required by any verdict, nothing applied:
   Today returns through the existing Today flow with the item still pending. Practice returns to the same
   Course/Topic scope; exact same-question restoration is NOT guaranteed (would need a `question=` redirect parameter
   plus Practice API support) — DEFERRED, not a Pilot blocker.
+* Production (2026-10-07, [HUMAN_REPORTED]): `59f718f` (includes `5b1046a`) is Ready on Vercel Production; normal Today and
+  Practice Answer flows smoke-tested PASS with no regression. The learner Answer 401 sub-slice is IMPLEMENTED + TESTED +
+  PRODUCTION NORMAL-FLOW SMOKE VERIFIED. A real Production 401 was NOT induced; the 401 recovery semantics rest on the
+  automated regression evidence in `5b1046a`. FUB-044 itself stays `DEFERRED` (open).
 * Also still open: Q3 authenticated browser accessibility/RTL verification (owned by `docs/PILOT_READINESS.md`) and
   the other candidates listed above.
 

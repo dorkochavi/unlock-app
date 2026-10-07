@@ -231,7 +231,7 @@ reports; only still-open pointers remain:
   authenticated Today timings), Q5 (Vercel failed-build behavior unknown), Q6a (`/login` is frameable; framing
   protection is a human DECISION). Expired-session recovery UX (FUB-044, low severity, non-blocking): learner side RESOLVED/LOCKED —
   learner 401 sign-in links carry the allowlisted `next`, and a 401 during Answer shows "answer not saved" (commit
-  `5b1046a`). Accepted V1 decision (401 during learner Answer): a 401 means the answer was not accepted and no Attempt
+  `5b1046a`). Learner Answer 401 sub-slice: IMPLEMENTED + TESTED + PRODUCTION NORMAL-FLOW SMOKE VERIFIED — `59f718f` (includes `5b1046a`) is on `origin/main` and Vercel Production is Ready; human Production smoke 2026-10-07 [HUMAN_REPORTED]: Today Answer flow PASS, Practice Answer flow PASS, no regression in submit → feedback → continue. A real Production session-expiry/401 was NOT deliberately induced; the 401 semantics are proven by the automated regression tests in `5b1046a` only. Accepted V1 decision (401 during learner Answer): a 401 means the answer was not accepted and no Attempt
   is created; the selection is never preserved or auto-replayed; the learner explicitly answers again after
   re-authentication. Today: returns through the existing Today flow, the unresolved item stays pending. Practice:
   returns to the same Course/Topic scope; exact same-question restoration is NOT guaranteed in V1 (no `question=`
