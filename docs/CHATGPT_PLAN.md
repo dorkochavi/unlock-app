@@ -3,9 +3,9 @@
 PLAN_VERSION: 022
 RUN_ID: 2026-10-07-VISUAL-POLISH-RUN-003
 START_HEAD: `f551706`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `f551706`
-STATUS: **IN PROGRESS** — local Run. No push, no deploy, no hosted mutation.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `3b90107`
+STATUS: **COMPLETE** — local Run. No push, no deploy, no hosted mutation. Final human walkthrough required before any push (Run report).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -18,14 +18,14 @@ Polish (not redesign) the accepted direction using Dor's human review: Today que
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A+B+G | Today question bottom composition, feedback hierarchy, queue spoiler removal (+ polish baseline shots) | REVIEW_GATE | PENDING |
-| C+D+F | Progress simplification, Course-detail hero compression, hero/purple restraint audit | REVIEW_GATE | PENDING |
-| E | Instructor desktop layout | REVIEW_GATE | PENDING |
-| H | Responsive/bottom-nav/dark-mode pass, verification, Run close | FINAL_GATE | PENDING |
+| A+B+G | Today question bottom composition, feedback hierarchy, queue spoiler removal (+ polish baseline shots) | REVIEW_GATE | DONE |
+| C+D+F | Progress simplification, Course-detail hero compression, hero/purple restraint audit | REVIEW_GATE | DONE |
+| E | Instructor desktop layout | REVIEW_GATE | DONE |
+| H | Responsive/bottom-nav/dark-mode pass, verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
-- VISUAL-POLISH-RUN-003: (in progress)
+- VISUAL-POLISH-RUN-003: `docs/RUNS/2026-10-07-VISUAL-POLISH-RUN-003.md`
 - DESIGN-REFRESH-OVERNIGHT-002: `docs/RUNS/2026-10-07-DESIGN-REFRESH-OVERNIGHT-002.md`
 - VISUAL-SYSTEM-RUN-001: `docs/RUNS/2026-10-06-VISUAL-SYSTEM-RUN-001.md`
 - PERFORMANCE-RUN-001: `docs/RUNS/2026-10-06-PERFORMANCE-RUN-001.md`

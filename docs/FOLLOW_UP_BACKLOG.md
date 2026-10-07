@@ -1471,7 +1471,7 @@ After real Pilot usage begins, or when product/UX questions require behavioral e
 
 # FUB-052 — Pre-Pilot Modern Visual Experience / Design System Refresh
 
-**Status:** `PARTIAL` — foundation + learner rollout (VISUAL-SYSTEM-RUN-001) and the visible art-direction refresh incl. Heebo, shell/nav, anchored sign-out and Instructor course-management surfaces (DESIGN-REFRESH-OVERNIGHT-002) DONE locally, unpushed; pending Dor's human visual walkthrough. Remaining: Dor's decisions (font keep, learner chip copy, desktop layout, dark toggle), instructor question-editor page, illustration language.
+**Status:** `PARTIAL` — foundation + learner rollout (VISUAL-SYSTEM-RUN-001) and the visible art-direction refresh incl. Heebo, shell/nav, anchored sign-out and Instructor course-management surfaces (DESIGN-REFRESH-OVERNIGHT-002) and the human-reviewed polish (VISUAL-POLISH-RUN-003: Today composition/feedback, Progress, Course hero, Instructor desktop, hero restraint; Heebo kept, queue prompts removed) DONE locally, unpushed; pending Dor's final walkthrough. Remaining narrow residuals: instructor question-editor visual rollout, dark-mode toggle (product decision), illustration language, iOS safe-area real-device check.
 **Priority:** `MEDIUM`
 **Area:** UX / visual system (cross-cutting; narrower leftovers stay in FUB-033)
 
