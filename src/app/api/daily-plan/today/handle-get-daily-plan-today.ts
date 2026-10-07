@@ -67,8 +67,24 @@
  * never deleted), both map to the same generic 500 `INTERNAL_ERROR` used
  * elsewhere in this function — never a silent substitution of different
  * content and never a partially-enriched item.
+ *
+ * ## Learning recap (RUN TODAY-LEARNING-RECAP-004)
+ *
+ * When — and ONLY when — at least one item on the plan is `completed`,
+ * `loadPlanAttempts` (optional dependency) reads the Attempts of THIS plan for
+ * THIS authenticated user (`authResult.userId` + the already-authorized
+ * `plan.id`, never client input) and the pure `deriveLearningRecap` result is
+ * attached as the optional `plan.learningRecap`. Fresh / skipped-only plans
+ * add no statement. The field is additive and absent when not computed. A
+ * failure of this read never fails Today: it is logged and the field is simply
+ * omitted (the recap is presentation-only; frozen-plan semantics are untouched).
  */
 import { toDailyPlanDto } from "./daily-plan-dto";
+import {
+  deriveLearningRecap,
+  type LearningRecapAttemptRow,
+  type TodayLearningRecap,
+} from "../../../../application/dailyPlan/derive-learning-recap";
 import type {
   GetOrCreateDailyPlanForTodayResult,
 } from "../../../../application/dailyPlan/get-or-create-daily-plan-for-today";
@@ -86,6 +102,8 @@ export interface HandleGetDailyPlanTodayDependencies {
   loadLearnerQuestionContent: (
     questionVersionIds: string[],
   ) => Promise<LearnerQuestionContent[]>;
+  /** Optional: Attempts of one plan for one authenticated user (recap read). */
+  loadPlanAttempts?: (userId: string, dailyPlanId: string) => Promise<LearningRecapAttemptRow[]>;
 }
 
 export interface RouteJsonResponse {
@@ -134,6 +152,24 @@ export async function handleGetDailyPlanToday(
         return { status: 200, body: { plan: toDailyPlanDto(result.plan, new Map()) } };
       }
 
+      const plan = result.plan;
+      async function recapField(): Promise<{ learningRecap?: TodayLearningRecap }> {
+        if (
+          deps.loadPlanAttempts === undefined ||
+          authResult.outcome !== "AUTHENTICATED" ||
+          !plan.items.some((item) => item.status === "completed")
+        ) {
+          return {};
+        }
+        try {
+          const attempts = await deps.loadPlanAttempts(authResult.userId, plan.id);
+          return { learningRecap: deriveLearningRecap(plan.items, attempts) };
+        } catch (error) {
+          logUnexpectedError("GET /api/daily-plan/today: unexpected error loading the learning recap (omitted)", error);
+          return {};
+        }
+      }
+
       let content: LearnerQuestionContent[];
       try {
         content = await deps.loadLearnerQuestionContent(uniqueVersionIds);
@@ -155,7 +191,10 @@ export async function handleGetDailyPlanToday(
         return internalErrorResponse();
       }
 
-      return { status: 200, body: { plan: toDailyPlanDto(result.plan, contentByVersionId) } };
+      return {
+        status: 200,
+        body: { plan: { ...toDailyPlanDto(result.plan, contentByVersionId), ...(await recapField()) } },
+      };
     }
 
     case "TIMEZONE_NOT_SET":

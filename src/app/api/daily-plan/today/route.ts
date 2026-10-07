@@ -65,6 +65,7 @@ import {
 import { PgConnectionProvider } from "@/infrastructure/postgres/pg-connection-provider";
 import { getPool } from "@/infrastructure/postgres/pg-pool";
 import { PostgresLearnerQuestionContentRepository } from "@/infrastructure/postgres/learner-question-content-repository";
+import { PostgresDailyPlanAttemptRecapRepository } from "@/infrastructure/postgres/daily-plan-attempt-recap-repository";
 import { requireAuthenticatedUser } from "@/infrastructure/supabase/require-authenticated-user";
 import { createSupabaseServerClient } from "@/infrastructure/supabase/server-client";
 
@@ -101,6 +102,14 @@ async function getImpl(): Promise<Response> {
         const pool = getPool();
         const repository = new PostgresLearnerQuestionContentRepository(pool);
         return timeStage("content", () => repository.findManyByVersionIds(questionVersionIds));
+      },
+      loadPlanAttempts: async (userId, dailyPlanId) => {
+        // Learning recap: reached ONLY for an authenticated request with a
+        // READY plan that has >= 1 completed item. `userId` is the trusted
+        // authenticated id and `dailyPlanId` comes from that user's own plan.
+        const pool = getPool();
+        const repository = new PostgresDailyPlanAttemptRecapRepository(pool);
+        return timeStage("recap", () => repository.findAttemptsForPlan(userId, dailyPlanId));
       },
     });
 

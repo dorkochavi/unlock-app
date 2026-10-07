@@ -34,6 +34,7 @@
  * omits the fields or substitutes another version's content.
  */
 import type { DailyPlan, DailyPlanItem } from "../../../../application/dailyPlan/ports";
+import type { TodayLearningRecap } from "../../../../application/dailyPlan/derive-learning-recap";
 import type { LearnerQuestionContent } from "../../../../application/learning/ports";
 
 export interface AnswerOptionDto {
@@ -68,6 +69,12 @@ export interface DailyPlanDto {
   startedAt: string | null;
   completedAt: string | null;
   items: DailyPlanItemDto[];
+  /**
+   * Presentation-only recap of today's answers (Run TODAY-LEARNING-RECAP-004).
+   * Attached by the route handler ONLY when >= 1 item is completed; absent
+   * otherwise. Never produced by `toDailyPlanDto` itself.
+   */
+  learningRecap?: TodayLearningRecap;
 }
 
 function toDailyPlanItemDto(

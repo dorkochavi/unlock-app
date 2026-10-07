@@ -32,6 +32,8 @@ const mocks = vi.hoisted(() => ({
   createProductionDailyPlanGenerationSettings: vi.fn(),
   getOrCreateDailyPlanForToday: vi.fn(),
   findManyByVersionIds: vi.fn(),
+  findAttemptsForPlan: vi.fn(),
+  RecapRepository: vi.fn(),
 }));
 
 vi.mock("@/infrastructure/supabase/server-client", () => ({
@@ -64,6 +66,14 @@ vi.mock("@/infrastructure/postgres/learner-question-content-repository", () => (
     this: { findManyByVersionIds: typeof mocks.findManyByVersionIds },
   ) {
     this.findManyByVersionIds = mocks.findManyByVersionIds;
+  }),
+}));
+
+vi.mock("@/infrastructure/postgres/daily-plan-attempt-recap-repository", () => ({
+  PostgresDailyPlanAttemptRecapRepository: mocks.RecapRepository.mockImplementation(function (
+    this: { findAttemptsForPlan: typeof mocks.findAttemptsForPlan },
+  ) {
+    this.findAttemptsForPlan = mocks.findAttemptsForPlan;
   }),
 }));
 
@@ -124,6 +134,9 @@ describe("GET /api/daily-plan/today — real route wiring: auth before DB constr
     expect(mocks.PgConnectionProvider).not.toHaveBeenCalled();
     expect(mocks.createProductionDailyPlanPorts).not.toHaveBeenCalled();
     expect(mocks.getOrCreateDailyPlanForToday).not.toHaveBeenCalled();
+    // Learning recap (Run TODAY-LEARNING-RECAP-004): its reader is never built either.
+    expect(mocks.RecapRepository).not.toHaveBeenCalled();
+    expect(mocks.findAttemptsForPlan).not.toHaveBeenCalled();
   });
 
   it("B. authenticated: real DB construction wiring is reached, exactly once, with the real pool/ports", async () => {
@@ -203,6 +216,39 @@ describe("GET /api/daily-plan/today — real route wiring: auth before DB constr
       questionType: "SINGLE_CHOICE",
     });
     expect(JSON.stringify(body)).not.toContain("correct_answer");
+  });
+
+  it("B3. recap read: NOT built for a fresh plan; built with the pool and called with the authenticated user + plan id only once an item is completed", async () => {
+    mocks.requireAuthenticatedUser.mockResolvedValue({
+      outcome: "AUTHENTICATED",
+      userId: "supabase-user-1",
+    });
+    const fakePool = { marker: "fake-pool" };
+    mocks.getPool.mockReturnValue(fakePool);
+    mocks.createProductionDailyPlanGenerationSettings.mockReturnValue({});
+    mocks.createProductionDailyPlanPorts.mockReturnValue({});
+    mocks.findManyByVersionIds.mockResolvedValue([
+      { questionVersionId: "qv-1", questionType: "SINGLE_CHOICE", prompt: "p", options: [] },
+    ]);
+
+    mocks.getOrCreateDailyPlanForToday.mockResolvedValue({
+      outcome: "READY",
+      plan: makePlan({ items: [makeItem()] }),
+    });
+    await GET();
+    expect(mocks.RecapRepository).not.toHaveBeenCalled();
+
+    mocks.findAttemptsForPlan.mockResolvedValue([]);
+    mocks.getOrCreateDailyPlanForToday.mockResolvedValue({
+      outcome: "READY",
+      plan: makePlan({ items: [makeItem({ status: "completed", resolvedAt: new Date(), completedAt: new Date() })] }),
+    });
+    const response = await GET();
+    const body = await response.json();
+    expect(mocks.RecapRepository).toHaveBeenCalledWith(fakePool);
+    expect(mocks.findAttemptsForPlan).toHaveBeenCalledTimes(1);
+    expect(mocks.findAttemptsForPlan).toHaveBeenCalledWith("supabase-user-1", "plan-1");
+    expect(body.plan.learningRecap).toMatchObject({ answered: 0 });
   });
 
   it("C. authenticated but DB construction throws: 500 INTERNAL_ERROR, no raw error/secret leaked", async () => {
