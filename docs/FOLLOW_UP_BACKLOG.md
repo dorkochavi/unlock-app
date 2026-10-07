@@ -1336,6 +1336,21 @@ Pilot UX / Readiness decision; none required by any verdict, nothing applied:
   on `/today`); (b) instructor save/publish has no 401 branch (generic "failed" message); (c) a 401 during an
   Answer drops the learner's selection with no "not saved" message.
 
+**Status update (2026-10-07, commit `5b1046a`) — FUB-044 remains `DEFERRED`, partially addressed:**
+
+* (a) RESOLVED for learner pages (Courses, Course detail, Progress, Practice carry the allowlisted `next`; Today uses
+  the default). STILL OPEN for instructor pages (plain `/login`; `/instructor/...` is not in the `next` allowlist —
+  needs an explicit, security-reviewed decision).
+* (b) STILL OPEN: instructor mutations (save/publish/archive/create/bulk publish) have no 401 branch.
+* (c) RESOLVED/LOCKED: a learner 401 during Answer shows "answer not saved" (Today and Practice) and is covered by
+  regression tests. **Accepted V1 decision:** a 401 means the answer was not accepted and no Attempt is created; the
+  selection is never preserved or auto-replayed; after re-authentication the learner explicitly answers again.
+  Today returns through the existing Today flow with the item still pending. Practice returns to the same
+  Course/Topic scope; exact same-question restoration is NOT guaranteed (would need a `question=` redirect parameter
+  plus Practice API support) — DEFERRED, not a Pilot blocker.
+* Also still open: Q3 authenticated browser accessibility/RTL verification (owned by `docs/PILOT_READINESS.md`) and
+  the other candidates listed above.
+
 Open human gates from that verification (Q2-B, Q3-Q5, Q6a framing) are owned by `docs/PILOT_READINESS.md`, not here.
 
 ## Promotion Trigger

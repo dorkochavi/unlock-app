@@ -229,8 +229,15 @@ reports; only still-open pointers remain:
   (`docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`): Q2-B (valid-refresh-token behavior after natural
   session expiry unproven), Q3 (accessibility of login/join/Progress/instructor flows unexercised), Q4 (no
   authenticated Today timings), Q5 (Vercel failed-build behavior unknown), Q6a (`/login` is frameable; framing
-  protection is a human DECISION). Expired-session recovery UX gaps (401 links lack `next`; instructor mutations have
-  no 401 branch; a 401 during Answer drops the selection silently) are confirmed, low severity, non-blocking.
+  protection is a human DECISION). Expired-session recovery UX (FUB-044, low severity, non-blocking): learner side RESOLVED/LOCKED —
+  learner 401 sign-in links carry the allowlisted `next`, and a 401 during Answer shows "answer not saved" (commit
+  `5b1046a`). Accepted V1 decision (401 during learner Answer): a 401 means the answer was not accepted and no Attempt
+  is created; the selection is never preserved or auto-replayed; the learner explicitly answers again after
+  re-authentication. Today: returns through the existing Today flow, the unresolved item stays pending. Practice:
+  returns to the same Course/Topic scope; exact same-question restoration is NOT guaranteed in V1 (no `question=`
+  redirect parameter, allowlist and Practice API unchanged) — deferred, not a Pilot blocker. STILL OPEN under FUB-044:
+  instructor mutation 401 recovery / re-login UX (no 401 branch; instructor sign-in links are plain `/login`),
+  instructor safe-`next` decision, Q3 authenticated browser accessibility/RTL verification, other deferred FUB-044 items.
   Isolated QA data (`QA-SliceB-*`) and other test data remain in the pre-pilot cleanup (`docs/PILOT_READINESS.md` item 12).
 - Pre-pilot: content gate, SMTP / Auth email capacity, earlier test-data cleanup (item 12) — `docs/PILOT_READINESS.md` §3.
 
