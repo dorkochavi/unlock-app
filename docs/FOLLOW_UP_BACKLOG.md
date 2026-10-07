@@ -1184,6 +1184,8 @@ mechanism/thresholds are decided (OQ-017).
 **Status:** `DEFERRED`
 **Area:** Content Intelligence (future) — authoring-time / import-time quality signals
 
+**Update 2026-10-08 (ASSESSMENT-ENGINE-NIGHT-001):** the design and a pure unwired linter prototype now exist; canonical owner `docs/ASSESSMENT_ENGINE.md` (Sections 10-11, 28; AE-001/002/031). Wiring and the `DUPLICATE_PROMPT` vs `DUPLICATE_STEM_EXACT` reconciliation are tracked in FUB-054/FUB-055. This item stays DEFERRED.
+
 Status qualifier (moved from the Status line, verbatim): PROMOTED — owned by Run 011 (content-generation / AI critic / assessment-quality intelligence; explicitly out of scope for any Run before 011, including UX-03-QA1 which found it). That label is historical: Run 011 has not started and does not own this item. It stays DEFERRED until a started Run's Plan names it.
 
 Product-owner QA (real 30-question course) found the CONTENT itself, not runtime code, leaked assessment patterns a
@@ -1553,6 +1555,76 @@ existing duplicates would make the migration fail. Migration is forward-only and
 ## Promotion Trigger
 
 Observed duplicate Topics in Production, concurrent-edit evidence, higher-volume concurrent instructor authoring, or the introduction of an Unarchive flow.
+
+---
+
+# FUB-054 — Assessment Linter Hardening (Set Cap, Hebrew False Positives, Word Boundaries)
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
+
+Non-blocking residuals from the final range review of ASSESSMENT-ENGINE-NIGHT-001: uncapped O(n^2) set-level checks (add `MAX_LINT_SET_ITEMS`, AE-032); Hebrew prefix false positive (`מלא` matched as `מ`+`לא`); all/none-of-above substring match without word boundary; seed term lists incomplete. Design owner and IDs: `docs/ASSESSMENT_ENGINE.md` Sections 10-11, 28 (AE-001/002/003/032). Not needed until the linter is wired.
+
+## Promotion Trigger
+
+A human decision to wire the linter (FUB-055) or any user-visible lint output.
+
+---
+
+# FUB-055 — Wire Linter Into Import Validator and Reconcile Duplicate Codes
+
+**Status:** `DEFERRED` (needs the group A/E human decisions)
+**Priority:** `LOW`
+**Area:** instructor import validation
+
+Wire the pure linter into the structured import validator as advisory output and reconcile `DUPLICATE_PROMPT` with `DUPLICATE_STEM_EXACT`. Relates to FUB-035. Detail, surface options and decisions: `docs/ASSESSMENT_ENGINE.md` Sections 27.1 (A, E), 27.2, 28 (AE-031), 30.
+
+## Promotion Trigger
+
+Human acceptance of the prototype and a chosen surface (Section 27.1 group A/E).
+
+---
+
+# FUB-056 — DOCX Ingestion Decision and Implementation
+
+**Status:** `DEFERRED` — human decision required
+**Priority:** `LOW`
+**Area:** Content Ingestion (not implemented)
+
+Hand-rolled bounded reader versus vetted library, and the security review budget, are a human decision (group B). No parser was written. Owner: `docs/ASSESSMENT_ENGINE.md` Sections 20-21, 27.1 B, AE-016/AE-023. Any parser needs security review.
+
+## Promotion Trigger
+
+Group B decisions made.
+
+---
+
+# FUB-057 — PDF Ingestion Dependency Gate
+
+**Status:** `DEFERRED` — `HUMAN_GATE`
+**Priority:** `LOW`
+**Area:** Content Ingestion (not implemented)
+
+PDF needs a vetted library (new dependency, CVE review); not approved. Owner: `docs/ASSESSMENT_ENGINE.md` Section 21, 27.1 B2, AE-024. Related: OQ-023, OQ-024.
+
+## Promotion Trigger
+
+Human dependency approval.
+
+---
+
+# FUB-058 — Pilot UX / Q3 Human Device Checks
+
+**Status:** `DEFERRED` — human action
+**Priority:** `MEDIUM` (pre-Pilot)
+**Area:** Pilot readiness / accessibility
+
+Pilot UX gate and Q3 a11y/RTL gate closed PARTIAL in ASSESSMENT-ENGINE-NIGHT-001. Remaining: deploy the Q3 commits, then real iOS/Android checks of sticky-bar focus clearance and instructor option names with a screen reader; re-run the `docs/PILOT_READINESS.md` student script on 2+ physical devices on current Production; induce a real 401 (learner and instructor); instructor laptop walk on Production. Relates to FUB-044. Details: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-NIGHT-001.md`.
+
+## Promotion Trigger
+
+Before the real Pilot.
 
 ---
 
