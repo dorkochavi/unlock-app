@@ -1338,10 +1338,8 @@ Pilot UX / Readiness decision; none required by any verdict, nothing applied:
 
 **Status update (2026-10-07, commit `5b1046a`) — FUB-044 remains `DEFERRED`, partially addressed:**
 
-* (a) RESOLVED for learner pages (Courses, Course detail, Progress, Practice carry the allowlisted `next`; Today uses
-  the default). STILL OPEN for instructor pages (plain `/login`; `/instructor/...` is not in the `next` allowlist —
-  needs an explicit, security-reviewed decision).
-* (b) STILL OPEN: instructor mutations (save/publish/archive/create/bulk publish) have no 401 branch.
+* (a) RESOLVED: learner pages carry the allowlisted `next`; Instructor pages now do too — six exact Instructor page paths allowlisted (no query/wildcard), security review PASS, and the two previously dead Instructor `next` redirects (new course, author self-enroll) now work.
+* (b) IMPLEMENTED + TESTED (Run 2026-10-07-FUB-044-INSTRUCTOR-401-001, local, unreleased): every Instructor mutation (save, join policy, publish/archive, create question, topics, question editor save/publish/create-another, import preview/confirm, bulk publish) shows an inline notice on 401 with a new-tab re-auth link; the page and draft stay mounted; no replay or persistence; bulk publish stops at the first 401.
 * (c) RESOLVED/LOCKED: a learner 401 during Answer shows "answer not saved" (Today and Practice) and is covered by
   regression tests. **Accepted V1 decision:** a 401 means the answer was not accepted and no Attempt is created; the
   selection is never preserved or auto-replayed; after re-authentication the learner explicitly answers again.
@@ -1352,6 +1350,7 @@ Pilot UX / Readiness decision; none required by any verdict, nothing applied:
   Practice Answer flows smoke-tested PASS with no regression. The learner Answer 401 sub-slice is IMPLEMENTED + TESTED +
   PRODUCTION NORMAL-FLOW SMOKE VERIFIED. A real Production 401 was NOT induced; the 401 recovery semantics rest on the
   automated regression evidence in `5b1046a`. FUB-044 itself stays `DEFERRED` (open).
+* Evidence (Instructor 401): cross-tab session sharing + draft preservation HUMAN VERIFIED on Production 2026-10-07 (sign out/in in tab 2; tab 1 not refreshed; draft kept; Save succeeded). A real expired-session 401 was NOT deliberately induced in Production; the 401 behavior rests on unit tests and security/code review.
 * Also still open: Q3 authenticated browser accessibility/RTL verification (owned by `docs/PILOT_READINESS.md`) and
   the other candidates listed above.
 
