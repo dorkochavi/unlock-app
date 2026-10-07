@@ -1,36 +1,31 @@
-# UNLOCK — DESIGN-REFRESH-OVERNIGHT-002 — Market research → visual direction → visible redesign
+# UNLOCK — VISUAL-POLISH-RUN-003 — Human-reviewed polish on the accepted Soft Premium Canvas direction
 
-PLAN_VERSION: 021
-RUN_ID: 2026-10-07-DESIGN-REFRESH-OVERNIGHT-002
-START_HEAD: `71801eb`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `34c74f0`
-STATUS: **COMPLETE** — local Run. No push, no deploy, no hosted mutation. Human visual walkthrough required before any push (Run report).
+PLAN_VERSION: 022
+RUN_ID: 2026-10-07-VISUAL-POLISH-RUN-003
+START_HEAD: `f551706`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `f551706`
+STATUS: **IN PROGRESS** — local Run. No push, no deploy, no hosted mutation.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Make UNLOCK visibly closer to a polished, modern, premium 2026 consumer learning product, building ON the VISUAL-SYSTEM-RUN-001 foundation (tokens, primitives, a11y, RTL). Evidence-driven: current-market research and reference snapshots → three directions → one chosen autonomously → real implementation → before/after snapshots → perf-safe verification.
-
-Invariants: visual-only. No change to learning/Attempt/scheduler/frozen-Today/Practice-selection semantics, authorization, DB/migrations, IA/navigation routes, brand/logo identity. No new heavy UI/animation dependency; no server→client conversion for styling; prefers-reduced-motion respected; a11y foundation (44px targets, focus-visible, non-color cues, RTL logical props) preserved. No push, no deploy, no hosted mutation.
+Polish (not redesign) the accepted direction using Dor's human review: Today question bottom composition (no overlap), calmer feedback hierarchy, simpler Progress, ~15–20% shorter Course-detail hero, intentional Instructor desktop layout, selective deep-indigo hero use (strong: Today, batch-complete, Course detail), no question prompts in Today queue, bottom nav never covers content, dark-mode chip contrast measured. Keep Heebo. Today/Practice stay centered (no two-pane). Visual-only; no semantics/route/IA/dependency/backend change; no push/deploy/hosted mutation.
 
 ## 2. Authority / References
-`CLAUDE.md`, `.claude/rules/*.md`. Backlog owner: FUB-052. Raw research and screenshots live in ignored `scratch/design-refresh-002/{before,inspiration,after,comparison}`.
+`CLAUDE.md`, `.claude/rules/*.md`. Owner: FUB-052. Screens: `scratch/visual-polish-003/{before,after,comparison}`; harness `scratch/design-refresh-002/harness/shoot.mjs`.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Preview harness (fixture-rendered, uncommitted) + baseline screenshots | AUTO | DONE |
-| B | Market research + reference snapshots + synthesis | AUTO | DONE |
-| C | Three directions + autonomous choice; foundation (tokens/type/surfaces/primitives) | REVIEW_GATE | DONE |
-| D | Courses + shell/bottom nav | REVIEW_GATE | DONE |
-| E | Today home + question experience | REVIEW_GATE | DONE |
-| F | Practice + Progress | REVIEW_GATE | DONE |
-| G | Login/Join + Instructor course page | REVIEW_GATE | DONE |
-| H | States, dark mode pass, self-review pass, full verification, Run close | FINAL_GATE | DONE |
+| A+B+G | Today question bottom composition, feedback hierarchy, queue spoiler removal (+ polish baseline shots) | REVIEW_GATE | PENDING |
+| C+D+F | Progress simplification, Course-detail hero compression, hero/purple restraint audit | REVIEW_GATE | PENDING |
+| E | Instructor desktop layout | REVIEW_GATE | PENDING |
+| H | Responsive/bottom-nav/dark-mode pass, verification, Run close | FINAL_GATE | PENDING |
 
 ## History
 
+- VISUAL-POLISH-RUN-003: (in progress)
 - DESIGN-REFRESH-OVERNIGHT-002: `docs/RUNS/2026-10-07-DESIGN-REFRESH-OVERNIGHT-002.md`
 - VISUAL-SYSTEM-RUN-001: `docs/RUNS/2026-10-06-VISUAL-SYSTEM-RUN-001.md`
 - PERFORMANCE-RUN-001: `docs/RUNS/2026-10-06-PERFORMANCE-RUN-001.md`
