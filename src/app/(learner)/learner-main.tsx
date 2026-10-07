@@ -23,7 +23,11 @@ export function LearnerMain({ children }: { children: ReactNode }) {
 
   return (
     <main
-      className={`page-container flex flex-1 flex-col pb-10 ${
+      className={`page-container flex flex-1 flex-col ${
+        // Learn Mode on mobile: no bottom padding, so the sticky action bar rests flush at
+        // the viewport bottom (padding below it would leave a gap under the bar).
+        learnMode ? "pb-0 sm:pb-10" : "pb-10"
+      } ${
         // The utility bar above already supplies top spacing in Browse Mode.
         learnMode ? "pt-6 sm:pt-10" : "pt-2 sm:pt-4"
       }`}

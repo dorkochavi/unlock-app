@@ -305,7 +305,7 @@ export function QuestionCard({
 
       {/* Mobile: the action bar sticks to the viewport bottom (the nav is hidden
           in Learn Mode), keeping the primary action in a stable place. */}
-      <div className="sticky bottom-0 -mx-4 mt-6 flex items-center gap-3 border-t border-border bg-background/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <div className="sticky bottom-0 z-10 -mx-4 mt-5 flex items-center gap-3 border-t border-border bg-background/95 px-4 pb-[calc(0.625rem+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         {feedback === null ? (
           <>
             <Button
@@ -340,11 +340,11 @@ const OPTION_STATE_STYLES: Record<
   { border: string; indicator: string }
 > = {
   selectedCorrect: {
-    border: "border-state-solid bg-state-solid-soft ring-2 ring-state-solid",
+    border: "border-state-solid bg-state-solid-soft",
     indicator: "bg-state-solid text-primary-contrast",
   },
   selectedIncorrect: {
-    border: "border-state-reinforce bg-state-reinforce-soft ring-2 ring-state-reinforce",
+    border: "border-state-reinforce bg-state-reinforce-soft",
     indicator: "bg-state-reinforce text-primary-contrast",
   },
   missedCorrect: {

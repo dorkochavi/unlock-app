@@ -281,7 +281,7 @@ function TodayQueue({ items }: { items: DailyPlanItemDto[] }) {
       <h2 id="today-queue-heading" className="mb-3 text-section font-bold">
         {messages.itemsHeading}
       </h2>
-      <ol className="grid gap-3 sm:grid-cols-2">
+      <ol className="grid gap-2 sm:grid-cols-2">
         {ordered.map((item, index) => {
           const pending = item.status === "pending";
           const reason =
@@ -292,7 +292,7 @@ function TodayQueue({ items }: { items: DailyPlanItemDto[] }) {
           return (
             <li
               key={item.id}
-              className={`flex items-start gap-3 rounded-card p-4 ${
+              className={`flex items-center gap-3 rounded-card px-4 py-3 ${
                 isNext ? "surface-raised ring-2 ring-primary-soft-border" : "border border-border bg-surface"
               }`}
             >
@@ -309,31 +309,24 @@ function TodayQueue({ items }: { items: DailyPlanItemDto[] }) {
                 {item.status === "completed" ? <SmallCheckIcon /> : index + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {reason !== null ? <span className="chip">{reason}</span> : null}
-                  {isNext ? (
-                    <span className="chip bg-primary-soft text-primary-soft-foreground">
-                      {messages.queueNext}
-                    </span>
-                  ) : null}
-                  {!pending && statusLabel !== null ? (
-                    <span
-                      className={`chip ${
-                        item.status === "completed" ? "bg-state-solid-soft text-state-solid" : ""
-                      }`}
-                    >
-                      {statusLabel}
-                    </span>
-                  ) : null}
-                </div>
-                <p
-                  className={`mt-1.5 line-clamp-2 break-words text-secondary ${
-                    pending ? "text-foreground" : "text-muted"
+                <p className={`font-semibold ${pending ? "text-foreground" : "text-muted"}`}>
+                  {messages.queueItemLabel.replace("{n}", String(index + 1))}
+                </p>
+                {reason !== null ? <p className="mt-0.5 text-secondary text-muted">{reason}</p> : null}
+              </div>
+              {isNext ? (
+                <span className="chip shrink-0 bg-primary-soft text-primary-soft-foreground">
+                  {messages.queueNext}
+                </span>
+              ) : !pending && statusLabel !== null ? (
+                <span
+                  className={`chip shrink-0 ${
+                    item.status === "completed" ? "bg-state-solid-soft text-state-solid" : ""
                   }`}
                 >
-                  {item.prompt}
-                </p>
-              </div>
+                  {statusLabel}
+                </span>
+              ) : null}
             </li>
           );
         })}

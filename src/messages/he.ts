@@ -414,6 +414,7 @@ export const he = {
     itemsHeading: "פריטים להיום",
     landingProgress: "{resolved} מתוך {total} הושלמו",
     queueNext: "הבא בתור",
+    queueItemLabel: "שאלה {n}",
     statusLabel: "סטטוס",
     actionType: {
       REVIEW_DUE: "חזרה מתוזמנת",
