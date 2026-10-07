@@ -37,6 +37,7 @@ import { CreateAnotherAction } from "./create-another-action";
 import {
   createEmptyQuestion,
   isEditorDirty,
+  optionControlLabel,
   publishNotReadyMessage,
   shouldShowCreateAnother,
   type EditorFormValues,
@@ -603,24 +604,21 @@ export default function InstructorQuestionEditorPage() {
                 <div>
                   <Label>{messages.questionEditor.optionsHeading}</Label>
                   <ul className="flex flex-col gap-2">
-                    {optionsDraft.map((option) => (
+                    {optionsDraft.map((option, index) => (
                       <li key={option.id} className="flex items-center gap-2">
                         <input
                           type={questionTypeDraft === "SINGLE_CHOICE" ? "radio" : "checkbox"}
                           name="correctOption"
                           checked={correctOptionIdsDraft.includes(option.id)}
                           onChange={() => handleToggleCorrect(option.id)}
-                          aria-label={
-                            questionTypeDraft === "SINGLE_CHOICE"
-                              ? messages.questionEditor.correctSingleLabel
-                              : messages.questionEditor.correctMultipleLabel
-                          }
+                          aria-label={optionControlLabel(messages.questionEditor.correctOptionLabel, index)}
                         />
                         <Input
                           type="text"
                           value={option.content}
                           onChange={(event) => handleOptionContentChange(option.id, event.target.value)}
                           placeholder={messages.questionEditor.optionContentPlaceholder}
+                          aria-label={optionControlLabel(messages.questionEditor.optionInputLabel, index)}
                           className="min-w-0 flex-1 text-sm"
                         />
                         <button

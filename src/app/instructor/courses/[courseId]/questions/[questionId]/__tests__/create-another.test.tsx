@@ -15,6 +15,7 @@ import { CreateAnotherAction } from "../create-another-action";
 import {
   createEmptyQuestion,
   isEditorDirty,
+  optionControlLabel,
   publishNotReadyMessage,
   shouldShowCreateAnother,
   type EditorFormValues,
@@ -180,5 +181,34 @@ describe("createEmptyQuestion — 401 (FUB-044)", () => {
     expect(unauth).toHaveBeenCalledTimes(1);
     const forbidden = vi.fn(async () => new Response("{}", { status: 403 }));
     expect(await createEmptyQuestion("c", forbidden as unknown as typeof fetch)).toEqual({ outcome: "ERROR" });
+  });
+});
+
+describe("optionControlLabel (Q3-B accessible names)", () => {
+  const options = (n: number) => Array.from({ length: n }, (_, i) => ({ id: "o" + i }));
+  const names = (template: string, opts: { id: string }[]) => opts.map((_, i) => optionControlLabel(template, i));
+
+  it("numbers option inputs and correct-answer controls 1-based with the approved Hebrew wording", () => {
+    expect(optionControlLabel(he.questionEditor.optionInputLabel, 0)).toBe("אפשרות 1");
+    expect(optionControlLabel(he.questionEditor.correctOptionLabel, 3)).toBe("סימון אפשרות 4 כתשובה נכונה");
+  });
+
+  it("yields distinct names for every option, for any option count", () => {
+    for (const n of [2, 4, 7]) {
+      for (const key of ["optionInputLabel", "correctOptionLabel"] as const) {
+        const got = names(he.questionEditor[key], options(n));
+        expect(new Set(got).size).toBe(n);
+      }
+    }
+  });
+
+  it("follows the current rendered order after a removal (option 2 of 4 removed -> 1,2,3)", () => {
+    const rendered = options(4).filter((o) => o.id !== "o1");
+    expect(names(he.questionEditor.optionInputLabel, rendered)).toEqual(["אפשרות 1", "אפשרות 2", "אפשרות 3"]);
+    expect(names(he.questionEditor.correctOptionLabel, rendered)).toEqual([
+      "סימון אפשרות 1 כתשובה נכונה",
+      "סימון אפשרות 2 כתשובה נכונה",
+      "סימון אפשרות 3 כתשובה נכונה",
+    ]);
   });
 });

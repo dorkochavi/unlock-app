@@ -35,6 +35,14 @@ export function isEditorDirty(baseline: EditorFormValues, current: EditorFormVal
   return a.length !== b.length || a.some((id, i) => id !== b[i]);
 }
 
+/**
+ * Accessible name for an answer-option control. `index` is the 0-based position in the CURRENT
+ * rendered option list (so numbering follows add/remove); the name uses 1-based `{n}`.
+ */
+export function optionControlLabel(template: string, index: number): string {
+  return template.replace("{n}", String(index + 1));
+}
+
 export function shouldShowCreateAnother(input: {
   courseArchived: boolean;
   dirty: boolean;
