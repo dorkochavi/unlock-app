@@ -35,7 +35,8 @@ Deferred or temporary items are collected in [§9](#9-temporary-bridges-and-defe
 
 13. Today landing answers immediately: "What should I do now?"
 14. Today uses one clear primary CTA: "התחל ללמוד" or "המשך ללמוד".
-15. **Today Complete** communicates success; uses only real data already available in the current DTO/state; does not invent metrics; does not require API/schema changes for richer summary data.
+15. **Today Complete** communicates success and shows a concise, evidence-based learning recap (TODAY-LEARNING-RECAP-004, Dor-approved): counts of answered/correct, topics answered all-correct vs. with at least one incorrect answer (non-null topics only, presentation-only, never called mastery), and at most one confidence line (sure-but-incorrect, else >=2 sure-and-correct). Derived deterministically server-side from this plan's persisted Attempts (optional `learningRecap` on Today GET; one extra plain read only once >=1 item is answered); no AI/speculative insight, no persisted summary, skips never counted as wrong, sections with no content are omitted.
+15a. **Today home never exposes its question queue/checklist** (no question prompts, no "שאלה N" rows, no per-item completed rows) before, during or after Today. Before starting: hero + at most one orientation line from the frozen reason counts. In progress: hero + at most "עד עכשיו: X מתוך Y נכונות". The recap is visually quieter than the hero.
 16. Today Complete primary CTA: "המשך ללמוד" → `/courses` (temporary bridge until Course Practice exists; see §9).
 17. Optional secondary/tertiary action: "לצפייה בהתקדמות" → `/progress`.
 18. No meaningless "סיימתי להיום" navigation action; the completion state itself already means the learner is done.

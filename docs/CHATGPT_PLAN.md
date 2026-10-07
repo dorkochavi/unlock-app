@@ -3,9 +3,9 @@
 PLAN_VERSION: 023
 RUN_ID: 2026-10-07-TODAY-LEARNING-RECAP-004
 START_HEAD: `64b3219`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `64b3219`
-STATUS: **IN PROGRESS** — local Run. No push, no deploy, no hosted mutation.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `259426b`
+STATUS: **COMPLETE** — local Run. No push, no deploy, no hosted mutation. Dor reviews the recap with real learning activity before any push (Run report).
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -18,13 +18,13 @@ Human product decision (Dor): Today home must NOT show a question queue/checklis
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Evidence map (read-only inspection of Today data flow + Attempt evidence) | AUTO | PENDING |
-| B | Recap derivation + (if needed) minimal derived response + queue removal + UI states + tests | REVIEW_GATE | PENDING |
-| C | Screens, review, perf evidence, docs, verification, Run close | FINAL_GATE | PENDING |
+| A | Evidence map (read-only inspection of Today data flow + Attempt evidence) | AUTO | DONE |
+| B | Recap derivation + (if needed) minimal derived response + queue removal + UI states + tests | REVIEW_GATE | DONE |
+| C | Screens, review, perf evidence, docs, verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
-- TODAY-LEARNING-RECAP-004: (in progress)
+- TODAY-LEARNING-RECAP-004: `docs/RUNS/2026-10-07-TODAY-LEARNING-RECAP-004.md`
 - VISUAL-POLISH-RUN-003: `docs/RUNS/2026-10-07-VISUAL-POLISH-RUN-003.md`
 - DESIGN-REFRESH-OVERNIGHT-002: `docs/RUNS/2026-10-07-DESIGN-REFRESH-OVERNIGHT-002.md`
 - VISUAL-SYSTEM-RUN-001: `docs/RUNS/2026-10-06-VISUAL-SYSTEM-RUN-001.md`
