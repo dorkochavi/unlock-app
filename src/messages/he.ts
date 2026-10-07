@@ -411,11 +411,32 @@ export const he = {
     landingBodyOne: "UNLOCK בחרה עבורך שאלה אחת לפי מה שהכי כדאי ללמוד עכשיו.",
     startAction: "התחל ללמוד",
     continueLearning: "המשך ללמוד",
-    itemsHeading: "פריטים להיום",
     landingProgress: "{resolved} מתוך {total} הושלמו",
-    queueNext: "הבא בתור",
-    queueItemLabel: "שאלה {n}",
-    statusLabel: "סטטוס",
+    // Run TODAY-LEARNING-RECAP-004: quiet orientation / recap copy. Neutral
+    // and descriptive only — no mastery, improvement or weakness claims.
+    recap: {
+      orientation: "בתוכנית היום: {parts}",
+      orientationJoin: "ו",
+      orientationSeparator: ", ",
+      orientationParts: {
+        REVIEW_DUE: { one: "חזרה מתוזמנת אחת", other: "{count} חזרות מתוזמנות" },
+        STRENGTHEN_MEMORY: { one: "חיזוק זיכרון אחד", other: "{count} חיזוקי זיכרון" },
+        RELEARN_LAPSE: { one: "למידה מחדש אחת", other: "{count} שאלות ללמידה מחדש" },
+        REPAIR_MISCONCEPTION: { one: "תיקון טעות נפוצה אחד", other: "{count} תיקוני טעויות נפוצות" },
+        NEW_LEARNING: { one: "שאלה אחת בחומר חדש", other: "{count} שאלות בחומר חדש" },
+      },
+      soFar: "עד עכשיו: {correct} מתוך {answered} נכונות",
+      title: "סיכום הלמידה שלך היום",
+      correctOfAnswered: "{correct} מתוך {answered} נכונות",
+      topicsWorked: "עבדת על {count} נושאים",
+      topicsWorkedOne: "עבדת על נושא אחד",
+      strongHeading: "ענית נכון על הכול ב:",
+      revisitHeading: "כדאי לחזור על:",
+      topicsMore: "ועוד {count}",
+      sureIncorrectOne: "בשאלה אחת היית בטוח/ה אבל התשובה הייתה שגויה",
+      sureIncorrect: "ב־{count} שאלות היית בטוח/ה אבל התשובה הייתה שגויה",
+      sureCorrect: "ב־{count} שאלות צדקת גם בביטחון גבוה",
+    },
     actionType: {
       REVIEW_DUE: "חזרה מתוזמנת",
       RELEARN_LAPSE: "למידה מחדש",
@@ -428,11 +449,6 @@ export const he = {
       // question-card.tsx's actionLabel computation, which now returns null
       // instead of leaking any unmapped internal code).
       NEW_LEARNING: "חומר חדש",
-    },
-    status: {
-      pending: "ממתין",
-      completed: "הושלם",
-      skipped: "דולג",
     },
     submit: "שליחה",
     submitting: "שולח...",
