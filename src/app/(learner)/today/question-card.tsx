@@ -339,19 +339,20 @@ const OPTION_STATE_STYLES: Record<
   Exclude<OptionFeedbackState, null>,
   { border: string; indicator: string }
 > = {
+  // Quiet option history: neutral surface, hairline border, thin inline-start accent;
+  // the verdict banner is the one saturated element. State still carries icon + text label.
   selectedCorrect: {
-    border: "border-state-solid bg-state-solid-soft",
-    indicator: "bg-state-solid text-primary-contrast",
+    border: "border-border border-s-4 border-s-state-solid bg-surface",
+    indicator: "bg-state-solid-soft text-state-solid",
   },
   selectedIncorrect: {
-    border: "border-state-reinforce bg-state-reinforce-soft",
-    indicator: "bg-state-reinforce text-primary-contrast",
+    border: "border-border border-s-4 border-s-state-reinforce bg-surface",
+    indicator: "bg-state-reinforce-soft text-state-reinforce",
   },
   missedCorrect: {
-    // RUN010-I: correctness is never color-only; a missed-correct answer gets
-    // the same positive treatment as selectedCorrect plus an icon + text label.
-    border: "border-state-solid bg-state-solid-soft",
-    indicator: "bg-state-solid text-primary-contrast",
+    // RUN010-I: correctness is never color-only; icon + text label stay.
+    border: "border-border border-s-4 border-s-state-solid bg-surface",
+    indicator: "bg-state-solid-soft text-state-solid",
   },
 };
 
