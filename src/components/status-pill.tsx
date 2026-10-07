@@ -22,7 +22,31 @@ const DOT: Record<StatusTone, string> = {
   neutral: "bg-state-not-started",
 };
 
-export function StatusPill({ tone, children }: { tone: StatusTone; children: ReactNode }) {
+/** Quiet variant: no background, dot + text only ("progress" text stays neutral to limit purple). */
+const QUIET_TEXT: Record<StatusTone, string> = {
+  solid: "text-state-solid",
+  reinforce: "text-state-reinforce",
+  progress: "text-muted",
+  neutral: "text-muted",
+};
+
+export function StatusPill({
+  tone,
+  children,
+  quiet = false,
+}: {
+  tone: StatusTone;
+  children: ReactNode;
+  quiet?: boolean;
+}) {
+  if (quiet) {
+    return (
+      <span className={`inline-flex shrink-0 items-center gap-1.5 text-meta font-semibold ${QUIET_TEXT[tone]}`}>
+        <span aria-hidden="true" className={`size-1.5 rounded-full ${DOT[tone]}`} />
+        {children}
+      </span>
+    );
+  }
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-meta font-semibold ${TONES[tone]}`}

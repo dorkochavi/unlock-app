@@ -246,21 +246,21 @@ function CourseReady({
   const isLearner = data.membership !== null && data.membership.role === "LEARNER";
 
   const heroAction =
-    "inline-flex min-h-control-lg w-full sm:flex-1 items-center justify-center rounded-control bg-hero-foreground px-5 text-center text-body font-bold text-hero transition duration-150 hover:opacity-90 active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hero-foreground";
+    "inline-flex min-h-12 w-full sm:flex-1 sm:min-h-control-lg items-center justify-center rounded-control bg-hero-foreground px-5 text-center text-body font-bold text-hero transition duration-150 hover:opacity-90 active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hero-foreground";
   const heroQuiet =
     "inline-flex min-h-control w-full sm:flex-1 sm:min-h-control-lg items-center justify-center rounded-control bg-hero-soft px-5 text-center font-semibold text-hero-foreground transition duration-150 hover:bg-white/25 active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hero-foreground";
 
   return (
     <>
-      <Card variant="hero" as="section" className="mb-6 p-6 sm:p-8">
+      <Card variant="hero" as="section" className="mb-5 px-5 py-4 sm:p-8">
         {data.membership !== null ? (
           <span className="chip bg-hero-soft text-hero-foreground">{messages.roleLabel[data.membership.role]}</span>
         ) : null}
-        <h1 className="mt-3 break-words text-page font-extrabold">{data.course.title}</h1>
+        <h1 className="mt-2 break-words text-[1.625rem] font-extrabold leading-tight sm:mt-3 sm:text-page">{data.course.title}</h1>
 
         {isLearner ? (
-          <div className="mt-6">
-            <div className="flex flex-col gap-2.5 sm:flex-row">
+          <div className="mt-3 sm:mt-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-2.5">
               {data.practiceAvailable === true ? (
                 <Link href={`/courses/${courseId}/practice?from=course`} className={heroAction}>
                   {messages.practiceAction}
@@ -270,10 +270,10 @@ function CourseReady({
                 {messages.goToToday}
               </Link>
             </div>
-            <p className="mt-3 text-center text-secondary text-hero-muted sm:text-start">{messages.continueInTodayHint}</p>
+            <p className="mt-2 text-center text-meta text-hero-muted sm:mt-3 sm:text-start sm:text-secondary">{messages.continueInTodayHint}</p>
           </div>
         ) : (
-          <div className="mt-6 sm:max-w-xs">
+          <div className="mt-4 sm:mt-6 sm:max-w-xs">
             <Link href={`/instructor/courses/${courseId}`} className={heroAction}>
               {messages.manageCourse}
             </Link>

@@ -4,17 +4,18 @@
  * use `Row` dividers (or spacing) inside a card instead.
  * Variants: default = white + hairline; `raised` (or `variant="raised"`) adds the
  * soft 2-layer shadow for a summary card; `hero` is THE deep-indigo surface (one
- * per screen, white text, carries the primary action); `quiet` is a tinted,
+ * per screen, white text, carries the primary action); `tint` is the LIGHT tinted header surface for non-hero screens (Progress, Join, Instructor); `quiet` is a tinted,
  * borderless panel for secondary grouping.
  */
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
-export type CardVariant = "default" | "raised" | "hero" | "quiet";
+export type CardVariant = "default" | "raised" | "hero" | "tint" | "quiet";
 
 const CARD_VARIANTS: Record<CardVariant, string> = {
   default: "rounded-card border border-border bg-surface",
   raised: "rounded-card surface-raised",
   hero: "rounded-surface surface-hero",
+  tint: "rounded-surface surface-tint",
   quiet: "rounded-card bg-surface-muted",
 };
 

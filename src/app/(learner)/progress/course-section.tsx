@@ -15,7 +15,6 @@
 import { Card } from "@/components/card";
 import { Chevron, LinkRow } from "@/components/link-row";
 import { ProgressBar } from "@/components/progress-bar";
-import { StatusPill } from "@/components/status-pill";
 import { interpolate } from "@/lib/interpolate";
 import { getMessages } from "@/messages";
 
@@ -32,13 +31,14 @@ export function CourseSection({
   progress: CourseProgress;
 }) {
   const messages = getMessages().progress;
+  const hasTopics = progress.kind === "ready" && progress.topics.length > 0;
   return (
     <li>
-      <Card as="div" raised className="p-3 sm:p-4">
-        <LinkRow variant="inline" href={`/courses/${id}`} showChevron={false} className="min-h-16 items-start">
+      <Card as="div" raised className="p-4 sm:p-5">
+        <LinkRow variant="inline" href={`/courses/${id}`} showChevron={false} className="min-h-14 items-start py-2">
           <span className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 flex-1 break-words text-title font-bold leading-snug">{title}</h2>
-            <Chevron className="mt-1 text-muted" />
+            <h2 className="min-w-0 flex-1 break-words text-section font-bold leading-snug">{title}</h2>
+            <Chevron className="mt-0.5 text-muted" />
           </span>
 
           {progress.kind === "unavailable" ? (
@@ -58,12 +58,10 @@ export function CourseSection({
           ) : null}
         </LinkRow>
 
-        {progress.kind === "ready" && progress.topics.length > 0 ? (
-          <CourseCoverageBar topics={progress.topics} />
-        ) : null}
+        {progress.kind === "ready" && hasTopics ? <CourseCoverageBar topics={progress.topics} /> : null}
 
-        {progress.kind === "ready" && progress.topics.length > 0 ? (
-          <div className="mt-3 border-t border-border pt-1">
+        {progress.kind === "ready" && hasTopics ? (
+          <div className="mt-3">
             <TopicList topics={progress.topics} />
           </div>
         ) : null}
@@ -72,39 +70,37 @@ export function CourseSection({
   );
 }
 
-/** Real activity only (no aggregate mastery label): status pill + count chips + one coverage bar. */
+/** Real activity only (no aggregate mastery label): ONE quiet text line, merged from the same counts. */
 function CourseActivitySummary({ topics }: { topics: TopicProgressDto[] }) {
   const messages = getMessages().progress;
   const summary = summarizeCourseActivity(topics);
 
   if (summary.attempted === 0) {
-    return (
-      <span className="mt-2 flex">
-        <StatusPill tone="neutral">{messages.courseNotStartedYet}</StatusPill>
-      </span>
-    );
+    return <span className="mt-1 block text-secondary font-normal text-muted">{messages.courseNotStartedYet}</span>;
   }
 
+  const parts = [
+    messages.courseActivityEncouragement,
+    interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total }),
+    ...(summary.topicsWithActivity > 1
+      ? [interpolate(messages.courseTopicsTouched, { count: summary.topicsWithActivity })]
+      : []),
+  ];
   return (
-    <span className="mt-2 block">
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <StatusPill tone="progress">{messages.courseActivityEncouragement}</StatusPill>
-        <span className="chip">
-          {interpolate(messages.coverage, { attempted: summary.attempted, total: summary.total })}
+    <span className="mt-1 block text-secondary font-normal text-muted">
+      {parts.map((part, index) => (
+        <span key={part}>
+          <span className="whitespace-nowrap">{part}</span>
+          {index < parts.length - 1 ? <span aria-hidden="true">{" · "}</span> : null}
         </span>
-        {summary.topicsWithActivity > 1 ? (
-          <span className="chip">
-            {interpolate(messages.courseTopicsTouched, { count: summary.topicsWithActivity })}
-          </span>
-        ) : null}
-      </span>
+      ))}
     </span>
   );
 }
 
-/** Course-wide coverage bar (attempted / total from the same counts), full card width below the header link. */
+/** Course-wide coverage bar (attempted / total from the same counts) — the ONE bar at Course level. */
 function CourseCoverageBar({ topics }: { topics: TopicProgressDto[] }) {
   const summary = summarizeCourseActivity(topics);
   if (summary.attempted === 0 || summary.total === 0) return null;
-  return <ProgressBar fraction={summary.attempted / summary.total} className="mb-0 mt-1 h-2" />;
+  return <ProgressBar fraction={summary.attempted / summary.total} className="mb-0 mt-2 h-1.5" />;
 }

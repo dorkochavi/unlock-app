@@ -20,10 +20,10 @@ export function ProgressBar({
   className?: string;
   segments?: number;
   size?: "md" | "lg";
-  tone?: "default" | "hero";
+  tone?: "default" | "hero" | "tint";
 }) {
   const clamped = Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : 0;
-  const track = tone === "hero" ? "bg-hero-soft" : "bg-primary-soft";
+  const track = tone === "hero" ? "bg-hero-soft" : tone === "tint" ? "bg-surface" : "bg-primary-soft";
   const fill = tone === "hero" ? "bg-white" : "bg-primary";
 
   if (segments !== undefined && Number.isInteger(segments) && segments >= 2 && segments <= 20) {

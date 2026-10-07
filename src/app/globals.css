@@ -29,6 +29,8 @@
   --primary-soft-foreground: #3730a3;
   --primary-soft-border: rgb(67 56 202 / 0.22);
   --primary-ring: rgb(67 56 202 / 0.28);
+  --tint: #f0effa; /* light tinted header surface (non-hero) */
+  --tint-border: rgb(67 56 202 / 0.12);
 
   /* Deep-indigo hero surface pair (text on it: --hero-foreground / --hero-muted). */
   --hero: #2e2a8f;
@@ -74,6 +76,8 @@
     --primary-soft-foreground: #d3d6ff;
     --primary-soft-border: rgb(143 151 255 / 0.4);
     --primary-ring: rgb(143 151 255 / 0.4);
+    --tint: #1d1b3f;
+    --tint-border: rgb(143 151 255 / 0.18);
 
     --hero: #35309c;
     --hero-to: #4a42c4;
@@ -199,6 +203,11 @@
   background-color: var(--surface);
   border: 1px solid var(--border);
   box-shadow: var(--elevation-raised);
+}
+/* `surface-tint`: light tinted header surface for non-hero screens (normal text colors apply). */
+@utility surface-tint {
+  background-color: var(--tint);
+  border: 1px solid var(--tint-border);
 }
 @utility surface-hero {
   background-color: var(--hero);

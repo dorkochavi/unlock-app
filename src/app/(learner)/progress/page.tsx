@@ -127,7 +127,7 @@ export default function LearnerProgressPage() {
       {state.kind === "ready" && state.courses.length > 0 ? (
         <>
           <ProgressOverview courses={state.courses} />
-          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start lg:gap-4">
             {state.courses.map((course) => (
               <CourseSection
                 key={course.id}
@@ -177,21 +177,20 @@ function ProgressOverview({ courses }: { courses: ProgressCourse[] }) {
   }
   if (topicCount === 0 || total === 0) return null;
 
+  const stateParts = STATE_ORDER.filter((key) => byState[key] > 0).map(
+    (key) => `${byState[key]} · ${messages.state[key]}`,
+  );
+
   return (
-    <Card variant="hero" className="mb-6 p-6 sm:p-8">
-      <p className="text-[1.375rem] font-extrabold leading-tight sm:text-[1.625rem]">
+    <Card variant="tint" className="mb-6 p-5 sm:p-6">
+      <p className="text-title font-extrabold leading-tight">
         {interpolate(messages.coverage, { attempted, total })}
       </p>
-      <ProgressBar
-        fraction={attempted / total}
-        size="lg"
-        tone="hero"
-        className="mb-0 mt-4"
-      />
-      <p className="mt-4 flex flex-wrap gap-2">
-        {STATE_ORDER.filter((key) => byState[key] > 0).map((key) => (
-          <span key={key} className="chip bg-hero-soft text-hero-foreground">
-            {byState[key]} · {messages.state[key]}
+      <ProgressBar fraction={attempted / total} tone="tint" className="mb-0 mt-3 h-2" />
+      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-0.5 text-secondary text-muted">
+        {stateParts.map((part) => (
+          <span key={part} className="whitespace-nowrap">
+            {part}
           </span>
         ))}
       </p>
@@ -205,13 +204,14 @@ function ProgressLoading({ label }: { label: string }) {
     <div role="status">
       <span className="sr-only">{label}</span>
       <div aria-hidden="true">
-        <Skeleton className="mb-6 h-36 w-full rounded-surface" />
+        <Skeleton className="mb-6 h-28 w-full rounded-surface" />
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {[0, 1].map((index) => (
-            <div key={index} className="rounded-card surface-raised p-4">
-              <Skeleton className="h-6 w-1/2" />
-              <Skeleton className="mt-3 h-5 w-3/4" />
-              <div className="mt-4 space-y-4">
+            <div key={index} className="rounded-card surface-raised p-4 sm:p-5">
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="mt-2 h-4 w-3/4" />
+              <Skeleton className="mt-3 h-1.5 w-full" />
+              <div className="mt-5 space-y-5">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
               </div>
