@@ -64,19 +64,19 @@ export function OwnCourseActionsView({
   const messages = getMessages().instructor.manage.ownCourse;
   return (
     <div className="flex flex-col gap-2">
-      {/* Rendered on the deep-indigo Course hero: one white primary, one tonal secondary. */}
+      {/* Rendered on the light tinted header: one primary, one quiet secondary. */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="button"
           onClick={onLearn}
           disabled={learning}
-          className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-white px-6 text-body font-bold text-hero shadow-[0_6px_16px_-8px_rgb(0_0_0/0.5)] transition duration-150 hover:bg-hero-muted active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-wait disabled:opacity-75 disabled:hover:bg-white disabled:active:scale-100 sm:w-auto sm:min-w-48"
+          className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-primary px-6 text-body font-bold text-primary-contrast transition duration-150 hover:bg-primary-hover active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-75 disabled:hover:bg-primary disabled:active:scale-100 sm:w-auto sm:min-w-48"
         >
           {learning ? messages.learning : messages.learnAction}
         </button>
         <Link
           href={manageHref}
-          className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-hero-soft px-6 text-center font-semibold text-hero-foreground transition duration-150 hover:bg-white/25 active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hero-foreground sm:w-auto"
+          className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control border border-border-strong bg-surface px-6 text-center font-semibold text-foreground transition duration-150 hover:bg-surface-muted active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
         >
           {messages.manageAction}
         </Link>

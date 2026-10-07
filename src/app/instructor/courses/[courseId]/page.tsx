@@ -647,9 +647,9 @@ export default function InstructorCourseManagePage() {
 
       {state.kind === "ready" ? (
         <div className="flex flex-col gap-6">
-          <Card variant="hero" as="section" className="flex flex-col gap-5 p-6 sm:p-8">
+          <Card variant="tint" as="section" className="flex flex-col gap-5 p-6 sm:p-8">
             <div className="flex flex-col items-start gap-3">
-              <span className="chip bg-hero-soft text-hero-foreground">
+              <span className="chip">
                 {messages.instructor.manage.statusLabel[state.course.status]}
               </span>
               <h1 className="break-words text-page font-extrabold">{state.course.title}</h1>

@@ -181,9 +181,9 @@ export default function JoinCoursePage() {
         ) : null}
 
         {state.kind === "ready" ? (
-          <Card variant="hero" as="section" className="flex flex-col gap-5 p-6 text-start sm:p-8">
+          <Card variant="tint" as="section" className="flex flex-col gap-5 p-6 text-start sm:p-8">
             <div className="flex flex-col gap-2">
-              <h1 className="text-secondary font-semibold text-hero-muted">{messages.join.heading}</h1>
+              <h1 className="text-secondary font-semibold text-muted">{messages.join.heading}</h1>
               <p className="text-title font-extrabold break-words">{state.title}</p>
             </div>
             {state.joinError ? (
@@ -195,7 +195,7 @@ export default function JoinCoursePage() {
               type="button"
               onClick={handleJoin}
               disabled={joining}
-              className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-white px-6 text-body font-bold text-hero shadow-[0_6px_16px_-8px_rgb(0_0_0/0.5)] transition duration-150 hover:bg-hero-muted active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-wait disabled:opacity-75 disabled:hover:bg-white disabled:active:scale-100"
+              className="inline-flex min-h-control-lg w-full items-center justify-center rounded-control bg-primary px-6 text-body font-bold text-primary-contrast transition duration-150 hover:bg-primary-hover active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-75 disabled:hover:bg-primary disabled:active:scale-100"
             >
               {joining ? messages.join.joining : messages.join.joinAction}
             </button>
