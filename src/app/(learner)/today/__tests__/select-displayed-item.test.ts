@@ -58,3 +58,12 @@ describe("selectDisplayedItem", () => {
     expect(selectDisplayedItem(items, fb("b"))).toEqual({ item: items[0], feedback: null });
   });
 });
+
+describe("selectDisplayedItem — 401 during Answer (FUB-044)", () => {
+  it("an item whose Answer returned 401 stays pending, so after re-login it is the same displayed item with no feedback", () => {
+    // A 401 never marks the item answered (no local or server resolution), so the
+    // reloaded plan still has it as the first pending item.
+    const reloaded = [makeItem("a", "completed"), makeItem("b", "pending"), makeItem("c", "pending")];
+    expect(selectDisplayedItem(reloaded, null)).toEqual({ item: reloaded[1], feedback: null });
+  });
+});

@@ -9,6 +9,7 @@ import {
   practicePath,
   submitPracticeAnswer,
 } from "../practice-api";
+import { buildSignInHref, resolveNextPathFromSearch } from "@/lib/safe-redirect";
 
 const COURSE = "123e4567-e89b-12d3-a456-426614174000";
 const TOPIC = "223e4567-e89b-12d3-a456-426614174000";
@@ -214,4 +215,48 @@ describe("submitPracticeAnswer", () => {
       confidenceLevel: "high",
     });
   });
+});
+
+describe("401 during a Practice answer (FUB-044)", () => {
+  const body = {
+    questionId: Q,
+    questionVersionId: "423e4567-e89b-12d3-a456-426614174000",
+    submissionId: "sub-1",
+    selectedAnswer: "B",
+    topicId: null,
+    confidenceLevel: null,
+  };
+
+  it("sends exactly one request on 401: no automatic replay", async () => {
+    const fetchMock = stubFetch(respond(401, {}));
+    await expect(submitPracticeAnswer(COURSE, body)).resolves.toEqual({ outcome: "UNAUTHENTICATED" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("a later explicit fresh answer is a new request carrying only the fresh selection", async () => {
+    const fetchMock = stubFetch(respond(401, {}));
+    await submitPracticeAnswer(COURSE, body);
+    fetchMock.mockImplementation(
+      respond(200, { isCorrect: true, correctOptionIds: ["C"], explanation: null }),
+    );
+    const fresh = { ...body, submissionId: "sub-2", selectedAnswer: "C" };
+    await expect(submitPracticeAnswer(COURSE, fresh)).resolves.toMatchObject({ outcome: "ACCEPTED" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String((fetchMock.mock.calls[1][1] as RequestInit).body))).toEqual(fresh);
+  });
+
+  it.each([
+    [null, "course"],
+    [TOPIC, "course"],
+    [null, "progress"],
+    [TOPIC, "progress"],
+  ] as const)(
+    "the sign-in link returns to the same Practice scope (topic=%s, from=%s) via the existing allowlist",
+    (topicId, from) => {
+      const path = practicePath(COURSE, topicId, from);
+      const href = buildSignInHref(path);
+      expect(href).toBe(`/login?next=${encodeURIComponent(path)}`);
+      expect(resolveNextPathFromSearch(href.slice(href.indexOf("?")))).toBe(path);
+    },
+  );
 });

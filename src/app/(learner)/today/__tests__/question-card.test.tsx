@@ -311,3 +311,11 @@ describe("QuestionCard incorrect feedback block", () => {
     expect(status).not.toMatch(/danger/);
   });
 });
+
+describe("QuestionCard fresh mount (FUB-044: question shown again after a 401 + re-login)", () => {
+  it("renders with no option selected", () => {
+    const html = renderCard(null);
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).not.toContain('aria-pressed="true"');
+  });
+});
