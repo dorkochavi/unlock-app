@@ -27,6 +27,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Temporary resume state | `scratch/development_checkpoint.md` | LOCAL/COLD |
 | How to interpret telemetry/context-cost signals | `docs/DEVOS_OBSERVABILITY.md` | COLD |
 | Assessment Engine direction (question quality, linter, ingestion, AI policy, Capability Ledger) | `docs/ASSESSMENT_ENGINE.md` | COLD |
+| Assessment linter calibration evidence (Golden Dataset v0.1; code in `src/domain/assessment/golden/`, plain-text ingestion prototype `src/domain/ingestion/`) | `docs/ASSESSMENT_CALIBRATION_V0_1.md` | COLD |
 | Long Autonomous Run orchestration (Phase 0 identity, gates, recovery) | `.claude/skills/autonomous-run/SKILL.md` | COLD |
 | Human index of how DevOS pieces fit | `docs/CLAUDE_CODE_OPERATING_GUIDE.md` (index only; canonical owners win) | COLD |
 

@@ -1566,6 +1566,8 @@ Observed duplicate Topics in Production, concurrent-edit evidence, higher-volume
 
 Non-blocking residuals from the final range review of ASSESSMENT-ENGINE-NIGHT-001: uncapped O(n^2) set-level checks (add `MAX_LINT_SET_ITEMS`, AE-032); Hebrew prefix false positive (`מלא` matched as `מ`+`לא`); all/none-of-above substring match without word boundary; seed term lists incomplete. Design owner and IDs: `docs/ASSESSMENT_ENGINE.md` Sections 10-11, 28 (AE-001/002/003/032). Not needed until the linter is wired.
 
+**Update (Run 2026-10-08-ASSESSMENT-ENGINE-002):** the set cap (AE-032), the `מלא` prefix case and all/none token matching were hardened. The remaining false-positive and heuristic work is tracked in FUB-059.
+
 ## Promotion Trigger
 
 A human decision to wire the linter (FUB-055) or any user-visible lint output.
@@ -1583,6 +1585,62 @@ Wire the pure linter into the structured import validator as advisory output and
 ## Promotion Trigger
 
 Human acceptance of the prototype and a chosen surface (Section 27.1 group A/E).
+
+---
+
+# FUB-059 — Linter False-Positive Fixes From Golden Dataset Calibration
+
+**Status:** `DEFERRED`
+**Priority:** `LOW` (rises to `MEDIUM` once wiring is planned, FUB-055)
+**Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
+
+One item for the fix list found by calibration: absolute-term prefix stoplist (`מרק`, `ברק`, `שכל`, `שום`), `חוץ` as standalone negation, English `at least`, a conservative Hebrew suffix fold for overlap/near-duplicate, a significance-aware key-position rule, homoglyph fold, and a short-option overlap rule. Details, re-run instructions and fixtures: `docs/ASSESSMENT_CALIBRATION_V0_1.md` Section 5; integration conditions in its Section 4; ledger AE-001/AE-002/AE-046 in `docs/ASSESSMENT_ENGINE.md`.
+
+## Promotion Trigger
+
+Decision to wire lint (FUB-055), or any Run that touches the linter heuristics. Re-run the calibration and update the generated report in the same change.
+
+---
+
+# FUB-060 — Native-Hebrew Review of Golden Dataset Labels
+
+**Status:** `DEFERRED` — human action
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/golden/**`
+
+The Hebrew labels of Golden Dataset v0.1 (ground truth, expected codes) were written without review by a Hebrew-fluent annotator. A fluent reviewer should confirm or correct them; annotator recruitment and agreement protocol is a group E decision (`docs/ASSESSMENT_ENGINE.md` 19.5, 27.1). Pointer: `docs/ASSESSMENT_CALIBRATION_V0_1.md` Sections 1 and 6.
+
+## Promotion Trigger
+
+Before any calibration result is used to justify wiring lint or changing a threshold.
+
+---
+
+# FUB-061 — DEV_STATUS RUN_ID Label vs Dormant Verifier Check
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `.claude/telemetry/verify-run-close.mjs`, `docs/DEV_STATUS.md`
+
+The verifier's DEV_STATUS RUN_ID mismatch check is dormant because `docs/DEV_STATUS.md` has no line-anchored `RUN_ID:` label (noted in the verifier header). Decide: add such a label to DEV_STATUS (and keep the check), or remove the dormant check. Do not impose a format without that decision.
+
+## Promotion Trigger
+
+Next DevOS maintenance Run.
+
+---
+
+# FUB-062 — Verifier Cannot Judge Current-State Prose Claims
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `.claude/telemetry/verify-run-close.mjs`
+
+The deterministic verifier cannot judge current-state prose claims in canonical docs (for example "`main` == `origin/main`", "deployed to Production"). Candidate: a WARN-only deterministic advisory comparing a documented `main == origin/main` claim with `git rev-list`. Production claims stay HUMAN_REPORTED and are out of scope. Owner of the reconciliation rule: `.claude/skills/autonomous-run/SKILL.md` Section 12 step 5.
+
+## Promotion Trigger
+
+A Run close where a stale ahead/behind or deploy claim was found by manual review.
 
 ---
 
