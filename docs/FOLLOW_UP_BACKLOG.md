@@ -1760,6 +1760,83 @@ Before the real Pilot.
 
 ---
 
+# FUB-068 — Question editor unsaved-edit navigation loss + Publish/dirty relationship (P2-03 + UX-01)
+
+**Status:** `DEFERRED` — human decision required
+**Priority:** `MEDIUM` (authoring work can be silently lost, but the surface is instructor-only and the data is re-typeable; no learner or persisted-data corruption)
+**Area:** `src/app/instructor/courses/[courseId]/questions/[questionId]/page.tsx`, `editor-logic.ts`
+
+Source: Design Audit 001 (2026-10-09), P2-03 and UX-01. **Evidence class: source-read only (SOURCE_ONLY audit plus a code read for this entry); no rendered, browser, or manual verification.**
+
+Code facts (base `5e4cc21`):
+
+* The editor keeps draft state in local `useState` (`page.tsx:208-213`) and a `baseline` snapshot set on load and on successful save (`page.tsx:225`, `286`, `416`). `isEditorDirty(baseline, current)` (`editor-logic.ts:18`) is used in exactly one place: gating `shouldShowCreateAnother` (`page.tsx:683-690`). Nothing warns on dirty before leaving.
+* Exit paths that discard edits without warning: the "back to course" `next/link` (`page.tsx:528-533`), any breadcrumb/global nav, browser back/forward, tab close/reload, and the `router.push` in `handleCreateAnother` (`page.tsx:358`, guarded only by the dirty-gated button visibility).
+* Publish is a bare `POST` with no body (`page.tsx:431-433`); the handler documents "No request body" and publishes the server-side saved draft (`handle-publish-question.ts:1-4`, `78-82`). The Publish button is disabled only by `publishing` (`page.tsx:668`), not by dirty state. Consequence: with unsaved edits, Publish publishes the previously saved draft and the UI shows `publishSuccess` (`page.tsx:679-681`) while the edits on screen are not what was published (UX-01).
+* Repo has `next` 16.3.5 and `react` 19.2.8, App Router (`package.json:29,33`). A grep over `src` for `beforeunload`, `useBeforeUnload`, `onbeforeunload`, `beforePopState` finds nothing: **no existing navigation guard or dirty-warning pattern anywhere.** The only `window.confirm` uses are destructive-action confirmations in `src/app/instructor/courses/[courseId]/page.tsx:488,606`, not navigation guards. App Router has no router-events or `beforePopState` API (a Pages Router feature); in-app guards must be built by intercepting links/`router.push` yourself, and browser back/forward cannot be reliably blocked. This rests on the repo grep plus general Next.js knowledge, not re-verified against Next 16 docs in this entry.
+
+## DECISION PACKET
+
+**DECISION:** When an instructor has unsaved edits in the question editor and tries to leave, what protection, if any, should the product provide?
+
+**WHY NOW:** Not urgent. Becomes relevant before the Pilot puts real instructors into long authoring sessions (an unsaved multi-option question with explanation is real typing effort). Cheap to decide alongside the FUB-058 instructor laptop walk.
+
+**OPTIONS:**
+
+* **A: browser `beforeunload` only.** Native "leave site?" prompt on tab close, reload, and external navigation when `isEditorDirty`. Does NOT cover in-app `Link` clicks, `router.push`, or SPA back/forward. Small change; the browser dialog text is not customizable or localized by the app.
+* **B: A plus an in-app guard for client navigations.** Same `beforeunload`, plus a custom link wrapper / confirm step on the editor's own internal links (back-to-course, create-another) and, if wanted, shared layout nav. App Router limits: arbitrary `Link` clicks elsewhere and back/forward cannot be intercepted cleanly without a fragile global click/popstate workaround; so B realistically covers the editor's own links and any nav the editor controls, not every possible exit. Needs a localized Hebrew confirm (modal or `window.confirm`) and a wording decision.
+* **C: local draft persistence (sessionStorage or localStorage) / autosave.** Prevents loss rather than warning. Implications: unsaved question content (possibly unpublished exam material) sits in browser storage on shared or school machines (privacy); must be keyed by user, course and question and cleared on save/sign-out; creates a conflict case if the server draft changed since (another tab or device), needing restore/discard UI and a staleness rule. Server-side autosave would instead change what "Save" and "Publish" mean (draft versus published semantics) and is a larger product and API decision.
+
+**RECOMMENDATION:** B (beforeunload plus a guarded editor back link and create-another), because A alone leaves the most common exit (the visible back link) unprotected and C adds privacy and conflict semantics the product has not specified. Recommendation only; no option is chosen. Independent sub-question UX-01: disabling Publish or prompting "save first" while dirty (or save-then-publish) is separate and cheap, with no storage or privacy implications, and can be decided without the navigation guard.
+
+**REVERSIBILITY:** A and B are fully reversible (client-only, no data, no schema). C with localStorage leaves residue in browsers already used; server autosave changes API semantics and is harder to reverse.
+
+**COST-RISK:** A: small (about an hour) plus a unit test of the dirty-to-listener wiring. B: small component/hook, wording, and tests (link-wrapper unit test; guard on/off by dirty state). C: moderate to large (key scheme, restore UI, conflict rule, cleanup, tests). a11y/RTL/mobile: `beforeunload` is unreliable on many mobile browsers (may not fire on tab switch or swipe-away), so mobile gets weaker protection under A and B; a custom confirm must be keyboard operable, focus-managed and Hebrew/RTL-correct; `window.confirm` is accessible by default but unstyled. Test strategy: unit tests on dirty gating and handler wiring; real `beforeunload`, back-button and mobile behavior needs human or browser verification, which unit tests do not provide.
+
+**WHAT CAN CONTINUE WITHOUT IT:** Everything. The editor works today and no other planned work depends on this. UX-01 can be decided and shipped independently.
+
+**EXACT HUMAN ACTION:** Reply `A`, `B`, `C` or `none` for the navigation guard, and separately `disable`, `prompt`, `save-then-publish` or `leave as is` for Publish while dirty.
+
+## Promotion Trigger
+
+Human answers the packet; or the pre-Pilot instructor walk (FUB-058) reports lost edits.
+
+---
+
+# FUB-069 — Design Audit 001 deferred items
+
+**Status:** `DEFERRED` (rows marked "product decision: yes" need a human answer first)
+**Priority:** `LOW` overall
+**Area:** UI / accessibility / design system (source audit 2026-10-09)
+
+Evidence class for ALL items: **the whole of Design Audit 001 was SOURCE_ONLY.** No rendered, browser, device, or screen-reader pass was done; a rendered pass is pending (Run C / browser isolation). Rows are source observations, not visual confirmations. Nothing here is fixed.
+
+Fixed in Run 2026-10-09-DESIGN-AUDIT-FOLLOWUP-001 and therefore NOT tracked here: P2-01 (`d20d449`), P2-02 (`60dc956`), DS-01 (`5e4cc21`). Evidence for those is source and unit-test only; no rendered or screen-reader verification. P2-03 and UX-01 are FUB-068.
+
+| ID | Item | Product decision? | Promotion trigger |
+| --- | --- | --- | --- |
+| P3-04 | `name` / `spellCheck` / `autocomplete` attributes missing on inputs | no | Any form-touching Run, or a rendered pass showing password-manager/spellcheck issues |
+| P3-05 | ASCII `...` instead of `…` in `src/messages/he.ts` loading/pending strings (many, e.g. lines 28-198). A grep of test files for Hebrew strings ending in `...` found no pinning test, but tests may reference them via `messages.*`; confirm by running the suite when changed | no | Copy pass on `he.ts` |
+| P3-06 | No skip link; no `theme-color` / `viewport` export | no | Layout/a11y Run or rendered pass |
+| DS-02 | 6 copies of hero button chrome | no | Next Button/ButtonLink primitive touch |
+| DS-03 | Instructor surfaces use raw `text-sm` / `rounded-lg` (~46 places) and 6 inline notice boxes (e.g. question editor `page.tsx:538,547,552`); `Notice` has no warning tone | yes for the warning-tone semantics, no for the rest | Next instructor-UI Run; Notice tone decision |
+| DS-04 | 16 raw controls; no Checkbox/Radio primitives (e.g. editor `page.tsx:610`) | no | Next form/primitive Run |
+| DS-05 | `dangerTertiary` disabled idiom; Button has no `pending` prop; Input hover state | no | Next Button primitive change |
+| DS-06 | Arbitrary values in classes; motion and radius tokens missing | no | Design-system token Run (relates to FUB-052) |
+| DS-07 | Dark mode follows OS only (no user toggle) | yes | Product decision on theme preference |
+| UX-03 | Non-manager "manage courses as instructor" link intent unclear | yes | Role/navigation product decision |
+| UX-08 | Dead-end StateBlocks on learner course/join for `notAuthorized` / `accessRevoked`; revoked-access semantics are a policy decision (fail closed per `.claude/rules/auth.md`) | yes | Membership revoke/rejoin policy decision |
+| P3-07 | `autoFocus` on mobile needs a device check (only `src/app/instructor/courses/[courseId]/page.tsx` uses it) | no | Mobile device checks (FUB-058) |
+| P3-08 | Import textarea lacks `dir="ltr"` / `spellCheck` handling | no | Next import-UI touch |
+| LINT-1 | Observed pre-existing eslint `react-hooks/purity` errors on `Date.now()` in the question editor page, at roughly lines 416/474 of the base version (now `page.tsx:417` and `475`: `setSavedAt(Date.now())`, `setPublishedAt(Date.now())`). Taken from the B-worker report; NOT re-run here, to be confirmed with `npx eslint` | no | Next lint cleanup or editor change |
+| RENDER-1 | Whole audit SOURCE_ONLY; rendered/visual/a11y pass pending (Run C / browser isolation) | no | Browser-isolation capability available |
+
+## Promotion Trigger
+
+Per-row triggers above. Promote product-decision rows via `docs/OPEN_QUESTIONS.md` or a decision packet when scheduled.
+
+---
+
 # Closed items (moved to archive)
 
 These items are closed; full text lives in `docs/archive/FOLLOW_UP_BACKLOG_CLOSED.md`. IDs are never reused.
