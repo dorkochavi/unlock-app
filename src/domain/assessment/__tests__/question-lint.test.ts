@@ -779,3 +779,63 @@ describe("B4 hardening: OPTIONS_TOO_MANY remains the explicit marker for skipped
     expect(r.find((i) => i.code === "OPTIONS_TOO_MANY")?.metrics).toEqual({ optionCount: MAX_LINT_OPTIONS + 1, maximum: MAX_LINT_OPTIONS });
   });
 });
+
+describe("Slice B2: linter false-positive rule fixes (and counter-examples that must still fire)", () => {
+  const abs = (first: string, base: Item = HE_CLEAN): boolean =>
+    lint({ answerOptions: opts([first, "פוטוסינתזה", "חלוקת תאים", "העברה פעילה"]) }, base).includes("OPTION_ABSOLUTE_TERM");
+  const neg = (prompt: string, base: Item = HE_CLEAN): boolean => lint({ prompt }, base).includes("STEM_NEGATIVE_WORDING");
+
+  it("short Hebrew absolute terms no longer match root-initial prefix letters (מרק, ברק, שכל, משכל, כל-words)", () => {
+    for (const w of ["מרק", "ברק", "שכל", "משכל", "הרק", "לרק"]) expect(abs(w)).toBe(false);
+  });
+  it("short Hebrew absolute terms still fire bare and with the conjunction vav", () => {
+    for (const w of ["רק", "ורק", "רק זה נכון", "כל", "וכל", "כל התאים", "וכל התאים", "בלבד", "בהכרח", "לעולם", "אף פעם", "ואף פעם"]) {
+      expect(abs(w)).toBe(true);
+    }
+  });
+  it("3+ letter Hebrew absolute terms keep prefix tolerance (תמיד, ותמיד, שתמיד, ובלבד)", () => {
+    for (const w of ["תמיד", "ותמיד", "שתמיד", "ובלבד", "לעולם", "ולעולם", "שבהכרח"]) expect(abs(w)).toBe(true);
+  });
+  it("English absolute terms still fire", () => {
+    for (const w of ["always", "only", "never"]) {
+      expect(lint({ answerOptions: opts([`It is ${w} true`, "Linked list", "Binary heap", "Sorted array"]) })).toContain("OPTION_ABSOLUTE_TERM");
+    }
+  });
+
+  it("Hebrew 'חוץ' is negative only as the exception 'חוץ מ…'", () => {
+    expect(neg("איזה גוף מנהל את הקשרים בנושא מדיניות חוץ של המדינה?")).toBe(false); // noun
+    expect(neg("איזה גוף נמצא במשרד החוץ של המדינה הזאת?")).toBe(false);
+    expect(neg("איזה חלק נמצא מחוץ לתא בגוף האדם?")).toBe(false);
+    expect(neg("איזה חלק נמצא בחוץ בגוף האדם הזה?")).toBe(false);
+    expect(neg("כל המבנים נמצאים בתא חוץ מאחד מהם?")).toBe(true);
+    expect(neg("כל המבנים נמצאים בתא וחוץ מאחד מהם?")).toBe(true);
+    expect(neg("כל המבנים נמצאים בתא חוץ מ-X אחד?")).toBe(true);
+    expect(neg("כל המבנים נמצאים בתא שחוץ מהמעבדה אין?")).toBe(true);
+  });
+  it("English 'least' is not negative in 'at least' / 'at the least', but 'the LEAST likely' fires", () => {
+    const en = (prompt: string): boolean => lint({ prompt }).includes("STEM_NEGATIVE_WORDING");
+    expect(en("A polygon needs at least how many straight sides?")).toBe(false);
+    expect(en("A polygon needs at the least how many straight sides?")).toBe(false);
+    expect(en("Which structure is the LEAST likely to be stored contiguously?")).toBe(true);
+    expect(en("Which of these is least likely to be stored contiguously?")).toBe(true);
+    expect(en("It needs at least two sides, but which is the least likely shape?")).toBe(true);
+  });
+  it("true negation cues still fire (Hebrew and English)", () => {
+    for (const p of [
+      "איזה מבנה לא נמצא בתא החי בגוף?", "איזה מבנה ולא נמצא בתא החי בגוף?", "בחרו מבנה שלא נמצא בתא החי בגוף",
+      "בחרו מבנה ושלא נמצא בתא החי בגוף", "איזה מבנה אינו נמצא בתא החי בגוף?", "איזה מבנה שאינו נמצא בתא החי בגוף?",
+      "איזה מבנה אין לו תפקיד בתוך התא החי?", "איזה חלק בלתי נחוץ בתא החי בגוף?", "איזה מבנה ללא ממברנה נמצא בתא החי?",
+      "איזה מבנה בלא ממברנה נמצא בתא החי?", "כל המבנים מלבד אחד נמצאים בתא החי?", "כל המבנים ומלבד אחד נמצאים בתא החי?",
+      "כל המבנים שמלבד אחד נמצאים בתא החי?",
+    ]) expect(neg(p)).toBe(true);
+    expect(lint({ prompt: "Which structure is not stored contiguously in memory?" })).toContain("STEM_NEGATIVE_WORDING");
+    expect(lint({ prompt: "All of these are stored contiguously EXCEPT which one?" })).toContain("STEM_NEGATIVE_WORDING");
+    expect(lint({ prompt: "Which structure is never stored contiguously in memory?" })).toContain("STEM_NEGATIVE_WORDING");
+  });
+  it("silent guards stay silent (מלא, מלאה, מלאכה, אלא, הלא, מחוץ)", () => {
+    for (const p of [
+      "איזה כלי הוא מלא במים בתוך המעבדה?", "איזו כוס מלאה במים בתוך המעבדה?", "איזו מלאכה נדרשת בתוך המעבדה הזאת?",
+      "איזה מבנה חשוב אלא שהוא נדיר בתוך הגוף?", "הלא זו הגדרה נכונה של התהליך בגוף?", "איזה חלק נמצא מחוץ לתא בגוף האדם?",
+    ]) expect(neg(p)).toBe(false);
+  });
+});

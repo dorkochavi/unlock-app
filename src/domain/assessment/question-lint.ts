@@ -139,13 +139,37 @@ const norm = (terms: readonly string[]): string[] => terms.map((t) => comparison
 /** Phrases are stored as space-joined tokens so matching is whole-token (word-boundary) matching. */
 const normPhrases = (phrases: readonly string[]): string[] => phrases.map((p) => tokenize(p).join(" "));
 
-const NEGATION_TERMS_EN = norm(["not", "except", "never", "least"]);
+const NEGATION_TERMS_EN = norm(["not", "except", "never"]);
+/** "least" is negative wording ("the LEAST likely") except in "at least" / "at the least". */
+function hasNegativeLeast(tokens: readonly string[]): boolean {
+  for (let i = 0; i < tokens.length; i += 1) {
+    if (tokens[i] !== "least") continue;
+    const p1 = i >= 1 ? tokens[i - 1] : "";
+    const p2 = i >= 2 ? tokens[i - 2] : "";
+    if (p1 === "at" || (p1 === "the" && p2 === "at")) continue;
+    return true;
+  }
+  return false;
+}
+/**
+ * Hebrew "חוץ" is a negation cue only as the exception preposition "חוץ מ…" (next token begins with מ, attached
+ * or hyphenated); as a noun ("מדיניות חוץ", "משרד החוץ") or in "מחוץ"/"בחוץ" it is not. Optional וש prefixes allowed.
+ */
+const HUTZ = norm(["חוץ"])[0];
+function hasHutzException(tokens: readonly string[]): boolean {
+  const mem = comparisonKey("מ")[0];
+  for (let i = 0; i + 1 < tokens.length; i += 1) {
+    if (!containsTerm([tokens[i]], HUTZ, NEGATION_HE_PREFIX_LETTERS, NEGATION_HE_PREFIX_MAX)) continue;
+    if (tokens[i + 1].startsWith(mem)) return true;
+  }
+  return false;
+}
 /**
  * Hebrew negation words match as WHOLE tokens only, optionally with a single conjunction/relativizer
  * prefix (ו, ש, וש). Other prefix letters are NOT accepted, so "מלא" (full), "הלא", "אלא", "מלאכה",
  * "מחוץ" never read as negation. Final letters are folded by norm().
  */
-const NEGATION_TERMS_HE = norm(["לא", "אין", "אינו", "אינה", "אינם", "אינן", "בלתי", "בלא", "ללא", "מלבד", "חוץ"]);
+const NEGATION_TERMS_HE = norm(["לא", "אין", "אינו", "אינה", "אינם", "אינן", "בלתי", "בלא", "ללא", "מלבד"]);
 const NEGATION_HE_PREFIX_LETTERS = "וש";
 const NEGATION_HE_PREFIX_MAX = 2;
 const ABSOLUTE_TERMS = norm([
@@ -417,7 +441,9 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
 
   const negations =
     NEGATION_TERMS_EN.filter((t) => containsTerm(promptTokens, t, "", 0)).length +
-    NEGATION_TERMS_HE.filter((t) => containsTerm(promptTokens, t, NEGATION_HE_PREFIX_LETTERS, NEGATION_HE_PREFIX_MAX)).length;
+    NEGATION_TERMS_HE.filter((t) => containsTerm(promptTokens, t, NEGATION_HE_PREFIX_LETTERS, NEGATION_HE_PREFIX_MAX)).length +
+    (hasNegativeLeast(promptTokens) ? 1 : 0) +
+    (hasHutzException(promptTokens) ? 1 : 0);
   if (negations > 0) out.push(issue("STEM_NEGATIVE_WORDING", "WARNING", "ITEM", { metrics: { negationTermCount: negations } }));
 
   const allIdx: number[] = [];

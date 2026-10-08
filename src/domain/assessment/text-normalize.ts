@@ -155,7 +155,12 @@ export function containsTerm(
       if (tok === want) continue;
       if (j === 0 && maxPrefixLetters > 0 && HEBREW_WORD.test(tok) && tok.length > want.length && tok.endsWith(want)) {
         const prefix = tok.slice(0, tok.length - want.length);
-        if (prefix.length <= maxPrefixLetters && Array.from(prefix).every((c) => prefixLetters.includes(c))) {
+        // With the full default prefix set, short terms (< PREFIX_STRIP_MIN_REMAINDER letters, e.g. רק, כל) collide
+        // with ordinary words that merely begin with a prefix letter (מרק, ברק, שכל), so they accept only the
+        // conjunction ו (ורק, וכל). An explicitly narrowed caller-supplied set (e.g. negation "וש") is used as given.
+        const allowed =
+          want.length < PREFIX_STRIP_MIN_REMAINDER && prefixLetters === HEBREW_PREFIX_LETTERS ? "ו" : prefixLetters;
+        if (prefix.length <= maxPrefixLetters && Array.from(prefix).every((c) => allowed.includes(c))) {
           continue;
         }
       }

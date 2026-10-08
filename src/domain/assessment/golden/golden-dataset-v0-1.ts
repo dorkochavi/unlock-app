@@ -210,7 +210,6 @@ const itemCases: GoldenCase[] = [
     input: q("איזה מזון חם מוגש לרוב בתחילת ארוחה בצהריים?", ["קינוח", "מרק", "סלט", "כריך"], 1),
     expected: clean({
       forbiddenCodes: ["OPTION_ABSOLUTE_TERM"],
-      knownFalsePositive: { codes: ["OPTION_ABSOLUTE_TERM"], reason: "Prefix stripping reads 'מרק' (soup) as מ+רק ('only'); same family: 'ברק' lightning, 'שכל' wit, 'שום' garlic." },
     }),
   },
   {
@@ -219,7 +218,6 @@ const itemCases: GoldenCase[] = [
     input: q("איזו תופעת טבע נראית בשמיים בזמן סערה חזקה?", ["שלג", "ברק", "ערפל", "קשת"], 1),
     expected: clean({
       forbiddenCodes: ["OPTION_ABSOLUTE_TERM"],
-      knownFalsePositive: { codes: ["OPTION_ABSOLUTE_TERM"], reason: "'ברק' is read as ב+רק; root-initial prefix letter (accepted heuristic limit, ASSESSMENT_ENGINE section 19.4)." },
     }),
   },
 
@@ -354,7 +352,6 @@ const itemCases: GoldenCase[] = [
     input: q("איזה גוף ממשלתי מנהל את הקשרים עם מדינות אחרות בנושא מדיניות חוץ?", ["משרד החוץ", "משרד התחבורה", "משרד הבריאות", "משרד החקלאות"], 0),
     expected: clean({
       forbiddenCodes: ["STEM_NEGATIVE_WORDING"],
-      knownFalsePositive: { codes: ["STEM_NEGATIVE_WORDING"], reason: "'חוץ' is in the Hebrew negation list (as in 'חוץ מ'), but also means 'outside/foreign' in a noun phrase." },
     }),
   },
   {
@@ -363,7 +360,6 @@ const itemCases: GoldenCase[] = [
     input: q("A polygon needs at least how many straight sides?", ["Two", "Three", "Five", "Eight"], 1),
     expected: clean({
       forbiddenCodes: ["STEM_NEGATIVE_WORDING"],
-      knownFalsePositive: { codes: ["STEM_NEGATIVE_WORDING"], reason: "'least' is in the English negation list (for 'LEAST likely'), but 'at least' is not negative wording." },
     }),
   },
   {

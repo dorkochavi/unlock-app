@@ -33,7 +33,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["NEAR_DUPLICATE_STEM", 3, 2, 1, 0, 5],
   ["OPTIONS_TOO_FEW", 2, 2, 0, 0, 16],
   ["OPTIONS_TOO_MANY", 1, 1, 0, 0, 16],
-  ["OPTION_ABSOLUTE_TERM", 3, 3, 0, 2, 16],
+  ["OPTION_ABSOLUTE_TERM", 3, 3, 0, 0, 16],
   ["OPTION_ALL_OF_ABOVE", 3, 3, 0, 0, 18],
   ["OPTION_COMBINATION_REFERENCE", 1, 0, 1, 0, 0],
   ["OPTION_DUPLICATE_EXACT", 1, 1, 0, 0, 26],
@@ -51,7 +51,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["SET_KEY_LENGTH_BIAS", 1, 1, 0, 0, 3],
   ["SET_TOO_SMALL", 1, 1, 0, 0, 2],
   ["STEM_EMPTY", 2, 2, 0, 0, 16],
-  ["STEM_NEGATIVE_WORDING", 3, 3, 0, 2, 16],
+  ["STEM_NEGATIVE_WORDING", 3, 3, 0, 0, 16],
   ["STEM_TEMPLATE_REPEATED", 1, 1, 0, 0, 3],
   ["STEM_TOO_SHORT", 1, 1, 0, 0, 17],
   ["TEXT_TRUNCATED", 2, 2, 0, 0, 16],
@@ -64,7 +64,7 @@ const EXPECTED_COUNTS = {
   clean: 18,
   unsupportedSemantic: 6,
   withKnownMiss: 7,
-  withKnownFalsePositive: 4,
+  withKnownFalsePositive: 0,
 };
 
 const EXPECTED_TOTALS = {
@@ -73,17 +73,17 @@ const EXPECTED_TOTALS = {
   falseNegative: 7,
   falseNegativeHeuristicGap: 4,
   falseNegativeNotImplemented: 3,
-  falsePositive: 4,
+  falsePositive: 0,
   cleanCases: 18,
-  cleanCasesWithWarningOrError: 4,
+  cleanCasesWithWarningOrError: 0,
 };
 
 const EXPECTED_SUMMARY = [
   "RECALL-LIKE (all labelled detections): 66/73 caught.",
   "FN count: 7 (4 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).",
-  "PRECISION-LIKE (labelled detections vs false alarms): 66/70.",
-  "FP count: 4 (all documented as KNOWN_FALSE_POSITIVE: yes).",
-  "CLEAN cases with a WARNING/ERROR: 4 of 18.",
+  "PRECISION-LIKE (labelled detections vs false alarms): 66/66.",
+  "FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: yes).",
+  "CLEAN cases with a WARNING/ERROR: 0 of 18.",
   "UNSUPPORTED SEMANTIC CASES: 6 (intentionally not asserted against the linter).",
   "Tiny synthetic fixture: all ratios are INDICATIVE ONLY, not statistics. Thresholds remain product-design defaults.",
 ];
@@ -98,12 +98,7 @@ const EXPECTED_KNOWN_MISS_IDS = [
   "SET-NEAR-DUP-INFLECTION-01",
 ];
 
-const EXPECTED_KNOWN_FP_IDS = [
-  "FP-ABSOLUTE-SOUP-01",
-  "FP-ABSOLUTE-LIGHTNING-01",
-  "FP-NEGATION-HE-HUTZ-01",
-  "FP-NEGATION-EN-LEAST-01",
-];
+const EXPECTED_KNOWN_FP_IDS: string[] = [];
 
 const EXPECTED_SEMANTIC_IDS = [
   "SEM-AMBIGUOUS-01",
