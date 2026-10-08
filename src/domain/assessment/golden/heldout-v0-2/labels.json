@@ -1,0 +1,1141 @@
+{
+  "labels": [
+    {
+      "caseId": "HO-001",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Sound factual item, balanced short options, informative explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-002",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Correct, clear item with informative explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-003",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Numeric options sorted; explanation covers the common error.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-004",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clear English item; key not a length outlier.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-005",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Valid multi-select, options sorted, good explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-006",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Valid multi-select; sound explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-007",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Fine item; one weak distractor is not reviewer-worthy.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-008",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clear, plausible distractors; key not longest.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-009",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Plain factual item, sorted years.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-010",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Good item; explanation explains the mean distractor.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-011",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key slightly longest and contains a non-absolute use of the word kol; borderline, not flagged.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-012",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Mixed Hebrew/English technical term is natural; clean.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-013",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean factual item with informative explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-014",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-015",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "forbiddenCodes": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key is by far the longest (about 2.5x shortest); length imbalance borderline.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-016",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Fine usage item; key only moderately longest.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-017",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "OPTION_PREFIX_STEM_REPEAT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Every option begins with the word tamid, which belongs in the stem.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-018",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem asks NOT prime.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-019",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Good conceptual item; distractors plausible misconceptions.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-020",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "EXPLANATION_MISSING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Distractors are implausible throw-aways (type of rock, disease of leaves).",
+      "rationale": "Key much longer than trivial distractors; no explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-021",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Stem uses eino.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-022",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING",
+        "STEM_DOUBLE_NEGATIVE",
+        "EXPLANATION_NAMES_ONLY_KEY"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem \"eina lo nechona\" is convoluted; distractors are absurd.",
+      "rationale": "Double negation in stem; explanation just restates the key.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-023",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Distractor \"only in the sea is there water\" is absurd; stem is vague.",
+      "rationale": "Options contain tamid/leolam/rak.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-024",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ALL_OF_ABOVE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "All of the above option is the key.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-025",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_NONE_OF_ABOVE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem presupposes a planet is listed; none key is a weak design.",
+      "rationale": "Key is None of the above.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-026",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_COMBINATION_REFERENCE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Option d refers to other options.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-027",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_COMBINATION_REFERENCE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Option b (helium in trace amounts) is also a true atmosphere gas, so key Both a and c is arguable.",
+      "rationale": "Combination option; semantic ambiguity.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-028",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Options a and b (kind and well-meaning; generous and caring) are near-synonyms; two arguably correct.",
+      "rationale": "Synonymous options give two defensible answers.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-029",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_PUNCTUATION_INCONSISTENT",
+        "OPTION_STYLE_OUTLIER",
+        "KEY_LONGEST_OPTION"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Option c ends with an exclamation mark and uses an infinitive; key is the longest.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-030",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT",
+        "STEM_NO_QUESTION_FORM",
+        "EXPLANATION_MISSING"
+      ],
+      "forbiddenCodes": [
+        "OPTION_COUNT_UNUSUAL"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem is a bare fragment, no explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-031",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "EXPLANATION_NAMES_ONLY_KEY"
+      ],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Explanation \"correct.\" gives no reasoning.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-032",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean completion-style item with informative explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-033",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Distractors Pizza, Gold, Tuesday are absurd and trivialize the item.",
+      "rationale": "Implausible distractors.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-034",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Options 8,6,5,7 unsorted.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-035",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_PUNCTUATION_INCONSISTENT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Options a and c end with a period, b and d do not.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-036",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_WHITESPACE_ANOMALY"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Options have leading/trailing spaces and a tab.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-037",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_DUPLICATE_EXACT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Options a and c are identical.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-038",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "CORRECT_ID_UNKNOWN"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Correct id e matches no option.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-039",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTIONS_TOO_FEW",
+        "OPTION_COUNT_UNUSUAL"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Only one option.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-040",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "CORRECT_COUNT_INVALID"
+      ],
+      "forbiddenCodes": [
+        "OPTION_COUNT_UNUSUAL"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Multiple choice with all options correct.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-041",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "CORRECT_COUNT_INVALID"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Second key (Seville) is factually wrong and contradicts the explanation.",
+      "rationale": "SINGLE_CHOICE with two correct ids.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-042",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key (Istanbul) is factually wrong; explanation says Ankara. Key contradicts explanation.",
+      "rationale": "Wrong key.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-043",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "EXPLANATION_MISSING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key K is wrong; sodium is Na (option b).",
+      "rationale": "Wrong key and no explanation.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-044",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "The Sun is the closest star to Earth and is listed; key Proxima Centauri is wrong/ambiguous for this stem.",
+      "rationale": "Stem/key mismatch.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-045",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Multiple defensible causes (demand-pull, cost-push, money supply); ambiguous contested key.",
+      "rationale": "Ambiguous contested key.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-046",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Trick question: every month has at least 28 days, answer 12 is a riddle rather than assessing knowledge.",
+      "rationale": "Trick question.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-047",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem combines an essay-style analyze critically directive with a simple recall question; cognitive-level/stem mismatch. Distractor \"hadil hogen\" is awkward Hebrew.",
+      "rationale": "Mismatched stem.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-048",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING",
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Negative stem; key contains All.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-049",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_STYLE_OUTLIER",
+        "KEY_LONGEST_OPTION"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Only option a carries niqqud and it is the longest.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-050",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-051",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key is a long sentence versus bare age distractors.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-052",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Distractors are weak throw-aways.",
+      "rationale": "Key far longer than distractors.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-053",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_NONE_OF_ABOVE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "None-of-the-above option in a multi-select is incoherent.",
+      "rationale": "Contains none of the above.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-054",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Stem asks NOT mammals.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-055",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key restates stack from stem and is far longer.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-056",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key (Ribosome) is wrong and contradicts the explanation naming mitochondrion.",
+      "rationale": "Wrong key.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-057",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT",
+        "STEM_NO_QUESTION_FORM",
+        "EXPLANATION_NAMES_ONLY_KEY"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Stem is a single word; explanation just repeats the term.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-058",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Trick riddle (feathers vs iron); tests wording not knowledge.",
+      "rationale": "Trick question.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-059",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Distractors (sit in the dark, only sweets) are absurd.",
+      "rationale": "Distractors with rak/leolam.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-060",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractors contain never/only; key is the longest.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-061",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Options a and b both correct (rule by the people vs through elected representatives); explanation admits the representative form.",
+      "rationale": "Two defensible keys.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-062",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Explanation wrongly attributes 1/12 to wrong addition (adding gives 1/3).",
+      "rationale": "Explanation inaccuracy about a distractor.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-063",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING",
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Negative stem; key contains kol.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-064",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_COMBINATION_REFERENCE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Option d Both a and b listed as correct in a select-all question is incoherent/redundant.",
+      "rationale": "Combination option.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-065",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Option d \"cannot be determined\" does not grammatically complete \"the price will\"; mismatch with stem.",
+      "rationale": "Grammatical stem/option mismatch.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-066",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Valid multi-select, sound.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-067",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_PUNCTUATION_INCONSISTENT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Binary fission also produces two identical daughter cells; arguably second correct answer.",
+      "rationale": "Stray period on b; inconsistent capitalization.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-068",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER",
+        "EXPLANATION_MISSING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key is a long descriptive phrase vs single names; no explanation.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-069",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-070",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Only option b has niqqud.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-071",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN"
+      ],
+      "forbiddenSetCodes": [
+        "SET_TOO_SMALL",
+        "SET_OPTION_COUNT_MIXED"
+      ],
+      "itemCodes": {
+        "3": [
+          "EXPLANATION_NAMES_ONLY_KEY"
+        ]
+      },
+      "semanticExpectation": null,
+      "rationale": "All 8 keys are option 1 (a). Item 3 explanation restates the key.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-072",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN"
+      ],
+      "forbiddenSetCodes": [
+        "SET_TOO_SMALL",
+        "DUPLICATE_STEM_EXACT"
+      ],
+      "itemCodes": {
+        "1": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "2": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "3": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "5": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "6": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "7": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "8": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "9": [
+          "OPTION_NUMERIC_UNORDERED"
+        ]
+      },
+      "semanticExpectation": "Item 10: both 135 and 243 are divisible by 9; explanation admits it, so two correct options for a single-choice item.",
+      "rationale": "All 10 keys at position 3. Numeric options unsorted in items 1-3,5-9 (item 4 has units, skipped).",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-073",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [],
+      "forbiddenSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN",
+        "SET_KEY_LENGTH_BIAS"
+      ],
+      "itemCodes": {
+        "8": [
+          "OPTION_ABSOLUTE_TERM",
+          "KEY_LONGEST_OPTION"
+        ]
+      },
+      "semanticExpectation": "Item 3 Hebrew gender error \"איזו כוכב לכת\" (should be איזה); item 4 malformed \"עצמות וחזקות\" (should be עצמות חזקות).",
+      "rationale": "Keys spread across positions 1-4. Item 8 has rak and a longest key; Hebrew errors are semantic.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-074",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "DUPLICATE_STEM_EXACT",
+        "DUPLICATE_STEM_NORMALIZED",
+        "NEAR_DUPLICATE_STEM",
+        "KEY_POSITION_IMBALANCE"
+      ],
+      "forbiddenSetCodes": [
+        "SET_TOO_SMALL"
+      ],
+      "itemCodes": {
+        "3": [
+          "EXPLANATION_NAMES_ONLY_KEY"
+        ],
+        "4": [
+          "EXPLANATION_NAMES_ONLY_KEY"
+        ],
+        "6": [
+          "EXPLANATION_NAMES_ONLY_KEY"
+        ],
+        "7": [
+          "EXPLANATION_NAMES_ONLY_KEY"
+        ],
+        "10": [
+          "EXPLANATION_NAMES_ONLY_KEY"
+        ]
+      },
+      "semanticExpectation": null,
+      "rationale": "Items 4/6 identical; 5/8 identical except niqqud/spacing; 3/10 near-identical. Keys only at positions 1-2; run of 3 at end borderline.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-075",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "STEM_TEMPLATE_REPEATED",
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN"
+      ],
+      "forbiddenSetCodes": [
+        "SET_TOO_SMALL",
+        "SET_KEY_LENGTH_BIAS"
+      ],
+      "itemCodes": {},
+      "semanticExpectation": "Many distractors are absurd nonsense or pun fillers (Binary soup, Hash cloud, Linked sky, Cumbersome).",
+      "rationale": "All 8 stems open with the same template; all keys option 1.",
+      "confidence": "high",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-076",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "SET_KEY_LENGTH_BIAS",
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN"
+      ],
+      "forbiddenSetCodes": [
+        "SET_TOO_SMALL"
+      ],
+      "itemCodes": {
+        "1": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "2": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "3": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "4": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "5": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "6": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "7": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "8": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "9": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ]
+      },
+      "semanticExpectation": "Item 8 stem gender error (מהי תפקיד) and option ids out of order; item 6 \"הקלטת חום\" and item 9 \"סלע קמיעי\" odd Hebrew; item 9 terminology uncertain.",
+      "rationale": "Every key is a long sentence vs 1-3 word distractors; 8 of 9 keys at position 1.",
+      "confidence": "medium",
+      "languageReviewRequired": true
+    },
+    {
+      "caseId": "HO-077",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "SET_KEY_LENGTH_BIAS",
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN"
+      ],
+      "forbiddenSetCodes": [
+        "SET_TOO_SMALL",
+        "SET_OPTION_COUNT_MIXED"
+      ],
+      "itemCodes": {
+        "2": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "4": [
+          "KEY_LONGEST_OPTION"
+        ],
+        "7": [
+          "KEY_LONGEST_OPTION"
+        ]
+      },
+      "semanticExpectation": null,
+      "rationale": "All keys at position 1 (a); key longest in about 5 of 8 items; items otherwise well written.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    },
+    {
+      "caseId": "HO-078",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [],
+      "forbiddenSetCodes": [
+        "KEY_POSITION_RUN",
+        "SET_OPTION_COUNT_MIXED",
+        "SET_TOO_SMALL"
+      ],
+      "itemCodes": {
+        "2": [
+          "STEM_NEGATIVE_WORDING",
+          "OPTION_NONE_OF_ABOVE",
+          "STEM_DOUBLE_NEGATIVE"
+        ],
+        "3": [
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "5": [
+          "STEM_NO_QUESTION_FORM",
+          "OPTION_ABSOLUTE_TERM",
+          "EXPLANATION_MISSING"
+        ]
+      },
+      "semanticExpectation": "Item 7 key Mean is wrong (explanation says median). Item 5 true/false with overlapping False/Sometimes is ambiguous. Item 6 key text awkward Hebrew.",
+      "rationale": "Item-level flaws; set statistics fine.",
+      "confidence": "medium",
+      "languageReviewRequired": false
+    }
+  ]
+}

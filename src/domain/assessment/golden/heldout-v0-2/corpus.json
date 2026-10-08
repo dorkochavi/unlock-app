@@ -1,0 +1,4047 @@
+{
+  "cases": [
+    {
+      "caseId": "HO-001",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי בירת אוסטרליה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "סידני"
+          },
+          {
+            "id": "b",
+            "content": "קנברה"
+          },
+          {
+            "id": "c",
+            "content": "מלבורן"
+          },
+          {
+            "id": "d",
+            "content": "פרת'"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "קנברה נבחרה כבירה כפשרה בין סידני למלבורן, שתיהן ערים גדולות שהתחרו על המעמד."
+      }
+    },
+    {
+      "caseId": "HO-002",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזה גז משתחרר לאטמוספרה כתוצר של תהליך הפוטוסינתזה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "חמצן"
+          },
+          {
+            "id": "b",
+            "content": "פחמן דו-חמצני"
+          },
+          {
+            "id": "c",
+            "content": "חנקן"
+          },
+          {
+            "id": "d",
+            "content": "מימן"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "בפוטוסינתזה הצמח קולט פחמן דו-חמצני ומים, ומפיק גלוקוז וחמצן. החמצן משתחרר דרך הפיוניות."
+      }
+    },
+    {
+      "caseId": "HO-003",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו ערכו של הביטוי 3 + 4 × 2?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "9"
+          },
+          {
+            "id": "b",
+            "content": "10"
+          },
+          {
+            "id": "c",
+            "content": "11"
+          },
+          {
+            "id": "d",
+            "content": "14"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "לפי סדר פעולות החשבון, כפל קודם לחיבור: 4 × 2 = 8, ואז 3 + 8 = 11. התשובה 14 מתקבלת מחישוב משמאל לימין."
+      }
+    },
+    {
+      "caseId": "HO-004",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which of the following is a renewable energy source?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Coal"
+          },
+          {
+            "id": "b",
+            "content": "Natural gas"
+          },
+          {
+            "id": "c",
+            "content": "Wind"
+          },
+          {
+            "id": "d",
+            "content": "Uranium"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "Wind is replenished naturally on a human timescale. Coal, natural gas and uranium are finite resources that are consumed when used."
+      }
+    },
+    {
+      "caseId": "HO-005",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Which of the following numbers are prime?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "2"
+          },
+          {
+            "id": "b",
+            "content": "9"
+          },
+          {
+            "id": "c",
+            "content": "11"
+          },
+          {
+            "id": "d",
+            "content": "15"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "2 and 11 have exactly two divisors. 9 is divisible by 3 and 15 by 3 and 5."
+      }
+    },
+    {
+      "caseId": "HO-006",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהחיות הבאות הן יונקים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "דולפין"
+          },
+          {
+            "id": "b",
+            "content": "כריש"
+          },
+          {
+            "id": "c",
+            "content": "עטלף"
+          },
+          {
+            "id": "d",
+            "content": "פינגווין"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "דולפין ועטלף הם יונקים: הם מניקים את צאצאיהם ובעלי שיער. כריש הוא דג ופינגווין הוא עוף."
+      }
+    },
+    {
+      "caseId": "HO-007",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה קורה בדרך כלל לכוח הקנייה של כסף בזמן אינפלציה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "הוא עולה"
+          },
+          {
+            "id": "b",
+            "content": "הוא יורד"
+          },
+          {
+            "id": "c",
+            "content": "הוא נשאר ללא שינוי"
+          },
+          {
+            "id": "d",
+            "content": "הוא מתאפס"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "אינפלציה פירושה עלייה כללית במחירים, ולכן באותו סכום כסף אפשר לקנות פחות סחורות ושירותים."
+      }
+    },
+    {
+      "caseId": "HO-008",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What does the HTTP status code 404 indicate?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "The server crashed while processing the request"
+          },
+          {
+            "id": "b",
+            "content": "The requested resource could not be found"
+          },
+          {
+            "id": "c",
+            "content": "The client is not authorized to view the resource"
+          },
+          {
+            "id": "d",
+            "content": "The request was successful"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "404 Not Found means the server is reachable but has no resource at the requested URL. Server crashes are 5xx and authorization failures are 401/403."
+      }
+    },
+    {
+      "caseId": "HO-009",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "באיזו שנה הוכרזה הקמת מדינת ישראל?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "1945"
+          },
+          {
+            "id": "b",
+            "content": "1948"
+          },
+          {
+            "id": "c",
+            "content": "1956"
+          },
+          {
+            "id": "d",
+            "content": "1967"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "ההכרזה על הקמת המדינה נערכה ב-14 במאי 1948 (ה' באייר תש\"ח)."
+      }
+    },
+    {
+      "caseId": "HO-010",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What is the median of the data set 3, 7, 9, 12, 20?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "7"
+          },
+          {
+            "id": "b",
+            "content": "9"
+          },
+          {
+            "id": "c",
+            "content": "10.2"
+          },
+          {
+            "id": "d",
+            "content": "12"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "The data is already sorted and has five values, so the median is the middle one, 9. The value 10.2 is the mean, which is pulled upward by the outlier 20."
+      }
+    },
+    {
+      "caseId": "HO-011",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי המטרה העיקרית של עקרון הפרדת הרשויות במשטר דמוקרטי?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "למנוע ריכוז של כל הכוח בידי גוף שלטוני אחד"
+          },
+          {
+            "id": "b",
+            "content": "להאיץ את קבלת ההחלטות בממשלה"
+          },
+          {
+            "id": "c",
+            "content": "להפחית את מספר העובדים במגזר הציבורי"
+          },
+          {
+            "id": "d",
+            "content": "להבטיח שהחוקים לא ישתנו לאורך זמן"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "חלוקת הסמכויות בין הרשות המחוקקת, המבצעת והשופטת יוצרת איזונים ובלמים ומקטינה סיכון לשימוש לרעה בכוח."
+      }
+    },
+    {
+      "caseId": "HO-012",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו ה-time complexity של binary search במערך ממוין בגודל n?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "O(1)"
+          },
+          {
+            "id": "b",
+            "content": "O(log n)"
+          },
+          {
+            "id": "c",
+            "content": "O(n)"
+          },
+          {
+            "id": "d",
+            "content": "O(n log n)"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "בכל צעד מחצים את טווח החיפוש, ולכן מספר הצעדים הוא לוגריתמי ב-n."
+      }
+    },
+    {
+      "caseId": "HO-013",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מחסור ממושך באיזה ויטמין גורם למחלת הצפדינה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "ויטמין A"
+          },
+          {
+            "id": "b",
+            "content": "ויטמין C"
+          },
+          {
+            "id": "c",
+            "content": "ויטמין D"
+          },
+          {
+            "id": "d",
+            "content": "ויטמין K"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "ויטמין C נדרש ליצירת קולגן; בלעדיו נפגעים רקמות החיבור, החניכיים והעור. מלחים בעבר חלו בצפדינה בגלל תזונה ללא פירות וירקות טריים."
+      }
+    },
+    {
+      "caseId": "HO-014",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which ocean covers the largest surface area on Earth?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Atlantic Ocean"
+          },
+          {
+            "id": "b",
+            "content": "Indian Ocean"
+          },
+          {
+            "id": "c",
+            "content": "Pacific Ocean"
+          },
+          {
+            "id": "d",
+            "content": "Arctic Ocean"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "The Pacific Ocean covers roughly a third of the planet's surface, more than all land area combined."
+      }
+    },
+    {
+      "caseId": "HO-015",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "במחקר נמצא מתאם חיובי חזק בין צריכת גלידה לבין מקרי טביעה בחופי הים. מהי המסקנה המוצדקת ביותר?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "אכילת גלידה גורמת לטביעה"
+          },
+          {
+            "id": "b",
+            "content": "טביעה גורמת לעלייה במכירות גלידה"
+          },
+          {
+            "id": "c",
+            "content": "ייתכן גורם שלישי, כמו מזג אוויר חם, שמשפיע על שני המשתנים"
+          },
+          {
+            "id": "d",
+            "content": "המתאם הוא מקרי ואין לו שום משמעות סטטיסטית"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "מתאם אינו מעיד על סיבתיות. בימים חמים יותר אנשים אוכלים יותר גלידה וגם שוחים יותר, ולכן גורם מתערב מסביר את הקשר."
+      }
+    },
+    {
+      "caseId": "HO-016",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which sentence uses \"their\" correctly?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Their going to the market tomorrow."
+          },
+          {
+            "id": "b",
+            "content": "The students forgot their umbrellas at school."
+          },
+          {
+            "id": "c",
+            "content": "Put the books over their."
+          },
+          {
+            "id": "d",
+            "content": "I think their is a mistake here."
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "\"Their\" is a possessive determiner. In the other sentences the intended words are \"they're\" or \"there\"."
+      }
+    },
+    {
+      "caseId": "HO-017",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו סכום הזוויות הפנימיות במשולש במישור?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "תמיד 90 מעלות"
+          },
+          {
+            "id": "b",
+            "content": "תמיד 180 מעלות"
+          },
+          {
+            "id": "c",
+            "content": "תמיד 270 מעלות"
+          },
+          {
+            "id": "d",
+            "content": "תמיד 360 מעלות"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "בגיאומטריה אוקלידית סכום זוויות המשולש הוא 180 מעלות לכל משולש. 360 מעלות הוא סכום הזוויות במרובע."
+      }
+    },
+    {
+      "caseId": "HO-018",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which of the following is NOT a prime number?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "2"
+          },
+          {
+            "id": "b",
+            "content": "3"
+          },
+          {
+            "id": "c",
+            "content": "5"
+          },
+          {
+            "id": "d",
+            "content": "9"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "9 = 3 × 3, so it has a divisor other than 1 and itself."
+      }
+    },
+    {
+      "caseId": "HO-019",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזו מהסיבות הבאות מסבירה בצורה הטובה ביותר מדוע עונות השנה קיימות על כדור הארץ?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "ציר הסיבוב של כדור הארץ נוטה ביחס למישור המסלול סביב השמש"
+          },
+          {
+            "id": "b",
+            "content": "המרחק של כדור הארץ מהשמש משתנה באופן חד מאוד לאורך השנה"
+          },
+          {
+            "id": "c",
+            "content": "הירח חוסם חלק מקרינת השמש בחודשי החורף בכל שנה"
+          },
+          {
+            "id": "d",
+            "content": "עוצמת פעילות השמש עולה ויורדת בהתאם ללוח השנה"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "הטיית הציר (כ-23.5 מעלות) גורמת לשינוי בזווית הקרינה ובאורך היום. המרחק מהשמש אינו הגורם: כדור הארץ קרוב לשמש דווקא בינואר."
+      }
+    },
+    {
+      "caseId": "HO-020",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי פוטוסינתזה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "תהליך שבו צמחים משתמשים באור השמש כדי לייצר סוכר מפחמן דו-חמצני ומים"
+          },
+          {
+            "id": "b",
+            "content": "נשימה של בעלי חיים"
+          },
+          {
+            "id": "c",
+            "content": "סוג של סלע"
+          },
+          {
+            "id": "d",
+            "content": "מחלה של עלים"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": null
+      }
+    },
+    {
+      "caseId": "HO-021",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזה מהבאים אינו מתכת?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "נחושת"
+          },
+          {
+            "id": "b",
+            "content": "ברזל"
+          },
+          {
+            "id": "c",
+            "content": "גופרית"
+          },
+          {
+            "id": "d",
+            "content": "אלומיניום"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "גופרית היא אל-מתכת."
+      }
+    },
+    {
+      "caseId": "HO-022",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזו מהטענות הבאות אינה לא נכונה לגבי כדור הארץ?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כדור הארץ שטוח"
+          },
+          {
+            "id": "b",
+            "content": "כדור הארץ מקיף את השמש"
+          },
+          {
+            "id": "c",
+            "content": "השמש מקיפה את כדור הארץ"
+          },
+          {
+            "id": "d",
+            "content": "כדור הארץ גדול מהשמש"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "כדור הארץ מקיף את השמש."
+      }
+    },
+    {
+      "caseId": "HO-023",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה נכון לגבי מים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "מים תמיד רותחים בטמפרטורה של 100 מעלות"
+          },
+          {
+            "id": "b",
+            "content": "המים מורכבים ממימן וחמצן"
+          },
+          {
+            "id": "c",
+            "content": "לעולם אין מים במצב נוזלי מתחת ל-10 מעלות"
+          },
+          {
+            "id": "d",
+            "content": "רק בים יש מים"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "מולקולת מים בנויה משני אטומי מימן ואטום חמצן אחד (H2O)."
+      }
+    },
+    {
+      "caseId": "HO-024",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which of the following are benefits of regular physical exercise?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Improved heart health"
+          },
+          {
+            "id": "b",
+            "content": "Better mood"
+          },
+          {
+            "id": "c",
+            "content": "Better sleep quality"
+          },
+          {
+            "id": "d",
+            "content": "All of the above"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "All three are well documented benefits of exercise."
+      }
+    },
+    {
+      "caseId": "HO-025",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which of these is a planet in our solar system?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "The Sun"
+          },
+          {
+            "id": "b",
+            "content": "The Moon"
+          },
+          {
+            "id": "c",
+            "content": "Sirius"
+          },
+          {
+            "id": "d",
+            "content": "None of the above"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "None of the listed bodies is a planet: the Sun and Sirius are stars and the Moon is a natural satellite."
+      }
+    },
+    {
+      "caseId": "HO-026",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "אילו מהבאים הם צבעי יסוד באור (RGB)?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "אדום, ירוק וכחול"
+          },
+          {
+            "id": "b",
+            "content": "אדום, צהוב וכחול"
+          },
+          {
+            "id": "c",
+            "content": "ירוק, כתום וסגול"
+          },
+          {
+            "id": "d",
+            "content": "תשובות א ו-ג נכונות"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "במודל RGB מערבבים אור אדום, ירוק וכחול. אדום-צהוב-כחול הוא מודל מסורתי של צבעי יסוד בציור."
+      }
+    },
+    {
+      "caseId": "HO-027",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which of these gases are part of Earth's atmosphere?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Nitrogen"
+          },
+          {
+            "id": "b",
+            "content": "Helium only in trace amounts"
+          },
+          {
+            "id": "c",
+            "content": "Oxygen"
+          },
+          {
+            "id": "d",
+            "content": "Both a and c"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "Nitrogen (about 78%) and oxygen (about 21%) are the main components."
+      }
+    },
+    {
+      "caseId": "HO-028",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What does the word \"benevolent\" mean?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Kind and well-meaning"
+          },
+          {
+            "id": "b",
+            "content": "Generous and caring"
+          },
+          {
+            "id": "c",
+            "content": "Angry and hostile"
+          },
+          {
+            "id": "d",
+            "content": "Lazy and careless"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Benevolent describes someone who is kind and wishes to do good for others."
+      }
+    },
+    {
+      "caseId": "HO-029",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו תפקידו העיקרי של מערכת העיכול?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "פירוק המזון לחומרים מזינים וספיגתם לדם"
+          },
+          {
+            "id": "b",
+            "content": "הולכת חמצן לתאים"
+          },
+          {
+            "id": "c",
+            "content": "לשלוח אותות עצביים לשרירים!"
+          },
+          {
+            "id": "d",
+            "content": "הגנה על הגוף מפני מחלות"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "מערכת העיכול מפרקת מזון מכנית וכימית, והמזון המפורק נספג בעיקר במעי הדק."
+      }
+    },
+    {
+      "caseId": "HO-030",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Capital of France",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Paris"
+          },
+          {
+            "id": "b",
+            "content": "Lyon"
+          },
+          {
+            "id": "c",
+            "content": "Marseille"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": null
+      }
+    },
+    {
+      "caseId": "HO-031",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי המהירות בקירוב של האור בריק?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "300 ק\"מ לשנייה"
+          },
+          {
+            "id": "b",
+            "content": "3,000 ק\"מ לשנייה"
+          },
+          {
+            "id": "c",
+            "content": "300,000 ק\"מ לשנייה"
+          },
+          {
+            "id": "d",
+            "content": "3,000,000 ק\"מ לשנייה"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "נכון."
+      }
+    },
+    {
+      "caseId": "HO-032",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "התהליך שבו מים נוזליים הופכים לאדים נקרא:",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "התאדות"
+          },
+          {
+            "id": "b",
+            "content": "התעבות"
+          },
+          {
+            "id": "c",
+            "content": "קיפאון"
+          },
+          {
+            "id": "d",
+            "content": "המסה"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "התאדות היא מעבר מנוזל לגז. התעבות היא התהליך ההפוך."
+      }
+    },
+    {
+      "caseId": "HO-033",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which gas do humans need to breathe in order to live?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Oxygen"
+          },
+          {
+            "id": "b",
+            "content": "Pizza"
+          },
+          {
+            "id": "c",
+            "content": "Gold"
+          },
+          {
+            "id": "d",
+            "content": "Tuesday"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Humans use oxygen for cellular respiration."
+      }
+    },
+    {
+      "caseId": "HO-034",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "כמה צלעות יש למשושה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "8"
+          },
+          {
+            "id": "b",
+            "content": "6"
+          },
+          {
+            "id": "c",
+            "content": "5"
+          },
+          {
+            "id": "d",
+            "content": "7"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "\"משושה\" הוא מצולע בעל שש צלעות (שש = שישה)."
+      }
+    },
+    {
+      "caseId": "HO-035",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which planet is known as the Red Planet?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Venus."
+          },
+          {
+            "id": "b",
+            "content": "Mars"
+          },
+          {
+            "id": "c",
+            "content": "Jupiter."
+          },
+          {
+            "id": "d",
+            "content": "Saturn"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "Mars appears red because of iron oxide on its surface."
+      }
+    },
+    {
+      "caseId": "HO-036",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What is the   main function of red blood cells? ",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": " Transport oxygen"
+          },
+          {
+            "id": "b",
+            "content": "Fight infections  "
+          },
+          {
+            "id": "c",
+            "content": "Clot the blood\t"
+          },
+          {
+            "id": "d",
+            "content": "Produce hormones"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Red blood cells carry oxygen using hemoglobin."
+      }
+    },
+    {
+      "caseId": "HO-037",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזה מהבאים הוא יונק ימי?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "לווייתן"
+          },
+          {
+            "id": "b",
+            "content": "טונה"
+          },
+          {
+            "id": "c",
+            "content": "לווייתן"
+          },
+          {
+            "id": "d",
+            "content": "מדוזה"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "לווייתן הוא יונק; טונה היא דג ומדוזה היא חסרת חוליות."
+      }
+    },
+    {
+      "caseId": "HO-038",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which language is primarily spoken in Brazil?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Spanish"
+          },
+          {
+            "id": "b",
+            "content": "Portuguese"
+          },
+          {
+            "id": "c",
+            "content": "French"
+          },
+          {
+            "id": "d",
+            "content": "English"
+          }
+        ],
+        "correctOptionIds": [
+          "e"
+        ],
+        "explanation": "Brazil was colonized by Portugal."
+      }
+    },
+    {
+      "caseId": "HO-039",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו הגורם העיקרי לגאות ושפל בים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כוח המשיכה של הירח"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "כוח המשיכה של הירח, ובמידה פחותה של השמש, גורם לגאות ושפל."
+      }
+    },
+    {
+      "caseId": "HO-040",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Which of the following are programming languages?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Python"
+          },
+          {
+            "id": "b",
+            "content": "Java"
+          },
+          {
+            "id": "c",
+            "content": "Rust"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "b",
+          "c"
+        ],
+        "explanation": "All three are general-purpose programming languages."
+      }
+    },
+    {
+      "caseId": "HO-041",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי בירת ספרד?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "ברצלונה"
+          },
+          {
+            "id": "b",
+            "content": "מדריד"
+          },
+          {
+            "id": "c",
+            "content": "סביליה"
+          },
+          {
+            "id": "d",
+            "content": "ולנסיה"
+          }
+        ],
+        "correctOptionIds": [
+          "b",
+          "c"
+        ],
+        "explanation": "מדריד היא בירת ספרד ומרכז השלטון."
+      }
+    },
+    {
+      "caseId": "HO-042",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי בירת טורקיה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "אנקרה"
+          },
+          {
+            "id": "b",
+            "content": "איסטנבול"
+          },
+          {
+            "id": "c",
+            "content": "איזמיר"
+          },
+          {
+            "id": "d",
+            "content": "אנטליה"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "בירת טורקיה היא אנקרה, אף שאיסטנבול היא העיר הגדולה ביותר."
+      }
+    },
+    {
+      "caseId": "HO-043",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What is the chemical symbol for sodium?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "So"
+          },
+          {
+            "id": "b",
+            "content": "Na"
+          },
+          {
+            "id": "c",
+            "content": "K"
+          },
+          {
+            "id": "d",
+            "content": "Sd"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": null
+      }
+    },
+    {
+      "caseId": "HO-044",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which star is closest to Earth?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "The Sun"
+          },
+          {
+            "id": "b",
+            "content": "Proxima Centauri"
+          },
+          {
+            "id": "c",
+            "content": "Sirius"
+          },
+          {
+            "id": "d",
+            "content": "Betelgeuse"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "Proxima Centauri is the nearest star to the Sun, about 4.2 light-years away."
+      }
+    },
+    {
+      "caseId": "HO-045",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו הגורם העיקרי לאינפלציה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "עלייה בביקוש המצרפי"
+          },
+          {
+            "id": "b",
+            "content": "עלייה בעלויות הייצור"
+          },
+          {
+            "id": "c",
+            "content": "הגדלת כמות הכסף במשק"
+          },
+          {
+            "id": "d",
+            "content": "ירידה בשער הריבית"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "הגדלת כמות הכסף ללא גידול מקביל בתוצר מביאה לעליית מחירים."
+      }
+    },
+    {
+      "caseId": "HO-046",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "How many months of the year have at least 28 days?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "1"
+          },
+          {
+            "id": "b",
+            "content": "6"
+          },
+          {
+            "id": "c",
+            "content": "11"
+          },
+          {
+            "id": "d",
+            "content": "12"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "Every month has at least 28 days."
+      }
+    },
+    {
+      "caseId": "HO-047",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "נתחו והעריכו באופן ביקורתי את מידת ההצלחה של המדיניות הכלכלית בשנות ה-30 בארצות הברית. מהו שם התוכנית של הנשיא רוזוולט?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "הניו דיל"
+          },
+          {
+            "id": "b",
+            "content": "תוכנית מרשל"
+          },
+          {
+            "id": "c",
+            "content": "הדיל הוגן"
+          },
+          {
+            "id": "d",
+            "content": "התוכנית הגדולה"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "הניו דיל (New Deal) הייתה סדרת תוכניות כלכליות ורפורמות שהונהגה בשנות ה-30."
+      }
+    },
+    {
+      "caseId": "HO-048",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which statement about triangles is NOT always true?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "The interior angles add up to 180 degrees"
+          },
+          {
+            "id": "b",
+            "content": "The sum of any two sides is greater than the third side"
+          },
+          {
+            "id": "c",
+            "content": "All triangles have a right angle"
+          },
+          {
+            "id": "d",
+            "content": "A triangle has three sides"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "Only right triangles have a 90 degree angle."
+      }
+    },
+    {
+      "caseId": "HO-049",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזה צבע נראה בשמיים ביום בהיר, ומדוע?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כָּחוֹל, כי האור הכחול מתפזר באטמוספרה יותר מצבעים אחרים"
+          },
+          {
+            "id": "b",
+            "content": "אדום, כי האטמוספרה סופגת את האור הכחול"
+          },
+          {
+            "id": "c",
+            "content": "ירוק, כי השמיים משקפים את צמחיית כדור הארץ"
+          },
+          {
+            "id": "d",
+            "content": "לבן, כי אור השמש אינו משתנה"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "פיזור ריילי גורם לאור בעל אורך גל קצר (כחול) להתפזר חזק יותר."
+      }
+    },
+    {
+      "caseId": "HO-050",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה פירוש הראשי תיבות \"מד\"א\"?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "מגן דוד אדום"
+          },
+          {
+            "id": "b",
+            "content": "מרכז דחיפות אזרחי"
+          },
+          {
+            "id": "c",
+            "content": "מערך דיור ארצי"
+          },
+          {
+            "id": "d",
+            "content": "מועצה דתית אזורית"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "מד״א הוא שירות האמבולנס והרפואה הדחופה בישראל."
+      }
+    },
+    {
+      "caseId": "HO-051",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו הגיל המינימלי להצבעה בבחירות לכנסת?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "גיל 18, כלומר כל אזרח ישראלי שמלאו לו 18 שנים ביום הבחירות רשאי להצביע"
+          },
+          {
+            "id": "b",
+            "content": "גיל 16"
+          },
+          {
+            "id": "c",
+            "content": "גיל 21"
+          },
+          {
+            "id": "d",
+            "content": "גיל 25"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "זכות הבחירה לכנסת ניתנת מגיל 18."
+      }
+    },
+    {
+      "caseId": "HO-052",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה ההבדל העיקרי בין RAM ל-ROM?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "RAM הוא זיכרון זמני שנמחק עם כיבוי המחשב, ו-ROM הוא זיכרון קבוע לקריאה בלבד"
+          },
+          {
+            "id": "b",
+            "content": "RAM איטי"
+          },
+          {
+            "id": "c",
+            "content": "ROM גדול"
+          },
+          {
+            "id": "d",
+            "content": "אין הבדל"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "RAM הוא זיכרון נדיף; ROM שומר מידע גם ללא חשמל."
+      }
+    },
+    {
+      "caseId": "HO-053",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהבאים הם מקורות אנרגיה מתחדשת?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "אנרגיה סולארית"
+          },
+          {
+            "id": "b",
+            "content": "אנרגיית רוח"
+          },
+          {
+            "id": "c",
+            "content": "פחם"
+          },
+          {
+            "id": "d",
+            "content": "אף אחת מהתשובות הנ\"ל"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "b"
+        ],
+        "explanation": "שמש ורוח מתחדשות מעצמן. פחם הוא דלק מאובנים."
+      }
+    },
+    {
+      "caseId": "HO-054",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Which of the following are NOT mammals?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Whale"
+          },
+          {
+            "id": "b",
+            "content": "Shark"
+          },
+          {
+            "id": "c",
+            "content": "Trout"
+          },
+          {
+            "id": "d",
+            "content": "Bat"
+          }
+        ],
+        "correctOptionIds": [
+          "b",
+          "c"
+        ],
+        "explanation": "Sharks and trout are fish; whales and bats are mammals."
+      }
+    },
+    {
+      "caseId": "HO-055",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What is a stack in computer science?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "A stack is a linear data structure in which elements are added and removed only from the top"
+          },
+          {
+            "id": "b",
+            "content": "A queue where items leave from the front"
+          },
+          {
+            "id": "c",
+            "content": "A sorted tree"
+          },
+          {
+            "id": "d",
+            "content": "A table of key-value pairs"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "A stack follows last-in, first-out (LIFO) ordering."
+      }
+    },
+    {
+      "caseId": "HO-056",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which organelle is known as the powerhouse of the cell?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Nucleus"
+          },
+          {
+            "id": "b",
+            "content": "Mitochondrion"
+          },
+          {
+            "id": "c",
+            "content": "Ribosome"
+          },
+          {
+            "id": "d",
+            "content": "Golgi apparatus"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "The mitochondrion produces most of the cell's ATP through cellular respiration, which is why it is called the powerhouse."
+      }
+    },
+    {
+      "caseId": "HO-057",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "פוטוסינתזה",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "תהליך יצירת סוכר בצמח"
+          },
+          {
+            "id": "b",
+            "content": "תהליך עיכול"
+          },
+          {
+            "id": "c",
+            "content": "תהליך רבייה"
+          },
+          {
+            "id": "d",
+            "content": "תהליך התפרקות"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "פוטוסינתזה."
+      }
+    },
+    {
+      "caseId": "HO-058",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה כבד יותר: קילוגרם נוצות או קילוגרם ברזל?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "קילוגרם ברזל"
+          },
+          {
+            "id": "b",
+            "content": "קילוגרם נוצות"
+          },
+          {
+            "id": "c",
+            "content": "שניהם שווים במשקלם"
+          },
+          {
+            "id": "d",
+            "content": "תלוי בצורה"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "קילוגרם הוא קילוגרם, ללא קשר לחומר."
+      }
+    },
+    {
+      "caseId": "HO-059",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזו פעולה עוזרת הכי הרבה למניעת הדבקה במחלות זיהומיות?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "שטיפת ידיים בסבון באופן קבוע"
+          },
+          {
+            "id": "b",
+            "content": "לשבת בחושך"
+          },
+          {
+            "id": "c",
+            "content": "לאכול רק ממתקים"
+          },
+          {
+            "id": "d",
+            "content": "לא לצאת מהבית לעולם"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "שטיפת ידיים מסירה חיידקים ווירוסים מהעור."
+      }
+    },
+    {
+      "caseId": "HO-060",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which statement about HTTPS is correct?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "It encrypts data between the browser and the server"
+          },
+          {
+            "id": "b",
+            "content": "It never uses certificates"
+          },
+          {
+            "id": "c",
+            "content": "It makes websites load instantly"
+          },
+          {
+            "id": "d",
+            "content": "It is only used by banks"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "HTTPS is HTTP over TLS, which provides encryption and server authentication via certificates."
+      }
+    },
+    {
+      "caseId": "HO-061",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which of these best describes democracy?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Rule by the people"
+          },
+          {
+            "id": "b",
+            "content": "Government by the people's elected representatives"
+          },
+          {
+            "id": "c",
+            "content": "Rule by a single hereditary leader"
+          },
+          {
+            "id": "d",
+            "content": "Rule by the military"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Democracy literally means rule by the people, either directly or through representatives."
+      }
+    },
+    {
+      "caseId": "HO-062",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מטילים קובייה הוגנת פעמיים. מהי ההסתברות לקבל 6 בשתי ההטלות?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "1/36"
+          },
+          {
+            "id": "b",
+            "content": "1/12"
+          },
+          {
+            "id": "c",
+            "content": "1/6"
+          },
+          {
+            "id": "d",
+            "content": "1/3"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "ההטלות בלתי תלויות: (1/6) × (1/6) = 1/36. התשובה 1/12 נובעת מחיבור שגוי בין ההסתברויות."
+      }
+    },
+    {
+      "caseId": "HO-063",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזו מהטענות הבאות איננה נכונה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כל הציפורים עפות"
+          },
+          {
+            "id": "b",
+            "content": "הלטאה היא זוחל"
+          },
+          {
+            "id": "c",
+            "content": "הצפרדע היא דו-חיים"
+          },
+          {
+            "id": "d",
+            "content": "הדולפין נושם אוויר"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "יש ציפורים שאינן עפות, כמו היענים והפינגווינים."
+      }
+    },
+    {
+      "caseId": "HO-064",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Select all that apply: which of the following are fruits in botanical terms?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Tomato"
+          },
+          {
+            "id": "b",
+            "content": "Cucumber"
+          },
+          {
+            "id": "c",
+            "content": "Carrot"
+          },
+          {
+            "id": "d",
+            "content": "Both a and b"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "b",
+          "d"
+        ],
+        "explanation": "Botanically, fruits develop from the flower's ovary and contain seeds. Carrots are roots."
+      }
+    },
+    {
+      "caseId": "HO-065",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "If demand for a product increases while supply stays constant, the price will",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "rise"
+          },
+          {
+            "id": "b",
+            "content": "fall"
+          },
+          {
+            "id": "c",
+            "content": "stay the same"
+          },
+          {
+            "id": "d",
+            "content": "cannot be determined"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Higher demand against fixed supply creates scarcity and pushes the equilibrium price up."
+      }
+    },
+    {
+      "caseId": "HO-066",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהבאים הם גורמי סיכון למחלות לב וכלי דם?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "עישון"
+          },
+          {
+            "id": "b",
+            "content": "לחץ דם גבוה"
+          },
+          {
+            "id": "c",
+            "content": "פעילות גופנית סדירה"
+          },
+          {
+            "id": "d",
+            "content": "רמות כולסטרול גבוהות"
+          },
+          {
+            "id": "e",
+            "content": "שתיית מים בכמות מספקת"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "b",
+          "d"
+        ],
+        "explanation": "עישון, לחץ דם גבוה וכולסטרול גבוה מזיקים לכלי הדם. פעילות גופנית והידרציה הן גורמי הגנה."
+      }
+    },
+    {
+      "caseId": "HO-067",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which process do cells use to divide into two identical daughter cells?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "mitosis"
+          },
+          {
+            "id": "b",
+            "content": "Meiosis."
+          },
+          {
+            "id": "c",
+            "content": "Binary Fission"
+          },
+          {
+            "id": "d",
+            "content": "photosynthesis"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Mitosis produces two genetically identical diploid cells."
+      }
+    },
+    {
+      "caseId": "HO-068",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מי כתב את הספר \"אלף לילה ולילה\"?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "שייקספיר"
+          },
+          {
+            "id": "b",
+            "content": "מחבר לא ידוע - אוסף סיפורים עממיים"
+          },
+          {
+            "id": "c",
+            "content": "דנטה"
+          },
+          {
+            "id": "d",
+            "content": "הומרוס"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": null
+      }
+    },
+    {
+      "caseId": "HO-069",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "כמה שעות שינה מומלצות בדרך כלל למבוגר בריא בלילה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "7 עד 9 שעות"
+          },
+          {
+            "id": "b",
+            "content": "3 עד 4 שעות"
+          },
+          {
+            "id": "c",
+            "content": "12 עד 14 שעות"
+          },
+          {
+            "id": "d",
+            "content": "5 עד 6 שעות"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "ההמלצה הרווחת למבוגרים היא 7 עד 9 שעות שינה בלילה."
+      }
+    },
+    {
+      "caseId": "HO-070",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזה מהבאים הוא הסבר נכון לתפקיד של הכלורופיל?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "קולט אנרגיית אור בצמח"
+          },
+          {
+            "id": "b",
+            "content": "מַעֲבִיר מים מהשורשים אל העלים"
+          },
+          {
+            "id": "c",
+            "content": "יוצר זרעים"
+          },
+          {
+            "id": "d",
+            "content": "מגן על הצמח מפני בעלי חיים"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "הכלורופיל הוא הפיגמנט הירוק שקולט אור בפוטוסינתזה."
+      }
+    },
+    {
+      "caseId": "HO-071",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What is the capital of Italy?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Rome"
+            },
+            {
+              "id": "b",
+              "content": "Milan"
+            },
+            {
+              "id": "c",
+              "content": "Naples"
+            },
+            {
+              "id": "d",
+              "content": "Turin"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Rome has been Italy's capital since 1871."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which continent is Egypt mostly located in?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Africa"
+            },
+            {
+              "id": "b",
+              "content": "Asia"
+            },
+            {
+              "id": "c",
+              "content": "Europe"
+            },
+            {
+              "id": "d",
+              "content": "South America"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Most of Egypt lies in northeast Africa; the Sinai is in Asia."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which river flows through London?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Thames"
+            },
+            {
+              "id": "b",
+              "content": "Seine"
+            },
+            {
+              "id": "c",
+              "content": "Danube"
+            },
+            {
+              "id": "d",
+              "content": "Rhine"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "The Thames flows through London."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What is the largest desert in the world by area?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Antarctic Desert"
+            },
+            {
+              "id": "b",
+              "content": "Sahara"
+            },
+            {
+              "id": "c",
+              "content": "Gobi"
+            },
+            {
+              "id": "d",
+              "content": "Arabian"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Antarctica is a polar desert and is larger than the Sahara."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which country has the most people?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "India"
+            },
+            {
+              "id": "b",
+              "content": "United States"
+            },
+            {
+              "id": "c",
+              "content": "Brazil"
+            },
+            {
+              "id": "d",
+              "content": "Indonesia"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "India recently passed China as the most populous country."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "On which continent is Mount Kilimanjaro?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Africa"
+            },
+            {
+              "id": "b",
+              "content": "Asia"
+            },
+            {
+              "id": "c",
+              "content": "Australia"
+            },
+            {
+              "id": "d",
+              "content": "North America"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Kilimanjaro is in Tanzania."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which sea lies between Europe and Africa?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Mediterranean Sea"
+            },
+            {
+              "id": "b",
+              "content": "Baltic Sea"
+            },
+            {
+              "id": "c",
+              "content": "Caspian Sea"
+            },
+            {
+              "id": "d",
+              "content": "Black Sea"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "The Mediterranean separates Southern Europe from North Africa."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which line of latitude is at 0 degrees?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Equator"
+            },
+            {
+              "id": "b",
+              "content": "Tropic of Cancer"
+            },
+            {
+              "id": "c",
+              "content": "Prime Meridian"
+            },
+            {
+              "id": "d",
+              "content": "Arctic Circle"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "The equator is 0 degrees latitude; the Prime Meridian is longitude."
+        }
+      ]
+    },
+    {
+      "caseId": "HO-072",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "כמה זה 7 × 8?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "54"
+            },
+            {
+              "id": "b",
+              "content": "48"
+            },
+            {
+              "id": "c",
+              "content": "56"
+            },
+            {
+              "id": "d",
+              "content": "64"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "7 × 8 = 56."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו השורש הריבועי של 144?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "11"
+            },
+            {
+              "id": "b",
+              "content": "14"
+            },
+            {
+              "id": "c",
+              "content": "12"
+            },
+            {
+              "id": "d",
+              "content": "16"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "12 × 12 = 144."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו 25% מ-80?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "25"
+            },
+            {
+              "id": "b",
+              "content": "40"
+            },
+            {
+              "id": "c",
+              "content": "20"
+            },
+            {
+              "id": "d",
+              "content": "15"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "80 × 0.25 = 20."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו היקף ריבוע שאורך צלעו 6 ס\"מ?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "12 ס\"מ"
+            },
+            {
+              "id": "b",
+              "content": "36 ס\"מ"
+            },
+            {
+              "id": "c",
+              "content": "24 ס\"מ"
+            },
+            {
+              "id": "d",
+              "content": "18 ס\"מ"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "4 × 6 = 24."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "פתרו: 3x + 5 = 20. מהו x?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "3"
+            },
+            {
+              "id": "b",
+              "content": "8"
+            },
+            {
+              "id": "c",
+              "content": "5"
+            },
+            {
+              "id": "d",
+              "content": "15"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "3x = 15, ולכן x = 5."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו הממוצע של 4, 8 ו-12?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "6"
+            },
+            {
+              "id": "b",
+              "content": "12"
+            },
+            {
+              "id": "c",
+              "content": "8"
+            },
+            {
+              "id": "d",
+              "content": "9"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "(4+8+12)/3 = 8."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו שטח מלבן שאורכו 9 ורוחבו 4?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "26"
+            },
+            {
+              "id": "b",
+              "content": "13"
+            },
+            {
+              "id": "c",
+              "content": "36"
+            },
+            {
+              "id": "d",
+              "content": "32"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "9 × 4 = 36."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "כמה מעלות יש בזווית ישרה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "45"
+            },
+            {
+              "id": "b",
+              "content": "180"
+            },
+            {
+              "id": "c",
+              "content": "90"
+            },
+            {
+              "id": "d",
+              "content": "360"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "זווית ישרה היא 90 מעלות."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו 2 בחזקת 5?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "10"
+            },
+            {
+              "id": "b",
+              "content": "25"
+            },
+            {
+              "id": "c",
+              "content": "32"
+            },
+            {
+              "id": "d",
+              "content": "16"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "2×2×2×2×2 = 32."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה מהמספרים הבאים מתחלק ב-9?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "124"
+            },
+            {
+              "id": "b",
+              "content": "135"
+            },
+            {
+              "id": "c",
+              "content": "243"
+            },
+            {
+              "id": "d",
+              "content": "250"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "סכום ספרות 243 הוא 9. אבל גם 135 מתחלק ב-9."
+        }
+      ]
+    },
+    {
+      "caseId": "HO-073",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה איבר בגוף אחראי על שאיבת הדם?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "הלב"
+            },
+            {
+              "id": "b",
+              "content": "הכבד"
+            },
+            {
+              "id": "c",
+              "content": "הכליה"
+            },
+            {
+              "id": "d",
+              "content": "הטחול"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "הלב הוא שריר שמזרים דם בכל הגוף."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו מצב הצבירה של קרח?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "גז"
+            },
+            {
+              "id": "b",
+              "content": "נוזל"
+            },
+            {
+              "id": "c",
+              "content": "מוצק"
+            },
+            {
+              "id": "d",
+              "content": "פלזמה"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "קרח הוא מים במצב מוצק."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזו כוכב לכת הוא הקרוב ביותר לשמש?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "נוגה"
+            },
+            {
+              "id": "b",
+              "content": "מאדים"
+            },
+            {
+              "id": "c",
+              "content": "כוכב חמה"
+            },
+            {
+              "id": "d",
+              "content": "צדק"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "כוכב חמה (מרקורי) הוא הקרוב ביותר לשמש."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה חומר נדרש לבניית עצמות וחזקות?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "נתרן"
+            },
+            {
+              "id": "b",
+              "content": "סידן"
+            },
+            {
+              "id": "c",
+              "content": "ברזל"
+            },
+            {
+              "id": "d",
+              "content": "יוד"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "סידן הוא מרכיב מרכזי במבנה העצם."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי יחידת המידה של כוח במערכת SI?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "ג'אול"
+            },
+            {
+              "id": "b",
+              "content": "ניוטון"
+            },
+            {
+              "id": "c",
+              "content": "וואט"
+            },
+            {
+              "id": "d",
+              "content": "פסקל"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "כוח נמדד בניוטון (N)."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה סוג של כלי דם מוביל דם מהלב אל הגוף?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "וריד"
+            },
+            {
+              "id": "b",
+              "content": "נימית"
+            },
+            {
+              "id": "c",
+              "content": "עורק"
+            },
+            {
+              "id": "d",
+              "content": "בלוטה"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "עורקים מובילים דם מהלב; ורידים מחזירים אליו דם."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו התוצר העיקרי של הנשימה התאית שאנו נושפים?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "חמצן"
+            },
+            {
+              "id": "b",
+              "content": "פחמן דו-חמצני"
+            },
+            {
+              "id": "c",
+              "content": "חנקן"
+            },
+            {
+              "id": "d",
+              "content": "הליום"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "בנשימה תאית נוצרים פחמן דו-חמצני ומים."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזו תכונה שייכת לתערובת ולא לתרכובת?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "אפשר להפריד את מרכיביה בשיטות פיזיקליות"
+            },
+            {
+              "id": "b",
+              "content": "מרכיביה קשורים בקשר כימי"
+            },
+            {
+              "id": "c",
+              "content": "יש לה נוסחה כימית קבועה"
+            },
+            {
+              "id": "d",
+              "content": "היא נוצרת רק בתגובה כימית"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "תערובת ניתנת להפרדה בסינון, זיקוק וכד'."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מה קורה לנפח גז בטמפרטורה קבועה כשהלחץ עליו גדל?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "הנפח קטן"
+            },
+            {
+              "id": "b",
+              "content": "הנפח גדל"
+            },
+            {
+              "id": "c",
+              "content": "הנפח אינו משתנה"
+            },
+            {
+              "id": "d",
+              "content": "הגז הופך למוצק"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "לפי חוק בויל, הלחץ והנפח ביחס הפוך בטמפרטורה קבועה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה איבר בצמח קולט מים ומינרלים מהאדמה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "עלה"
+            },
+            {
+              "id": "b",
+              "content": "פרח"
+            },
+            {
+              "id": "c",
+              "content": "גזע"
+            },
+            {
+              "id": "d",
+              "content": "שורש"
+            }
+          ],
+          "correctOptionIds": [
+            "d"
+          ],
+          "explanation": "השורש קולט מים ומינרלים."
+        }
+      ]
+    },
+    {
+      "caseId": "HO-074",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו הים הנמוך ביותר בעולם?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "ים המלח"
+            },
+            {
+              "id": "b",
+              "content": "הים התיכון"
+            },
+            {
+              "id": "c",
+              "content": "ים סוף"
+            },
+            {
+              "id": "d",
+              "content": "הכינרת"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "ים המלח נמצא כ-430 מטר מתחת לפני הים."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה גז מהווה את רוב האטמוספרה של כדור הארץ?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "חמצן"
+            },
+            {
+              "id": "b",
+              "content": "חנקן"
+            },
+            {
+              "id": "c",
+              "content": "ארגון"
+            },
+            {
+              "id": "d",
+              "content": "פחמן דו-חמצני"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "כ-78% מהאטמוספרה הוא חנקן."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מי היה ראש הממשלה הראשון של ישראל?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "דוד בן-גוריון"
+            },
+            {
+              "id": "b",
+              "content": "משה שרת"
+            },
+            {
+              "id": "c",
+              "content": "לוי אשכול"
+            },
+            {
+              "id": "d",
+              "content": "גולדה מאיר"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "בן-גוריון כיהן כראש הממשלה הראשון."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי יחידת המידה של זרם חשמלי?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "וולט"
+            },
+            {
+              "id": "b",
+              "content": "אמפר"
+            },
+            {
+              "id": "c",
+              "content": "אוהם"
+            },
+            {
+              "id": "d",
+              "content": "וואט"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "זרם חשמלי נמדד באמפר."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מה תפקידו של הכלורופיל?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "לקלוט אור"
+            },
+            {
+              "id": "b",
+              "content": "לאגור מים"
+            },
+            {
+              "id": "c",
+              "content": "להגן על הפרי"
+            },
+            {
+              "id": "d",
+              "content": "להאכיל חרקים"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "קולט אור בפוטוסינתזה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי יחידת המידה של זרם חשמלי?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "וולט"
+            },
+            {
+              "id": "b",
+              "content": "אמפר"
+            },
+            {
+              "id": "c",
+              "content": "אוהם"
+            },
+            {
+              "id": "d",
+              "content": "וואט"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "זרם חשמלי נמדד באמפר."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזו עיר היא בירת צרפת?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "ליון"
+            },
+            {
+              "id": "b",
+              "content": "פריז"
+            },
+            {
+              "id": "c",
+              "content": "ניס"
+            },
+            {
+              "id": "d",
+              "content": "בורדו"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "פריז היא בירת צרפת."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מה תפקידו של הכְּלוֹרוֹפִיל ?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "לקלוט אור"
+            },
+            {
+              "id": "b",
+              "content": "לאגור מים"
+            },
+            {
+              "id": "c",
+              "content": "להגן על הפרי"
+            },
+            {
+              "id": "d",
+              "content": "להאכיל חרקים"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "קולט אור בפוטוסינתזה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה מהבאים הוא מתכת נוזלית בטמפרטורת החדר?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "כספית"
+            },
+            {
+              "id": "b",
+              "content": "אלומיניום"
+            },
+            {
+              "id": "c",
+              "content": "נחושת"
+            },
+            {
+              "id": "d",
+              "content": "זהב"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "כספית היא המתכת היחידה הנוזלית בטמפרטורת החדר."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מי היה ראש הממשלה הראשון של מדינת \"ישראל\"?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "דוד בן־גוריון"
+            },
+            {
+              "id": "b",
+              "content": "משה שרת"
+            },
+            {
+              "id": "c",
+              "content": "לוי אשכול"
+            },
+            {
+              "id": "d",
+              "content": "גולדה מאיר"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "בן־גוריון כיהן כראש הממשלה הראשון."
+        }
+      ]
+    },
+    {
+      "caseId": "HO-075",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of rock?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Igneous"
+            },
+            {
+              "id": "b",
+              "content": "Photic"
+            },
+            {
+              "id": "c",
+              "content": "Tidal"
+            },
+            {
+              "id": "d",
+              "content": "Lunar"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Igneous, sedimentary and metamorphic are the three rock types."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of triangle?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Scalene"
+            },
+            {
+              "id": "b",
+              "content": "Rhomboid"
+            },
+            {
+              "id": "c",
+              "content": "Oblong"
+            },
+            {
+              "id": "d",
+              "content": "Trapezoid"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "A scalene triangle has three unequal sides."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of cloud?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Cumulus"
+            },
+            {
+              "id": "b",
+              "content": "Cumulative"
+            },
+            {
+              "id": "c",
+              "content": "Cumbersome"
+            },
+            {
+              "id": "d",
+              "content": "Culmination"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Cumulus clouds are puffy, heaped clouds."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of government?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Republic"
+            },
+            {
+              "id": "b",
+              "content": "Isotope"
+            },
+            {
+              "id": "c",
+              "content": "Peninsula"
+            },
+            {
+              "id": "d",
+              "content": "Meridian"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "A republic is a state where power rests with citizens and elected officials."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of chemical bond?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Covalent"
+            },
+            {
+              "id": "b",
+              "content": "Magnetic"
+            },
+            {
+              "id": "c",
+              "content": "Sonic"
+            },
+            {
+              "id": "d",
+              "content": "Thermal"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Covalent bonds involve shared electron pairs."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of sentence?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Interrogative"
+            },
+            {
+              "id": "b",
+              "content": "Tangential"
+            },
+            {
+              "id": "c",
+              "content": "Rhomboid"
+            },
+            {
+              "id": "d",
+              "content": "Verbose"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Interrogative sentences ask questions."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of data structure?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Binary tree"
+            },
+            {
+              "id": "b",
+              "content": "Binary soup"
+            },
+            {
+              "id": "c",
+              "content": "Hash cloud"
+            },
+            {
+              "id": "d",
+              "content": "Linked sky"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "A binary tree is a hierarchical structure where each node has at most two children."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of market structure?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Monopoly"
+            },
+            {
+              "id": "b",
+              "content": "Monolith"
+            },
+            {
+              "id": "c",
+              "content": "Monorail"
+            },
+            {
+              "id": "d",
+              "content": "Monogram"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "A monopoly has a single seller dominating the market."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is a type of variable in statistics?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Categorical"
+            },
+            {
+              "id": "b",
+              "content": "Atmospheric"
+            },
+            {
+              "id": "c",
+              "content": "Geological"
+            },
+            {
+              "id": "d",
+              "content": "Ceremonial"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Variables are categorical or numerical."
+        }
+      ]
+    },
+    {
+      "caseId": "HO-076",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מדוע הים התיכון מלוח פחות מים המלח?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "כי הוא פתוח לאוקיינוס ומתחלף בו מים, בעוד ים המלח הוא אגם סגור שהמים בו מתאדים ונשארים המלחים"
+            },
+            {
+              "id": "b",
+              "content": "כי הוא עמוק"
+            },
+            {
+              "id": "c",
+              "content": "כי יש בו דגים"
+            },
+            {
+              "id": "d",
+              "content": "כי הוא קר"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "ים המלח אגן סגור ללא יציאה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי חשיבותה של תקנת הבחירות החשאיות?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "היא מאפשרת לכל אזרח להצביע לפי מצפונו ללא חשש מלחץ או נקמה"
+            },
+            {
+              "id": "b",
+              "content": "היא מקצרת את הספירה"
+            },
+            {
+              "id": "c",
+              "content": "היא חוסכת נייר"
+            },
+            {
+              "id": "d",
+              "content": "היא מונעת הצבעה"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "חשאיות מגינה על חופש הבחירה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו תפקיד מערכת החיסון?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "להגן על הגוף מפני חיידקים, נגיפים וגורמי מחלה אחרים באמצעות תאים ונוגדנים"
+            },
+            {
+              "id": "b",
+              "content": "לעכל מזון"
+            },
+            {
+              "id": "c",
+              "content": "להניע את השרירים"
+            },
+            {
+              "id": "d",
+              "content": "לייצר עצמות"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "מערכת החיסון מזהה ומחסלת פולשים."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי ריבית דריבית?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "ריבית המחושבת הן על הקרן המקורית והן על הריבית שנצברה בתקופות קודמות"
+            },
+            {
+              "id": "b",
+              "content": "ריבית קבועה"
+            },
+            {
+              "id": "c",
+              "content": "עמלה בנקאית"
+            },
+            {
+              "id": "d",
+              "content": "הלוואה"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "ריבית דריבית גורמת לצמיחה מעריכית."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מה גורם לשינוי בעונות השנה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "נטיית ציר כדור הארץ בזמן שהוא מקיף את השמש"
+            },
+            {
+              "id": "b",
+              "content": "המרחק"
+            },
+            {
+              "id": "c",
+              "content": "הירח"
+            },
+            {
+              "id": "d",
+              "content": "כתמי שמש"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "הטיית הציר משנה את זווית הקרינה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי תופעת החממה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "הקלטת חום באטמוספרה על ידי גזים כמו פחמן דו-חמצני ומתאן, המחממת את כדור הארץ"
+            },
+            {
+              "id": "b",
+              "content": "גידול צמחים"
+            },
+            {
+              "id": "c",
+              "content": "קרינת שמש"
+            },
+            {
+              "id": "d",
+              "content": "גשם חומצי"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "גזי חממה לוכדים חום."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "למה משמש מנוע חיפוש?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "לאתר ולדרג דפי אינטרנט רלוונטיים לשאילתה שהמשתמש הקליד"
+            },
+            {
+              "id": "b",
+              "content": "לשמור קבצים"
+            },
+            {
+              "id": "c",
+              "content": "לכתוב מסמכים"
+            },
+            {
+              "id": "d",
+              "content": "להפעיל מדפסת"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "מנוע חיפוש סורק ומדרג דפים."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי תפקיד הנשיא במדינת ישראל?",
+          "answerOptions": [
+            {
+              "id": "b",
+              "content": "ראש הממשלה"
+            },
+            {
+              "id": "a",
+              "content": "תפקיד ייצוגי ברובו, הכולל חתימה על חוקים, הטלת הרכבת הממשלה ומתן חנינות"
+            },
+            {
+              "id": "c",
+              "content": "שופט עליון"
+            },
+            {
+              "id": "d",
+              "content": "מפקד צה\"ל"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "הנשיא הוא ראש המדינה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה סוג של סלע נוצר מהתקרשות לבה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "סלע מגמתי (יציקה) שנוצר מהתקררות והתגבשות של מגמה או לבה"
+            },
+            {
+              "id": "b",
+              "content": "סלע משקע"
+            },
+            {
+              "id": "c",
+              "content": "סלע גבישי"
+            },
+            {
+              "id": "d",
+              "content": "סלע קמיעי"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "סלעים יוצקים נוצרים מהתקררות."
+        }
+      ]
+    },
+    {
+      "caseId": "HO-077",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following best describes the function of the DNS?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "It translates domain names into IP addresses"
+            },
+            {
+              "id": "b",
+              "content": "It encrypts all web traffic end to end"
+            },
+            {
+              "id": "c",
+              "content": "It stores web pages on the user's device"
+            },
+            {
+              "id": "d",
+              "content": "It assigns hardware addresses to network cards"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "DNS resolves human-readable names such as example.com to IP addresses that routers can use."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי הסיבה העיקרית לכך שלוח השנה הגרגוריאני כולל שנה מעוברת?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "שנה טרופית אורכת כ-365.25 ימים, והתוספת מקזזת את ההפרש"
+            },
+            {
+              "id": "b",
+              "content": "כדי שהחגים ייפלו תמיד באותו יום בשבוע"
+            },
+            {
+              "id": "c",
+              "content": "מפני שהירח מקיף את כדור הארץ 12 פעמים בשנה"
+            },
+            {
+              "id": "d",
+              "content": "כדי להאריך את חודש פברואר בלבד"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "בלי יום נוסף אחת לארבע שנים התאריכים היו נסחפים ביחס לעונות."
+        },
+        {
+          "questionType": "MULTIPLE_CHOICE",
+          "prompt": "Which of the following are examples of fiscal policy?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Changing income tax rates"
+            },
+            {
+              "id": "b",
+              "content": "Raising government spending on infrastructure"
+            },
+            {
+              "id": "c",
+              "content": "Changing the central bank interest rate"
+            },
+            {
+              "id": "d",
+              "content": "Printing additional currency"
+            }
+          ],
+          "correctOptionIds": [
+            "a",
+            "b"
+          ],
+          "explanation": "Fiscal policy concerns taxes and government spending. Interest rates and the money supply belong to monetary policy."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו ערך ה-p בבדיקת השערות?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "ההסתברות לקבל תוצאה קיצונית לפחות כמו שנצפתה, בהנחה שהשערת האפס נכונה"
+            },
+            {
+              "id": "b",
+              "content": "ההסתברות שהשערת האפס נכונה"
+            },
+            {
+              "id": "c",
+              "content": "ההסתברות שהמחקר שוחזר בהצלחה"
+            },
+            {
+              "id": "d",
+              "content": "גודל האפקט במדגם"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "טעות נפוצה היא לפרש p כהסתברות שהשערת האפס נכונה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which event is generally considered the start of World War II in Europe?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Germany's invasion of Poland in 1939"
+            },
+            {
+              "id": "b",
+              "content": "The bombing of Pearl Harbor in 1941"
+            },
+            {
+              "id": "c",
+              "content": "The signing of the Treaty of Versailles in 1919"
+            },
+            {
+              "id": "d",
+              "content": "The fall of Paris in 1940"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Britain and France declared war on Germany after the invasion of Poland on 1 September 1939."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזו פעולה היא הדרך היעילה ביותר להפחית את הסיכון לפריצה לחשבון מקוון?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "הפעלת אימות דו-שלבי"
+            },
+            {
+              "id": "b",
+              "content": "החלפת הסיסמה בכל יום"
+            },
+            {
+              "id": "c",
+              "content": "שימוש בשם משתמש ארוך יותר"
+            },
+            {
+              "id": "d",
+              "content": "מחיקת היסטוריית הגלישה"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "אימות דו-שלבי חוסם גם גנבת סיסמה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What is the main purpose of a control group in an experiment?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "To provide a baseline for comparison with the treatment group"
+            },
+            {
+              "id": "b",
+              "content": "To receive the strongest treatment"
+            },
+            {
+              "id": "c",
+              "content": "To make the sample larger"
+            },
+            {
+              "id": "d",
+              "content": "To remove the need for randomization"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "Without a baseline, one cannot tell whether the treatment caused the change."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מה מתרחש בשלב האנפאזה במיטוזה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "הכרומטידות האחיות נפרדות ונעות אל קטבי התא"
+            },
+            {
+              "id": "b",
+              "content": "הכרומוזומים מסתדרים במישור המשווני"
+            },
+            {
+              "id": "c",
+              "content": "קרום הגרעין נעלם"
+            },
+            {
+              "id": "d",
+              "content": "הציטופלזמה מתחלקת לשני תאים"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "אנפאזה: הפרדת הכרומטידות. המטאפאזה קודמת לה והטלופאזה אחריה."
+        }
+      ]
+    },
+    {
+      "caseId": "HO-078",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What is the boiling point of water at sea level?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "90 degrees Celsius"
+            },
+            {
+              "id": "b",
+              "content": "100 degrees Celsius"
+            },
+            {
+              "id": "c",
+              "content": "110 degrees Celsius"
+            },
+            {
+              "id": "d",
+              "content": "120 degrees Celsius"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "Water boils at 100 C at standard atmospheric pressure."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה מהבאים אינו חלק מהמערכת העצבית המרכזית?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "המוח"
+            },
+            {
+              "id": "b",
+              "content": "חוט השדרה"
+            },
+            {
+              "id": "c",
+              "content": "עצבי הגפיים"
+            },
+            {
+              "id": "d",
+              "content": "אף אחד מהם"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "העצבים ההיקפיים שייכים למערכת ההיקפית."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "The Industrial Revolution began in which country?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Great Britain"
+            },
+            {
+              "id": "b",
+              "content": "France"
+            },
+            {
+              "id": "c",
+              "content": "The United States of America, which became a leading industrial power later"
+            },
+            {
+              "id": "d",
+              "content": "Germany"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "It started in Britain in the late 18th century."
+        },
+        {
+          "questionType": "MULTIPLE_CHOICE",
+          "prompt": "אילו מהמספרים הבאים הם זוגיים?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "12"
+            },
+            {
+              "id": "b",
+              "content": "15"
+            },
+            {
+              "id": "c",
+              "content": "20"
+            },
+            {
+              "id": "d",
+              "content": "33"
+            }
+          ],
+          "correctOptionIds": [
+            "a",
+            "c"
+          ],
+          "explanation": "מספר זוגי מתחלק ב-2 ללא שארית."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Plants are always green.",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "True"
+            },
+            {
+              "id": "b",
+              "content": "False"
+            },
+            {
+              "id": "c",
+              "content": "Sometimes"
+            },
+            {
+              "id": "d",
+              "content": "Never"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": null
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי הפונקציה של ה-CPU במחשב?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "ביצוע הוראות ותכנית וחישובים"
+            },
+            {
+              "id": "b",
+              "content": "אחסון קבצים לטווח ארוך"
+            },
+            {
+              "id": "c",
+              "content": "הצגת תמונה על המסך"
+            },
+            {
+              "id": "d",
+              "content": "חיבור לרשת"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "ה-CPU הוא יחידת העיבוד המרכזית."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which of the following is the best measure of central tendency for data with extreme outliers?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Mean"
+            },
+            {
+              "id": "b",
+              "content": "Median"
+            },
+            {
+              "id": "c",
+              "content": "Range"
+            },
+            {
+              "id": "d",
+              "content": "Variance"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "The median is robust to outliers."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי בירת יפן?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "בייג'ינג"
+            },
+            {
+              "id": "b",
+              "content": "סיאול"
+            },
+            {
+              "id": "c",
+              "content": "טוקיו"
+            },
+            {
+              "id": "d",
+              "content": "בנגקוק"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "טוקיו היא בירת יפן."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזו מהמדינות הבאות הייתה חברה בברית המועצות?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "פולין"
+            },
+            {
+              "id": "b",
+              "content": "אוקראינה"
+            },
+            {
+              "id": "c",
+              "content": "הונגריה"
+            },
+            {
+              "id": "d",
+              "content": "רומניה"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "אוקראינה הייתה רפובליקה בברית המועצות; השאר היו מדינות חסות בגוש המזרחי."
+        }
+      ]
+    }
+  ]
+}
