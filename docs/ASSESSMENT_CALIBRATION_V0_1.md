@@ -1,7 +1,7 @@
 # Assessment Linter Calibration Report - Golden Dataset v0.1
 
-Status: DRAFT evidence artifact. Run `2026-10-08-ASSESSMENT-ENGINE-002`, Slices B5 + B6 (AE-004, AE-033, AE-034, AE-046).
-Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` at HEAD `c2941d6`. No linter change was made.
+Status: DRAFT evidence artifact. Created in Run `2026-10-08-ASSESSMENT-ENGINE-002` (B5 + B6; AE-004, AE-033, AE-034, AE-046); regenerated in Run `2026-10-08-ASSESSMENT-ENGINE-003`, Slice B3.
+Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`). Run 002 numbers were measured at `c2941d6` with no linter change. The linter WAS changed in Run 003 (Slices B2/B4): historical commits `2e379e2` (rule-level fixes for the 4 golden false positives) and `ee4494e` (bounded Latin/Cyrillic/Greek homoglyph fold in the duplicate key). The generated sections below, and sections 2-3, reflect the Run 003 linter; sections 4-5 are the Run 002 snapshot, annotated where Run 003 superseded them. No integration verdict is made here (Run 003 Slice B5).
 
 ## 1. What this is (and is not)
 
@@ -31,11 +31,11 @@ There is no script. The generated sections (between the `GENERATED` markers) are
 <!-- GENERATED:BEGIN formatCalibrationMarkdown (src/domain/assessment/golden/calibration.ts) -->
 ## Headline (generated)
 
-- RECALL-LIKE (all labelled detections): 66/73 caught.
-- FN count: 7 (4 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).
-- PRECISION-LIKE (labelled detections vs false alarms): 66/70.
-- FP count: 4 (all documented as KNOWN_FALSE_POSITIVE: yes).
-- CLEAN cases with a WARNING/ERROR: 4 of 18.
+- RECALL-LIKE (all labelled detections): 67/73 caught.
+- FN count: 6 (3 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).
+- PRECISION-LIKE (labelled detections vs false alarms): 67/67.
+- FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: yes).
+- CLEAN cases with a WARNING/ERROR: 0 of 18.
 - UNSUPPORTED SEMANTIC CASES: 6 (intentionally not asserted against the linter).
 - Tiny synthetic fixture: all ratios are INDICATIVE ONLY, not statistics. Thresholds remain product-design defaults.
 
@@ -48,8 +48,8 @@ There is no script. The generated sections (between the `GENERATED` markers) are
 | SET cases | 17 |
 | CLEAN cases (no WARNING/ERROR is correct) | 18 |
 | UNSUPPORTED SEMANTIC CASES | 6 |
-| Cases with a KNOWN_MISS | 7 |
-| Cases with a KNOWN_FALSE_POSITIVE | 4 |
+| Cases with a KNOWN_MISS | 6 |
+| Cases with a KNOWN_FALSE_POSITIVE | 0 |
 
 ## Per-check results (generated)
 
@@ -72,11 +72,11 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 | NEAR_DUPLICATE_STEM | yes | 3 | 2 | 1 | 0 | 5 | 2/2 | 2/3 |
 | OPTIONS_TOO_FEW | yes | 2 | 2 | 0 | 0 | 16 | 2/2 | 2/2 |
 | OPTIONS_TOO_MANY | yes | 1 | 1 | 0 | 0 | 16 | 1/1 | 1/1 |
-| OPTION_ABSOLUTE_TERM | yes | 3 | 3 | 0 | 2 | 16 | 3/5 | 3/3 |
+| OPTION_ABSOLUTE_TERM | yes | 3 | 3 | 0 | 0 | 16 | 3/3 | 3/3 |
 | OPTION_ALL_OF_ABOVE | yes | 3 | 3 | 0 | 0 | 18 | 3/3 | 3/3 |
 | OPTION_COMBINATION_REFERENCE | NO | 1 | 0 | 1 | 0 | 0 | n/a | 0/1 |
 | OPTION_DUPLICATE_EXACT | yes | 1 | 1 | 0 | 0 | 26 | 1/1 | 1/1 |
-| OPTION_DUPLICATE_NORMALIZED | yes | 10 | 9 | 1 | 0 | 18 | 9/9 | 9/10 |
+| OPTION_DUPLICATE_NORMALIZED | yes | 10 | 10 | 0 | 0 | 18 | 10/10 | 10/10 |
 | OPTION_EMPTY | yes | 1 | 1 | 0 | 0 | 16 | 1/1 | 1/1 |
 | OPTION_ID_DUPLICATE | yes | 1 | 1 | 0 | 0 | 16 | 1/1 | 1/1 |
 | OPTION_LENGTH_IMBALANCE | yes | 2 | 2 | 0 | 0 | 19 | 2/2 | 2/2 |
@@ -90,7 +90,7 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 | SET_KEY_LENGTH_BIAS | yes | 1 | 1 | 0 | 0 | 3 | 1/1 | 1/1 |
 | SET_TOO_SMALL | yes | 1 | 1 | 0 | 0 | 2 | 1/1 | 1/1 |
 | STEM_EMPTY | yes | 2 | 2 | 0 | 0 | 16 | 2/2 | 2/2 |
-| STEM_NEGATIVE_WORDING | yes | 3 | 3 | 0 | 2 | 16 | 3/5 | 3/3 |
+| STEM_NEGATIVE_WORDING | yes | 3 | 3 | 0 | 0 | 16 | 3/3 | 3/3 |
 | STEM_TEMPLATE_REPEATED | yes | 1 | 1 | 0 | 0 | 3 | 1/1 | 1/1 |
 | STEM_TOO_SHORT | yes | 1 | 1 | 0 | 0 | 17 | 1/1 | 1/1 |
 | TEXT_TRUNCATED | yes | 2 | 2 | 0 | 0 | 16 | 2/2 | 2/2 |
@@ -103,7 +103,6 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 | WEAK-GRAMMAR-CUE-EN-01 | ARTICLE_MISMATCH | NOT_IMPLEMENTED | ARTICLE_MISMATCH is a documented but unimplemented code (AE-029). |
 | WEAK-STYLE-CUE-HE-01 | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED | OPTION_STYLE_OUTLIER is a documented but unimplemented code (AE-029); the length and leakage checks fire only as incidental partial signals. |
 | WEAK-COMBINATION-EN-01 | OPTION_COMBINATION_REFERENCE | NOT_IMPLEMENTED | OPTION_COMBINATION_REFERENCE is a documented but unimplemented code (AE-029). |
-| ADV-HOMOGLYPH-01 | OPTION_DUPLICATE_NORMALIZED | HEURISTIC_GAP | No confusable/homoglyph (UTS #39 skeleton) folding; only NFC, case, niqqud, final letters, quotes, dashes, digits and zero-width/bidi stripping. |
 | OVERLAP-OPTIONS-HE-BOUNDARY-01 | OPTION_OVERLAP_HIGH | HEURISTIC_GAP | Boundary: Jaccard 0.833 < OPTION_OVERLAP_JACCARD 0.85 for short options; a single extra word on a 5-word option is a large relative change. |
 | SET-NEAR-DUP-INFLECTION-01 | NEAR_DUPLICATE_STEM | HEURISTIC_GAP | Gender/number inflections change the tokens, so Jaccard falls below the threshold (documented expected miss, ASSESSMENT_ENGINE section 19.4). |
 
@@ -111,10 +110,6 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 
 | Case | Codes | Reason |
 |---|---|---|
-| FP-ABSOLUTE-SOUP-01 | OPTION_ABSOLUTE_TERM | Prefix stripping reads 'מרק' (soup) as מ+רק ('only'); same family: 'ברק' lightning, 'שכל' wit, 'שום' garlic. |
-| FP-ABSOLUTE-LIGHTNING-01 | OPTION_ABSOLUTE_TERM | 'ברק' is read as ב+רק; root-initial prefix letter (accepted heuristic limit, ASSESSMENT_ENGINE section 19.4). |
-| FP-NEGATION-HE-HUTZ-01 | STEM_NEGATIVE_WORDING | 'חוץ' is in the Hebrew negation list (as in 'חוץ מ'), but also means 'outside/foreign' in a noun phrase. |
-| FP-NEGATION-EN-LEAST-01 | STEM_NEGATIVE_WORDING | 'least' is in the English negation list (for 'LEAST likely'), but 'at least' is not negative wording. |
 
 ## Intentionally unsupported semantic cases (generated)
 
@@ -130,9 +125,9 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 
 ## 2. Reading the results
 
-- **Strong area: structural diagnostics and normalization.** Every ERROR-class structural case, every Hebrew normalization variant (niqqud, final letters, geresh/gershayim, maqaf, NFC/NFD, Eastern Arabic digits, zero-width, bidi) and every bounded-work case (60 options, 60 correct ids, ~6000-char strings, throwing input, 2001-item set) behaved as ground truth says. Only confusable homoglyphs (Cyrillic `a`) are missed.
-- **Weak area: Hebrew word-level heuristics.** All 4 false positives come from word lists applied to attached-prefix Hebrew tokens or ambiguous words (`OPTION_ABSOLUTE_TERM` on `מרק`/`ברק`; `STEM_NEGATIVE_WORDING` on `חוץ` and English `at least`). The Hebrew misses are morphological (inflection) or boundary cases (overlap 0.833 vs 0.85).
-- **Clean-case behaviour.** 14 of 18 CLEAN cases are silent, including every `מלא` / `אלא` / `מלאכה` / `Nonexistent` / `Allocation` / `כלל` near-miss. The 4 that warn are exactly the 4 KNOWN_FALSE_POSITIVE cases.
+- **Strong area: structural diagnostics and normalization.** Every ERROR-class structural case, every Hebrew normalization variant (niqqud, final letters, geresh/gershayim, maqaf, NFC/NFD, Eastern Arabic digits, zero-width, bidi) and every bounded-work case (60 options, 60 correct ids, ~6000-char strings, throwing input, 2001-item set) behaved as ground truth says. Confusable homoglyphs (Cyrillic `a`), missed in Run 002, are now caught by the bounded fold (ADV-HOMOGLYPH-01).
+- **Weak area: Hebrew word-level heuristics.** Run 002 had 4 false positives from word lists on attached-prefix Hebrew tokens or ambiguous words (`מרק`/`ברק`, `חוץ`, English `at least`); Run 003 rule-level fixes removed all 4 at a recall cost and with residuals (section 7). The remaining Hebrew misses are morphological (inflection) or boundary cases (overlap 0.833 vs 0.85).
+- **Clean-case behaviour.** All 18 CLEAN cases are silent (Run 002: 14 of 18; the 4 that warned were the former KNOWN_FALSE_POSITIVE cases, now fixed). This is a fixture-fit result: the rules were adjusted against these very cases, so 0 FP is not evidence of 0 FP on real content.
 - **Unimplemented checks** (`ARTICLE_MISMATCH`, `OPTION_STYLE_OUTLIER`, `OPTION_COMBINATION_REFERENCE`) appear in the table with Implemented = NO so they are never mistaken for coverage.
 - **Semantic cases are silent by design.** The linter passes an ambiguous item, implausible distractors, a paraphrase-equivalent pair, topic under-coverage and recall overuse. This is the documented limit of code (ASSESSMENT_ENGINE section 19.3), and the reason a clean result must never be shown as "good question".
 
@@ -154,9 +149,11 @@ All thresholds are product-design defaults, not research-backed. Verdict rules: 
 | SET_KEY_LENGTH_BIAS_SHARE (0.5, min 8 eligible) | 1 TP (7 of 12 strictly longest by a few characters); balanced set silent | KEEP-provisional | Strictly-longest is a strict, low-noise criterion; no counter-evidence. |
 | STEM_TEMPLATE_SHARE (0.4) / TOKEN_COUNT (3) | 1 TP (6 of 12); 0 FP | KEEP-provisional | No counter-evidence; single case only. |
 
-## 4. INTEGRATION READINESS
+## 4. INTEGRATION READINESS (Run 002 snapshot, superseded by Run 003 Slice B5)
 
-**Verdict: NOT_READY** for wiring into any instructor-facing flow. This is a recommendation; nothing is integrated in this Slice (AE-031 stays gated).
+> Historical: figures below (4 of 18 CLEAN warn, 2 HEURISTIC_GAP) describe the Run 002 linter. Current numbers are in the generated headline. A fresh integration verdict is deferred to Run 003 Slice B5 and is NOT made here.
+
+**Verdict (Run 002): NOT_READY** for wiring into any instructor-facing flow. This is a recommendation; nothing is integrated in this Slice (AE-031 stays gated).
 
 | Criterion | Status | Evidence |
 |---|---|---|
@@ -176,7 +173,9 @@ All thresholds are product-design defaults, not research-backed. Verdict rules: 
 4. Have a Hebrew-fluent reviewer confirm or correct the Hebrew labels, and grow the dataset from real linter false positives/negatives (synthetic or properly cleared).
 5. Reconcile code names with the existing import validator (AE-031) before any wiring.
 
-## 5. Suggested linter fixes (NOT applied in this Slice)
+## 5. Suggested linter fixes (Run 002 list; status after Run 003)
+
+Status: items 1 and 2 applied in Run 003 B2 (`2e379e2`, with recall/residual costs in section 7); item 5 applied in Run 003 B4 (`ee4494e`). Items 3, 4, 6, 7 remain open (see section 9 dispositions).
 
 1. **Absolute-term prefix collisions** (`מרק`, `ברק`, `שכל`, `שום`): do not accept attached prefix letters for `רק`, `כל`, `שום`; or accept only unambiguous prefixes and add an exact-token stoplist for known collisions. Re-run: FP-ABSOLUTE-SOUP-01 / FP-ABSOLUTE-LIGHTNING-01 should become silent while the three absolute-term cases keep firing.
 2. **Negation noun uses**: drop `חוץ` as a standalone negation (keep the phrase `חוץ מ`) and match English `least` only when not preceded by `at`. Re-run: FP-NEGATION-HE-HUTZ-01 and FP-NEGATION-EN-LEAST-01.
@@ -186,9 +185,64 @@ All thresholds are product-design defaults, not research-backed. Verdict rules: 
 6. **Option overlap on short options**: consider a size-aware rule (for example also flag two options differing by a single token when each has at most 6 tokens). Needs a purpose-built negative set first; do not lower 0.85 blindly.
 7. **Unimplemented codes** exercised as honest misses (`ARTICLE_MISMATCH`, `OPTION_STYLE_OUTLIER`, `OPTION_COMBINATION_REFERENCE`): prioritise via AE-029 only after the false-positive work above, per ledger guidance.
 
-## 6. Limits of this evidence
+## 6. Limits of this evidence (unchanged by Run 003 except where noted)
 
 - 89 hand-made synthetic cases, single author, no inter-annotator agreement.
 - Thresholds are checked at a handful of points, not swept; do not read a KEEP as validation.
 - The position-rule noise figures come from an analytic binomial estimate of uniform random key placement (no script committed) over 4 options, not from real quizzes.
 - Local pure-function evidence only; says nothing about import/publish flow, UI wording, or instructor behaviour.
+
+## 7. Known limits of the Run 003 rule fixes
+
+Accepted costs and residuals, deliberately documented rather than hidden. All are WARNING-only heuristic limits.
+
+- **2-letter-term prefix recall loss.** `רק`/`כל` accept only the conjunction `ו` as an attached prefix, so `בכל` / `לכל` / `מכל` / `ככל` (e.g. "לכל התאים") no longer trigger `OPTION_ABSOLUTE_TERM`, while `ורק` / `וכל` do. Pinned by a unit test in `question-lint.test.ts`; no Golden case.
+- **`שום` homograph.** `שום` is both "garlic" and the absolute "no/any"; it remains ambiguous, so a garlic option is a possible false positive and a prefixed absolute use is a possible miss.
+- **`חוץ מ…` next-token residual.** `חוץ` counts as negation only in the exception phrase before a `מ`-initial next token; a noun phrase whose next word happens to start with `מ` can still warn, and an exception phrase with a different continuation is missed.
+- **`at least` idiom ignored.** `least` is not negation after `at`; a rare genuinely negative use is missed.
+- **Duplicate-key lookalike fold.** `duplicateKey` folds a table of 14 Cyrillic/Greek lookalikes to Latin (bounded, not a full UTS #39 skeleton). Other scripts and unlisted confusables are not folded.
+
+## 8. Run 002 vs Run 003
+
+Per-check deltas only; there is no single score. Same 89-case fixture; Run 003 numbers are the generated headline above. Fixture-fit caveat applies: Run 003 rules were tuned against these cases.
+
+| Check | Run 002 | Run 003 | Delta |
+|---|---|---|---|
+| Labelled detections caught (recall-like) | 66/73 | 67/73 | +1 (homoglyph) |
+| FN total (HEURISTIC_GAP + NOT_IMPLEMENTED) | 7 (4 + 3) | 6 (3 + 3) | -1 HEURISTIC_GAP |
+| FP total | 4 | 0 | -4 |
+| CLEAN cases with WARNING/ERROR | 4 of 18 | 0 of 18 | -4 |
+| Unsupported semantic cases | 6 | 6 | 0 |
+| OPTION_ABSOLUTE_TERM | 3/3 recall, 2 FP | 3/3 recall, 0 FP | FP -2 (recall loss on `בכל/לכל/מכל/ככל` is not in the fixture) |
+| STEM_NEGATIVE_WORDING | 3/3 recall, 2 FP | 3/3 recall, 0 FP | FP -2 (residuals in section 7) |
+| OPTION_DUPLICATE_NORMALIZED | 9/10 recall | 10/10 recall | +1 |
+| KEY_STEM_LEXICAL_OVERLAP, NEAR_DUPLICATE_STEM, OPTION_OVERLAP_HIGH | 4/5, 2/3, 1/2 | 4/5, 2/3, 1/2 | none |
+| Unimplemented codes (ARTICLE_MISMATCH, OPTION_STYLE_OUTLIER, OPTION_COMBINATION_REFERENCE) | 0/1 each | 0/1 each | none |
+
+### Heuristic family verdicts
+
+| Family | Verdict | Basis |
+|---|---|---|
+| Structural diagnostics and normalization | KEEP | No miss or FP in either run. |
+| Absolute terms (`OPTION_ABSOLUTE_TERM`) | WATCH | FPs removed; known recall loss on 2-letter-term prefixes and `שום` ambiguity; needs real Hebrew options to size the loss. |
+| Negation (`STEM_NEGATIVE_WORDING`) | WATCH | FPs removed; `חוץ מ…` and `at least` residuals (section 7). |
+| Duplicate normalized (`OPTION_DUPLICATE_NORMALIZED`) | KEEP | 10/10 with bounded fold; fold is deliberately limited. |
+| Lexical overlap / key leakage (`KEY_STEM_LEXICAL_OVERLAP`) | WATCH | 1 miss from Hebrew inflection; stemming risks new FPs. |
+| Near-duplicate stems (`NEAR_DUPLICATE_STEM`) | WATCH | 1 inflection miss; only 5 negatives. |
+| Option overlap (`OPTION_OVERLAP_HIGH`) | WATCH | 0.833 vs 0.85 boundary miss; one case does not justify tuning. |
+| Length/position/template set checks | WATCH | Position rules analytically noisy on small sets (section 3); other set checks KEEP-provisional. |
+| Unimplemented codes | CHANGE (only via AE-029) | Honest misses; no behaviour to keep. |
+
+## 9. False-negative disposition
+
+Each remaining or newly fixed false negative has an explicit disposition (B4 result). Pointers only; see `docs/ASSESSMENT_ENGINE.md` for the ledger.
+
+| Case | Check | Disposition | Rationale |
+|---|---|---|---|
+| ADV-HOMOGLYPH-01 | OPTION_DUPLICATE_NORMALIZED | FIX_NOW_DETERMINISTIC (fixed, `ee4494e`) | Bounded Cyrillic/Greek to Latin fold in `duplicateKey`. |
+| WEAK-LEAKAGE-HE-INFLECTION-01 | KEY_STEM_LEXICAL_OVERLAP | KEEP_AS_KNOWN_LIMIT | Hebrew morphology; stemming would raise false positives. |
+| SET-NEAR-DUP-INFLECTION-01 | NEAR_DUPLICATE_STEM | KEEP_AS_KNOWN_LIMIT | Same morphology reason. |
+| OVERLAP-OPTIONS-HE-BOUNDARY-01 | OPTION_OVERLAP_HIGH | KEEP_AS_KNOWN_LIMIT | Jaccard 0.833 vs 0.85; tuning to one case is overfitting; revisit with more labelled data. |
+| WEAK-GRAMMAR-CUE-EN-01 | ARTICLE_MISMATCH | TOO_NOISY / FUTURE_RESEARCH | Phonetic a/an exceptions; English-only. |
+| WEAK-STYLE-CUE-HE-01 | OPTION_STYLE_OUTLIER | FUTURE_RESEARCH | No calibrated thresholds; the length part is covered by existing checks. |
+| WEAK-COMBINATION-EN-01 | OPTION_COMBINATION_REFERENCE | KEEP_AS_KNOWN_LIMIT (deferred) | Best next candidate (AE-029). |
