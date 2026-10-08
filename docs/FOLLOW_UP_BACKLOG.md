@@ -1809,7 +1809,7 @@ Human answers the packet; or the pre-Pilot instructor walk (FUB-058) reports los
 **Priority:** `LOW` overall
 **Area:** UI / accessibility / design system (source audit 2026-10-09)
 
-Evidence class for ALL items: **the whole of Design Audit 001 was SOURCE_ONLY.** No rendered, browser, device, or screen-reader pass was done; a rendered pass is pending (Run C / browser isolation). Rows are source observations, not visual confirmations. Nothing here is fixed.
+Evidence class for ALL items: **the whole of Design Audit 001 was SOURCE_ONLY.** No rendered, browser, device, or screen-reader pass was done; a rendered pass is pending (Run C / browser isolation; see FUB-070 harness and FUB-072 pass). Rows are source observations, not visual confirmations. Nothing here is fixed.
 
 Visual follow-up from the DS-01 fix (source reasoning only, not rendered): `src/app/(learner)/courses/course-row.tsx:50` now renders its authored `p-4` instead of the previously winning default `p-5`; confirm visually in a rendered pass. Fixed in Run 2026-10-09-DESIGN-AUDIT-FOLLOWUP-001 and therefore NOT tracked here: P2-01 (`d20d449`), P2-02 (`60dc956`), DS-01 (`5e4cc21`). Evidence for those is source and unit-test only; no rendered or screen-reader verification. P2-03 and UX-01 are FUB-068.
 
@@ -1834,6 +1834,48 @@ Visual follow-up from the DS-01 fix (source reasoning only, not rendered): `src/
 ## Promotion Trigger
 
 Per-row triggers above. Promote product-decision rows via `docs/OPEN_QUESTIONS.md` or a decision packet when scheduled.
+
+---
+
+# FUB-070 — Isolated rendered-audit harness (Option E+) — build after first-run gates
+
+**Status:** `DEFERRED` — human approval required for first run
+**Priority:** `LOW`
+**Area:** Tooling / verification (design: `docs/BROWSER_ISOLATION_DESIGN.md`)
+
+Build the Option E+ harness at design level only so far: three files (`isolated-audit.mjs`, `net-guard.cjs`, `fixtures.mjs`), scrubbed env covering every `.env.local` key name, Node connect/dns guard with TEST-NET canary, free-port no-reuse server, route-abort and end-of-run assertions. Includes the human-approved OS egress-deny step (e.g. Windows Firewall outbound block for node/chromium except loopback). Evidence class of the design: source-read only, nothing executed, SECURITY-reviewed ACCEPT_WITH_CORRECTIONS (corrections applied). It proves nothing about real Supabase Auth, screen readers or physical devices.
+
+## Promotion Trigger
+
+Human approves the First-run gates in the design doc (OS egress deny, independent reviewer agreement to the run) and wants a rendered audit pass.
+
+---
+
+# FUB-071 — Make Playwright webServer safe by default / decide join-errors.spec
+
+**Status:** `DEFERRED` — human decision required
+**Priority:** `LOW`
+**Area:** `playwright.config.ts`, `e2e/**` (`join-errors.spec.ts`)
+
+The existing Playwright harness runs `npm run dev` with the ambient `.env.local` and `reuseExistingServer: !process.env.CI`. The public `GET /api/courses/:id` reaches `getPool()` without auth, so `join-errors.spec` ran against the hosted DB (read-only). Decide whether to scrub env / add a guard / skip by default, and whether e2e should ever touch hosted. Evidence class: source-read only.
+
+## Promotion Trigger
+
+Human decision on whether e2e may touch hosted; or before any new e2e that could reach `getPool()`.
+
+---
+
+# FUB-072 — Rendered Design Audit Pass 1 (blocked on FUB-070)
+
+**Status:** `DEFERRED` — blocked on FUB-070
+**Priority:** `LOW`
+**Area:** UI / accessibility (Design Audit 001, Run 2026-10-09-DESIGN-AUDIT-FOLLOWUP-001)
+
+Unverified-by-rendering items to cover once isolation exists: Courses list row `p-4` vs `p-5` change (`course-row.tsx`); Notice appearance on instructor error/success sites; Topic input accessible names via the accessibility tree; long Hebrew strings; bidi mixed Hebrew/English; import textarea direction; Hebrew/RTL screenshots at 360/390/430/desktop; focus walk; target sizes; overflow. Matrix in design doc section 6. Rendered mocked-browser evidence only; not screen-reader or physical-device verification (FUB-058).
+
+## Promotion Trigger
+
+FUB-070 harness exists and its First-run gates are passed.
 
 ---
 
