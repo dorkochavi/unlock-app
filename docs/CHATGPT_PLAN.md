@@ -1,34 +1,26 @@
-# UNLOCK — ASSESSMENT-ENGINE-003 — Calibration Hardening + Blueprint Foundation + DevOS Telemetry Attribution
+# UNLOCK — ASSESSMENT-ENGINE-HEBREW-REVIEW-001 — Apply Dor's Hebrew Review + Calibration Recheck
 
-PLAN_VERSION: 027
-RUN_ID: 2026-10-08-ASSESSMENT-ENGINE-003
-START_HEAD: `f729e65`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `4bb6753`
-STATUS: **COMPLETE + STOP** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/Google contact.
+PLAN_VERSION: 028
+RUN_ID: 2026-10-08-ASSESSMENT-ENGINE-HEBREW-REVIEW-001
+START_HEAD: `2c0b053`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `2c0b053`
+STATUS: **IN_PROGRESS** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-A: fix coarse per-Slice telemetry attribution (smallest change to an existing owner).
-B: harden deterministic question-linter false positives, recalibrate Golden Dataset, classify known false negatives, prepare Hebrew human review queue (FUB-060 stays open), readiness recheck (no integration).
-C: Learning Objectives v0.1 + Assessment Blueprint v0.1 design; pure deterministic blueprint validation prototype if justified.
-Principle: DETERMINISTIC BY DEFAULT. SEMANTIC AI ONLY WHERE NECESSARY. HUMAN AUTHORITY AT PUBLICATION.
-Canonical owner of product direction: `docs/ASSESSMENT_ENGINE.md`.
+Apply Dor's 17 human Hebrew-review decisions (12 APPROVED, 5 CHANGE) to the Golden Dataset, regenerate calibration, resolve FUB-060 truthfully, reassess integration readiness. Small, bounded Run.
 
 ## 2. Invariants
-No push/merge/rebase/tag/deploy/force; no hosted Supabase/Vercel mutation; no migration/schema; no dependency change; no external AI/Google calls; no auto-publication; no FSRS/scheduler/mastery change; linter not wired into import/UI; no new Skill; Skill/rule changes do not widen this Run's authority.
+No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; no dependency change; no AI/Google; linter not wired; no new heuristics unless strictly required (default: document disagreements as KNOWN_MISS/KNOWN_FALSE_POSITIVE/SEMANTIC_EXPECTATION); no Blueprint/OQ-050 work; no new Skill.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Telemetry attribution hardening | REVIEW_GATE | DONE |
-| B1-B2 | FP root cause + fixes | REVIEW_GATE | DONE |
-| B3-B4 | Recalibration; FN disposition | REVIEW_GATE | DONE |
-| B5 | Hebrew human review queue; readiness recheck | AUTO | DONE |
-| C1-C2 | Learning Objectives + Blueprint design | AUTO | DONE |
-| C3-C4 | Blueprint pure validation + scenarios | REVIEW_GATE | DONE |
-| L | Ledger, review, Run close | FINAL_GATE | DONE |
+| H1 | Apply 5 CHANGE fixtures + record 12 APPROVED (HUMAN_APPROVED: Dor, 2026-10-08) | REVIEW_GATE | PENDING |
+| H2 | Regenerate calibration, delta, disagreements, FUB-060, readiness recheck | REVIEW_GATE | PENDING |
+| Z | Review, verification, Run close | FINAL_GATE | PENDING |
 
 ## History
 
@@ -36,4 +28,3 @@ No push/merge/rebase/tag/deploy/force; no hosted Supabase/Vercel mutation; no mi
 - ASSESSMENT-ENGINE-002: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-002.md`
 - ASSESSMENT-ENGINE-NIGHT-001: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-NIGHT-001.md`
 - Q3-A11Y-NIGHT-001: `docs/RUNS/2026-10-08-Q3-A11Y-NIGHT-001.md`
-- TODAY-LEARNING-RECAP-004: `docs/RUNS/2026-10-07-TODAY-LEARNING-RECAP-004.md`
