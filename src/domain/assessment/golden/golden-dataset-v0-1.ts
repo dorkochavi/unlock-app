@@ -194,8 +194,8 @@ const itemCases: GoldenCase[] = [
   },
   {
     id: "WEAK-ABSOLUTE-HE-PREFIX-01", scope: "ITEM", tags: ["weak", "hebrew", "absolute-language", "prefix"],
-    description: "Absolute terms with attached prefixes: 'ותמיד' and 'שתמיד'.",
-    input: q("איזה משפט מתאר נכון את מזג האוויר בישראל?", ["חם בקיץ ויבש", "חם ותמיד לח", "קר כך שתמיד יורד שלג", "קר ובהיר"], 0),
+    description: "Absolute terms with an attached prefix: 'ותמיד' (in two distractors).",
+    input: q("איזה משפט מתאר נכון את מזג האוויר בישראל?", ["חם בקיץ ויבש", "חם ותמיד לח", "קר ותמיד יורד שלג", "קר ובהיר"], 0),
     expected: exp(["OPTION_ABSOLUTE_TERM"], []),
   },
   {
@@ -207,7 +207,7 @@ const itemCases: GoldenCase[] = [
   {
     id: "FP-ABSOLUTE-SOUP-01", scope: "ITEM", tags: ["clean", "hebrew", "false-positive-guard", "absolute-prefix-collision"],
     description: "Key 'מרק' (soup) is not the absolute 'רק' (only) with a prefix; ground truth says no absolute-term warning.",
-    input: q("איזה מזון חם מוגש לרוב בתחילת ארוחה בצהריים?", ["קינוח", "מרק", "סלט", "כריך"], 1),
+    input: q("איזה מאכל חם מוגש לעיתים קרובות בתחילת ארוחת צהריים?", ["קינוח", "מרק", "סלט", "כריך"], 1),
     expected: clean({
       forbiddenCodes: ["OPTION_ABSOLUTE_TERM"],
     }),
@@ -263,9 +263,9 @@ const itemCases: GoldenCase[] = [
   {
     id: "WEAK-LEAKAGE-HE-INFLECTION-01", scope: "ITEM", tags: ["weak", "hebrew", "lexical-leakage", "inflection"],
     description: "Key leaks stem words in a different inflection (singular vs plural, with/without construct form).",
-    input: q("מהי הסיבה העיקרית לעליית המחירים של סחורות?", ["מזג אוויר נעים", "העלייה במחיר הסחורות", "מספר ימי חופשה", "גודל העיר"], 1),
+    input: q("איזו מגמה מתארת מצב שבו מחירי הסחורות עולים לאורך זמן?", ["שינוי בעונות השנה", "עלייה במחיר הסחורות", "הגדלת מספר הכבישים", "ירידה בטמפרטורה הממוצעת"], 1),
     expected: exp(["KEY_STEM_LEXICAL_OVERLAP"], [], {
-      knownMiss: { codes: ["KEY_STEM_LEXICAL_OVERLAP"], kind: "HEURISTIC_GAP", reason: "Only exact prefix-stripped tokens match; inflection/morphology (מחיר/המחירים, עלייה/עליית) is not unified, so overlap counts 1 < 2." },
+      knownMiss: { codes: ["KEY_STEM_LEXICAL_OVERLAP"], kind: "HEURISTIC_GAP", reason: "Only exact prefix-stripped tokens match; inflection/morphology (מחיר/מחירי, עלייה/עולים) is not unified, so overlap counts 1 < 2." },
     }),
   },
 
@@ -579,10 +579,10 @@ const itemCases: GoldenCase[] = [
   // ---- Semantic-only judgments (linter result is NOT asserted) ----
   {
     id: "SEM-AMBIGUOUS-01", scope: "ITEM", tags: ["semantic", "hebrew", "ambiguous-question"],
-    description: "Two options are defensible as the key; structurally the item is flawless.",
-    input: q("איזו חיה נחשבת לגדולה ביותר בקרב היונקים?", ["לווייתן כחול", "פיל אפריקאי", "ג'ירפה", "היפופוטם"], 0),
+    description: "Two options are defensible as the key (largest by area vs by population); the stem names no criterion; structurally the item is flawless.",
+    input: q("איזו מדינה היא הגדולה ביותר?", ["רוסיה", "הודו", "שווייץ", "נורווגיה"], 0),
     expected: exp([], [], {
-      semanticExpectation: "SEMANTIC_EXPECTATION: 'largest' is ambiguous (by mass, length, or on land): the linter passes it; a human or critic must flag the two defensible keys.",
+      semanticExpectation: "SEMANTIC_EXPECTATION: 'largest' is ambiguous (by area or by population: the stem gives no criterion): the linter passes it; a human or critic must flag the two defensible keys.",
     }),
   },
   {
@@ -687,8 +687,8 @@ const setCases: GoldenCase[] = [
     id: "SET-NEAR-DUP-INFLECTION-01", scope: "SET", tags: ["set", "duplicate-questions", "near-duplicate", "inflection"],
     description: "Stems differ only by gender/number inflections of several words (same assessed fact).",
     set: cleanSet(BALANCED_POSITIONS, {
-      2: withPrompt(poolItem(POOL[2], BALANCED_POSITIONS[2]), "איזה חיה נחשבת לבעלת חיים נפוצה בבית אצל משפחות קטנות?"),
-      11: withPrompt(poolItem(POOL[11], BALANCED_POSITIONS[11]), "איזו חיות נחשבות לבעלות חיים נפוצים בבתים אצל משפחה קטנה?"),
+      2: withPrompt(poolItem(POOL[2], BALANCED_POSITIONS[2]), "איזו חיה נחשבת לחיית מחמד נפוצה בבית של משפחה קטנה?"),
+      11: withPrompt(poolItem(POOL[11], BALANCED_POSITIONS[11]), "אילו חיות נחשבות לחיות מחמד נפוצות בבתים של משפחות קטנות?"),
     }),
     expected: exp(["NEAR_DUPLICATE_STEM"], ["DUPLICATE_STEM_EXACT", "DUPLICATE_STEM_NORMALIZED"], {
       knownMiss: { codes: ["NEAR_DUPLICATE_STEM"], kind: "HEURISTIC_GAP", reason: "Gender/number inflections change the tokens, so Jaccard falls below the threshold (documented expected miss, ASSESSMENT_ENGINE section 19.4)." },
