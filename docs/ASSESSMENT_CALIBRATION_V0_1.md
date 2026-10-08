@@ -99,7 +99,7 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 
 | Case | Codes | Kind | Reason |
 |---|---|---|---|
-| WEAK-LEAKAGE-HE-INFLECTION-01 | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP | Only exact prefix-stripped tokens match; inflection/morphology (מחיר/המחירים, עלייה/עליית) is not unified, so overlap counts 1 < 2. |
+| WEAK-LEAKAGE-HE-INFLECTION-01 | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP | Only exact prefix-stripped tokens match; inflection/morphology (מחיר/מחירי, עלייה/עולים) is not unified, so overlap counts 1 < 2. |
 | WEAK-GRAMMAR-CUE-EN-01 | ARTICLE_MISMATCH | NOT_IMPLEMENTED | ARTICLE_MISMATCH is a documented but unimplemented code (AE-029). |
 | WEAK-STYLE-CUE-HE-01 | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED | OPTION_STYLE_OUTLIER is a documented but unimplemented code (AE-029); the length and leakage checks fire only as incidental partial signals. |
 | WEAK-COMBINATION-EN-01 | OPTION_COMBINATION_REFERENCE | NOT_IMPLEMENTED | OPTION_COMBINATION_REFERENCE is a documented but unimplemented code (AE-029). |
@@ -115,7 +115,7 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 
 | Case | SEMANTIC_EXPECTATION |
 |---|---|
-| SEM-AMBIGUOUS-01 | SEMANTIC_EXPECTATION: 'largest' is ambiguous (by mass, length, or on land): the linter passes it; a human or critic must flag the two defensible keys. |
+| SEM-AMBIGUOUS-01 | SEMANTIC_EXPECTATION: 'largest' is ambiguous (by area or by population: the stem gives no criterion): the linter passes it; a human or critic must flag the two defensible keys. |
 | SEM-DISTRACTORS-PLAUSIBLE-01 | SEMANTIC_EXPECTATION: distractors are other capitals, so they are plausible to a learner; plausibility is not computable by the linter. |
 | SEM-DISTRACTORS-IMPLAUSIBLE-01 | SEMANTIC_EXPECTATION: distractors are not alternatives a learner would consider; the item gives away the key. Linter sees balanced short options and stays silent. |
 | SEM-EQUIVALENT-STEMS-NOTE-01 | SEMANTIC_EXPECTATION: item 0 and item 11 assess the same fact (assessment-equivalent paraphrase); token similarity is far below NEAR_DUPLICATE_STEM, so detection needs a semantic critic. |
