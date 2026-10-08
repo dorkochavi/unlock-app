@@ -179,4 +179,19 @@ describe("normalizePlainText", () => {
     expect(codes(r)).toContain("LABEL_TRUNCATED");
     expect(ok(normalizePlainText("x", { label: 5 })).document.source.label).toBeNull();
   });
+
+  it("heading cleanup is linear on long interior whitespace runs and handles closing hashes", () => {
+    const t0 = Date.now();
+    const r = normalizePlainText("# a" + " ".repeat(200000) + "b");
+    expect(r.ok).toBe(true);
+    expect(Date.now() - t0).toBeLessThan(1000);
+    const h = (x: string) => {
+      const o = normalizePlainText(x);
+      return o.ok ? o.document.sections[0].title : "ERR";
+    };
+    expect(h("# Title ##")).toBe("Title");
+    expect(h("# Title##")).toBe("Title##");
+    expect(h("# Title   ")).toBe("Title");
+    expect(h("# ###")).toBe(null);
+  });
 });

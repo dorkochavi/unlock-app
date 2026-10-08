@@ -108,6 +108,18 @@ const SPACE_OR_INVISIBLE = new RegExp(`[\\s${INVISIBLE_CLASS}]`);
 // C0 controls except TAB, LF, VT, FF, CR (whitespace-like, handled by collapse), plus DEL; NUL counted separately.
 const CONTROL_G = /[\u0001-\u0008\u000E-\u001F\u007F]/g;
 const NUL_G = /\u0000/g;
+/** Linear-time removal of an ATX closing "#" sequence (avoids a backtracking regex on long space runs). */
+function stripClosingHashes(t: string): string {
+  let e = t.length;
+  while (e > 0 && (t[e - 1] === " " || t[e - 1] === "	")) e--;
+  let h = e;
+  while (h > 0 && t[h - 1] === "#") h--;
+  if (h === e) return t.slice(0, e);
+  if (h === 0) return "";
+  const c = t[h - 1];
+  return c === " " || c === "	" ? t.slice(0, h) : t.slice(0, e);
+}
+
 const HEADING_RE = /^(#{1,6})[ \t]+(.*)$/;
 
 function clampCap(requested: unknown, max: number): number {
@@ -260,7 +272,7 @@ function normalizeUnsafe(input: unknown, opts?: NormalizePlainTextOptions): Norm
     if (!indent.includes("\t") && indent.length <= 3) {
       const m = HEADING_RE.exec(input.slice(a, b));
       if (m) {
-        const title = cleanText(m[2].replace(/[ \t]+#+[ \t]*$/, "").replace(/^#+[ \t]*$/, ""));
+        const title = cleanText(stripClosingHashes(m[2]));
         if (title !== "") heading = { level: m[1].length, title };
       }
     }
