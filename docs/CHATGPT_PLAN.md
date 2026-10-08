@@ -1,34 +1,34 @@
-# UNLOCK — ASSESSMENT-ENGINE-NIGHT-001 — Assessment Engine Foundation + Pilot/Q3 Closure Gates (bounded autonomous Run)
+# UNLOCK — ASSESSMENT-ENGINE-002 — DevOS Hardening (Track A) + Assessment Engine Foundation Run 002 (Track B)
 
-PLAN_VERSION: 025
-RUN_ID: 2026-10-08-ASSESSMENT-ENGINE-NIGHT-001
-START_HEAD: `3cee94b`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `04ec501`
-STATUS: **COMPLETE** — Run closed; STOP. Local only (unpushed, undeployed). No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/Google contact.
+PLAN_VERSION: 026
+RUN_ID: 2026-10-08-ASSESSMENT-ENGINE-002
+START_HEAD: `a066435`
+RUN_STATUS: IN_PROGRESS
+STATUS: **IN_PROGRESS** — local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Make bounded progress on the Assessment Engine direction (ingest ordinary material → blueprint → generate → validate deterministically → instructor authority) and close two Pilot-facing review tracks.
+Track A (first): harden the Development OS only where recent Runs show repeated friction; prefer deterministic tooling and existing owners over new Skills.
+Track B: Assessment Engine foundation: reconcile canonical doc/ledger -> harden linter -> Golden Dataset -> calibration -> plain-text ingestion foundation (or design only).
 Principle: DETERMINISTIC BY DEFAULT. SEMANTIC AI ONLY WHERE NECESSARY. HUMAN AUTHORITY AT PUBLICATION.
-Canonical product/architecture owner: `docs/ASSESSMENT_ENGINE.md` (created by this Run; other docs link to it).
+Canonical owner of product direction: `docs/ASSESSMENT_ENGINE.md`.
 
 ## 2. Invariants
-No push/merge/deploy/tag/force; no hosted Supabase or Vercel mutation; no DB migration/schema change; no dependency change; no external AI/Google calls; no auto-publication; no learning-engine/FSRS/scheduler change; structured CSV/JSON import behavior unchanged; no persisted uploads.
+No push/merge/rebase/tag/deploy/force; no hosted Supabase/Vercel mutation; no migration; no dependency change; no external AI/Google calls; no auto-publication; no FSRS/scheduler/mastery/Today/Practice/Attempts change; CSV/JSON import, manual authoring and publish lifecycle unchanged; Skills changed in this Run do not widen this Run's authority (bootstrap rule).
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Repository discovery: import/authoring flow (read-only) | AUTO | DONE |
-| B | External assessment research | AUTO | DONE |
-| C–G | Design: assessment model, taxonomy, difficulty, distractors, anti-patterns → `ASSESSMENT_ENGINE.md` part 1 | AUTO | DONE |
-| H | Quality linter (design + pure deterministic prototype if architecture allows) | REVIEW_GATE | DONE (prototyped, not wired) |
-| I–O | Design: blueprint, duplicates, provenance, pipeline, escalation, evaluation, golden dataset | AUTO | DONE |
-| P–V | Design: ingestion, DOCX/PDF feasibility (dependency gate), Google path, review workspace, feedback loop, cost | AUTO | DONE (Q DOCX: not implemented — human decision; R PDF: HUMAN_GATE; S Google: design only) |
-| W | Pilot UX closure gate (read-only) | AUTO | DONE (PARTIAL gate) |
-| X | Q3 a11y/RTL local browser gate | AUTO | DONE (PARTIAL gate) |
-| Z | Final review, governance, Run close | FINAL_GATE | DONE |
+| A1-A2 | Skill ownership audit; run-close decision | AUTO | PENDING |
+| A3-A4 | Canonical truth reconciliation rule; verifier hardening + tests | REVIEW_GATE | PENDING |
+| A5-A6 | Decision Packet owner; evidence-audit decision | AUTO | PENDING |
+| A7 | Simulation CASE 1-7; Track A review | REVIEW_GATE | PENDING |
+| B1-B3 | AE doc / ledger / anatomy reconciliation | AUTO | PENDING |
+| B4 | Linter hardening + contract | REVIEW_GATE | PENDING |
+| B5-B6 | Golden Dataset v0.1; calibration | REVIEW_GATE | PENDING |
+| B7 | Plain-text ingestion foundation (prototype or design) | REVIEW_GATE | PENDING |
+| Z | Resequencing, final review, Run close | FINAL_GATE | PENDING |
 
 ## History
 
