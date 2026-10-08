@@ -180,6 +180,7 @@ export const he = {
         addError: "לא ניתן היה להוסיף את הנושא. נסו שוב.",
         duplicateNameError: "כבר קיים נושא פעיל בשם הזה בקורס. יש לבחור שם אחר.",
         renameAction: "עריכה",
+        renameLabel: "עריכת שם הנושא",
         renameSave: "שמירה",
         renameCancel: "ביטול",
         renameError: "לא ניתן היה לשמור את השם. נסו שוב.",

@@ -788,6 +788,7 @@ export default function InstructorCourseManagePage() {
                               type="text"
                               value={renameDraft}
                               onChange={(event) => setRenameDraft(event.target.value)}
+                              aria-label={messages.instructor.manage.topics.renameLabel}
                               className="min-h-control min-w-0 flex-1 rounded-field border border-field-border bg-surface px-3 py-1 text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               autoFocus
                             />
@@ -849,6 +850,7 @@ export default function InstructorCourseManagePage() {
                     value={newTopicName}
                     onChange={(event) => setNewTopicName(event.target.value)}
                     placeholder={messages.instructor.manage.topics.addPlaceholder}
+                    aria-label={messages.instructor.manage.topics.addPlaceholder}
                     className="min-w-0 flex-1"
                     required
                   />
