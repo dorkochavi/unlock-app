@@ -3,9 +3,9 @@
 PLAN_VERSION: 029
 RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-004
 START_HEAD: `170ed8c`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `170ed8c`
-STATUS: **IN PROGRESS** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `d837177`
+STATUS: **COMPLETE + STOP** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -18,15 +18,16 @@ No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A1 | Blind HELD_OUT_AUTHOR worker: author corpus (scratchpad, outside repo) | AUTO | PENDING |
-| A2 | Independent HELD_OUT_LABELER worker: labels (scratchpad) | AUTO | PENDING |
-| A3 | Freeze: mechanical conversion into repo fixture + freeze commit (`HELD_OUT_FREEZE_HEAD`) | REVIEW_GATE | PENDING |
-| A4 | First blind evaluation with the unchanged linter; held-out harness/test; per-check TP/FN/FP | REVIEW_GATE | PENDING |
-| A5 | FUB-064 verdict, position-rule verdict, human-review queue, readiness reassessment, docs routing | REVIEW_GATE | PENDING |
-| Z | Review, verification, Run close | FINAL_GATE | PENDING |
+| A1 | Blind HELD_OUT_AUTHOR worker: author corpus (scratchpad, outside repo) | AUTO | DONE |
+| A2 | Independent HELD_OUT_LABELER worker: labels (scratchpad) | AUTO | DONE |
+| A3 | Freeze: mechanical conversion into repo fixture + freeze commit (`HELD_OUT_FREEZE_HEAD`) | REVIEW_GATE | DONE |
+| A4 | First blind evaluation with the unchanged linter; held-out harness/test; per-check TP/FN/FP | REVIEW_GATE | DONE |
+| A5 | FUB-064 verdict, position-rule verdict, human-review queue, readiness reassessment, docs routing | REVIEW_GATE | DONE |
+| Z | Review, verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
+- ASSESSMENT-ENGINE-004: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-004.md`
 - ASSESSMENT-ENGINE-HEBREW-REVIEW-001: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-HEBREW-REVIEW-001.md`
 - ASSESSMENT-ENGINE-003: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-003.md`
 - ASSESSMENT-ENGINE-002: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-002.md`
