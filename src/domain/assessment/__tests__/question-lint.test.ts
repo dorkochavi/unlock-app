@@ -432,6 +432,14 @@ describe("normalization helpers", () => {
     expect(duplicateKey("Hello world?!")).toBe("hello world");
     expect(duplicateKey("מנכ\"ל")).toContain('"');
   });
+  it("duplicate key folds bounded Latin/Cyrillic/Greek lookalikes only", () => {
+    expect(duplicateKey("pаypal")).toBe(duplicateKey("paypal"));
+    expect(duplicateKey("АPPLE")).toBe(duplicateKey("apple"));
+    expect(duplicateKey("οpen")).toBe(duplicateKey("open"));
+    expect(duplicateKey("мама")).not.toBe(duplicateKey("мала")); // distinct Russian words stay distinct
+    expect(duplicateKey("שלום")).toBe("שלומ"); // Hebrew untouched
+    expect(comparisonKey("pаypal")).not.toBe(comparisonKey("paypal")); // comparison key unchanged
+  });
   it("prefix stripping respects minimum remainder", () => {
     expect(stripHebrewPrefixes("התאית")).toBe("תאית");
     expect(stripHebrewPrefixes("שלא")).toBe("שלא");

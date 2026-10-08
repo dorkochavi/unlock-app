@@ -37,7 +37,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["OPTION_ALL_OF_ABOVE", 3, 3, 0, 0, 18],
   ["OPTION_COMBINATION_REFERENCE", 1, 0, 1, 0, 0],
   ["OPTION_DUPLICATE_EXACT", 1, 1, 0, 0, 26],
-  ["OPTION_DUPLICATE_NORMALIZED", 10, 9, 1, 0, 18],
+  ["OPTION_DUPLICATE_NORMALIZED", 10, 10, 0, 0, 18],
   ["OPTION_EMPTY", 1, 1, 0, 0, 16],
   ["OPTION_ID_DUPLICATE", 1, 1, 0, 0, 16],
   ["OPTION_LENGTH_IMBALANCE", 2, 2, 0, 0, 19],
@@ -63,15 +63,15 @@ const EXPECTED_COUNTS = {
   set: 17,
   clean: 18,
   unsupportedSemantic: 6,
-  withKnownMiss: 7,
+  withKnownMiss: 6,
   withKnownFalsePositive: 0,
 };
 
 const EXPECTED_TOTALS = {
   expectedDetections: 73,
-  truePositive: 66,
-  falseNegative: 7,
-  falseNegativeHeuristicGap: 4,
+  truePositive: 67,
+  falseNegative: 6,
+  falseNegativeHeuristicGap: 3,
   falseNegativeNotImplemented: 3,
   falsePositive: 0,
   cleanCases: 18,
@@ -79,9 +79,9 @@ const EXPECTED_TOTALS = {
 };
 
 const EXPECTED_SUMMARY = [
-  "RECALL-LIKE (all labelled detections): 66/73 caught.",
-  "FN count: 7 (4 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).",
-  "PRECISION-LIKE (labelled detections vs false alarms): 66/66.",
+  "RECALL-LIKE (all labelled detections): 67/73 caught.",
+  "FN count: 6 (3 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).",
+  "PRECISION-LIKE (labelled detections vs false alarms): 67/67.",
   "FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: yes).",
   "CLEAN cases with a WARNING/ERROR: 0 of 18.",
   "UNSUPPORTED SEMANTIC CASES: 6 (intentionally not asserted against the linter).",
@@ -93,7 +93,6 @@ const EXPECTED_KNOWN_MISS_IDS = [
   "WEAK-GRAMMAR-CUE-EN-01",
   "WEAK-STYLE-CUE-HE-01",
   "WEAK-COMBINATION-EN-01",
-  "ADV-HOMOGLYPH-01",
   "OVERLAP-OPTIONS-HE-BOUNDARY-01",
   "SET-NEAR-DUP-INFLECTION-01",
 ];

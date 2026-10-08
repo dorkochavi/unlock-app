@@ -440,9 +440,7 @@ const itemCases: GoldenCase[] = [
     id: "ADV-HOMOGLYPH-01", scope: "ITEM", tags: ["adversarial", "english", "homoglyph", "duplicate-answers"],
     description: "'paypal' vs 'pаypal' (Cyrillic a): visually identical, different code points.",
     input: q("Which brand name is spelled with two letters p?", ["paypal", "market", "pаypal", "banner"], 0),
-    expected: exp(["OPTION_DUPLICATE_NORMALIZED"], [], {
-      knownMiss: { codes: ["OPTION_DUPLICATE_NORMALIZED"], kind: "HEURISTIC_GAP", reason: "No confusable/homoglyph (UTS #39 skeleton) folding; only NFC, case, niqqud, final letters, quotes, dashes, digits and zero-width/bidi stripping." },
-    }),
+    expected: exp(["OPTION_DUPLICATE_NORMALIZED"], []),
   },
   {
     id: "OVERLAP-OPTIONS-HE-01", scope: "ITEM", tags: ["weak", "hebrew", "option-overlap"],

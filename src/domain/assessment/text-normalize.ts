@@ -71,9 +71,22 @@ function trimTerminal(s: string): string {
   return s.slice(0, end);
 }
 
-/** Duplicate key: comparison key plus step 8 (terminal punctuation stripped). May be empty for punctuation-only text. */
+/**
+ * Bounded confusable table (lowercase Cyrillic/Greek letters visually identical to a Latin letter -> Latin).
+ * Subset of the UTS #39 idea, deliberately small: only unambiguous lookalikes, no digits/punctuation/Hebrew.
+ * Injective over Cyrillic-only and Greek-only strings, so two genuinely different words in one script never
+ * collide; a collision means Latin vs lookalike (visually indistinguishable to a reader). Duplicate key only.
+ */
+const CONFUSABLE_TO_LATIN: Readonly<Record<string, string>> = {
+  "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i", "ј": "j", "ѕ": "s", "һ": "h",
+  "ο": "o", "ν": "v", "ρ": "p",
+};
+const CONFUSABLE_CHARS = /[аеорсухіјѕһονρ]/g;
+
+/** Duplicate key: comparison key plus confusable folding plus step 8 (terminal punctuation stripped). May be empty for punctuation-only text. */
 export function duplicateKey(text: unknown): string {
-  return trimTerminal(comparisonKey(text)).trim();
+  const folded = comparisonKey(text).replace(CONFUSABLE_CHARS, (c) => CONFUSABLE_TO_LATIN[c] ?? c);
+  return trimTerminal(folded).trim();
 }
 
 /** Linear strip of leading/trailing quote/hyphen characters. */
