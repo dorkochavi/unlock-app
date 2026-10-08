@@ -1811,7 +1811,7 @@ Human answers the packet; or the pre-Pilot instructor walk (FUB-058) reports los
 
 Evidence class for ALL items: **the whole of Design Audit 001 was SOURCE_ONLY.** No rendered, browser, device, or screen-reader pass was done; a rendered pass is pending (Run C / browser isolation). Rows are source observations, not visual confirmations. Nothing here is fixed.
 
-Fixed in Run 2026-10-09-DESIGN-AUDIT-FOLLOWUP-001 and therefore NOT tracked here: P2-01 (`d20d449`), P2-02 (`60dc956`), DS-01 (`5e4cc21`). Evidence for those is source and unit-test only; no rendered or screen-reader verification. P2-03 and UX-01 are FUB-068.
+Visual follow-up from the DS-01 fix (source reasoning only, not rendered): `src/app/(learner)/courses/course-row.tsx:50` now renders its authored `p-4` instead of the previously winning default `p-5`; confirm visually in a rendered pass. Fixed in Run 2026-10-09-DESIGN-AUDIT-FOLLOWUP-001 and therefore NOT tracked here: P2-01 (`d20d449`), P2-02 (`60dc956`), DS-01 (`5e4cc21`). Evidence for those is source and unit-test only; no rendered or screen-reader verification. P2-03 and UX-01 are FUB-068.
 
 | ID | Item | Product decision? | Promotion trigger |
 | --- | --- | --- | --- |
@@ -1828,7 +1828,7 @@ Fixed in Run 2026-10-09-DESIGN-AUDIT-FOLLOWUP-001 and therefore NOT tracked here
 | UX-08 | Dead-end StateBlocks on learner course/join for `notAuthorized` / `accessRevoked`; revoked-access semantics are a policy decision (fail closed per `.claude/rules/auth.md`) | yes | Membership revoke/rejoin policy decision |
 | P3-07 | `autoFocus` on mobile needs a device check (only `src/app/instructor/courses/[courseId]/page.tsx` uses it) | no | Mobile device checks (FUB-058) |
 | P3-08 | Import textarea lacks `dir="ltr"` / `spellCheck` handling | no | Next import-UI touch |
-| LINT-1 | Observed pre-existing eslint `react-hooks/purity` errors on `Date.now()` in the question editor page, at roughly lines 416/474 of the base version (now `page.tsx:417` and `475`: `setSavedAt(Date.now())`, `setPublishedAt(Date.now())`). Taken from the B-worker report; NOT re-run here, to be confirmed with `npx eslint` | no | Next lint cleanup or editor change |
+| LINT-1 | (Confirmed pre-existing at `2718786` by the Run review.) Observed pre-existing eslint `react-hooks/purity` errors on `Date.now()` in the question editor page, at roughly lines 416/474 of the base version (now `page.tsx:417` and `475`: `setSavedAt(Date.now())`, `setPublishedAt(Date.now())`). Taken from the B-worker report; NOT re-run here, to be confirmed with `npx eslint` | no | Next lint cleanup or editor change |
 | RENDER-1 | Whole audit SOURCE_ONLY; rendered/visual/a11y pass pending (Run C / browser isolation) | no | Browser-isolation capability available |
 
 ## Promotion Trigger
