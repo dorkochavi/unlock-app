@@ -5,6 +5,30 @@
  * Status: NOT wired into import, publish, API or UI. No publish automation.
  * Pure functions: no IO, no network, no AI, no Date/random. Independent of the
  * learning engine / scheduler. Never throws: garbage input yields issues.
+ * Hardened in Run 2026-10-08-ASSESSMENT-ENGINE-002, Slice B4.
+ *
+ * CONTRACT (decision B4): this is a SECONDARY QUALITY LINTER, not the structural validator.
+ *   - Precondition: canonical structural/publish validation (the import validator and the
+ *     publish-readiness validator) owns structural and publish validity and runs first.
+ *     The linter is never the authority on whether a question may be imported or published.
+ *   - Defensive totality: the linter NEVER relies on that precondition for its own safety. It
+ *     never throws, does bounded work and is ReDoS-safe on arbitrary (hostile, nullish,
+ *     non-string, huge) input.
+ *   - Structural defects it happens to see are reported through its ERROR codes as DEFENSIVE
+ *     STRUCTURAL DIAGNOSTICS, NOT AUTHORITATIVE VALIDATION. A clean lint result never implies
+ *     structural validity, and an ERROR here never replaces the canonical validator's verdict.
+ *   - Supported questionType values mirror the canonical set (QUESTION_TYPES in
+ *     src/domain/learning/answer.ts: SINGLE_CHOICE, MULTIPLE_CHOICE). Any other value (missing,
+ *     wrong case, non-string) raises QUESTION_TYPE_UNSUPPORTED; type-independent checks still run,
+ *     type-dependent checks (correct-count rule, key-based checks) are skipped.
+ *   - NO SILENT TRUNCATION: every cap that cuts input or analysis yields an explicit, content-blind
+ *     issue (OPTIONS_TOO_MANY, CORRECT_IDS_TOO_MANY, TEXT_TRUNCATED, SET_ITEMS_TRUNCATED,
+ *     SET_ANALYSIS_TRUNCATED), so incomplete diagnosis is always visible.
+ *
+ * BOUNDS (n = items read <= MAX_LINT_BATCH_ITEMS, k = options <= MAX_LINT_OPTIONS,
+ *   T = chars per text <= MAX_LINT_TEXT_CHARS): sanitize O(k*T) per item; lintQuestionItem
+ *   O(k^2*T) worst (pairwise option overlap), O(k*T) typical; near-duplicate stems at most
+ *   MAX_NEAR_DUP_COMPARISONS pair comparisons, each O(T); remaining set checks O(n*k*T).
  *
  * Issues are content-blind: codes, ids, positions and numeric metrics only,
  * never authored text.
@@ -12,14 +36,16 @@
  * All thresholds below are PRODUCT-DESIGN DEFAULTS, NOT research-backed. They are
  * named constants to be tuned against a Golden Dataset and instructor feedback.
  *
- * Implemented ITEM ERRORS: INPUT_UNREADABLE, OPTIONS_TOO_MANY, STEM_EMPTY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE,
- *   OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_COUNT_INVALID, CORRECT_ID_UNKNOWN.
- * Implemented ITEM WARNINGS: STEM_TOO_SHORT, STEM_NEGATIVE_WORDING, OPTION_ALL_OF_ABOVE,
+ * Implemented ITEM ERRORS (defensive structural diagnostics): INPUT_UNREADABLE, STEM_EMPTY,
+ *   QUESTION_TYPE_UNSUPPORTED, OPTIONS_TOO_MANY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE,
+ *   OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_IDS_TOO_MANY, CORRECT_COUNT_INVALID,
+ *   CORRECT_ID_UNKNOWN.
+ * Implemented ITEM WARNINGS: TEXT_TRUNCATED, STEM_TOO_SHORT, STEM_NEGATIVE_WORDING, OPTION_ALL_OF_ABOVE,
  *   OPTION_NONE_OF_ABOVE, OPTION_ABSOLUTE_TERM, KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE,
  *   KEY_STEM_LEXICAL_OVERLAP, OPTION_OVERLAP_HIGH, OPTION_WHITESPACE_ANOMALY, EXPLANATION_MISSING.
- * Implemented SET WARNINGS: SET_TOO_SMALL, DUPLICATE_STEM_EXACT, DUPLICATE_STEM_NORMALIZED,
- *   NEAR_DUPLICATE_STEM, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS,
- *   STEM_TEMPLATE_REPEATED.
+ * Implemented SET WARNINGS: SET_TOO_SMALL, SET_ITEMS_TRUNCATED, DUPLICATE_STEM_EXACT,
+ *   DUPLICATE_STEM_NORMALIZED, NEAR_DUPLICATE_STEM, SET_ANALYSIS_TRUNCATED, KEY_POSITION_IMBALANCE,
+ *   KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS, STEM_TEMPLATE_REPEATED.
  * NOT implemented (documented in section 10.3/11.1): STEM_NO_QUESTION_FORM, STEM_DOUBLE_NEGATIVE,
  *   OPTION_COMBINATION_REFERENCE, OPTION_STYLE_OUTLIER, OPTION_PREFIX_STEM_REPEAT, ARTICLE_MISMATCH,
  *   OPTION_NUMERIC_UNORDERED, OPTION_COUNT_UNUSUAL, OPTION_PUNCTUATION_INCONSISTENT,
@@ -94,25 +120,46 @@ export const STEM_TEMPLATE_SHARE = 0.4;
 export const MAX_LINT_OPTIONS = 50;
 /** SET_KEY_LENGTH_BIAS needs at least this many eligible items (else it is statistically meaningless). */
 export const SET_KEY_LENGTH_BIAS_MIN_ELIGIBLE = MIN_SET_SIZE;
-/** Upper bound on correctOptionIds entries read per item. */
-const MAX_CORRECT_READ = 1000;
+/** More correctOptionIds than this raises CORRECT_IDS_TOO_MANY (never silently truncated). */
+export const MAX_LINT_CORRECT_IDS = MAX_LINT_OPTIONS;
+/** Per-text cap (prompt, option content); longer text is analysed on its prefix and raises TEXT_TRUNCATED. */
+export const MAX_LINT_TEXT_CHARS = 5000;
+/** Per-id cap (option ids, correct ids); longer ids are cut and counted in TEXT_TRUNCATED. */
+export const MAX_LINT_ID_CHARS = 256;
+/** At most this many items are read by lintQuestionSet / lintQuestionBatch; more raises SET_ITEMS_TRUNCATED. */
+export const MAX_LINT_BATCH_ITEMS = 2000;
+/** At most this many stem pairs are compared for NEAR_DUPLICATE_STEM; more raises SET_ANALYSIS_TRUNCATED. */
+export const MAX_NEAR_DUP_COMPARISONS = 20000;
+/** Canonical question types (mirrors QUESTION_TYPES in src/domain/learning/answer.ts; not imported on purpose). */
+const SUPPORTED_QUESTION_TYPES: readonly string[] = ["SINGLE_CHOICE", "MULTIPLE_CHOICE"];
 const SAFE_ID = /^[A-Za-z0-9]{1,8}$/;
 
 // ---- Seed term lists (to be curated; comparison-normalized at module init) ----
 const norm = (terms: readonly string[]): string[] => terms.map((t) => comparisonKey(t));
+/** Phrases are stored as space-joined tokens so matching is whole-token (word-boundary) matching. */
+const normPhrases = (phrases: readonly string[]): string[] => phrases.map((p) => tokenize(p).join(" "));
 
-const NEGATION_TERMS = norm(["not", "except", "never", "least", "לא", "אינו", "אינה", "מלבד", "חוץ"]);
+const NEGATION_TERMS_EN = norm(["not", "except", "never", "least"]);
+/**
+ * Hebrew negation words match as WHOLE tokens only, optionally with a single conjunction/relativizer
+ * prefix (ו, ש, וש). Other prefix letters are NOT accepted, so "מלא" (full), "הלא", "אלא", "מלאכה",
+ * "מחוץ" never read as negation. Final letters are folded by norm().
+ */
+const NEGATION_TERMS_HE = norm(["לא", "אין", "אינו", "אינה", "אינם", "אינן", "בלתי", "בלא", "ללא", "מלבד", "חוץ"]);
+const NEGATION_HE_PREFIX_LETTERS = "וש";
+const NEGATION_HE_PREFIX_MAX = 2;
 const ABSOLUTE_TERMS = norm([
   "always", "never", "only", "all", "none", "completely", "entirely", "every",
   "תמיד", "אף פעם", "רק", "לעולם", "כל", "בלבד", "בהכרח", "אף אחד", "שום",
 ]);
-const ALL_OF_ABOVE_PHRASES = norm([
+const ALL_OF_ABOVE_PHRASES = normPhrases([
   "all of the above", "all of these", "all the above", "all of the answers",
-  "כל התשובות", "כולן נכונות", "כל האמור לעיל", 'כל הנ"ל',
+  "כל התשובות", "כל התשובות נכונות", "כולן נכונות", "כולם נכונים", "כל האמור לעיל", 'כל הנ"ל',
 ]);
-const NONE_OF_ABOVE_PHRASES = norm([
+const NONE_OF_ABOVE_PHRASES = normPhrases([
   "none of the above", "none of these", "none of the answers",
-  "אף אחת מהתשובות", "אף תשובה", "אף אחד מהאמור", "אף אחת מהן", "אין תשובה נכונה", "אין אף תשובה",
+  "אף אחת מהתשובות", "אף אחד מהתשובות", "אף תשובה", "אף אחד מהאמור", "אף אחת מהן", "אף אחד מהם",
+  "אין תשובה נכונה", "אין אף תשובה",
 ]);
 const STOP_WORDS = new Set(
   norm([
@@ -125,15 +172,22 @@ const STOP_WORDS = new Set(
 interface SafeOption {
   id: string;
   content: string;
+  /** Content was cut to MAX_LINT_TEXT_CHARS. */
+  truncated: boolean;
 }
 interface SafeItem {
   unreadable: boolean;
   questionType: string;
   prompt: string;
+  promptTruncated: boolean;
   /** At most MAX_LINT_OPTIONS + 1 options are copied; see optionCount for the true length. */
   options: SafeOption[];
   optionCount: number;
+  /** First MAX_LINT_CORRECT_IDS correct ids; see correctCount for the true length. */
   correct: string[];
+  correctCount: number;
+  /** Number of option/correct ids cut to MAX_LINT_ID_CHARS. */
+  idTruncatedCount: number;
   explanation: string | null;
 }
 
@@ -144,7 +198,14 @@ function str(v: unknown): string {
 }
 
 function emptyItem(unreadable: boolean): SafeItem {
-  return { unreadable, questionType: "", prompt: "", options: [], optionCount: 0, correct: [], explanation: null };
+  return {
+    unreadable, questionType: "", prompt: "", promptTruncated: false, options: [], optionCount: 0,
+    correct: [], correctCount: 0, idTruncatedCount: 0, explanation: null,
+  };
+}
+
+function capText(s: string): { v: string; cut: boolean } {
+  return s.length > MAX_LINT_TEXT_CHARS ? { v: s.slice(0, MAX_LINT_TEXT_CHARS), cut: true } : { v: s, cut: false };
 }
 
 /** Total: never throws (throwing getters / Proxies yield an unreadable item). */
@@ -153,6 +214,15 @@ function sanitize(raw: unknown): SafeItem {
     const o = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
     const opts: SafeOption[] = [];
     let optionCount = 0;
+    let idTruncatedCount = 0;
+    const readId = (v: unknown): string => {
+      const s = str(v);
+      if (s.length > MAX_LINT_ID_CHARS) {
+        idTruncatedCount += 1;
+        return s.slice(0, MAX_LINT_ID_CHARS);
+      }
+      return s;
+    };
     const ao = o.answerOptions;
     if (Array.isArray(ao)) {
       optionCount = ao.length;
@@ -160,23 +230,31 @@ function sanitize(raw: unknown): SafeItem {
       for (let i = 0; i < take; i += 1) {
         const x: unknown = ao[i];
         const e = (typeof x === "object" && x !== null ? x : {}) as Record<string, unknown>;
-        opts.push({ id: str(e.id), content: str(e.content) });
+        const c = capText(str(e.content));
+        opts.push({ id: readId(e.id), content: c.v, truncated: c.cut });
       }
     }
     const correct: string[] = [];
+    let correctCount = 0;
     const co = o.correctOptionIds;
     if (Array.isArray(co)) {
-      const take = Math.min(co.length, MAX_CORRECT_READ);
-      for (let i = 0; i < take; i += 1) correct.push(str(co[i]));
+      correctCount = co.length;
+      const take = Math.min(correctCount, MAX_LINT_CORRECT_IDS);
+      for (let i = 0; i < take; i += 1) correct.push(readId(co[i]));
     }
     const expl = o.explanation;
+    const p = capText(str(o.prompt));
     return {
       unreadable: false,
       questionType: str(o.questionType),
-      prompt: str(o.prompt),
+      prompt: p.v,
+      promptTruncated: p.cut,
       options: opts,
       optionCount,
       correct,
+      correctCount,
+      idTruncatedCount,
+      // Only emptiness is read, via a linear trim; never truncated.
       explanation: typeof expl === "string" ? expl : null,
     };
   } catch {
@@ -207,7 +285,8 @@ function round3(n: number): number {
 
 /** Resolved single key (SINGLE_CHOICE, exactly one distinct correct id matching an option). */
 function singleKeyIndex(item: SafeItem): number {
-  if (item.unreadable || item.optionCount > MAX_LINT_OPTIONS || item.questionType !== "SINGLE_CHOICE") return -1;
+  if (item.unreadable || item.optionCount > MAX_LINT_OPTIONS || item.correctCount > MAX_LINT_CORRECT_IDS) return -1;
+  if (item.questionType !== "SINGLE_CHOICE") return -1;
   const distinct = Array.from(new Set(item.correct));
   if (distinct.length !== 1) return -1;
   const matches: number[] = [];
@@ -252,6 +331,9 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   // ---- ERRORS ----
   if (isBlank(item.prompt)) out.push(issue("STEM_EMPTY", "ERROR", "ITEM"));
 
+  const typeSupported = SUPPORTED_QUESTION_TYPES.includes(item.questionType);
+  if (!typeSupported) out.push(issue("QUESTION_TYPE_UNSUPPORTED", "ERROR", "ITEM"));
+
   if (item.optionCount > MAX_LINT_OPTIONS) {
     // Cap: skip all per-option and pairwise checks (bounded work for hostile input).
     out.push(issue("OPTIONS_TOO_MANY", "ERROR", "ITEM", { metrics: { optionCount: item.optionCount, maximum: MAX_LINT_OPTIONS } }));
@@ -295,27 +377,47 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
     out.push(issue("OPTION_DUPLICATE_NORMALIZED", "ERROR", "ITEM", { ...optRefs(normIdx, ids), metrics: { groupCount: normGroups.length } }));
   }
 
-  const distinctCorrect = Array.from(new Set(item.correct));
-  const count = distinctCorrect.length;
-  if (
-    (item.questionType === "SINGLE_CHOICE" && count !== 1) ||
-    (item.questionType === "MULTIPLE_CHOICE" && (count < 1 || count >= item.options.length))
-  ) {
-    out.push(issue("CORRECT_COUNT_INVALID", "ERROR", "ITEM", { metrics: { correctCount: count } }));
+  if (item.correctCount > MAX_LINT_CORRECT_IDS) {
+    // Only a prefix was read: correct-count / unknown-id checks would be wrong, so they are skipped explicitly.
+    out.push(issue("CORRECT_IDS_TOO_MANY", "ERROR", "ITEM", { metrics: { correctIdCount: item.correctCount, maximum: MAX_LINT_CORRECT_IDS } }));
+  } else {
+    const distinctCorrect = Array.from(new Set(item.correct));
+    const count = distinctCorrect.length;
+    if (
+      (item.questionType === "SINGLE_CHOICE" && count !== 1) ||
+      (item.questionType === "MULTIPLE_CHOICE" && (count < 1 || count >= item.options.length))
+    ) {
+      out.push(issue("CORRECT_COUNT_INVALID", "ERROR", "ITEM", { metrics: { correctCount: count } }));
+    }
+
+    const idSet = new Set(ids);
+    const unknown = distinctCorrect.filter((c) => !idSet.has(c));
+    if (unknown.length > 0) out.push(issue("CORRECT_ID_UNKNOWN", "ERROR", "ITEM", { metrics: { unknownCount: unknown.length } }));
   }
 
-  const idSet = new Set(ids);
-  const unknown = distinctCorrect.filter((c) => !idSet.has(c));
-  if (unknown.length > 0) out.push(issue("CORRECT_ID_UNKNOWN", "ERROR", "ITEM", { metrics: { unknownCount: unknown.length } }));
-
   // ---- WARNINGS ----
+  const truncatedOptionIdx = item.options.map((o, i) => (o.truncated ? i : -1)).filter((i) => i >= 0);
+  if (item.promptTruncated || truncatedOptionIdx.length > 0 || item.idTruncatedCount > 0) {
+    out.push(issue("TEXT_TRUNCATED", "WARNING", "ITEM", {
+      ...optRefs(truncatedOptionIdx, ids),
+      metrics: {
+        promptTruncated: item.promptTruncated ? 1 : 0,
+        optionTruncatedCount: truncatedOptionIdx.length,
+        idTruncatedCount: item.idTruncatedCount,
+        maxTextChars: MAX_LINT_TEXT_CHARS,
+        maxIdChars: MAX_LINT_ID_CHARS,
+      },
+    }));
+  }
   const promptTokens = tokenize(item.prompt);
   const wordCount = collapseWhitespace(item.prompt).split(" ").filter((w) => w.length > 0).length;
   if (wordCount > 0 && wordCount < STEM_MIN_WORDS) {
     out.push(issue("STEM_TOO_SHORT", "WARNING", "ITEM", { metrics: { wordCount, minimum: STEM_MIN_WORDS } }));
   }
 
-  const negations = NEGATION_TERMS.filter((t) => containsTerm(promptTokens, t)).length;
+  const negations =
+    NEGATION_TERMS_EN.filter((t) => containsTerm(promptTokens, t, "", 0)).length +
+    NEGATION_TERMS_HE.filter((t) => containsTerm(promptTokens, t, NEGATION_HE_PREFIX_LETTERS, NEGATION_HE_PREFIX_MAX)).length;
   if (negations > 0) out.push(issue("STEM_NEGATIVE_WORDING", "WARNING", "ITEM", { metrics: { negationTermCount: negations } }));
 
   const allIdx: number[] = [];
@@ -323,15 +425,13 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   const absIdx: number[] = [];
   item.options.forEach((opt, i) => {
     if (!nonEmpty(i)) return;
-    const key = duplicateKey(opt.content);
-    const isAll = ALL_OF_ABOVE_PHRASES.some((p) => key.includes(p));
-    const isNone = NONE_OF_ABOVE_PHRASES.some((p) => key.includes(p));
+    const toks = tokenize(opt.content);
+    // Whole-token phrase matching: "nonexistent ..." / "allocation" never match "none ..." / "all ...".
+    const isAll = ALL_OF_ABOVE_PHRASES.some((p) => containsTerm(toks, p));
+    const isNone = NONE_OF_ABOVE_PHRASES.some((p) => containsTerm(toks, p));
     if (isAll) allIdx.push(i);
     if (isNone) noneIdx.push(i);
-    if (!isAll && !isNone) {
-      const toks = tokenize(opt.content);
-      if (ABSOLUTE_TERMS.some((t) => containsTerm(toks, t))) absIdx.push(i);
-    }
+    if (!isAll && !isNone && ABSOLUTE_TERMS.some((t) => containsTerm(toks, t))) absIdx.push(i);
   });
   if (allIdx.length > 0) out.push(issue("OPTION_ALL_OF_ABOVE", "WARNING", "ITEM", optRefs(allIdx, ids)));
   if (noneIdx.length > 0) out.push(issue("OPTION_NONE_OF_ABOVE", "WARNING", "ITEM", optRefs(noneIdx, ids)));
@@ -413,33 +513,53 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   return out;
 }
 
-/** Total list reader: an unreadable element becomes an empty, unreadable item that set checks skip. */
-function sanitizeList(inputs: unknown): SafeItem[] {
-  const items: SafeItem[] = [];
+const UNREADABLE_ELEMENT: unknown = new Proxy({}, { get() { throw new Error("unreadable"); } });
+
+/**
+ * Total, capped list reader. Reads at most MAX_LINT_BATCH_ITEMS elements; `total` is the true length
+ * so callers can raise SET_ITEMS_TRUNCATED. An unreadable element becomes an unreadable placeholder.
+ */
+function readRawList(inputs: unknown): { list: unknown[]; total: number } {
+  const list: unknown[] = [];
   try {
-    if (!Array.isArray(inputs)) return items;
-    const len = inputs.length;
-    for (let i = 0; i < len; i += 1) {
+    if (!Array.isArray(inputs)) return { list, total: 0 };
+    const total = inputs.length;
+    const take = Math.min(total, MAX_LINT_BATCH_ITEMS);
+    for (let i = 0; i < take; i += 1) {
       try {
-        items.push(sanitize(inputs[i]));
+        list.push(inputs[i]);
       } catch {
-        items.push(emptyItem(true));
+        list.push(UNREADABLE_ELEMENT);
       }
     }
+    return { list, total };
   } catch {
-    return [];
+    return { list: [], total: 0 };
   }
-  return items;
 }
 
 /** Lint a set (SET-scope issues only, deterministic order). Pass item-level results via lintQuestionBatch. */
 export function lintQuestionSet(inputs: unknown): QuestionLintIssue[] {
-  const items = sanitizeList(inputs);
+  const { list, total } = readRawList(inputs);
+  return lintSetFromList(list, total);
+}
+
+function lintSetFromList(list: ReadonlyArray<unknown>, total: number): QuestionLintIssue[] {
+  const items: SafeItem[] = list.map((raw) => {
+    try {
+      return sanitize(raw);
+    } catch {
+      return emptyItem(true);
+    }
+  });
   const n = items.length;
   const out: QuestionLintIssue[] = [];
   const small = n < MIN_SET_SIZE;
 
   if (small) out.push(issue("SET_TOO_SMALL", "WARNING", "SET", { metrics: { itemCount: n, minimum: MIN_SET_SIZE } }));
+  if (total > n) {
+    out.push(issue("SET_ITEMS_TRUNCATED", "WARNING", "SET", { metrics: { itemCount: total, analyzedCount: n, maximum: MAX_LINT_BATCH_ITEMS } }));
+  }
 
   // Stem duplicates.
   const trimmedPrompts = items.map((it) => it.prompt.trim());
@@ -455,14 +575,29 @@ export function lintQuestionSet(inputs: unknown): QuestionLintIssue[] {
   }
 
   const stemSets = items.map((it) => similarityTokenSet(it.prompt));
-  for (let i = 0; i < n; i += 1) {
-    for (let j = i + 1; j < n; j += 1) {
-      if (dupKeys[i] === null || dupKeys[j] === null || dupKeys[i] === dupKeys[j]) continue;
+  // Bounded work: at most MAX_NEAR_DUP_COMPARISONS candidate pairs (lexicographic order) are examined;
+  // if more exist, the cut is reported explicitly (never a silent partial diagnosis).
+  const candidates: number[] = [];
+  for (let i = 0; i < n; i += 1) if (dupKeys[i] !== null) candidates.push(i);
+  const pairsPlanned = (candidates.length * (candidates.length - 1)) / 2;
+  let pairsCompared = 0;
+  nearDup: for (let a = 0; a < candidates.length; a += 1) {
+    for (let b = a + 1; b < candidates.length; b += 1) {
+      if (pairsCompared >= MAX_NEAR_DUP_COMPARISONS) break nearDup;
+      pairsCompared += 1;
+      const i = candidates[a];
+      const j = candidates[b];
+      if (dupKeys[i] === dupKeys[j]) continue;
       const sim = jaccard(stemSets[i], stemSets[j]);
       if (sim >= NEAR_DUPLICATE_STEM_JACCARD) {
         out.push(issue("NEAR_DUPLICATE_STEM", "WARNING", "SET", { itemIndexes: [i, j], metrics: { similarity: round3(sim) } }));
       }
     }
+  }
+  if (pairsCompared < pairsPlanned) {
+    out.push(issue("SET_ANALYSIS_TRUNCATED", "WARNING", "SET", {
+      metrics: { eligibleItems: candidates.length, pairsPlanned, pairsCompared, maximumPairs: MAX_NEAR_DUP_COMPARISONS },
+    }));
   }
 
   if (small) return out;
@@ -544,30 +679,14 @@ export function lintQuestionSet(inputs: unknown): QuestionLintIssue[] {
   return out;
 }
 
-const UNREADABLE_ELEMENT: unknown = new Proxy({}, { get() { throw new Error("unreadable"); } });
-
-/** Convenience: item issues (tagged with itemIndex, in item order) followed by set issues. */
+/** Convenience: item issues (tagged with itemIndex, in item order) followed by set issues. Reads at most MAX_LINT_BATCH_ITEMS items. */
 export function lintQuestionBatch(inputs: unknown): QuestionLintIssue[] {
-  let list: unknown[] = [];
-  try {
-    if (Array.isArray(inputs)) {
-      const len = inputs.length;
-      for (let i = 0; i < len; i += 1) {
-        try {
-          list.push(inputs[i]);
-        } catch {
-          list.push(UNREADABLE_ELEMENT);
-        }
-      }
-    }
-  } catch {
-    list = [];
-  }
+  const { list, total } = readRawList(inputs);
   const out: QuestionLintIssue[] = [];
   list.forEach((it, itemIndex) => {
     for (const i of lintQuestionItem(it)) out.push({ ...i, itemIndex });
   });
-  return out.concat(lintQuestionSet(list));
+  return out.concat(lintSetFromList(list, total));
 }
 
 export interface LintSummary {

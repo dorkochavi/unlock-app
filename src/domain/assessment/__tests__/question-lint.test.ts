@@ -6,8 +6,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   KEY_POSITION_RUN_LENGTH,
+  MAX_LINT_BATCH_ITEMS,
+  MAX_LINT_CORRECT_IDS,
+  MAX_LINT_ID_CHARS,
   MAX_LINT_OPTIONS,
-
+  MAX_LINT_TEXT_CHARS,
+  MAX_NEAR_DUP_COMPARISONS,
   MIN_SET_SIZE,
   lintQuestionBatch,
   lintQuestionItem,
@@ -385,6 +389,7 @@ describe("severity separation and summary", () => {
   const ERRORS = [
     "STEM_EMPTY", "OPTIONS_TOO_FEW", "OPTION_EMPTY", "OPTION_ID_DUPLICATE", "OPTION_DUPLICATE_EXACT",
     "OPTION_DUPLICATE_NORMALIZED", "CORRECT_COUNT_INVALID", "CORRECT_ID_UNKNOWN",
+    "QUESTION_TYPE_UNSUPPORTED", "CORRECT_IDS_TOO_MANY",
   ];
   it("only structural codes are ERROR; ERRORs come before WARNINGs", () => {
     const r = lintQuestionItem({ questionType: "SINGLE_CHOICE", prompt: " ", answerOptions: [{ id: "A", content: "x" }], correctOptionIds: ["Q"], explanation: null });
@@ -540,5 +545,237 @@ describe("hardening after review", () => {
     s[0] = { ...s[0], prompt: invisible };
     s[1] = { ...s[1], prompt: invisible + " " };
     expect(codes(lintQuestionSet(s))).not.toContain("DUPLICATE_STEM_EXACT");
+  });
+});
+
+describe("B4 hardening: Hebrew negation is whole-token", () => {
+  const neg = (prompt: string): boolean => lint({ prompt }, HE_CLEAN).includes("STEM_NEGATIVE_WORDING");
+  it("does not fire for words that merely end in or contain lamed-alef", () => {
+    expect(neg("איזה כלי הוא מלא במים בתוך המעבדה?")).toBe(false); // מלא (full)
+    expect(neg("איזו כוס מלאה במים בתוך המעבדה?")).toBe(false); // מלאה
+    expect(neg("איזו מלאכה נדרשת בתוך המעבדה הזאת?")).toBe(false); // מלאכה
+    expect(neg("איזה מבנה חשוב אלא שהוא נדיר בתוך הגוף?")).toBe(false); // אלא
+    expect(neg("הלא זו הגדרה נכונה של התהליך בגוף?")).toBe(false); // הלא
+    expect(neg("איזה חלק נמצא מחוץ לתא בגוף האדם?")).toBe(false); // מחוץ (prefix mem)
+  });
+  it("still fires for true negation tokens, incl. conjunction/relativizer prefixes", () => {
+    for (const p of [
+      "איזה מבנה לא נמצא בתא החי בגוף?",
+      "איזה מבנה ולא נמצא בתא החי בגוף?",
+      "בחרו מבנה שלא נמצא בתא החי בגוף",
+      "איזה מבנה אינו נמצא בתא החי בגוף?",
+      "איזו מערכת אינה קיימת בתא החי בגוף?",
+      "איזה חלק בלתי נחוץ בתא החי בגוף?",
+      "איזה מבנה אין לו תפקיד בתוך התא החי?",
+      "כל המבנים מלבד אחד נמצאים בתא החי?",
+      "איזה מבנה ללא ממברנה נמצא בתא החי?",
+    ]) expect(neg(p)).toBe(true);
+  });
+  it("English negation terms are whole tokens (notable does not fire)", () => {
+    expect(lint({ prompt: "Which notable structure provides constant lookup time?" })).not.toContain("STEM_NEGATIVE_WORDING");
+    expect(lint({ prompt: "Which structure is not stored contiguously in memory?" })).toContain("STEM_NEGATIVE_WORDING");
+  });
+});
+
+describe("B4 hardening: all/none-of-the-above use token boundaries", () => {
+  const withLast = (last: string): string[] => lint({ answerOptions: opts(["Hash table", "Linked list", "Binary heap", last]) });
+  const withLastHe = (last: string): string[] =>
+    lint({ answerOptions: opts(["נשימה תאית", "פוטוסינתזה", "חלוקת תאים", last]) }, HE_CLEAN);
+
+  it("English true positives", () => {
+    expect(withLast("All of the above")).toContain("OPTION_ALL_OF_ABOVE");
+    expect(withLast("all of the above.")).toContain("OPTION_ALL_OF_ABOVE");
+    expect(withLast("Both are true, all of these")).toContain("OPTION_ALL_OF_ABOVE");
+    expect(withLast("None of the above")).toContain("OPTION_NONE_OF_ABOVE");
+    expect(withLast("None of these")).toContain("OPTION_NONE_OF_ABOVE");
+  });
+  it("English false-positive substrings do not match", () => {
+    for (const t of ["Nonexistent of the above kind", "Overall of these", "Tall of these", "none of the aboves", "Nonexistent of the above", "Overall of the above"]) {
+      const c = withLast(t);
+      expect(c).not.toContain("OPTION_ALL_OF_ABOVE");
+      expect(c).not.toContain("OPTION_NONE_OF_ABOVE");
+    }
+  });
+  it("Hebrew true positives (incl. prefix on first token)", () => {
+    for (const t of ["כל התשובות נכונות", "כולן נכונות", "כל האמור לעיל", 'כל הנ"ל', "וכל התשובות נכונות"]) {
+      expect(withLastHe(t)).toContain("OPTION_ALL_OF_ABOVE");
+    }
+    for (const t of ["אף אחת מהתשובות", "אף תשובה", "אף אחד מהאמור", "אף אחת מהן", "אין תשובה נכונה", "אין אף תשובה"]) {
+      expect(withLastHe(t)).toContain("OPTION_NONE_OF_ABOVE");
+    }
+  });
+  it("Hebrew false-positive substrings do not match", () => {
+    for (const t of ["כל התשובותיהם שונות", "אף תשובתי", "כולנו נכונות", "כולן", "אף תשובות", "דאף תשובה"]) {
+      const c = withLastHe(t);
+      expect(c).not.toContain("OPTION_NONE_OF_ABOVE");
+      expect(c).not.toContain("OPTION_ALL_OF_ABOVE");
+    }
+  });
+});
+
+describe("B4 hardening: questionType contract (secondary linter, defensive totality)", () => {
+  it("QUESTION_TYPE_UNSUPPORTED for unknown, missing, wrong-case and non-string types (content-blind)", () => {
+    for (const t of ["TRUE_FALSE", "", "single_choice", "SINGLE_CHOICE ", undefined, null, 7, {}]) {
+      const r = lintQuestionItem({ ...EN_CLEAN, questionType: t });
+      const hit = r.find((i) => i.code === "QUESTION_TYPE_UNSUPPORTED");
+      expect(hit).toMatchObject({ severity: "ERROR", scope: "ITEM" });
+      expect(hit?.metrics).toBeUndefined();
+    }
+    expect(JSON.stringify(lintQuestionItem({ ...EN_CLEAN, questionType: "SECRETTYPE" }))).not.toContain("SECRETTYPE");
+    expect(lint({})).not.toContain("QUESTION_TYPE_UNSUPPORTED");
+    expect(lint({ questionType: "MULTIPLE_CHOICE", correctOptionIds: ["A", "B"] })).not.toContain("QUESTION_TYPE_UNSUPPORTED");
+  });
+  it("unsupported type still gets type-independent checks but no type-dependent ones", () => {
+    const c = lint({
+      questionType: "TRUE_FALSE",
+      prompt: " ",
+      correctOptionIds: ["A", "B", "Z"],
+      answerOptions: opts(["Hash table", "Hash table", "x", "y"]),
+    });
+    expect(c).toContain("STEM_EMPTY");
+    expect(c).toContain("OPTION_DUPLICATE_EXACT");
+    expect(c).toContain("CORRECT_ID_UNKNOWN");
+    expect(c).not.toContain("CORRECT_COUNT_INVALID");
+    const keyed = lint({
+      questionType: "TRUE_FALSE",
+      answerOptions: opts(["A hash table, giving constant time lookup", "Linked list", "Binary heap", "Sorted array"]),
+    });
+    expect(keyed).toContain("QUESTION_TYPE_UNSUPPORTED");
+    expect(keyed).not.toContain("KEY_LONGEST_OPTION"); // no key-based check for an unsupported type
+  });
+  it("unsupported-type items never feed set key analysis", () => {
+    const s = Array.from({ length: 8 }, (_, i) => setItem(i, 0, { questionType: "TRUE_FALSE" }));
+    const c = codes(lintQuestionSet(s));
+    expect(c).not.toContain("KEY_POSITION_IMBALANCE");
+    expect(c).not.toContain("KEY_POSITION_RUN");
+  });
+  it("defensive structural ERRORs are diagnostics, a clean result is not proof of validity", () => {
+    expect(summarizeLintIssues(lintQuestionItem({ ...EN_CLEAN, correctOptionIds: ["Z"] })).hasErrors).toBe(true);
+  });
+});
+
+describe("B4 hardening: correctOptionIds cap", () => {
+  it("exactly MAX_LINT_CORRECT_IDS is analysed normally", () => {
+    const ids = Array.from({ length: MAX_LINT_CORRECT_IDS }, (_, i) => `k${i}`);
+    const atCap = lint({ questionType: "MULTIPLE_CHOICE", correctOptionIds: ids });
+    expect(atCap).not.toContain("CORRECT_IDS_TOO_MANY");
+    expect(atCap).toContain("CORRECT_ID_UNKNOWN");
+  });
+  it("more than the cap raises CORRECT_IDS_TOO_MANY with the true count and skips misleading checks", () => {
+    const many = Array.from({ length: 200000 }, (_, i) => `k${i}`);
+    const t0 = performance.now();
+    const r = lintQuestionItem({ ...EN_CLEAN, correctOptionIds: many });
+    expect(performance.now() - t0).toBeLessThan(2000);
+    expect(r.find((i) => i.code === "CORRECT_IDS_TOO_MANY")).toMatchObject({
+      severity: "ERROR",
+      scope: "ITEM",
+      metrics: { correctIdCount: 200000, maximum: MAX_LINT_CORRECT_IDS },
+    });
+    expect(codes(r)).not.toContain("CORRECT_COUNT_INVALID");
+    expect(codes(r)).not.toContain("CORRECT_ID_UNKNOWN");
+    expect(lint({ correctOptionIds: Array.from({ length: MAX_LINT_CORRECT_IDS + 1 }, () => "A") })).toContain("CORRECT_IDS_TOO_MANY");
+    const longKey = lint({
+      answerOptions: opts(["A hash table, giving constant time lookup", "Linked list", "Binary heap", "Sorted array"]),
+      correctOptionIds: Array.from({ length: MAX_LINT_CORRECT_IDS + 1 }, () => "A"),
+    });
+    expect(longKey).not.toContain("KEY_LONGEST_OPTION"); // no key resolved from a partial read
+  });
+});
+
+describe("B4 hardening: text and id truncation is explicit", () => {
+  it("long prompt / option / id each raise TEXT_TRUNCATED (content-blind, bounded)", () => {
+    const longText = "word ".repeat(MAX_LINT_TEXT_CHARS);
+    const t0 = performance.now();
+    const r = lintQuestionItem(item({ prompt: longText, answerOptions: opts([longText, "Linked list", "Binary heap", "Sorted array"]) }));
+    expect(performance.now() - t0).toBeLessThan(2000);
+    expect(r.find((i) => i.code === "TEXT_TRUNCATED")).toMatchObject({
+      severity: "WARNING",
+      scope: "ITEM",
+      optionIds: ["A"],
+      optionPositions: [0],
+      metrics: { promptTruncated: 1, optionTruncatedCount: 1, idTruncatedCount: 0, maxTextChars: MAX_LINT_TEXT_CHARS },
+    });
+    const idHit = lintQuestionItem(
+      item({ answerOptions: [{ id: "x".repeat(MAX_LINT_ID_CHARS + 1), content: "Hash table" }, { id: "B", content: "Linked list" }], correctOptionIds: ["B"] }),
+    ).find((i) => i.code === "TEXT_TRUNCATED");
+    expect(idHit?.metrics).toMatchObject({ promptTruncated: 0, optionTruncatedCount: 0, idTruncatedCount: 1 });
+    expect(JSON.stringify(r)).not.toContain("word");
+  });
+  it("text exactly at the cap is not truncated; clean items never raise it", () => {
+    expect(lint({ prompt: `Which ${"x".repeat(MAX_LINT_TEXT_CHARS - 6)}` })).not.toContain("TEXT_TRUNCATED");
+    expect(lint({})).not.toContain("TEXT_TRUNCATED");
+  });
+  it("10 MB strings stay bounded and total", () => {
+    const huge = "ab ".repeat(3_500_000);
+    const t0 = performance.now();
+    const r = lintQuestionBatch([item({ prompt: huge, answerOptions: opts([huge, huge, "x one", "y two"]), explanation: huge })]);
+    expect(performance.now() - t0).toBeLessThan(3000);
+    expect(codes(r)).toContain("TEXT_TRUNCATED");
+  });
+});
+
+describe("B4 hardening: set caps are explicit", () => {
+  const distinctStems = (n: number): Item[] =>
+    Array.from({ length: n }, (_, i) => setItem(i, i % 4, { prompt: `unique stem token${i} alpha${i} beta${i} gamma${i}` }));
+
+  it("constants are bounded", () => {
+    expect(MAX_NEAR_DUP_COMPARISONS).toBe(20000);
+    expect(MAX_LINT_BATCH_ITEMS).toBe(2000);
+  });
+  it("near-duplicate scan within budget is complete: no SET_ANALYSIS_TRUNCATED", () => {
+    expect(codes(lintQuestionSet(distinctStems(200)))).not.toContain("SET_ANALYSIS_TRUNCATED"); // 19900 pairs
+    expect(codes(lintQuestionSet(setOf(BALANCED)))).not.toContain("SET_ANALYSIS_TRUNCATED");
+  });
+  it("near-duplicate scan over budget stops and says so (content-blind metrics)", () => {
+    const t0 = performance.now();
+    const r = lintQuestionSet(distinctStems(300)); // 44850 pairs > 20000
+    expect(performance.now() - t0).toBeLessThan(3000);
+    const hit = r.find((i) => i.code === "SET_ANALYSIS_TRUNCATED");
+    expect(hit).toMatchObject({
+      severity: "WARNING",
+      scope: "SET",
+      metrics: { eligibleItems: 300, pairsPlanned: 44850, pairsCompared: MAX_NEAR_DUP_COMPARISONS, maximumPairs: MAX_NEAR_DUP_COMPARISONS },
+    });
+    expect(JSON.stringify(hit)).not.toContain("unique");
+  });
+  it("near-duplicates inside the budget are still found when the scan is truncated", () => {
+    const s = distinctStems(300);
+    s[0] = { ...s[0], prompt: "Which structure gives constant lookup time in practice today" };
+    s[1] = { ...s[1], prompt: "Which structure gives constant lookup time in practice now" };
+    const r = lintQuestionSet(s);
+    expect(r.find((i) => i.code === "NEAR_DUPLICATE_STEM")?.itemIndexes).toEqual([0, 1]);
+    expect(codes(r)).toContain("SET_ANALYSIS_TRUNCATED");
+  });
+  it("more than MAX_LINT_BATCH_ITEMS: only the first are read, SET_ITEMS_TRUNCATED reports the true count", () => {
+    const big = distinctStems(MAX_LINT_BATCH_ITEMS + 500);
+    const t0 = performance.now();
+    const r = lintQuestionBatch(big);
+    expect(performance.now() - t0).toBeLessThan(15000);
+    expect(r.find((i) => i.code === "SET_ITEMS_TRUNCATED")).toMatchObject({
+      severity: "WARNING",
+      scope: "SET",
+      metrics: { itemCount: MAX_LINT_BATCH_ITEMS + 500, analyzedCount: MAX_LINT_BATCH_ITEMS, maximum: MAX_LINT_BATCH_ITEMS },
+    });
+    expect(Math.max(...r.map((i) => i.itemIndex ?? -1))).toBeLessThan(MAX_LINT_BATCH_ITEMS);
+    expect(codes(r)).toContain("SET_ANALYSIS_TRUNCATED");
+    expect(codes(lintQuestionSet(big))).toContain("SET_ITEMS_TRUNCATED");
+  });
+  it("exactly MAX_LINT_BATCH_ITEMS items is not item-truncated", () => {
+    expect(codes(lintQuestionSet(distinctStems(MAX_LINT_BATCH_ITEMS)))).not.toContain("SET_ITEMS_TRUNCATED");
+  });
+  it("hostile arrays: sparse and huge-length arrays are bounded and total", () => {
+    const t0 = performance.now();
+    const r = lintQuestionSet(new Array(1_000_000));
+    expect(performance.now() - t0).toBeLessThan(5000);
+    expect(codes(r)).toContain("SET_ITEMS_TRUNCATED");
+    expect(() => lintQuestionBatch(new Array(50000))).not.toThrow();
+  });
+});
+
+describe("B4 hardening: OPTIONS_TOO_MANY remains the explicit marker for skipped option analysis", () => {
+  it("reports the true count", () => {
+    const many = Array.from({ length: MAX_LINT_OPTIONS + 1 }, (_, i) => ({ id: `o${i}`, content: `option ${i}` }));
+    const r = lintQuestionItem(item({ answerOptions: many, correctOptionIds: ["o1"] }));
+    expect(r.find((i) => i.code === "OPTIONS_TOO_MANY")?.metrics).toEqual({ optionCount: MAX_LINT_OPTIONS + 1, maximum: MAX_LINT_OPTIONS });
   });
 });

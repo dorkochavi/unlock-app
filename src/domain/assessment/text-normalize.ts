@@ -127,17 +127,25 @@ export function similarityTokenSet(text: unknown): Set<string> {
 /** Jaccard similarity of two sets; 0 when both are empty. */
 export function jaccard(a: ReadonlySet<string>, b: ReadonlySet<string>): number {
   if (a.size === 0 && b.size === 0) return 0;
+  const [small, large] = a.size <= b.size ? [a, b] : [b, a];
   let inter = 0;
-  for (const x of a) if (b.has(x)) inter += 1;
+  for (const x of small) if (large.has(x)) inter += 1;
   return inter / (a.size + b.size - inter);
 }
 
 /**
- * True when `term` (already comparison-normalized, may be multi-word) occurs as a
- * token sequence in `tokens`. The first token may carry up to 3 attached Hebrew
- * prefix letters ("shelo", "vetamid"). WARNING-only heuristic.
+ * True when `term` (already comparison-normalized, space-joined tokens, may be multi-word)
+ * occurs as a WHOLE-TOKEN sequence in `tokens` (word-boundary matching: never a substring of a
+ * longer word). The first token may carry up to `maxPrefixLetters` attached Hebrew prefix letters
+ * drawn from `prefixLetters` ("shelo", "vetamid"). Pass prefixLetters "" for exact-token matching
+ * (English terms, or Hebrew words whose prefixed forms are ambiguous). WARNING-only heuristic.
  */
-export function containsTerm(tokens: readonly string[], term: string): boolean {
+export function containsTerm(
+  tokens: readonly string[],
+  term: string,
+  prefixLetters: string = HEBREW_PREFIX_LETTERS,
+  maxPrefixLetters: number = PREFIX_STRIP_MAX_LETTERS,
+): boolean {
   const parts = term.split(" ");
   for (let i = 0; i + parts.length <= tokens.length; i += 1) {
     let ok = true;
@@ -145,9 +153,9 @@ export function containsTerm(tokens: readonly string[], term: string): boolean {
       const tok = tokens[i + j];
       const want = parts[j];
       if (tok === want) continue;
-      if (j === 0 && HEBREW_WORD.test(tok) && tok.length > want.length && tok.endsWith(want)) {
+      if (j === 0 && maxPrefixLetters > 0 && HEBREW_WORD.test(tok) && tok.length > want.length && tok.endsWith(want)) {
         const prefix = tok.slice(0, tok.length - want.length);
-        if (prefix.length <= PREFIX_STRIP_MAX_LETTERS && Array.from(prefix).every((c) => HEBREW_PREFIX_LETTERS.includes(c))) {
+        if (prefix.length <= maxPrefixLetters && Array.from(prefix).every((c) => prefixLetters.includes(c))) {
           continue;
         }
       }
