@@ -448,6 +448,108 @@ test('No WARN (b): stale snapshot, or unrelated session name', () => {
 });
 
 // ---------------------------------------------------------------------
+// COMPLETE / IN_PROGRESS WARN-only advisories (never FAIL)
+// ---------------------------------------------------------------------
+const GOOD_REPORT = (runId) =>
+  `# Run Report -- ${runId}\n\nStatus: \`COMPLETE\` (local only)\n`;
+
+// Builds a COMPLETE fixture: c0 = START, c1 = content commit (LAST_VERIFIED_HEAD),
+// then the docs/Plan/report are committed on top (the close commit).
+function completeFixture({ runId, report, planExtra = '', lvhIsClose = false }) {
+  const dir = mkTempDir();
+  const [c0, c1] = initFixtureRepo(dir, 2);
+  const plan = (lvh) =>
+    planFixture({ runId, startHead: c0, lastVerifiedHead: lvh, runStatus: 'COMPLETE' }) + planExtra;
+  writeDocs(dir, { plan: plan(c1) });
+  if (report !== null) writeRunReport(dir, runId, report);
+  commitFixtureFiles(dir);
+  if (lvhIsClose) {
+    const close = git(dir, ['rev-parse', 'HEAD']).trim();
+    writeDocs(dir, { plan: plan(close) });
+    commitFixtureFiles(dir, 'fixture: plan edit');
+  }
+  return dir;
+}
+
+const HISTORY = (runId) => `\n## History\n\n- X: \`docs/RUNS/${runId}.md\`\n`;
+
+test('No WARN: well-formed COMPLETE Run (report Status, RUN_ID, History link, LVH below close commit)', () => {
+  const runId = '2026-01-01-FIXTURE-GOODCLOSE';
+  const dir = completeFixture({ runId, report: GOOD_REPORT(runId), planExtra: HISTORY(runId) });
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.doesNotMatch(stdout, /WARN: (Run report|Plan |LAST_VERIFIED_HEAD ".*self-citing)/);
+});
+
+test('WARN: COMPLETE report lacks Status: COMPLETE line or the RUN_ID (still PASS)', () => {
+  const runId = '2026-01-01-FIXTURE-BADREPORT';
+  const dir = completeFixture({ runId, report: '# something else\n\nStatus: IN_PROGRESS\n', planExtra: HISTORY(runId) });
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.match(stdout, /WARN: Run report .* no line-anchored "Status:" line containing COMPLETE/);
+  assert.match(stdout, /WARN: Run report .* does not mention its RUN_ID/);
+});
+
+test('WARN: COMPLETE Plan does not link docs/RUNS/<RUN_ID>.md (still PASS)', () => {
+  const runId = '2026-01-01-FIXTURE-NOLINK';
+  const dir = completeFixture({ runId, report: GOOD_REPORT(runId) });
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.match(stdout, /WARN: Plan does not reference docs\/RUNS\/2026-01-01-FIXTURE-NOLINK\.md/);
+});
+
+test('WARN: LAST_VERIFIED_HEAD is the commit that last touched the Run report (self-cite); not when it is a content commit', () => {
+  const runId = '2026-01-01-FIXTURE-SELFCITE';
+  const bad = completeFixture({ runId, report: GOOD_REPORT(runId), planExtra: HISTORY(runId), lvhIsClose: false });
+  // LVH = content commit c1 (below the close commit): no self-cite WARN.
+  assert.doesNotMatch(runVerifier(bad).stdout, /self-citing/);
+  // Make LVH the commit that added the report (close commit) -> WARN.
+  const dir = mkTempDir();
+  const [c0] = initFixtureRepo(dir, 1);
+  writeRunReport(dir, runId, GOOD_REPORT(runId));
+  writeDocs(dir, { plan: planFixture({ runId, startHead: c0, lastVerifiedHead: c0, runStatus: 'COMPLETE' }) + HISTORY(runId) });
+  commitFixtureFiles(dir);
+  const close = git(dir, ['rev-parse', 'HEAD']).trim();
+  writeDocs(dir, { plan: planFixture({ runId, startHead: c0, lastVerifiedHead: close, runStatus: 'COMPLETE' }) + HISTORY(runId) });
+  commitFixtureFiles(dir, 'fixture: plan edit');
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.match(stdout, /WARN: LAST_VERIFIED_HEAD ".*" may be the commit that last touched the Run report/);
+});
+
+test('WARN: backticked docs/ path in Plan History that does not exist; globs and existing paths are ignored', () => {
+  const runId = '2026-01-01-FIXTURE-DOCPATH';
+  const extra = HISTORY(runId) + '- gone: `docs/RUNS/NOPE.md`\n- glob: `docs/RUNS/**`\n';
+  const dir = completeFixture({ runId, report: GOOD_REPORT(runId), planExtra: extra });
+  const { status, stdout } = runVerifier(dir);
+  assert.equal(status, 0, stdout);
+  assert.match(stdout, /WARN: Plan header\/History references docs\/RUNS\/NOPE\.md/);
+  assert.doesNotMatch(stdout, /references docs\/RUNS\/\*\*/);
+  assert.doesNotMatch(stdout, /references docs\/RUNS\/2026-01-01-FIXTURE-DOCPATH\.md/);
+});
+
+test('WARN: IN_PROGRESS with zero PENDING slice rows; no WARN when a PENDING row exists', () => {
+  const none = planCorruptionFixture('IN_PROGRESS', '| A | x | AUTO | DONE |\n');
+  const r1 = runVerifier(none);
+  assert.equal(r1.status, 0, r1.stdout);
+  assert.match(r1.stdout, /WARN: RUN_STATUS: IN_PROGRESS but .* zero PENDING slice-table rows/);
+  const some = planCorruptionFixture('IN_PROGRESS', SLICE_TABLE_PENDING);
+  assert.doesNotMatch(runVerifier(some).stdout, /zero PENDING/);
+});
+
+test('Dormant: DEV_STATUS prose mentioning RUN_ID mid-line never triggers the RUN_ID mismatch FAIL', () => {
+  const runId = '2026-01-01-FIXTURE-DEVSTATUS';
+  const dir = mkTempDir();
+  const [c0] = initFixtureRepo(dir, 1);
+  writeDocs(dir, {
+    devStatus: '# DEV_STATUS\n\nHooks attribute telemetry to whatever `RUN_ID:` the Plan declares.\n',
+    plan: planFixture({ runId, startHead: c0, runStatus: 'IN_PROGRESS' }) + SLICE_TABLE_PENDING,
+  });
+  commitFixtureFiles(dir);
+  assert.equal(runVerifier(dir).status, 0);
+});
+
+// ---------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------
 console.log('');

@@ -210,6 +210,22 @@ The Plan's Slice queue declares one gate per Slice; this skill owns what each ga
 Do not pause after a Slice merely because it ended; pause only as its gate, a STOP/ESCALATE, or the
 Drift Check requires.
 
+**Decision Packet** (what a HUMAN_DECISION_GATE / `HUMAN_APPROVAL_REQUIRED` stop must hand the human; compact, no new file):
+- DECISION — the single question to answer;
+- WHY NOW — what it blocks, or why it cannot wait;
+- OPTIONS — 2-3 genuine options only; never fabricate alternatives to fill the list;
+- RECOMMENDATION — one option, with the reason;
+- REVERSIBILITY — how to undo each option;
+- COST-RISK — effort, risk, and what each option forecloses;
+- WHAT CAN CONTINUE WITHOUT IT — safe independent work;
+- EXACT HUMAN ACTION — the literal command/click/answer needed.
+
+Whether unrelated safe work may continue past a gate is set by the Run prompt, not by this Skill; the
+packet only reports what could continue.
+
+**Bootstrap.** Skill/rule changes made during a Run do not widen that Run's own authority; they apply
+from the next Run.
+
 ## 8. Goal Lock / Goal vs. Proxy
 
 Keep RUN_GOAL explicit and locked for the duration of the Run. A proxy metric — token usage, cache
@@ -247,14 +263,27 @@ classes or selection logic — it only requires that the step not be skipped.
    (see `docs/DEV_STATUS.md` and `docs/CHATGPT_PLAN.md` for the live shape of these fields, and
    `.claude/telemetry/verify-run-close.mjs` for the deterministic, zero-AI gate that checks them).
 4. Write Run-close docs (`docs/DEV_STATUS.md`, `docs/RUNS/<RUN_ID>.md`) per `CLAUDE.md` §11/§12.
-5. Commit.
-6. Derive the actual closing HEAD from Git after the commit exists — never author a doc that cites
+   Claims in them follow the evidence-class vocabulary in `.claude/rules/testing.md` §13 (do not
+   upgrade an evidence class).
+5. **Canonical truth reconciliation** (before the commit). For every CURRENT/CANONICAL doc this Run
+   modified (Plan, `DEV_STATUS`, `ASSESSMENT_ENGINE`, `CONTEXT_MAP`, ...), inspect its repository-state
+   claims (HEAD, baseline, START_HEAD, LAST_VERIFIED_HEAD, origin/main, Production, deployed commit, tag,
+   "current reality") and reconcile only CURRENT-state claims:
+   - never rewrite historical evidence (Run reports, dated entries, START_HEAD) because HEAD advanced;
+   - prefer explicit labels `START_HEAD` / `LAST_VERIFIED_HEAD` / `LOCAL_HEAD` / `ORIGIN_MAIN` /
+     `PRODUCTION_HEAD` / `RELEASE_TAG` over "current HEAD";
+   - a git commit is not a deployment and `origin/main` is not Production; a Production claim needs provenance;
+   - never cite the closing commit's own hash (step 8).
+6. Run `node .claude/telemetry/verify-run-close.mjs --pre-close` (the Run-close commit does not exist yet,
+   so the tree is dirty); fix FAILs and read WARNs.
+7. Commit.
+8. Derive the actual closing HEAD from Git after the commit exists — never author a doc that cites
    the hash of the very commit it is part of (a Run-close doc cannot correctly self-cite its own
    commit's hash; this is the specific trap the START_HEAD/LAST_VERIFIED_HEAD/RUN_STATUS model
    replaced).
-7. Run the verifier and require a PASS.
-8. Confirm a clean tree.
-9. STOP. Do not push.
+9. Run `node .claude/telemetry/verify-run-close.mjs` (no flag), require a PASS, and read WARNs. On a self-cite WARN, fix `LAST_VERIFIED_HEAD` in a follow-up commit that does not touch the Run report, then re-run.
+10. Confirm a clean tree.
+11. STOP. Do not push.
 
 ## 13. Experiment/Telemetry Hooks
 

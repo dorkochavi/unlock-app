@@ -174,6 +174,14 @@ When reporting evidence, include only what is useful:
 
 Avoid inflating reports with every incidental command.
 
+Evidence classes must not be upgraded in claims or summaries:
+- unit test != integration test; mocked browser != Production; browser != physical device;
+- automated accessibility check != screen-reader verification;
+- git commit != deployed; `origin/main` != Production;
+- `HUMAN_REPORTED` != automated evidence.
+
+State the class actually exercised; when only a lower class exists, say so.
+
 ## 14. Failures
 
 If required verification fails:

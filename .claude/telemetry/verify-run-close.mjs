@@ -16,9 +16,24 @@
  *   identity surface (per CLAUDE.md S2, it owns "current execution").
  *   docs/DEV_STATUS.md is a narrative snapshot; it is consulted only for
  *   an optional RUN_ID cross-check and the legacy-string WARN below;
- * - docs/RUNS/** is checked only for the EXISTENCE of the expected report
- *   file (fs.existsSync) -- its content is never read or scanned. Run
- *   reports are frozen historical ledger entries and out of scope here.
+ * - docs/RUNS/<current RUN_ID>.md (the CURRENT Run's report only) is checked
+ *   for existence (FAIL) and, as WARN-only advisories, for a line-anchored
+ *   `Status:` line containing COMPLETE and for mentioning the RUN_ID. Other
+ *   reports under docs/RUNS/** are frozen historical ledger entries and are
+ *   never read or scanned; historical hashes are never compared to HEAD.
+ *
+ * WARN-only advisories added by the Assessment-Engine-002 hardening (all
+ * deterministic; none can fail a Run):
+ *   - COMPLETE: Run report `Status:` line / RUN_ID mention (above);
+ *   - COMPLETE: Plan does not reference docs/RUNS/<RUN_ID>.md;
+ *   - COMPLETE: LAST_VERIFIED_HEAD is the commit that last touched the Run
+ *     report (the closing commit self-citing -- LAST_VERIFIED_HEAD should be
+ *     the last verified CONTENT commit, below the close commit);
+ *   - COMPLETE: a backticked `docs/...` path (no glob) in the Plan header or
+ *     History does not exist;
+ *   - IN_PROGRESS: slice table has zero PENDING rows (close not yet declared?).
+ * DEV_STATUS RUN_ID cross-check is dormant: DEV_STATUS has no line-anchored
+ * `RUN_ID:` label today, so it never fires; no format is imposed on it.
  *
  * Usage:
  *   node .claude/telemetry/verify-run-close.mjs [--pre-close] [--root <path>]
@@ -113,6 +128,39 @@ export function planPendingSliceRows(content) {
   return content
     .split(/\r?\n/)
     .filter((line) => /^\s*\|.*\|\s*PENDING\b[^|]*\|\s*$/.test(line));
+}
+
+// True when the Plan has at least one slice-table row with a recognised status cell.
+export function planHasSliceStatusRows(content) {
+  if (!content) return false;
+  return content.split('\n').some((line) => {
+    const t = line.trim();
+    if (!t.startsWith('|') || !t.endsWith('|')) return false;
+    const cells = t.split('|');
+    const last = cells[cells.length - 2].trim();
+    return /^(PENDING|DONE|BLOCKED|IN_PROGRESS|SKIPPED)/.test(last);
+  });
+}
+
+// Backticked docs/... paths in the Plan header (before the first "## ") and in
+// the "## History" section. Glob/placeholder paths are skipped. Pure.
+export function planDocPathRefs(content) {
+  if (!content) return [];
+  const firstH2 = content.search(/^## /m);
+  const header = firstH2 === -1 ? content : content.slice(0, firstH2);
+  const histStart = content.search(/^## History\b/m);
+  let hist = '';
+  if (histStart !== -1) {
+    const rest = content.slice(histStart + 3);
+    const next = rest.search(/^## /m);
+    hist = next === -1 ? rest : rest.slice(0, next);
+  }
+  const text = header + '\n' + hist;
+  const out = new Set();
+  for (const m of text.matchAll(/`(docs\/[^`\s*<>{}]+)`/g)) {
+    out.add(m[1].replace(/#.*$/, '').replace(/[:.,;)]+$/, ''));
+  }
+  return [...out];
 }
 
 function gitRefExists(root, ref) {
@@ -249,6 +297,43 @@ function gitOutput(root, args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 }
 
+// WARN-only advisories for a COMPLETE Run whose report file exists.
+export function checkCompleteAdvisories({ root, runId, plan, reportPath, lastVerifiedHead }) {
+  const warns = [];
+  const report = readFileSafe(reportPath) ?? '';
+  const statusLine = report.match(/^[ \t]*Status:[ \t]*(.*)$/m);
+  if (!statusLine || !/COMPLETE/.test(statusLine[1])) {
+    warns.push(
+      `Run report docs/RUNS/${runId}.md has no line-anchored "Status:" line containing COMPLETE.`
+    );
+  }
+  if (!report.includes(runId)) {
+    warns.push(`Run report docs/RUNS/${runId}.md does not mention its RUN_ID "${runId}".`);
+  }
+  if (!plan.includes(`docs/RUNS/${runId}.md`)) {
+    warns.push(`Plan does not reference docs/RUNS/${runId}.md.`);
+  }
+  for (const ref of planDocPathRefs(plan)) {
+    if (!fs.existsSync(path.join(root, ref))) {
+      warns.push(`Plan header/History references ${ref}, which does not exist.`);
+    }
+  }
+  if (lastVerifiedHead) {
+    try {
+      const lvh = gitOutput(root, ['rev-parse', '--verify', `${lastVerifiedHead}^{commit}`]);
+      const lastTouch = gitOutput(root, ['log', '-1', '--format=%H', '--', `docs/RUNS/${runId}.md`]);
+      if (lastTouch && lvh === lastTouch) {
+        warns.push(
+          `LAST_VERIFIED_HEAD "${lastVerifiedHead}" may be the commit that last touched the Run report (possibly self-citing the close commit; ignore if that commit was a content commit) -- cite the last verified CONTENT commit instead.`
+        );
+      }
+    } catch {
+      // unresolved refs are reported by the FAIL checks; nothing to add here.
+    }
+  }
+  return warns;
+}
+
 export function runVerification({ root, preClose }) {
   const fails = [];
   const warns = [];
@@ -318,7 +403,17 @@ export function runVerification({ root, preClose }) {
     const reportPath = path.join(root, 'docs', 'RUNS', `${runId}.md`);
     if (!fs.existsSync(reportPath)) {
       fails.push(`RUN_STATUS: COMPLETE but expected Run report ${reportPath} is missing.`);
+    } else {
+      warns.push(...checkCompleteAdvisories({ root, runId, plan, reportPath, lastVerifiedHead }));
     }
+  } else if (
+    runStatus === 'IN_PROGRESS' &&
+    planPendingSliceRows(plan).length === 0 &&
+    planHasSliceStatusRows(plan)
+  ) {
+    warns.push(
+      `RUN_STATUS: IN_PROGRESS but ${planPath} has zero PENDING slice-table rows -- Run finished but RUN_STATUS not yet COMPLETE (or slice table missing)?`
+    );
   }
 
   if (lastVerifiedHead) {
