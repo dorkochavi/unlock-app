@@ -1,35 +1,34 @@
-# UNLOCK — ASSESSMENT-ENGINE-002 — DevOS Hardening (Track A) + Assessment Engine Foundation Run 002 (Track B)
+# UNLOCK — ASSESSMENT-ENGINE-003 — Calibration Hardening + Blueprint Foundation + DevOS Telemetry Attribution
 
-PLAN_VERSION: 026
-RUN_ID: 2026-10-08-ASSESSMENT-ENGINE-002
-START_HEAD: `a066435`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `0694749`
-STATUS: **COMPLETE** — Run closed; STOP. Local only (unpushed, undeployed). No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/Google contact.
+PLAN_VERSION: 027
+RUN_ID: 2026-10-08-ASSESSMENT-ENGINE-003
+START_HEAD: `f729e65`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `f729e65`
+STATUS: **IN_PROGRESS** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Track A (first): harden the Development OS only where recent Runs show repeated friction; prefer deterministic tooling and existing owners over new Skills.
-Track B: Assessment Engine foundation: reconcile canonical doc/ledger -> harden linter -> Golden Dataset -> calibration -> plain-text ingestion foundation (or design only).
+A: fix coarse per-Slice telemetry attribution (smallest change to an existing owner).
+B: harden deterministic question-linter false positives, recalibrate Golden Dataset, classify known false negatives, prepare Hebrew human review queue (FUB-060 stays open), readiness recheck (no integration).
+C: Learning Objectives v0.1 + Assessment Blueprint v0.1 design; pure deterministic blueprint validation prototype if justified.
 Principle: DETERMINISTIC BY DEFAULT. SEMANTIC AI ONLY WHERE NECESSARY. HUMAN AUTHORITY AT PUBLICATION.
 Canonical owner of product direction: `docs/ASSESSMENT_ENGINE.md`.
 
 ## 2. Invariants
-No push/merge/rebase/tag/deploy/force; no hosted Supabase/Vercel mutation; no migration; no dependency change; no external AI/Google calls; no auto-publication; no FSRS/scheduler/mastery/Today/Practice/Attempts change; CSV/JSON import, manual authoring and publish lifecycle unchanged; Skills changed in this Run do not widen this Run's authority (bootstrap rule).
+No push/merge/rebase/tag/deploy/force; no hosted Supabase/Vercel mutation; no migration/schema; no dependency change; no external AI/Google calls; no auto-publication; no FSRS/scheduler/mastery change; linter not wired into import/UI; no new Skill; Skill/rule changes do not widen this Run's authority.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A1-A2 | Skill ownership audit; run-close decision | AUTO | DONE |
-| A3-A4 | Canonical truth reconciliation rule; verifier hardening + tests | REVIEW_GATE | DONE |
-| A5-A6 | Decision Packet owner; evidence-audit decision | AUTO | DONE |
-| A7 | Simulation CASE 1-7; Track A review | REVIEW_GATE | DONE |
-| B1-B3 | AE doc / ledger / anatomy reconciliation | AUTO | DONE |
-| B4 | Linter hardening + contract | REVIEW_GATE | DONE |
-| B5-B6 | Golden Dataset v0.1; calibration | REVIEW_GATE | DONE |
-| B7 | Plain-text ingestion foundation (prototype or design) | REVIEW_GATE | DONE |
-| Z | Resequencing, final review, Run close | FINAL_GATE | DONE |
+| A | Telemetry attribution hardening | REVIEW_GATE | PENDING |
+| B1-B2 | FP root cause + fixes | REVIEW_GATE | PENDING |
+| B3-B4 | Recalibration; FN disposition | REVIEW_GATE | PENDING |
+| B5 | Hebrew human review queue; readiness recheck | AUTO | PENDING |
+| C1-C2 | Learning Objectives + Blueprint design | AUTO | PENDING |
+| C3-C4 | Blueprint pure validation + scenarios | REVIEW_GATE | PENDING |
+| L | Ledger, review, Run close | FINAL_GATE | PENDING |
 
 ## History
 
@@ -37,6 +36,3 @@ No push/merge/rebase/tag/deploy/force; no hosted Supabase/Vercel mutation; no mi
 - ASSESSMENT-ENGINE-NIGHT-001: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-NIGHT-001.md`
 - Q3-A11Y-NIGHT-001: `docs/RUNS/2026-10-08-Q3-A11Y-NIGHT-001.md`
 - TODAY-LEARNING-RECAP-004: `docs/RUNS/2026-10-07-TODAY-LEARNING-RECAP-004.md`
-- VISUAL-POLISH-RUN-003: `docs/RUNS/2026-10-07-VISUAL-POLISH-RUN-003.md`
-- DESIGN-REFRESH-OVERNIGHT-002: `docs/RUNS/2026-10-07-DESIGN-REFRESH-OVERNIGHT-002.md`
-- (earlier Runs: see `docs/RUNS/**`)
