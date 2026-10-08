@@ -1,7 +1,7 @@
 # Assessment Linter Calibration Report - Golden Dataset v0.1
 
 Status: DRAFT evidence artifact. Created in Run `2026-10-08-ASSESSMENT-ENGINE-002` (B5 + B6; AE-004, AE-033, AE-034, AE-046); regenerated in Run `2026-10-08-ASSESSMENT-ENGINE-003`, Slice B3.
-Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`). Run 002 numbers were measured at `c2941d6` with no linter change. The linter WAS changed in Run 003 (Slices B2/B4): historical commits `2e379e2` (rule-level fixes for the 4 golden false positives) and `ee4494e` (bounded Latin/Cyrillic/Greek homoglyph fold in the duplicate key). The generated sections below, and sections 2-3, reflect the Run 003 linter; sections 4-5 are the Run 002 snapshot, annotated where Run 003 superseded them. No integration verdict is made here (Run 003 Slice B5).
+Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`). Run 002 numbers were measured at `c2941d6` with no linter change. The linter WAS changed in Run 003 (Slices B2/B4): historical commits `2e379e2` (rule-level fixes for the 4 golden false positives) and `ee4494e` (bounded Latin/Cyrillic/Greek homoglyph fold in the duplicate key). The generated sections below, and sections 2-3, reflect the Run 003 linter; section 4 is the Run 003 Slice B5 integration recheck (verdict NOT_READY, recommendation only) and section 5 is the Run 002 list annotated where Run 003 superseded it. Section 10 is a human review queue for FUB-060 prep (MODEL_REVIEWED_NOT_HUMAN_APPROVED; FUB-060 remains open).
 
 ## 1. What this is (and is not)
 
@@ -149,29 +149,29 @@ All thresholds are product-design defaults, not research-backed. Verdict rules: 
 | SET_KEY_LENGTH_BIAS_SHARE (0.5, min 8 eligible) | 1 TP (7 of 12 strictly longest by a few characters); balanced set silent | KEEP-provisional | Strictly-longest is a strict, low-noise criterion; no counter-evidence. |
 | STEM_TEMPLATE_SHARE (0.4) / TOKEN_COUNT (3) | 1 TP (6 of 12); 0 FP | KEEP-provisional | No counter-evidence; single case only. |
 
-## 4. INTEGRATION READINESS (Run 002 snapshot, superseded by Run 003 Slice B5)
+## 4. INTEGRATION READINESS (Run 003 Slice B5 recheck; replaces the Run 002 snapshot)
 
-> Historical: figures below (4 of 18 CLEAN warn, 2 HEURISTIC_GAP) describe the Run 002 linter. Current numbers are in the generated headline. A fresh integration verdict is deferred to Run 003 Slice B5 and is NOT made here.
-
-**Verdict (Run 002): NOT_READY** for wiring into any instructor-facing flow. This is a recommendation; nothing is integrated in this Slice (AE-031 stays gated).
+**Verdict: NOT_READY** for wiring into any instructor-facing flow. This is a recommendation only; nothing is wired and AE-031 stays gated. Run 002 was also NOT_READY; the Run 003 improvements (0 FP, 0 of 18 CLEAN warn) change the false-positive criterion but not the verdict, for the reasons below.
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| Contract clarity | PASS | Header states: secondary quality linter, defensive structural diagnostics only, ERROR is not authoritative validation, unsupported questionType handling, no silent truncation. Codes are content-blind. |
-| Bounded runtime | PASS | Hostile cases pass: 60 options, 60 correct ids, ~6000-char prompt and option, throwing input, a 2001-item set (explicit `SET_ITEMS_TRUNCATED` + `SET_ANALYSIS_TRUNCATED`). The whole dataset runs in well under a second. |
-| Stable codes | PASS | Code names, scopes and severities are unchanged by calibration and pinned by the regression test. |
-| Determinism | PASS | Identical report on repeated runs (asserted); no clock, randomness or IO in the linter or harness. |
-| False-positive behaviour | FAIL (for default-on use) | 4 of 18 CLEAN cases warn. `OPTION_ABSOLUTE_TERM` flags common words (`מרק`, `ברק`; by the same mechanism `שכל`, `שום`). `STEM_NEGATIVE_WORDING` flags `חוץ` and `at least`. Set-level `KEY_POSITION_IMBALANCE` is analytically noisy on small fair sets. |
-| Hebrew behaviour | WATCH | Normalization is strong. Word-list checks suffer prefix collisions; inflection is not handled (2 HEURISTIC_GAP misses on stem/key leakage and near-duplicate stems). Labels lack Hebrew-fluent annotator review. |
-| Blocking semantic false confidence | WATCH | A clean lint result is silent on ambiguity, implausible distractors, paraphrase duplicates, topic and cognitive balance (6 unsupported semantic cases). Safe only if the surface never presents "no warnings" as "good question" and never blocks or auto-approves on lint. |
+| Contract clarity, bounded runtime, stable codes, determinism | PASS (unchanged since Run 002) | Hostile/bounded cases pass, codes pinned by regression test, identical report on repeated runs, no clock/IO/randomness. |
+| False-positive behaviour on the fixture | PASS, but fixture-fit | 0 FP, 0 of 18 CLEAN warn. The Run 003 fixes were made against the same 89 cases that measure them (tuned-on-test), so this is not evidence of a low false-positive rate on real content. |
+| Hebrew label validity | OPEN (blocking) | FUB-060 remains OPEN: no Hebrew-fluent human has reviewed the labels. The queue in section 10 is `MODEL_REVIEWED_NOT_HUMAN_APPROVED`. |
+| Fixture size and provenance | FAIL | 89 synthetic, single-author cases; no real authored items; per-code NEG counts are small; no inter-annotator agreement. |
+| Remaining misses | WATCH | 6 FN: 3 HEURISTIC_GAP (inflection x2, overlap boundary) and 3 NOT_IMPLEMENTED (AE-029). Known-limit dispositions in section 9. |
+| Warning stability | WATCH | Rule fixes traded recall for precision (section 7: `בכל/לכל/מכל/ככל` recall loss, `שום`, `חוץ מ…`, `at least`); position rules analytically noisy on small sets (section 3). Stability on real content is untested. |
+| Thresholds | WATCH | All provisional product-design defaults (section 3); several WATCH. |
+| Blocking semantic false confidence | WATCH | 6 unsupported semantic cases: a clean lint result says nothing about ambiguity, distractor plausibility, paraphrase duplicates, topic or cognitive balance. |
 
-### Conditions to reach READY_FOR_INTEGRATION (advisory-only)
+### Exit criteria for READY_FOR_INTEGRATION (advisory-only)
 
-1. Fix or constrain the known false-positive families (section 5, items 1-2) and re-run this calibration with the KNOWN_FALSE_POSITIVE entries removed.
-2. Replace or suppress the set-level `KEY_POSITION_IMBALANCE` rule with a significance-aware rule (section 5, item 4) or gate it behind a larger minimum set size.
-3. Surface lint only as non-blocking advisory text with explicit wording that automated checks cannot judge correctness, ambiguity or distractor quality; no pass/fail badge, no publish gating, no score.
-4. Have a Hebrew-fluent reviewer confirm or correct the Hebrew labels, and grow the dataset from real linter false positives/negatives (synthetic or properly cleared).
-5. Reconcile code names with the existing import validator (AE-031) before any wiring.
+1. FUB-060 closed by a Hebrew-fluent human (decisions recorded in section 10), with label corrections applied and this report regenerated.
+2. Fixture extended with real or properly cleared authored items, including purpose-built negatives (similar-but-distinct options, short stems, garlic/`שום`, prefixed absolute uses), measured on cases NOT used to tune rules (held-out split).
+3. Position-imbalance rule made significance-aware or gated by a larger minimum set size (section 5, item 4).
+4. Surface is non-blocking advisory text only: no pass/fail badge, no score, no publish gating, wording that automated checks cannot judge correctness, ambiguity or distractor quality.
+5. Reconcile code names with the import validator (AE-031) before any wiring.
+6. Threshold WATCH items re-examined against the larger fixture; known-limit recall losses (section 7) sized on real Hebrew options.
 
 ## 5. Suggested linter fixes (Run 002 list; status after Run 003)
 
@@ -246,3 +246,31 @@ Each remaining or newly fixed false negative has an explicit disposition (B4 res
 | WEAK-GRAMMAR-CUE-EN-01 | ARTICLE_MISMATCH | TOO_NOISY / FUTURE_RESEARCH | Phonetic a/an exceptions; English-only. |
 | WEAK-STYLE-CUE-HE-01 | OPTION_STYLE_OUTLIER | FUTURE_RESEARCH | No calibrated thresholds; the length part is covered by existing checks. |
 | WEAK-COMBINATION-EN-01 | OPTION_COMBINATION_REFERENCE | KEEP_AS_KNOWN_LIMIT (deferred) | Best next candidate (AE-029). |
+
+## 10. Human review queue (FUB-060 prep)
+
+Status of everything in this section: `MODEL_REVIEWED_NOT_HUMAN_APPROVED`. A model selected these cases and wrote the questions; no Hebrew-fluent human has judged them. **FUB-060 REMAINS OPEN.** Claude does not satisfy that gate; only a human decision recorded below can, and no label has been changed by this section.
+
+Selection criterion: Golden cases whose ground-truth label depends on Hebrew-fluent judgment (naturalness of wording, negation reading, whether prefix/normalization changes meaning, distractor plausibility, morphology/boundary labels) plus the cases touched by the Run 003 B2 rule fixes. Obvious cases are excluded: structural, English, digit/bidi/zero-width/niqqud/maqaf/gershayim normalization, all/none-of-the-above, and the other Hebrew cases whose label is mechanical. **16 of 89 Golden cases are queued**, plus 1 row with no Golden case (the `בכל/לכל` recall loss, pinned only by a unit test). Hebrew text is copied verbatim from `golden-dataset-v0-1.ts`; options are shown in dataset order with the key marked `[KEY]`.
+
+How Dor records decisions: put `APPROVED`, `CHANGE: <new label or wording>` or `REJECT: <reason>` in the Decision column of each row (or in a commit that edits the fixture), then close FUB-060 in `docs/FOLLOW_UP_BACKLOG.md` yourself. Label changes require regenerating the report.
+
+| # | Case ID | Stem and options | Expected label / warning | Why review is needed | Question for Dor | Decision |
+|---|---|---|---|---|---|---|
+| 1 | FP-ABSOLUTE-SOUP-01 | איזה מזון חם מוגש לרוב בתחילת ארוחה בצהריים? / קינוח / מרק [KEY] / סלט / כריך | CLEAN; OPTION_ABSOLUTE_TERM forbidden | Run 003 B2 touched; `מרק` vs prefix+`רק` | Is `מרק` unambiguously the noun here, and is the stem natural Hebrew? | |
+| 2 | FP-ABSOLUTE-LIGHTNING-01 | איזו תופעת טבע נראית בשמיים בזמן סערה חזקה? / שלג / ברק [KEY] / ערפל / קשת | CLEAN; OPTION_ABSOLUTE_TERM forbidden | Run 003 B2 touched; `ברק` vs `ב`+`רק` | Same as 1; is `ברק` read only as lightning? | |
+| 3 | FP-NEGATION-HE-HUTZ-01 | איזה גוף ממשלתי מנהל את הקשרים עם מדינות אחרות בנושא מדיניות חוץ? / משרד החוץ [KEY] / משרד התחבורה / משרד הבריאות / משרד החקלאות | CLEAN; STEM_NEGATIVE_WORDING forbidden | Run 003 B2 touched; `חוץ` noun vs negation | Would a fluent speaker read any negative wording in this stem? Is the wording natural? | |
+| 4 | WEAK-NEGATION-HE-PREFIX-01 | בחרו את החיה שלא חיה במים בדרך כלל. / דג / דולפין / פרה [KEY] / כריש | STEM_NEGATIVE_WORDING | `שלא` (relativizer+negation) form; fix must not lose it | Is `שלא חיה` read as negative wording that can trip learners? Is the sentence natural? | |
+| 5 | WEAK-ABSOLUTE-HE-PREFIX-01 | איזה משפט מתאר נכון את מזג האוויר בישראל? / חם בקיץ ויבש [KEY] / חם ותמיד לח / קר כך שתמיד יורד שלג / קר ובהיר | OPTION_ABSOLUTE_TERM | `ותמיד`, `שתמיד` prefixed forms | Do `ותמיד` and `שתמיד` read as absolute-language cues? Is `קר כך שתמיד…` natural? | |
+| 6 | WEAK-LEAKAGE-HE-PREFIX-01 | מי אישרה את ההחלטה בנושא התקציב השנתי? / מורה בבית ספר / ועדת התקציב השנתי [KEY] / נהג אוטובוס / שחקן כדורסל | KEY_STEM_LEXICAL_OVERLAP | Prefix stripping (ה/ו/ב) must preserve meaning | Does the overlap (התקציב, השנתי) really give the key away, or is it incidental? | |
+| 7 | WEAK-LEAKAGE-HE-INFLECTION-01 (KNOWN_MISS HEURISTIC_GAP) | מהי הסיבה העיקרית לעליית המחירים של סחורות? / מזג אוויר נעים / העלייה במחיר הסחורות [KEY] / מספר ימי חופשה / גודל העיר | KEY_STEM_LEXICAL_OVERLAP (linter misses) | Label hinges on inflection (מחיר/המחירים, עלייה/עליית) | Does the key leak the stem to a fluent reader? Is the key natural Hebrew? | |
+| 8 | CLEAN-HE-MALE-01 | הנוסע הגיע מלא תקווה אלא שהמלון היה סגור. מה היה מצב המלון? / פתוח / סגור [KEY] / מלא / נטוש | CLEAN | `מלא`/`אלא` near-miss for negation | Is any negation read here? Is the stem natural, and is `מלא` a plausible distractor? | |
+| 9 | OVERLAP-OPTIONS-HE-BOUNDARY-01 (KNOWN_MISS HEURISTIC_GAP) | איזו הגדרה מתארת נכון את המושג כוח בפיזיקה? / גורם שמשנה את מהירות הגוף [KEY] / גורם שמשנה את מהירות הגוף בפועל / מקום שבו מאחסנים מים / סוג של חומר מתכתי | OPTION_OVERLAP_HIGH (Jaccard 0.833 < 0.85) | Label claims options 1 and 2 are near-identical to a reader | Do these two options read as near-identical (is the item flawed)? Does `בפועל` change meaning? | |
+| 10 | SET-NEAR-DUP-INFLECTION-01 (KNOWN_MISS HEURISTIC_GAP) | Items 2 and 11 stems (other 10 items from the clean pool): איזה חיה נחשבת לבעלת חיים נפוצה בבית אצל משפחות קטנות? / איזו חיות נחשבות לבעלות חיים נפוצים בבתים אצל משפחה קטנה? | NEAR_DUPLICATE_STEM (linter misses) | Stems are deliberately inflected and may be ungrammatical Hebrew | Are these stems grammatical, and do they assess the same fact? | |
+| 11 | SET-NEAR-DUP-STEM-01 | Items 2 and 11 stems: איזה גז חיוני לנשימה של בני אדם בכל יום רגיל בבית? / איזה גז חיוני לנשימה של בני אדם בכל יום רגיל בחוץ? | NEAR_DUPLICATE_STEM | Differs only by `בבית`/`בחוץ` | Are these the same assessed fact (should the pair be flagged)? Is `בחוץ` vs `בבית` a meaningful difference? | |
+| 12 | WEAK-STYLE-CUE-HE-01 (KNOWN_MISS NOT_IMPLEMENTED) | איזה פריט משמש לכתיבה על דף נייר? / עט / שולחן / הוא משמש לכתיבה על דף נייר ולרישום הערות. [KEY] / כיסא | OPTION_STYLE_OUTLIER (+ KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE, KEY_STEM_LEXICAL_OVERLAP) | Label hinges on style naturalness and on the key not naming an item | Is the key a style outlier a reader would use as a cue? Is the item otherwise acceptable? | |
+| 13 | SEM-AMBIGUOUS-01 | איזו חיה נחשבת לגדולה ביותר בקרב היונקים? / לווייתן כחול [KEY] / פיל אפריקאי / ג'ירפה / היפופוטם | Semantic only: ambiguous `גדולה ביותר` | Ambiguity of `גדולה ביותר` is a language judgment | Is the stem really ambiguous (mass vs height vs land), or is the key clear enough? | |
+| 14 | SEM-DISTRACTORS-PLAUSIBLE-01 | איזו בירה נמצאת על גדות נהר התמזה? / לונדון [KEY] / פריז / ברלין / רומא | Semantic only: plausible distractors | `בירה` also means "beer" in Hebrew; stem wording | Is `איזו בירה` natural for "which capital", or does the beer reading confuse? Are the distractors plausible? | |
+| 15 | SEM-DISTRACTORS-IMPLAUSIBLE-01 | איזו בירה נמצאת על גדות נהר התמזה? / לונדון [KEY] / פיצה / כחול / שבע | Semantic only: implausible distractors | Same stem wording; distractor plausibility | Same wording question as 14; are `פיצה`/`כחול`/`שבע` implausible enough to give the key away? | |
+| 16 | DUP-NORM-FINAL-LETTER-01 | איזו עיר היא בירת מדינת ישראל? / ירושלים [KEY] / חיפה / ירושלימ / אילת | OPTION_DUPLICATE_NORMALIZED | Normalization folds final/medial letters; `ירושלימ` is a misspelling | Should a misspelling with a medial mem count as "the same option"? Does folding change meaning? | |
+| 17 | (no Golden case; unit test in `question-lint.test.ts`) | An option such as `לכל התאים` (`בכל` / `לכל` / `מכל` / `ככל` forms) | Currently NOT flagged (accepted recall loss, section 7); `ורק`/`וכל` are flagged | Run 003 B2 deliberately traded recall for precision | Is the lost recall acceptable, i.e. would a reviewer want such absolute-language options flagged? | |
