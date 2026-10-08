@@ -1,4 +1,5 @@
 import { Button } from "@/components/button";
+import { Notice } from "@/components/notice";
 
 /** "Create another Question" action + its error (PREVIEW-QA-FIX-001). Visibility is decided by the caller. */
 export function CreateAnotherAction({
@@ -21,7 +22,7 @@ export function CreateAnotherAction({
           {creating ? creatingLabel : label}
         </Button>
       </div>
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <Notice tone="error">{error}</Notice> : null}
     </div>
   );
 }

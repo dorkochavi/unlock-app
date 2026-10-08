@@ -26,6 +26,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
+import { Notice } from "@/components/notice";
 import { Input, Label, Select, Textarea } from "@/components/input";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
@@ -646,9 +647,9 @@ export default function InstructorQuestionEditorPage() {
                   />
                 </label>
 
-                {saveError ? <p className="text-sm text-danger">{saveError}</p> : null}
+                {saveError ? <Notice tone="error">{saveError}</Notice> : null}
                 {!saveError && savedAt !== null ? (
-                  <p className="text-sm text-state-solid">{messages.questionEditor.saveSuccess}</p>
+                  <Notice tone="success">{messages.questionEditor.saveSuccess}</Notice>
                 ) : null}
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -674,9 +675,9 @@ export default function InstructorQuestionEditorPage() {
                   ) : null}
                 </div>
 
-                {publishError ? <p className="text-sm text-danger">{publishError}</p> : null}
+                {publishError ? <Notice tone="error">{publishError}</Notice> : null}
                 {!publishError && publishedAt !== null ? (
-                  <p className="text-sm text-state-solid">{messages.questionEditor.publishSuccess}</p>
+                  <Notice tone="success">{messages.questionEditor.publishSuccess}</Notice>
                 ) : null}
 
                 {shouldShowCreateAnother({

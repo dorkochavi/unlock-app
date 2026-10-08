@@ -24,6 +24,7 @@ import { useParams } from "next/navigation";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
+import { Notice } from "@/components/notice";
 import { Label, Select, Textarea } from "@/components/input";
 import { LoadingState, StateBlock } from "@/components/state-block";
 import { buildSignInHref } from "@/lib/safe-redirect";
@@ -411,7 +412,7 @@ export default function InstructorImportPage() {
                   </Button>
                 </div>
 
-                {previewState.kind === "error" ? <p className="text-sm text-danger">{previewState.message}</p> : null}
+                {previewState.kind === "error" ? <Notice tone="error">{previewState.message}</Notice> : null}
               </div>
             </Card>
           </fieldset>
@@ -488,7 +489,7 @@ export default function InstructorImportPage() {
                 </div>
               )}
 
-              {confirmState.kind === "error" ? <p className="mt-2 text-sm text-danger">{confirmState.message}</p> : null}
+              {confirmState.kind === "error" ? <Notice tone="error" className="mt-2">{confirmState.message}</Notice> : null}
             </Card>
           ) : null}
         </div>

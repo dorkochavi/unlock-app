@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 
 import { Button, ButtonLink } from "@/components/button";
 import { Card } from "@/components/card";
+import { Notice } from "@/components/notice";
 import { Input, Label } from "@/components/input";
 import { getMessages } from "@/messages";
 
@@ -106,7 +107,7 @@ export default function NewInstructorCoursePage() {
             <Input type="date" value={examDate} onChange={(event) => setExamDate(event.target.value)} />
           </label>
 
-          {error ? <p className="text-sm text-danger">{error}</p> : null}
+          {error ? <Notice tone="error">{error}</Notice> : null}
 
           <div className="flex gap-3">
             <Button type="submit" disabled={submitting}>

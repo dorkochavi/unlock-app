@@ -129,11 +129,17 @@ describe("CreateAnotherAction markup", () => {
     expect(html).toContain(he.questionEditor.creatingAnother);
     expect(html).not.toContain("יצירת שאלה נוספת");
   });
+  it("has no alert when there is no error", () => {
+    const html = renderToStaticMarkup(<CreateAnotherAction {...props} creating={false} error={null} />);
+    expect(html).not.toContain("role=");
+  });
   it("shows the Hebrew create error", () => {
     const html = renderToStaticMarkup(
       <CreateAnotherAction {...props} creating={false} error={he.questionEditor.createAnotherError} />,
     );
     expect(html).toContain(he.questionEditor.createAnotherError);
+    expect(html).toContain('role="alert"');
+    expect(html.match(/role="alert"/g)).toHaveLength(1);
   });
 });
 
