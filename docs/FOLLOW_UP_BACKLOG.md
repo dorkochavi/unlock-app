@@ -1606,15 +1606,13 @@ Decision to wire lint (FUB-055), or any Run that touches the linter heuristics. 
 
 # FUB-060 — Native-Hebrew Review of Golden Dataset Labels
 
-**Status:** `DEFERRED` — human action
+**Status:** `RESOLVED` (Run 2026-10-08-ASSESSMENT-ENGINE-HEBREW-REVIEW-001; human review by Dor, 2026-10-08)
 **Priority:** `LOW`
 **Area:** `src/domain/assessment/golden/**`
 
-The Hebrew labels of Golden Dataset v0.1 (ground truth, expected codes) were written without review by a Hebrew-fluent annotator. A fluent reviewer should confirm or correct them; annotator recruitment and agreement protocol is a group E decision (`docs/ASSESSMENT_ENGINE.md` 19.5, 27.1). Pointer: `docs/ASSESSMENT_CALIBRATION_V0_1.md` Sections 1 and 6. **Update (Run 003):** still OPEN and human-only; a 17-row review queue (`MODEL_REVIEWED_NOT_HUMAN_APPROVED`) is prepared in `docs/ASSESSMENT_CALIBRATION_V0_1.md` Section 10 for the reviewer. It blocks the Hebrew-label-validity readiness criterion (Section 4).
+**Closure:** All 17 queued Hebrew review rows (`docs/ASSESSMENT_CALIBRATION_V0_1.md` Section 10) received human review (Dor, 2026-10-08): 12 approved unchanged, 5 required fixture/wording changes (FP-ABSOLUTE-SOUP-01, WEAK-ABSOLUTE-HE-PREFIX-01, WEAK-LEAKAGE-HE-INFLECTION-01, SET-NEAR-DUP-INFLECTION-01, SEM-AMBIGUOUS-01), 0 rejected. The changes were applied (case IDs kept, still 89 cases) and the calibration report was regenerated afterwards; totals are unchanged and no new disagreement appeared.
 
-## Promotion Trigger
-
-Before any calibration result is used to justify wiring lint or changing a threshold.
+**Not claimed:** this is a single-reviewer review of a synthetic fixture. It is not psychometric, production or real-course validation, and there is no inter-annotator agreement. Closing it satisfies only the Hebrew-label-review criterion; integration readiness stays NOT_READY (calibration Section 4; remaining blockers include FUB-063, FUB-064, residual FUB-059). Annotator recruitment/agreement protocol remains a group E decision (`docs/ASSESSMENT_ENGINE.md` 19.5, 27.1).
 
 ---
 
