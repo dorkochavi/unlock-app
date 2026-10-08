@@ -11,8 +11,10 @@ Every non-trivial statement carries (or sits under a heading that carries) one o
 
 | Label | Meaning |
 |---|---|
-| **CURRENT REALITY** | True of the committed repository at HEAD `882dc5b` (code, migrations, tests, accepted docs). |
-| **RUN OUTPUT** | Produced by Run `2026-10-08-ASSESSMENT-ENGINE-NIGHT-001` (documents, and any artifact the Run lists in Section 29). Not product behavior. |
+| **CURRENT REALITY** | True of the committed repository (code, migrations, tests, accepted docs) as inspected when the statement was last reconciled (Run 002, B1). Re-verify against code before relying on it; no git ref is claimed as "current". |
+| **RUN 001 OUTPUT** (also written RUN OUTPUT) | Produced by Run `2026-10-08-ASSESSMENT-ENGINE-NIGHT-001`, ending at `a066435` (RUN 001 END): this document and the linter prototype (Section 29). Not product behavior. |
+| **RUN 002** | Planned or in-progress work of Run `2026-10-08-ASSESSMENT-ENGINE-002` (Run START_HEAD = RUN 001 END `a066435`). PLANNED never means done. |
+| **HUMAN GATE** | A decision only the human owner can make (Section 27.1). |
 | **FUTURE DESIGN** | A proposed design. Not built. Nothing under this label may be read as implemented. |
 | **SPECULATION / OPEN QUESTION** | Unresolved; may be wrong; needs research or a human decision. |
 
@@ -20,7 +22,7 @@ Research claims carry a second tag: **SUPPORTED BY RESEARCH** (with the verifica
 
 ## How to read
 
-- Sections 1-3 are intent and principles. 4-11 are the analytical core (what code can do vs what AI/humans must do, and the concrete lint checks). 12-19 are the knowledge/blueprint/provenance/pipeline/evaluation design. 20-27 cover ingestion, review, feedback, cost, risks and open questions; 28 is the Capability Ledger (the place to look up what is built, designed, gated, or needs AI); 29-30 state what this Run produced and what remains.
+- Sections 1-3 are intent and principles. 4-11 are the analytical core (what code can do vs what AI/humans must do, and the concrete lint checks). 12-19 are the knowledge/blueprint/provenance/pipeline/evaluation design. 20-27 cover ingestion, review, feedback, cost, risks and open questions; 28 is the Capability Ledger (the place to look up what is built, designed, gated, or needs AI); 29-30 state what Run 001 produced and what remains (Run 002 changes are logged in 28.4). Section 5.1 and 28.3 record Run 002 decisions.
 - If you only need the lint rules: Sections 10 and 11. If you only need "do we need AI for X": Section 4.
 - Nothing here changes the Learning Engine, FSRS/scheduler, mastery, or misconception-to-mastery inference. No AI provider, SDK, or model is chosen.
 
@@ -43,7 +45,7 @@ Source Material -> extraction -> normalized document -> knowledge map
 
 Eventually the system should "understand": what is worth learning; which objective an item assesses; the intended cognitive level; the intended difficulty; the source evidence; why the correct answer is correct; why each distractor is wrong; which misconception each distractor may represent; coverage of the material; set-level bias and redundancy; and generated-versus-observed difficulty.
 
-**CURRENT REALITY.** None of the pipeline exists. What exists is a structured text import (JSON/CSV) of already-written questions into DRAFT, a content validator, and the authoring/publish lifecycle (Section 3.1 and Section 20 in a later Slice).
+**CURRENT REALITY.** The pipeline above does not exist as a product flow. What exists is: a structured text import (JSON/CSV) of already-written questions into DRAFT, a content validator, the authoring/publish lifecycle (Sections 3.3 and 20), and one RUN 001 OUTPUT code artifact: a pure, deterministic, **unwired** linter prototype in `src/domain/assessment/` (Sections 10-11; ledger AE-001..003, PROTOTYPED, not VERIFIED). No ingestion, knowledge map, blueprint, generator, critic, or review workspace exists.
 
 ## 2. Product principles
 
@@ -80,7 +82,7 @@ Eventually the system should "understand": what is worth learning; which objecti
 - `src/domain/import/types.ts`: `CanonicalQuestionRow {sourceRowNumber, topicName, questionType, prompt, answerOptions:{id,content}[], correctOptionIds, explanation|null}` and `validateCanonicalQuestionRowContent`.
 - `PILOT_CONTENT_VALIDATOR` (`src/application/import/validate-import-source.ts`, `scripts/validate-import.mjs`): codes with severity ERROR/WARNING, content-blind, includes a `DUPLICATE_PROMPT` warning.
 - `assertQuestionPublishReady` (`src/domain/question/types.ts`): the single strict structural publish gate. `QUESTION_TYPES = SINGLE_CHOICE | MULTIPLE_CHOICE`.
-- Pedagogical checks (position bias, length, distinctiveness, distractor plausibility, option-count distribution, templated/duplicate detection) are deferred as FUB-035 in `docs/FOLLOW_UP_BACKLOG.md`. **CURRENT REALITY: none of them exist.**
+- Pedagogical checks (position bias, length, distinctiveness, distractor plausibility, option-count distribution, templated/duplicate detection) were deferred as FUB-035 in `docs/FOLLOW_UP_BACKLOG.md`. **CURRENT REALITY:** none of them run in any import, publish, API or UI flow. A subset of the heuristic ones (position, length, overlap, templating, duplicates) exists only as the unwired RUN 001 OUTPUT linter prototype (Section 10 status note); distractor plausibility and semantic checks do not exist.
 
 ## 4. AI Necessity Matrix
 
@@ -134,16 +136,24 @@ Rule of thumb (**PRODUCT DESIGN DECISION**): the only operations needing AI are 
 | misconception category | USEFUL LATER | none | Section 8; NOT fed to mastery. |
 | correct-answer rationale | CORE NOW | partially: `explanation` | |
 | explanation | CORE NOW | `explanation|null` | |
-| source provenance | USEFUL LATER | none | Section 15. |
-| generator provenance (model/process) | USEFUL LATER | none | Needed only once a generator exists. |
-| generation version (prompt/pipeline) | USEFUL LATER | none | For reproducibility and A/B. |
-| confidence | NOT YET JUSTIFIED | none | Model self-confidence is poorly calibrated (SPECULATION/OPEN QUESTION); prefer lint + critic findings. |
-| quality warnings | CORE NOW | none persisted | Output of linter; advisory. |
-| lint result | CORE NOW | none persisted | Derived; recompute by content hash rather than store as truth. |
+| source provenance | CORE for machine-generated items; optional for manually authored (decision 5.1) | none | Section 15. |
+| generator provenance (model/process) | CORE once automated generation exists; not needed before (5.1) | none | Mandatory for any generated item. |
+| generation version (prompt/pipeline) | CORE once automated generation exists (5.1) | none | For reproducibility and A/B. |
+| confidence | NOT YET JUSTIFIED (re-affirmed, 5.1) | none | Model self-confidence is poorly calibrated (SPECULATION/OPEN QUESTION); prefer lint + critic findings. |
+| quality warnings | CORE NOW | computed by the unwired linter prototype; none persisted | Output of linter; advisory. |
+| lint result | CORE NOW | computed only, never stored; no flow calls the prototype | Derived; recompute by content hash rather than store as truth. |
 | semantic critique result | USEFUL LATER | none | Only when escalated. |
 | instructor review state | CORE NOW (for engine proposals) | draft/publish lifecycle exists for questions | Proposal batch needs approve/edit/reject state (Section 22). |
 | observed difficulty | USEFUL LATER (feedback loop) | none | Derived from Attempts; never stored on the QuestionVersion. |
 | observed distractor effectiveness | USEFUL LATER (feedback loop) | none | Derived; Section 23. |
+
+### 5.1 Run 002 decisions (B3) - PRODUCT DESIGN DECISION, human to confirm
+
+1. **Source provenance is CORE for machine-generated questions and optional for manually authored ones.** A generated item without a traceable source cannot be reviewed for groundedness, so a generated proposal lacking provenance is not review-ready (PROVENANCE_MISSING, META, applies to engine proposals only). Manually authored/imported items keep working without it; the instructor is the source of authority. Nothing is enforced today: no generator and no provenance storage exist.
+2. **Generator provenance and generation version become mandatory the moment automated generation exists.** Without them, outputs cannot be reproduced, compared across prompt/model changes, or audited. Until a generator exists they stay unused (no speculative fields).
+3. **Intended difficulty is never observed difficulty** (re-affirmed, Sections 6.1 and 7.1). They are separate fields; observed values are derived from Attempts and never written into QuestionVersions. A lint or UI must label the first as "intended".
+4. **No generic confidence score is promoted.** No concrete consumer is justified and self-reported model confidence is poorly calibrated. Revisit only if calibration evidence (Section 18.1) shows a score predicts instructor acceptance. Lint findings and critic findings remain the explainable signals.
+5. Tier changes above are design decisions only: no schema, migration or field was added.
 
 Constraint (**CURRENT REALITY**): QuestionVersions and Attempts are immutable. New engine metadata must not mutate historical evidence; derived metrics are computed from Attempts, not written into versions.
 
@@ -281,9 +291,9 @@ Classification: **DET** = deterministically detectable; **HEUR** = heuristic (fa
 
 ## 10. Item-Level Linter
 
-**FUTURE DESIGN (Run is design-only; the linter module is a separate later Slice).** Home (planned): `src/domain/assessment/question-lint.ts` with `__tests__/question-lint.test.ts`. Pure TypeScript, no I/O, deterministic.
+**Design: FUTURE DESIGN beyond the implemented subset below; the subset is a RUN 001 OUTPUT prototype.** Home: `src/domain/assessment/question-lint.ts` with `__tests__/question-lint.test.ts`. Pure TypeScript, no I/O, deterministic. Run 002 work on it (B4 hardening, B5 Golden Dataset, B6 calibration) is PLANNED, not done.
 
-**RUN OUTPUT (status note).** A pure prototype of this linter exists in `src/domain/assessment/question-lint.ts` (with `text-normalize.ts`; commits e2d55eb and 022bfed; 52 unit tests). **Implemented ITEM ERRORS:** INPUT_UNREADABLE, OPTIONS_TOO_MANY, STEM_EMPTY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE, OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_COUNT_INVALID, CORRECT_ID_UNKNOWN. **Implemented ITEM WARNINGS:** STEM_TOO_SHORT, STEM_NEGATIVE_WORDING, OPTION_ALL_OF_ABOVE, OPTION_NONE_OF_ABOVE, OPTION_ABSOLUTE_TERM, KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE, KEY_STEM_LEXICAL_OVERLAP, OPTION_OVERLAP_HIGH, OPTION_WHITESPACE_ANOMALY, EXPLANATION_MISSING. Every other code in 10.3 is **not implemented**, including all META checks (they need metadata that does not exist today). The prototype is **not wired** into import, publish, API, or UI; it is unit-tested only and was reviewed by one general reviewer. Status: PROTOTYPED (Section 28), not verified. The remainder of this section is the design, still **FUTURE DESIGN** where it exceeds the list above.
+**RUN 001 OUTPUT (status note).** A pure prototype of this linter exists in `src/domain/assessment/question-lint.ts` (with `text-normalize.ts`; commits e2d55eb and 022bfed; 52 unit tests). **Implemented ITEM ERRORS:** INPUT_UNREADABLE, OPTIONS_TOO_MANY, STEM_EMPTY, OPTIONS_TOO_FEW, OPTION_EMPTY, OPTION_ID_DUPLICATE, OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_COUNT_INVALID, CORRECT_ID_UNKNOWN. **Implemented ITEM WARNINGS:** STEM_TOO_SHORT, STEM_NEGATIVE_WORDING, OPTION_ALL_OF_ABOVE, OPTION_NONE_OF_ABOVE, OPTION_ABSOLUTE_TERM, KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE, KEY_STEM_LEXICAL_OVERLAP, OPTION_OVERLAP_HIGH, OPTION_WHITESPACE_ANOMALY, EXPLANATION_MISSING. Every other code in 10.3 is **not implemented**, including all META checks (they need metadata that does not exist today). The prototype is **not wired** into import, publish, API, or UI; it is unit-tested only and was reviewed by one general reviewer. Status: PROTOTYPED (Section 28), not verified. The remainder of this section is the design, still **FUTURE DESIGN** where it exceeds the list above.
 
 ### 10.1 Contract
 
@@ -381,7 +391,7 @@ Notes:
 
 ## 11. Assessment-Set Linter
 
-**RUN OUTPUT (status note).** The prototype implements these **SET WARNINGS** only: SET_TOO_SMALL, DUPLICATE_STEM_EXACT, DUPLICATE_STEM_NORMALIZED, NEAR_DUPLICATE_STEM, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS, STEM_TEMPLATE_REPEATED. Not implemented: NEAR_DUPLICATE_ITEM, SET_OPTION_COUNT_MIXED, ALL_OR_NONE_OVERUSE, QUESTION_TYPE_MONO, and every META check. The prototype is **not wired** into any flow. It has no set-size cap constant (only `MAX_LINT_OPTIONS = 50` per item); a `MAX_LINT_SET_ITEMS` cap is a recommended, unimplemented hardening (AE-032).
+**RUN 001 OUTPUT (status note).** The prototype implements these **SET WARNINGS** only: SET_TOO_SMALL, DUPLICATE_STEM_EXACT, DUPLICATE_STEM_NORMALIZED, NEAR_DUPLICATE_STEM, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS, STEM_TEMPLATE_REPEATED. Not implemented: NEAR_DUPLICATE_ITEM, SET_OPTION_COUNT_MIXED, ALL_OR_NONE_OVERUSE, QUESTION_TYPE_MONO, and every META check. The prototype is **not wired** into any flow. It has no set-size cap constant (only `MAX_LINT_OPTIONS = 50` per item); a `MAX_LINT_SET_ITEMS` cap is a recommended, unimplemented hardening (AE-032).
 
 **FUTURE DESIGN.** Operates on an ordered list of items (a proposal batch, or a draft set assembled for a topic/course). Same issue shape as Section 10, `scope: SET`, `rows` listing the affected item indexes. Minimum set size for statistics: 8 items (**product default**; below that, distribution checks are skipped and `SET_TOO_SMALL` is emitted once).
 
@@ -531,7 +541,7 @@ Stage 6 is skipped for LOW-risk items. Stage 7 is skipped when no findings exist
 
 ## 17. AI Escalation Policy
 
-**FUTURE DESIGN; no provider, SDK, model, or LLM call is chosen or made by this Run.**
+**FUTURE DESIGN; no provider, SDK, model, or LLM call is chosen or made anywhere in the repo (CURRENT REALITY).**
 
 Risk is determined after deterministic lint, per item, by code, from metadata and lint output:
 
@@ -580,7 +590,7 @@ Rules:
 
 ## 19. Golden Dataset Approach
 
-**FUTURE DESIGN.** A small, hand-curated, **synthetic** dataset that fixes the expected behavior of the linter and (later) critic.
+**FUTURE DESIGN.** A small, hand-curated, **synthetic** dataset that fixes the expected behavior of the linter and (later) critic. **CURRENT REALITY:** no fixtures exist (AE-004 DESIGNED; AE-033 IDEA). **RUN 002:** Golden Dataset v0.1 (B5) and threshold calibration (B6) are PLANNED, not done. Until it exists, every linter threshold is an unvalidated default and the linter stays PROTOTYPED.
 
 ### 19.1 Constraints
 
@@ -672,7 +682,7 @@ Binary, unstructured documents (DOCX, PDF) differ in kind: they are binary, need
 
 ### 21.1 DOCX
 
-**Status: DESIGNED, not implemented in this Run.** A hand-rolled bounded reader is feasible with `node:zlib` and **no new dependency** (the repo has no zip, XML, or PDF parser today; `inflateRawSync` with `maxOutputLength` gives a hard decompression cap). Extraction targets `word/document.xml`: paragraphs/runs/text (`w:p`, `w:r`, `w:t`), `w:tab`, `w:br`, `w:hyperlink` text, tables (`w:tbl`); headings via paragraph style (style ids can be localized, so mapping through `styles.xml` is more reliable than names); Hebrew is stored in logical order (no reversal needed; `w:bidi`/`w:rtl` are direction hints); tracked deletions (`w:delText`) are skipped.
+**Status: DESIGNED; no code exists (CURRENT REALITY).** A hand-rolled bounded reader is feasible with `node:zlib` and **no new dependency** (the repo has no zip, XML, or PDF parser today; `inflateRawSync` with `maxOutputLength` gives a hard decompression cap). Extraction targets `word/document.xml`: paragraphs/runs/text (`w:p`, `w:r`, `w:t`), `w:tab`, `w:br`, `w:hyperlink` text, tables (`w:tbl`); headings via paragraph style (style ids can be localized, so mapping through `styles.xml` is more reliable than names); Hebrew is stored in logical order (no reversal needed; `w:bidi`/`w:rtl` are direction hints); tracked deletions (`w:delText`) are skipped.
 
 **HUMAN_GATE:** whether to hand-roll or to adopt a vetted library, and how much security-review budget to spend, is a human decision (group B). A hand-rolled reader trades dependency risk for the burden of hostile-input tests and a security review.
 
@@ -717,7 +727,11 @@ There is **no Google OAuth** in the repo; authentication is Supabase email/passw
 | Pilot suitability | Suitable | Not recommended | Not suitable (needs human decision and review) |
 | Long-term | Always remains a fallback | Likely dropped | Possible destination |
 
-### 21.4 Staged recommendation (recommended, human to confirm)
+### 21.4 Format roadmap (PROVISIONAL, Run 002 B2 note; the parent updates it after plain-text evidence)
+
+Evaluated order, lowest risk first: **plain text paste -> DOCX -> PDF text -> Google export/upload (option A) -> authenticated connector (later)**. Plain text has no binary parsing, so it is the first prototype (AE-025, Run 002 B7, PLANNED) and gives evidence about normalization, chunking and Hebrew handling that later extractors reuse. DOCX needs a hostile-input parser: the hand-roll vs library choice and security-review budget are a **HUMAN GATE** (group B). PDF needs a new dependency: **HUMAN GATE** (group B). Google option A needs no Google-specific code once DOCX/PDF exist; the connector is a **HUMAN GATE** (group D). Nothing here is implemented.
+
+### 21.5 Staged recommendation (recommended, human to confirm)
 
 1. Stage 1 - option A: Google Doc exported as DOCX (or PDF) and uploaded through the DOCX/PDF path. No Google-specific code.
 2. Stage 2 - maybe option B, only if instructors report the export step as a real obstacle and the SSRF controls are accepted.
@@ -770,7 +784,7 @@ Illustrative insights (examples of what the system could eventually say, not cur
 | Minimum sample | Roughly 100+ responses for stable CTT estimates | `memory`; OPEN QUESTION for UNLOCK cohort sizes |
 | Distractors from student responses | Deriving misconception-based distractors from labeled student responses (Shin, Guo, Gierl 2019) | SUPPORTED BY RESEARCH (`seen` summary) |
 | Validity frameworks (Kane, Messick) | Argument-based framing of what scores mean | `memory`; PRODUCT DESIGN DECISION whether to adopt |
-| Item response theory | Model-based difficulty and ability estimates | SPECULATION: no source was reviewed in this Run |
+| Item response theory | Model-based difficulty and ability estimates | SPECULATION: no source was reviewed in Run 001 |
 | Pre-data difficulty prediction | Predicting difficulty from features before any responses | OPEN QUESTION (open research; Kurdi et al. 2020 `seen`: generators are weak on difficulty control) |
 
 All of these require response volume, privacy decisions, and a human owner (AE-038, AE-039).
@@ -817,7 +831,7 @@ Metrics to collect once AI is ever used (AE-035): AI calls per document and per 
 
 | Group | When needed | Decision |
 |---|---|---|
-| A | Before merging current code | A1. Accept the pure linter prototype (not wired) into the main line as is, or hold it. A2. Is advisory-only status acceptable until wiring is decided? A3. Keep thresholds as named defaults? |
+| A | Status of existing code (the prototype is already committed, so this is about its accepted status) | A1. Keep the pure linter prototype (not wired) as is, or hold/remove it. A2. Is advisory-only status acceptable until wiring is decided? A3. Keep thresholds as named defaults? |
 | B | Before implementing PDF/DOCX | B1. DOCX: hand-roll vs vetted library; security review budget. B2. PDF dependency approval (candidate library, CVE review). B3. Persistence of uploads/proposal batches (OQ-023, OQ-024) or stay stateless. B4. Upload cap and transport (about 4 MB vs direct-to-storage). B5. OCR in or out of V1 (currently out). |
 | C | Before using AI | C1. Whether to use AI at all. C2. Provider/SDK/model and data-handling terms. C3. Stakes level (formative vs graded) for escalation policy. C4. Budget and cost ceilings. C5. Human approval policy for AI content (OQ-038). C6. Critic calibration set and annotators. |
 | D | Before a Google connector | D1. Whether to build one. D2. OAuth app ownership, scopes, consent screen. D3. Token storage and threat model. D4. Security review. |
@@ -834,72 +848,81 @@ Metrics to collect once AI is ever used (AE-035): AI calls per document and per 
 
 ## 28. Capability Ledger
 
-**RUN OUTPUT (documentation); every capability below is labeled by its true status.** Status vocabulary: IDEA, RESEARCHED, DESIGNED, PROTOTYPED, IMPLEMENTED, VERIFIED, DEFERRED, HUMAN_GATE, REJECTED. Nothing is IMPLEMENTED or VERIFIED. The only code that exists is the pure linter prototype (AE-001, AE-002, AE-003): **PROTOTYPED, not wired into any flow, unit-tested only (52 tests), reviewed by one general reviewer.** Every other capability is **FUTURE DESIGN**. Phase values (NOW, NEXT, LATER) are **recommended, human to confirm**; they do not promote work.
+**Labels: CURRENT REALITY (status of each row), FUTURE DESIGN (phases and next steps), HUMAN GATE (decisions column).** Every capability is labeled by its true status. Status vocabulary: IDEA, RESEARCHED, DESIGNED, PROTOTYPED, IMPLEMENTED, VERIFIED, DEFERRED, HUMAN_GATE, REJECTED. Nothing is IMPLEMENTED or VERIFIED. The only code that exists is the pure linter prototype (AE-001, AE-002, AE-003): **PROTOTYPED, not wired into any flow, unit-tested only (52 tests as of RUN 001 END `a066435`), reviewed by one general reviewer.** Status moves only on evidence: DESIGNED never becomes IMPLEMENTED without code, and PROTOTYPED never becomes VERIFIED without evidence beyond unit tests (at minimum Golden Dataset results, Section 19). Phase values (NOW, NEXT, LATER) are recommended, human to confirm; they do not promote work. "Run 002" markers in the Next step column mean PLANNED or in progress in Run `2026-10-08-ASSESSMENT-ENGINE-002`, not done (B4 linter hardening, B5 Golden Dataset v0.1, B6 calibration, B7 plain-text ingestion prototype).
 
-| ID | Capability | Why | Status | Evidence / location | Limitations | Dependencies | Human decisions | Phase | Needs AI? | Code-deterministic? |
-|---|---|---|---|---|---|---|---|---|---|---|
-| AE-001 | Item-level deterministic linter (S10) | Catch structural and heuristic item flaws without AI | PROTOTYPED | `src/domain/assessment/question-lint.ts`, `text-normalize.ts`; commits e2d55eb, 022bfed; 52 unit tests; 10 ERROR + 11 WARNING item codes | Not wired into any flow; unit-tested only; one general review; thresholds are product defaults; remaining item codes unimplemented (AE-029) | AE-003 | Where results surface (AE-031) | NOW | No | Yes |
-| AE-002 | Set-level deterministic linter (S11) | Catch set-level bias and redundancy | PROTOTYPED | `src/domain/assessment/question-lint.ts`, `text-normalize.ts`; commits e2d55eb, 022bfed; 52 unit tests; 8 SET codes | As AE-001; META set checks need metadata (AE-030); no set-size cap yet (AE-032) | AE-001, AE-003 | Surface location (AE-031) | NOW | No | Yes |
-| AE-003 | Hebrew-aware comparison normalization (S10.2) | Reliable duplicate/overlap detection on Hebrew text | PROTOTYPED | `text-normalize.ts` (commits e2d55eb, 022bfed) | Not validated against a Golden Dataset; prefix heuristic has accepted false positives; thresholds unvalidated | - | Hebrew-fluent reviewer for dataset (AE-004) | NOW | No | Yes |
-| AE-004 | Golden Dataset design (synthetic, Hebrew-first) | Fix expected linter/critic behavior; regression base | DESIGNED | Section 19 | No fixtures exist; annotators and agreement protocol undecided | - | Annotators; protocol (group E) | NEXT | No | Yes |
-| AE-005 | AI Necessity Matrix and escalation policy | Spend AI only where code cannot decide | DESIGNED | Sections 4, 17 | Risk thresholds are defaults; stakes level undecided | - | Stakes level (formative vs graded) | NEXT | Optional | Partly |
-| AE-006 | Question anatomy / metadata fields | Define which metadata is core vs later | DESIGNED | Section 5 | No schema or migration; none stored today | - | Which fields become persisted (OQ-023 related) | NEXT | No | Yes |
-| AE-007 | Pedagogical question type taxonomy | Shared vocabulary for blueprint and review | DESIGNED | Section 6 | Taxonomy choice unresolved; Anderson-Krathwohl is memory-level only | - | Taxonomy choice | NEXT | No | Yes |
-| AE-008 | Difficulty model v0.1 (intended vs observed) | Intended difficulty without coupling to FSRS | DESIGNED | Section 7 | No pre-data difficulty prediction is validated (open research) | AE-006 | Label scale | LATER | Optional | Partly |
-| AE-009 | Distractor model and taxonomy | Each distractor knows why it exists | DESIGNED | Section 8 | Misconception tags are metadata only | AE-006 | Taxonomy ownership | NEXT | Optional | Partly |
-| AE-010 | Knowledge map | Know what is worth assessing | IDEA | Section 12 | Needs semantic extraction; no design of storage | AE-023, AE-024 | Instructor approval workflow | LATER | Required | Partly |
-| AE-011 | Assessment blueprint | Prevent coverage collapse | DESIGNED | Section 13 | Allocation arithmetic only designed; objectives need instructor input | AE-006, AE-010 | Blueprint ownership | LATER | Optional | Partly |
-| AE-012 | Duplicate / equivalence model | Detect exact to assessment-equivalent duplicates | DESIGNED | Section 14; exact/normalized/near-stem levels prototyped inside AE-002 | Semantic and assessment-equivalent levels need AI; separate from learner anti-repeat | AE-002 | None | NEXT | Optional | Partly |
-| AE-013 | Provenance model | Answer where a question came from | DESIGNED | Section 15 | No storage; page precision not promised | AE-016 | Storage decision (OQ-023) | NEXT | No | Yes |
-| AE-014 | Generator / critic / review pipeline | End-to-end engine contract | DESIGNED | Section 16 | Only stage 5 (lint) has a prototype; no stage is wired | AE-001, AE-016 | Per-stage human gates | LATER | Optional | Partly |
-| AE-015 | Evaluation framework (profile) | No opaque single score | DESIGNED | Section 18 | No harness; metrics not collected | AE-004 | AI-judge calibration | LATER | Optional | Partly |
-| AE-016 | Content Ingestion layer architecture | Separate async layer for binary sources | DESIGNED | Section 20 | Architecture only; no code; entity names not mandated | - | Persistence (OQ-023/024); upload transport | NEXT | No | Yes |
-| AE-017 | Authenticated Google Docs/Drive connector (option C) | Direct import from Google | HUMAN_GATE | Section 21.3 | Repo has email/password auth only; needs OAuth app, scopes, token storage, threat model | AE-016 | Group D decisions | LATER | No | Yes |
-| AE-018 | Instructor review workspace | Human authority at publication | IDEA | Section 22 | Design concept only; no UI | AE-022, AE-036 | Review policy | LATER | No | Yes |
-| AE-019 | Real-world feedback loop | Compare intended vs observed quality | IDEA | Section 23 | Needs response volume; no schema; no FSRS change allowed | AE-038 | Analytics scope, privacy | LATER | No | Yes |
-| AE-020 | Misconception-to-mastery inference | Possible learner modeling | DEFERRED | Out of scope; Learning Engine untouched | Would alter the Learning Engine; no accepted decision | - | Product/ADR decision | LATER | No | Partly |
-| AE-021 | Semantic critic / AI escalation execution | Judge grounding and ambiguity | IDEA | Section 17 | No provider, SDK, or call chosen; judge reliability uncalibrated | AE-005, AE-004 | Group C decisions | LATER | Required | No |
-| AE-022 | Proposal-batch confirm path | Replace raw-text re-parse for engine path | IDEA | Sections 16, 20 | Current confirm re-sends raw text; not changed | AE-036 | Persistence decision | NEXT | No | Yes |
-| AE-023 | DOCX text extractor (bounded, hand-rolled) | First non-text source; no new dependency | DESIGNED | Section 21.1; facts in Run feasibility notes | Not implemented this Run; needs hostile-input tests and security review | AE-016 | Hand-roll vs vetted library; security review budget (group B) | NEXT | No | Yes |
-| AE-024 | PDF text extractor (text-only, no OCR) | Common instructor source format | HUMAN_GATE | Section 21.2 | Needs a vetted library (new dependency); Hebrew visual-order caveats | AE-016 | Dependency approval (group B) | LATER | No | Yes |
-| AE-025 | Plain-text paste ingestion | Lowest-risk source, no binary parsing | IDEA | Section 20 | No UI or route | AE-016 | None | NEXT | No | Yes |
-| AE-026 | Google option A: export DOCX/PDF then upload | Google content with no OAuth | DESIGNED | Section 21.3 | Manual instructor step; no provenance link to the Google file | AE-023, AE-024 | None beyond AE-023/024 | NEXT | No | Yes |
-| AE-027 | Google option B: public/shareable link fetch | Convenience without OAuth | DEFERRED | Section 21.3 | Server-side fetch of user URLs (SSRF risk); weak permissions model | AE-016 | Group D decisions | LATER | No | Yes |
-| AE-028 | Blueprint coverage checker | Verify cells filled and limits respected | IDEA | Sections 11, 13 | Needs blueprint and metadata | AE-011, AE-030 | None | LATER | No | Yes |
-| AE-029 | Remaining unimplemented lint codes | Complete the designed non-META checks | DESIGNED | Sections 10.3, 11.1; list in Section 10 RUN OUTPUT note | Not implemented: STEM_NO_QUESTION_FORM, STEM_DOUBLE_NEGATIVE, OPTION_COMBINATION_REFERENCE, OPTION_STYLE_OUTLIER, OPTION_PREFIX_STEM_REPEAT, ARTICLE_MISMATCH, OPTION_NUMERIC_UNORDERED, OPTION_COUNT_UNUSUAL, OPTION_PUNCTUATION_INCONSISTENT, EXPLANATION_NAMES_ONLY_KEY, NEAR_DUPLICATE_ITEM, SET_OPTION_COUNT_MIXED, ALL_OR_NONE_OVERUSE, QUESTION_TYPE_MONO | AE-001, AE-002 | Which to prioritize | NEXT | No | Yes |
-| AE-030 | META lint checks (provenance, topic, objective, cognitive, difficulty, coverage) | Coverage/bias checks over metadata | DESIGNED | Sections 10.3, 11.1 | Metadata does not exist today; checks no-op without it | AE-006 | Metadata persistence | LATER | No | Yes |
-| AE-031 | Lint wiring into import validator; reconcile with DUPLICATE_PROMPT | Make lint results visible to instructors | IDEA | Sections 11.1, 16 | Not wired; code-name reconciliation undecided; no UI | AE-001, AE-002 | Where and how shown; blocking vs advisory | NEXT | No | Yes |
-| AE-032 | Set-size cap MAX_LINT_SET_ITEMS | Bound batch lint cost (pairwise comparisons) | IDEA | Identified gap: only MAX_LINT_OPTIONS = 50 exists in the module | Not implemented; batch lint has no item-count cap | AE-002 | Cap value | NEXT | No | Yes |
-| AE-033 | Golden dataset fixtures (code) | Regression base for lint changes | IDEA | Section 19 | No fixtures; needs Hebrew-fluent review | AE-004 | Annotators | NEXT | No | Yes |
-| AE-034 | Evaluation harness | Precision/recall per check code | IDEA | Section 18.1 | Not built | AE-033 | None | LATER | Optional | Partly |
-| AE-035 | Cost and acceptance metrics | Cost per accepted question, escalation rate | DESIGNED | Section 25 | No collection; no AI in use | AE-021, AE-037 | Metrics privacy | LATER | No | Yes |
-| AE-036 | Proposal-batch persistence | Server-held batch for review and confirm | IDEA | Sections 16, 20 | Storage undecided (OQ-023, OQ-024 OPEN); IP threat model applies | - | Persistence and retention (group B) | NEXT | No | Yes |
-| AE-037 | Instructor decision log (approve/edit/reject) | Live quality signal and training data | IDEA | Section 22 | No storage | AE-036 | Retention policy | LATER | No | Yes |
-| AE-038 | Item psychometrics (CTT-style statistics) | Observed difficulty and discrimination | IDEA | Section 24 | Needs response volume; conventions only | AE-019 | Min responses; privacy | LATER | No | Yes |
-| AE-039 | Distractor effectiveness analysis | Flag non-functioning distractors for review | IDEA | Sections 23, 24 | Review flag only, never auto-delete; small cohorts unreliable | AE-038 | Threshold policy | LATER | No | Yes |
-| AE-040 | OCR for scanned PDFs | Support image-only documents | DEFERRED | Section 21.2 | Out of V1; new dependency/cost; Hebrew OCR quality unknown | AE-024 | Group B decision | LATER | Optional | No |
-| AE-041 | Question-writing bias screen | Fairness of wording | IDEA | Sections 9, 26 | No source found in Run research; needs human judgment | - | Policy owner | LATER | Optional | No |
-| AE-042 | AI question generator | Draft items from blueprint cells | IDEA | Section 16 stage 4 | No provider chosen; AI proposes only; instructor approves | AE-011, AE-010 | Group C decisions | LATER | Required | No |
-| AE-043 | Repair / regeneration loop | Fix flagged items within bounded retries | IDEA | Section 16 stage 7 | Depends on generator and lint | AE-042, AE-001 | Retry bound | LATER | Required | Partly |
-| AE-044 | Direct-to-storage upload for large files | Exceed the ~4 MB function body limit | DEFERRED | Section 20 | Needs storage and signed-URL design | AE-016, AE-036 | Storage decision | LATER | No | Yes |
+| ID | Capability | Why | Status | Evidence / location | Limitations | Dependencies | Human decisions | Phase | Next step | Needs AI? | Code-deterministic? |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| AE-001 | Item-level deterministic linter (S10) | Catch structural and heuristic item flaws without AI | PROTOTYPED | `src/domain/assessment/question-lint.ts`, `text-normalize.ts`; commits e2d55eb, 022bfed; 52 unit tests; 10 ERROR + 11 WARNING item codes | Not wired into any flow; unit-tested only; one general review; thresholds are product defaults; remaining item codes unimplemented (AE-029) | AE-003 | Where results surface (AE-031) | NOW | Run 002 B4 hardening (PLANNED); then calibrate (AE-046) | No | Yes |
+| AE-002 | Set-level deterministic linter (S11) | Catch set-level bias and redundancy | PROTOTYPED | Same files and commits; 8 SET codes | As AE-001; META set checks need metadata (AE-030); no set-size cap yet (AE-032) | AE-001, AE-003 | Surface location (AE-031) | NOW | Run 002 B4 hardening incl. set cap (PLANNED) | No | Yes |
+| AE-003 | Hebrew-aware comparison normalization (S10.2) | Reliable duplicate/overlap detection on Hebrew text | PROTOTYPED | `text-normalize.ts` (commits e2d55eb, 022bfed) | Not validated against a Golden Dataset; prefix heuristic has accepted false positives | - | Hebrew-fluent reviewer for dataset (AE-004) | NOW | Exercise via Golden Dataset v0.1 (AE-033) | No | Yes |
+| AE-004 | Golden Dataset design (synthetic, Hebrew-first) | Fix expected linter/critic behavior; regression base | DESIGNED | Section 19 | No fixtures yet; annotators and agreement protocol undecided | - | Annotators; protocol (group E) | NOW | Realize v0.1 via AE-033 (Run 002 B5, PLANNED) | No | Yes |
+| AE-005 | AI Necessity Matrix and escalation policy | Spend AI only where code cannot decide | DESIGNED | Sections 4, 17 | Risk thresholds are defaults; stakes level undecided | - | Stakes level (formative vs graded) | NEXT | Revisit when group C opens | Optional | Partly |
+| AE-006 | Question anatomy / metadata fields | Define which metadata is core vs later | DESIGNED | Section 5 (tier decisions recorded in 5.1) | No schema or migration; none stored today | - | Which fields become persisted (OQ-023 related) | NEXT | Decide persistence shape; add LO (AE-045) | No | Yes |
+| AE-007 | Pedagogical question type taxonomy | Shared vocabulary for blueprint and review | DESIGNED | Section 6 | Taxonomy choice unresolved; Anderson-Krathwohl is memory-level only | - | Taxonomy choice | NEXT | Human choice of taxonomy | No | Yes |
+| AE-008 | Difficulty model v0.1 (intended vs observed) | Intended difficulty without coupling to FSRS | DESIGNED | Section 7 | No pre-data difficulty prediction is validated (open research) | AE-006 | Label scale | LATER | Wait for AE-006 and response data | Optional | Partly |
+| AE-009 | Distractor model and taxonomy | Each distractor knows why it exists | DESIGNED | Section 8 | Misconception tags are metadata only | AE-006 | Taxonomy ownership | NEXT | Fold into AE-006 persistence decision | Optional | Partly |
+| AE-010 | Knowledge map | Know what is worth assessing | IDEA | Section 12 | Needs semantic extraction (AI REQUIRED); no storage design. A deterministic fake map is explicitly rejected (28.3) | AE-016, AE-023, AE-024 | Instructor approval workflow | LATER | None until group C and AE-016; see 28.3 | Required | Partly |
+| AE-011 | Assessment blueprint | Prevent coverage collapse | DESIGNED | Section 13 | Allocation arithmetic only designed; objectives need instructor input | AE-006, AE-045 | Blueprint ownership | NEXT | Design-level work as an instructor-authored artifact, no AI (28.3) | Optional | Partly |
+| AE-012 | Duplicate / equivalence model | Detect exact to assessment-equivalent duplicates | DESIGNED | Section 14; exact/normalized/near-stem levels prototyped inside AE-002 | Semantic and assessment-equivalent levels need AI; separate from learner anti-repeat | AE-002 | None | NEXT | Surface level covered by AE-002; semantic levels wait for group C | Optional | Partly |
+| AE-013 | Provenance model | Answer where a question came from | DESIGNED | Section 15 | No storage; page precision not promised | AE-016 | Storage decision (OQ-023) | NEXT | Decide with AE-006 | No | Yes |
+| AE-014 | Generator / critic / review pipeline | End-to-end engine contract | DESIGNED | Section 16 | Only stage 5 (lint) has a prototype; no stage is wired | AE-001, AE-016 | Per-stage human gates | LATER | None | Optional | Partly |
+| AE-015 | Evaluation framework (profile) | No opaque single score | DESIGNED | Section 18 | No harness; metrics not collected | AE-004 | AI-judge calibration | LATER | After AE-033/AE-034 | Optional | Partly |
+| AE-016 | Content Ingestion layer architecture | Separate async layer for binary sources | DESIGNED | Section 20 | Architecture only; no code; entity names not mandated | - | Persistence (OQ-023/024); upload transport | NEXT | Evidence from AE-025 prototype first | No | Yes |
+| AE-017 | Authenticated Google Docs/Drive connector (option C) | Direct import from Google | HUMAN_GATE | Section 21.3 | Repo has email/password auth only; needs OAuth app, scopes, token storage, threat model | AE-016 | Group D decisions | LATER | Human gate | No | Yes |
+| AE-018 | Instructor review workspace | Human authority at publication | IDEA | Section 22 | Design concept only; no UI | AE-022, AE-036 | Review policy | LATER | None | No | Yes |
+| AE-019 | Real-world feedback loop | Compare intended vs observed quality | IDEA | Section 23 | Needs response volume; no schema; no FSRS change allowed | AE-038 | Analytics scope, privacy | LATER | None | No | Yes |
+| AE-020 | Misconception-to-mastery inference | Possible learner modeling | DEFERRED | Out of scope; Learning Engine untouched | Would alter the Learning Engine; no accepted decision | - | Product/ADR decision | LATER | None | No | Partly |
+| AE-021 | Semantic critic / AI escalation execution | Judge grounding and ambiguity | IDEA | Section 17 | No provider, SDK, or call chosen; judge reliability uncalibrated | AE-005, AE-004 | Group C decisions | LATER | Human gate (group C) | Required | No |
+| AE-022 | Proposal-batch confirm path | Replace raw-text re-parse for engine path | IDEA | Sections 16, 20 | Current confirm re-sends raw text; not changed | AE-036 | Persistence decision | NEXT | Blocked on AE-036 | No | Yes |
+| AE-023 | DOCX text extractor (bounded, hand-rolled) | First non-text source; no new dependency | DESIGNED | Section 21.1 | Not implemented; needs hostile-input tests and security review | AE-016 | Hand-roll vs vetted library; security review budget (group B) | NEXT | Human gate, then after plain-text evidence (AE-025) | No | Yes |
+| AE-024 | PDF text extractor (text-only, no OCR) | Common instructor source format | HUMAN_GATE | Section 21.2 | Needs a vetted library (new dependency); Hebrew visual-order caveats | AE-016 | Dependency approval (group B) | LATER | Human gate | No | Yes |
+| AE-025 | Plain-text paste ingestion | Lowest-risk source, no binary parsing | IDEA | Section 20 | No UI or route; no code yet | AE-016 | None | NOW | Run 002 B7 prototype (PLANNED, not done) | No | Yes |
+| AE-026 | Google option A: export DOCX/PDF then upload | Google content with no OAuth | DESIGNED | Section 21.3 | Manual instructor step; no provenance link to the Google file | AE-023, AE-024 | None beyond AE-023/024 | NEXT | Follows AE-023/024 | No | Yes |
+| AE-027 | Google option B: public/shareable link fetch | Convenience without OAuth | DEFERRED | Section 21.3 | Server-side fetch of user URLs (SSRF risk); weak permissions model | AE-016 | Group D decisions | LATER | None | No | Yes |
+| AE-028 | Blueprint coverage checker | Verify cells filled and limits respected | IDEA | Sections 11, 13 | Needs blueprint and metadata | AE-011, AE-030 | None | LATER | After AE-011 design and AE-006 persistence | No | Yes |
+| AE-029 | Remaining unimplemented lint codes | Complete the designed non-META checks | DESIGNED | Sections 10.3, 11.1 | Not implemented: STEM_NO_QUESTION_FORM, STEM_DOUBLE_NEGATIVE, OPTION_COMBINATION_REFERENCE, OPTION_STYLE_OUTLIER, OPTION_PREFIX_STEM_REPEAT, ARTICLE_MISMATCH, OPTION_NUMERIC_UNORDERED, OPTION_COUNT_UNUSUAL, OPTION_PUNCTUATION_INCONSISTENT, EXPLANATION_NAMES_ONLY_KEY, NEAR_DUPLICATE_ITEM, SET_OPTION_COUNT_MIXED, ALL_OR_NONE_OVERUSE, QUESTION_TYPE_MONO | AE-001, AE-002 | Which to prioritize | NEXT | Prioritize after calibration (AE-046); do not add before Golden cases exist | No | Yes |
+| AE-030 | META lint checks (provenance, topic, objective, cognitive, difficulty, coverage) | Coverage/bias checks over metadata | DESIGNED | Sections 10.3, 11.1 | Metadata does not exist today; checks no-op without it | AE-006 | Metadata persistence | LATER | None | No | Yes |
+| AE-031 | Lint wiring into import validator; reconcile with DUPLICATE_PROMPT | Make lint results visible to instructors | IDEA | Sections 11.1, 16 | Not wired; code-name reconciliation undecided; no UI | AE-001, AE-002, AE-033, AE-046 | Where and how shown; blocking vs advisory | NEXT | Gated on Golden Dataset and calibration (28.3); no wiring in Run 002 | No | Yes |
+| AE-032 | Set-size cap MAX_LINT_SET_ITEMS | Bound batch lint cost (pairwise comparisons) | IDEA | Identified gap: only MAX_LINT_OPTIONS = 50 exists in the module | Not implemented; batch lint has no item-count cap | AE-002 | Cap value | NOW | Run 002 B4 (PLANNED, not done) | No | Yes |
+| AE-033 | Golden dataset fixtures (code) | Regression base for lint changes | IDEA | Section 19 | No fixtures yet; needs Hebrew-fluent review | AE-004 | Annotators | NOW | Run 002 B5 v0.1 (PLANNED, not done) | No | Yes |
+| AE-034 | Evaluation harness | Precision/recall per check code | IDEA | Section 18.1 | Not built | AE-033 | None | LATER | After AE-033 | Optional | Partly |
+| AE-035 | Cost and acceptance metrics | Cost per accepted question, escalation rate | DESIGNED | Section 25 | No collection; no AI in use | AE-021, AE-037 | Metrics privacy | LATER | None | No | Yes |
+| AE-036 | Proposal-batch persistence | Server-held batch for review and confirm | IDEA | Sections 16, 20 | Storage undecided (OQ-023, OQ-024 OPEN); IP threat model applies | - | Persistence and retention (group B) | NEXT | Human decision | No | Yes |
+| AE-037 | Instructor decision log (approve/edit/reject) | Live quality signal and training data | IDEA | Section 22 | No storage | AE-036 | Retention policy | LATER | None | No | Yes |
+| AE-038 | Item psychometrics (CTT-style statistics) | Observed difficulty and discrimination | IDEA | Section 24 | Needs response volume; conventions only | AE-019 | Min responses; privacy | LATER | None | No | Yes |
+| AE-039 | Distractor effectiveness analysis | Flag non-functioning distractors for review | IDEA | Sections 23, 24 | Review flag only, never auto-delete; small cohorts unreliable | AE-038 | Threshold policy | LATER | None | No | Yes |
+| AE-040 | OCR for scanned PDFs | Support image-only documents | DEFERRED | Section 21.2 | Out of V1; new dependency/cost; Hebrew OCR quality unknown | AE-024 | Group B decision | LATER | None | Optional | No |
+| AE-041 | Question-writing bias screen | Fairness of wording | IDEA | Sections 9, 26 | No source found in Run research; needs human judgment | - | Policy owner | LATER | None | Optional | No |
+| AE-042 | AI question generator | Draft items from blueprint cells | IDEA | Section 16 stage 4 | No provider chosen; AI proposes only; instructor approves | AE-011, AE-010 | Group C decisions | LATER | Human gate (group C) | Required | No |
+| AE-043 | Repair / regeneration loop | Fix flagged items within bounded retries | IDEA | Section 16 stage 7 | Depends on generator and lint | AE-042, AE-001 | Retry bound | LATER | None | Required | Partly |
+| AE-044 | Direct-to-storage upload for large files | Exceed the ~4 MB function body limit | DEFERRED | Section 20 | Needs storage and signed-URL design | AE-016, AE-036 | Storage decision | LATER | None | No | Yes |
+| AE-045 | Learning Objectives (instructor-authored metadata) | Give items and blueprint a human-owned target; enables OBJECTIVE_* checks | IDEA | Sections 5, 13 (new entry in Run 002) | No model, storage, or UI; ownership undecided | AE-006 | Who owns objectives; persistence | NEXT | Design-level only; decide with AE-006 | No | Yes |
+| AE-046 | Linter threshold calibration | Replace unvalidated defaults with Golden-Dataset-informed values | IDEA | Section 19 (new entry in Run 002) | Needs AE-033; tuned on synthetic data only, so not proof of real-world precision | AE-033, AE-001 | Acceptable false-positive rate (group E) | NOW | Run 002 B6 (PLANNED, not done) | No | Yes |
 
+### 28.1 Status distribution
 
-### 28.1 Status distribution (44 capabilities)
+| Status | Before Run 002 (44) | After Run 002 doc reconciliation (46) |
+|---|---|---|
+| IDEA | 18 | 20 |
+| RESEARCHED | 0 | 0 |
+| DESIGNED | 17 | 17 |
+| PROTOTYPED | 3 | 3 |
+| IMPLEMENTED | 0 | 0 |
+| VERIFIED | 0 | 0 |
+| DEFERRED | 4 | 4 |
+| HUMAN_GATE | 2 | 2 |
+| REJECTED | 0 | 0 |
+| **Total** | **44** | **46** |
 
-| Status | Count |
-|---|---|
-| IDEA | 18 |
-| RESEARCHED | 0 |
-| DESIGNED | 17 |
-| PROTOTYPED | 3 |
-| IMPLEMENTED | 0 |
-| VERIFIED | 0 |
-| DEFERRED | 4 |
-| HUMAN_GATE | 2 |
-| REJECTED | 0 |
-| **Total** | **44** |
+Phase distribution (recommended, human to confirm): before NOW 3, NEXT 17, LATER 24; after NOW 8, NEXT 15, LATER 23.
 
-Phase distribution (recommended, human to confirm): NOW 3, NEXT 17, LATER 24.
+| Phase | IDEA | DESIGNED | PROTOTYPED | DEFERRED | HUMAN_GATE | Total |
+|---|---|---|---|---|---|---|
+| NOW | 4 | 1 | 3 | 0 | 0 | 8 |
+| NEXT | 4 | 11 | 0 | 0 | 0 | 15 |
+| LATER | 12 | 5 | 0 | 4 | 2 | 23 |
+
+These are doc-level counts only: no status changed in Run 002 so far (no code was promoted). IDEA +2 comes from two new entries (AE-045, AE-046).
 
 ### 28.2 How to query this ledger
 
@@ -910,9 +933,31 @@ Phase distribution (recommended, human to confirm): NOW 3, NEXT 17, LATER 24.
 - **Does it need Dor?** Status HUMAN_GATE, or any non-trivial entry in the Human decisions column (cross-reference the groups A-F in Section 27.1).
 - **Does it need AI?** Column "Needs AI?": No, Optional, or Required. **Is it deterministic in code?** Column "Code-deterministic?": Yes, Partly, or No.
 
-## 29. What was implemented in this Run
+### 28.3 Resequencing review (Run 002, B2) - PRODUCT DESIGN DECISION, human to confirm
 
-**RUN OUTPUT.** Run `2026-10-08-ASSESSMENT-ENGINE-NIGHT-001`. The Run report owns details; this is the inventory.
+**Hypothesis 1: the Golden Dataset should precede wiring heuristic warnings into instructor-facing flows. Verdict: ACCEPTED.** The warnings are heuristics with unvalidated thresholds and known Hebrew false positives (10.2). Showing them to Pilot instructors uncalibrated risks early loss of trust, and nothing yet measures their precision. The structural ERROR codes largely duplicate the existing import validator/publish gate, so wiring them adds little before calibration. Consequences: AE-004/AE-033 (v0.1) and AE-046 (calibration) move to NOW; AE-031 stays NEXT and now depends on them plus a human decision on where lint is shown (groups A and E). Developer-side use (scripts, tests, offline reports) does not need to wait. This does not make the linter VERIFIED: a synthetic dataset gives regression evidence, not real-world precision.
+
+**Hypothesis 2: Knowledge Map, Learning Objectives, Blueprint and Coverage should move from LATER to NEXT, before AI generation. Verdict: PARTLY ACCEPTED, decided per item.**
+
+| Item | Decision | Rationale |
+|---|---|---|
+| Learning Objectives (AE-045, new) | NEXT (design-level) | Instructor-authored, no AI needed; unlocks OBJECTIVE_* checks and the blueprint. Needs a persistence decision (OQ-023 related). |
+| Assessment Blueprint (AE-011) | LATER -> NEXT (design-level, instructor-authored) | Allocation arithmetic and conformity checks are deterministic. It can be designed against Topics and LOs without a knowledge map. No code or schema is promoted. |
+| Coverage checker (AE-028) | stays LATER | Needs blueprint, metadata and persistence (AE-006, AE-030); nothing to check yet. |
+| Knowledge Map (AE-010) | stays LATER | Extraction is AI REQUIRED (Section 4). A deterministic "map" (keyword/heading extraction) would be a fake semantic map presenting surface structure as meaning, so it is rejected, not deferred. Without ingestion (AE-016) and persistence there is no input or home for it. |
+| AI generation (AE-042) | stays LATER | Group C is unresolved. Ordering "map and blueprint before generation" already holds through dependencies (AE-042 depends on AE-010 and AE-011), so promoting the map would only pull semantic work forward without a consumer. |
+
+### 28.4 Changes in Run 002 (ledger log)
+
+- Added the Next step column; reviewed all 44 rows for status, evidence, dependency, next step and human gate; no status was changed (nothing was promoted).
+- Added AE-045 (Learning Objectives, IDEA, NEXT) and AE-046 (linter threshold calibration, IDEA, NOW).
+- Phase changes: AE-004, AE-032, AE-033, AE-025 NEXT -> NOW (Run 002 work PLANNED, not done); AE-011 LATER -> NEXT (design-level only).
+- AE-031 now depends on AE-033 and AE-046. AE-006 notes the Section 5.1 tier decisions. AE-023 sequenced after plain-text evidence.
+- Marked as PLANNED in Run 002 (not complete): B4 hardening (AE-001, AE-002, AE-032), B5 Golden Dataset v0.1 (AE-033, AE-004), B6 calibration (AE-046), B7 plain-text ingestion prototype (AE-025).
+
+## 29. What was implemented in Run 001
+
+**RUN 001 OUTPUT** (historical inventory, RUN 001 END `a066435`). Run `2026-10-08-ASSESSMENT-ENGINE-NIGHT-001`. The Run report owns details; Run 002 changes are not listed here (see 28.4).
 
 - This document, `docs/ASSESSMENT_ENGINE.md` (Sections 1-30), including the Capability Ledger. Commits 1536181 (Sections 1-19) and the commit that adds Sections 20-30.
 - A **pure deterministic linter prototype**: `src/domain/assessment/question-lint.ts` and `text-normalize.ts`, with 52 unit tests (commits e2d55eb, then hardening 022bfed after review: ReDoS, totality, caps). It implements 10 item ERROR codes, 11 item WARNING codes, and 8 set WARNING codes (Sections 10, 11). It is **not wired** into any import, publish, API, or UI flow; it makes no AI call; it is **PROTOTYPED, not VERIFIED**.
@@ -924,12 +969,12 @@ No Learning Engine, FSRS, scheduler, mastery, schema, API, or UI change was made
 
 ## 30. What remains
 
-**FUTURE DESIGN. All items below are recommended, human to confirm; nothing is autonomously promoted.**
+**FUTURE DESIGN. All items below are recommended, human to confirm; nothing is autonomously promoted.** Reconciled in Run 002 to match ledger phases (Section 28); the ledger is authoritative if they differ.
 
 | Phase | Work (ledger ids) |
 |---|---|
-| NOW | Human decision on group A (accepting the prototype); deciding where the prototype's output would surface. (AE-001, AE-002, AE-003) |
-| NEXT | Wire lint into the import validator and reconcile `DUPLICATE_PROMPT` (AE-031); add `MAX_LINT_SET_ITEMS` (AE-032); the remaining non-META lint codes (AE-029); Golden Dataset fixtures (AE-004, AE-033); plain-text paste ingestion (AE-025); DOCX extractor after the group B decision (AE-023); proposal-batch persistence decision (AE-036, AE-022); ingestion layer scaffolding (AE-016); Google option A guidance (AE-026). |
-| LATER | PDF extractor after dependency approval (AE-024); knowledge map, blueprint, coverage checker (AE-010, AE-011, AE-028); AI generation and critic after group C (AE-021, AE-042, AE-043); review workspace and decision log (AE-018, AE-037); evaluation harness and cost metrics (AE-034, AE-035); feedback loop and psychometrics (AE-019, AE-038, AE-039); Google connector after group D (AE-017); OCR and large-file upload (AE-040, AE-044). |
+| NOW | Run 002 (PLANNED, not done): linter hardening and set cap (AE-001, AE-002, AE-032); Golden Dataset v0.1 (AE-004, AE-033); calibration (AE-046); plain-text ingestion prototype (AE-025). Human decision on group A (status of the prototype) and where its output would surface. |
+| NEXT | Wire lint into the import validator and reconcile `DUPLICATE_PROMPT` (AE-031), only after Golden Dataset and calibration; the remaining non-META lint codes (AE-029); Learning Objectives and blueprint design, instructor-authored (AE-045, AE-011); metadata persistence decision (AE-006, AE-013); DOCX extractor after the group B decision (AE-023); proposal-batch persistence decision (AE-036, AE-022); ingestion layer scaffolding (AE-016); Google option A guidance (AE-026). |
+| LATER | PDF extractor after dependency approval (AE-024); knowledge map and coverage checker (AE-010, AE-028); AI generation and critic after group C (AE-021, AE-042, AE-043); review workspace and decision log (AE-018, AE-037); evaluation harness and cost metrics (AE-034, AE-035); feedback loop and psychometrics (AE-019, AE-038, AE-039); Google connector after group D (AE-017); OCR and large-file upload (AE-040, AE-044). |
 
 Remaining human gates for the Pilot are tracked in the Run report and Section 27.1 (group E), not restated here.
