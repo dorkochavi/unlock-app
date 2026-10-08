@@ -29,7 +29,7 @@ type CardProps = {
 
 /** True when a caller's className already sets padding (`p-*`, any breakpoint), so the default `p-5` must not fight it. */
 export function setsPadding(className?: string): boolean {
-  return /(^|s)(?:[w-]+:)*p-/.test(className ?? "");
+  return /(^|\s)(?:[\w-]+:)*p-/.test(className ?? "");
 }
 
 export function Card({ as: Tag = "section", className, raised, variant, children, ...rest }: CardProps) {

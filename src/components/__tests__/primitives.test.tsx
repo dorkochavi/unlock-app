@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { Button, ButtonLink, buttonClasses } from "../button";
+import { Card, setsPadding } from "../card";
 import { Field } from "../field";
 import { Input } from "../input";
 import { LinkRow } from "../link-row";
@@ -113,5 +114,32 @@ describe("buttonClasses", () => {
     expect(buttonClasses("tertiary")).not.toContain("state-disabled");
     expect(buttonClasses("tertiary")).toContain("min-h-control");
     expect(buttonClasses("primary", { compact: true })).toContain("min-h-control-compact");
+  });
+});
+
+describe("setsPadding (DS-01: regex lost its backslashes)", () => {
+  it.each(["p-6", "mt-4 p-6", "sm:p-8", "mt-4 sm:p-8", "flex gap-4 hover:p-2", "md:hover:p-3"])(
+    "detects a p-* shorthand in %j",
+    (cls) => {
+      expect(setsPadding(cls)).toBe(true);
+    },
+  );
+
+  it.each(["px-5 py-4", "mt-4 px-5", "snap-start", "sp-1", "stop-x", "flex gap-4", "", undefined])(
+    "does not treat %j as a p-* shorthand",
+    (cls) => {
+      expect(setsPadding(cls)).toBe(false);
+    },
+  );
+
+  it("omits the default p-5 on Card and LinkRow when a non-first-token p-* is passed, keeps it otherwise", () => {
+    const hasDefault = (html: string) => /(^|[\s"])p-5([\s"]|$)/.test(html);
+    expect(hasDefault(renderToStaticMarkup(<Card className="mt-4 sm:p-8">x</Card>))).toBe(false);
+    expect(hasDefault(renderToStaticMarkup(<Card className="mt-4 p-6">x</Card>))).toBe(false);
+    expect(hasDefault(renderToStaticMarkup(<Card className="px-5 py-4">x</Card>))).toBe(true);
+    expect(hasDefault(renderToStaticMarkup(<Card>x</Card>))).toBe(true);
+    expect(hasDefault(renderToStaticMarkup(<LinkRow href="/a" className="mt-4 sm:p-8">x</LinkRow>))).toBe(false);
+    expect(hasDefault(renderToStaticMarkup(<LinkRow href="/a" className="px-5 py-4">x</LinkRow>))).toBe(true);
+    expect(hasDefault(renderToStaticMarkup(<LinkRow href="/a">x</LinkRow>))).toBe(true);
   });
 });
