@@ -32,6 +32,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Learning Objectives and Assessment Blueprint design (v0.1; pure prototype in `src/domain/assessment/blueprint/`, unwired) | `docs/ASSESSMENT_BLUEPRINT_V0_1.md` | COLD |
 | Long Autonomous Run orchestration (Phase 0 identity, gates, recovery) | `.claude/skills/autonomous-run/SKILL.md` | COLD |
 | Human index of how DevOS pieces fit | `docs/CLAUDE_CODE_OPERATING_GUIDE.md` (index only; canonical owners win) | COLD |
+| Browser isolation design (rendered audits with zero hosted contact; DRAFT, source-read only) | `docs/BROWSER_ISOLATION_DESIGN.md` | COLD |
 
 ## Task → Smallest Context
 
