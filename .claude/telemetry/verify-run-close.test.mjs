@@ -415,6 +415,40 @@ test('WARN (a): near-zero events despite many commits since START_HEAD', () => {
   assert.match(stdout, /only 3 event\(s\)/);
 });
 
+function writeStarts(dir, runId, sliceIds) {
+  const rawDir = path.join(dir, 'scratch', 'telemetry', runId, 'raw');
+  fs.mkdirSync(rawDir, { recursive: true });
+  const lines = sliceIds.map((s, i) =>
+    JSON.stringify({ event: 'SubagentStart', slice_id: s, agent_id: `a${i}` })
+  );
+  fs.writeFileSync(path.join(rawDir, 'starts.jsonl'), lines.join('\n') + '\n');
+}
+
+test('WARN: all workers share one slice_id, and one slice_id covering >3 starts', () => {
+  const runId = '2026-02-01-ATTR-SLICE';
+  const dir = attributionFixture(2, runId);
+  writeStarts(dir, runId, ['A', 'A']);
+  let out = runVerifier(dir);
+  assert.equal(out.status, 0, out.stdout);
+  assert.match(out.stdout, /All 2 dispatched workers share slice_id A/);
+  writeStarts(dir, runId, [null, null, null]);
+  out = runVerifier(dir);
+  assert.match(out.stdout, /share slice_id \(unattributed\)/);
+  writeStarts(dir, runId, ['A', 'A', 'A', 'A', 'B']);
+  out = runVerifier(dir);
+  assert.equal(out.status, 0, out.stdout);
+  assert.match(out.stdout, /slice_id A covers 4 worker dispatches/);
+});
+
+test('No slice-granularity WARN: distinct slice_ids, a single worker, or no starts', () => {
+  const runId = '2026-02-01-ATTR-SLICE-OK';
+  const dir = attributionFixture(2, runId);
+  for (const ids of [['A', 'B', 'B'], ['A'], []]) {
+    writeStarts(dir, runId, ids);
+    assert.doesNotMatch(runVerifier(dir).stdout, /dispatched workers share|worker dispatches \(>/);
+  }
+});
+
 test('No WARN (a): thin telemetry on a short Run, or ample events on a long Run', () => {
   const runId = '2026-02-01-ATTR-OK';
   const short = attributionFixture(3, runId); // 2 commits < threshold

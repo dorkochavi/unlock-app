@@ -195,6 +195,7 @@ function isAncestor(root, ancestor, descendant) {
 export const MIN_RUN_EVENTS = 20; // fewer events than this is "near zero"
 export const MIN_RUN_COMMITS = 5; // ...only suspicious for a Run this long
 export const RECENT_SESSION_HOURS = 48; // "recently active" other-folder session
+export const MAX_STARTS_PER_SLICE_ID = 3; // more worker dispatches under one slice_id is suspicious
 
 function normalizeName(value) {
   return String(value ?? '')
@@ -293,6 +294,50 @@ export function checkTelemetryAttribution({ root, runId, startHead, now = Date.n
   return warns;
 }
 
+/**
+ * WARN-only: coarse Slice attribution. Counts SubagentStart events per
+ * slice_id (null = unattributed). Warns when >= 2 workers share a single
+ * slice_id (or none) or one slice_id covers > MAX_STARTS_PER_SLICE_ID starts,
+ * i.e. the parent likely did not update CURRENT_SLICE before dispatching.
+ */
+export function checkSliceAttributionGranularity({ root, runId }) {
+  const rawDir = path.join(root, 'scratch', 'telemetry', runId, 'raw');
+  let files;
+  try {
+    files = fs.readdirSync(rawDir).filter((f) => f.endsWith('.jsonl'));
+  } catch {
+    return [];
+  }
+  const counts = new Map();
+  for (const f of files) {
+    for (const line of (readFileSafe(path.join(rawDir, f)) ?? '').split(/\r?\n/)) {
+      if (!line.includes('SubagentStart')) continue;
+      try {
+        const e = JSON.parse(line);
+        if (e.event !== 'SubagentStart') continue;
+        const id = e.slice_id ?? null;
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      } catch {
+        // ignore malformed lines
+      }
+    }
+  }
+  const total = [...counts.values()].reduce((a, b) => a + b, 0);
+  const label = (id) => (id === null ? '(unattributed)' : id);
+  if (total >= 2 && counts.size === 1) {
+    const [id] = counts.keys();
+    return [
+      `All ${total} dispatched workers share slice_id ${label(id)} -- CURRENT_SLICE was likely not updated before each dispatch (autonomous-run Section 7 pre-dispatch record).`,
+    ];
+  }
+  return [...counts]
+    .filter(([, n]) => n > MAX_STARTS_PER_SLICE_ID)
+    .map(
+      ([id, n]) =>
+        `slice_id ${label(id)} covers ${n} worker dispatches (> ${MAX_STARTS_PER_SLICE_ID}) -- per-Slice attribution may be coarse; was CURRENT_SLICE updated before each dispatch?`
+    );
+}
+
 function gitOutput(root, args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 }
@@ -389,6 +434,7 @@ export function runVerification({ root, preClose }) {
   }
 
   warns.push(...checkTelemetryAttribution({ root, runId, startHead }));
+  warns.push(...checkSliceAttributionGranularity({ root, runId }));
 
   if (runStatus === 'COMPLETE') {
     if (!lastVerifiedHead) {

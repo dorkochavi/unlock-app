@@ -175,7 +175,10 @@ preloading, so policy is not invented or duplicated.
 - Smallest useful change — the minimum that satisfies the goal;
 - Must remain unchanged — the invariants/surfaces this Slice must not touch;
 - Proof — what evidence would show the Slice succeeded;
-- Risks — what could go wrong.
+- Risks — what could go wrong;
+- CURRENT_SLICE — overwrite the §6 checkpoint `CURRENT_SLICE:` line for this Slice (and for any
+  reviewer/fix worker of it) BEFORE the dispatch call; telemetry stamps at event time, so a stale
+  line misattributes the worker. `verify-run-close.mjs` WARNs on coarse attribution.
 
 **After each Slice returns**, the parent records:
 - Expected vs. Observed;
