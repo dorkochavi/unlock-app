@@ -801,6 +801,12 @@ describe("Slice B2: linter false-positive rule fixes (and counter-examples that 
       expect(abs(w)).toBe(true);
     }
   });
+  it("PINS accepted recall loss: ב/ל/מ/כ + כל (בכל, לכל, מכל, ככל) no longer fire; ורק/וכל do (documented known limit)", () => {
+    // Accepted trade-off of the 2-letter-term restriction: a legitimate absolute like 'לכל התאים' is now missed
+    // (no Golden case; see ASSESSMENT_CALIBRATION_V0_1 known limits). If prefix handling is refined, update deliberately.
+    for (const w of ["בכל התאים", "לכל התאים", "מכל התאים", "ככל התאים", "בכל", "לכל", "מכל", "ככל"]) expect(abs(w)).toBe(false);
+    for (const w of ["ורק", "וכל", "וכל התאים", "ורק זה נכון"]) expect(abs(w)).toBe(true);
+  });
   it("3+ letter Hebrew absolute terms keep prefix tolerance (תמיד, ותמיד, שתמיד, ובלבד)", () => {
     for (const w of ["תמיד", "ותמיד", "שתמיד", "ובלבד", "לעולם", "ולעולם", "שבהכרח"]) expect(abs(w)).toBe(true);
   });

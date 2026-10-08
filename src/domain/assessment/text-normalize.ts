@@ -150,13 +150,14 @@ export function jaccard(a: ReadonlySet<string>, b: ReadonlySet<string>): number 
  * True when `term` (already comparison-normalized, space-joined tokens, may be multi-word)
  * occurs as a WHOLE-TOKEN sequence in `tokens` (word-boundary matching: never a substring of a
  * longer word). The first token may carry up to `maxPrefixLetters` attached Hebrew prefix letters
- * drawn from `prefixLetters` ("shelo", "vetamid"). Pass prefixLetters "" for exact-token matching
+ * drawn from `prefixLetters` ("shelo", "vetamid"); when `prefixLetters` is omitted the default set applies, except
+ * that terms shorter than PREFIX_STRIP_MIN_REMAINDER accept only "ו". Pass prefixLetters "" for exact-token matching
  * (English terms, or Hebrew words whose prefixed forms are ambiguous). WARNING-only heuristic.
  */
 export function containsTerm(
   tokens: readonly string[],
   term: string,
-  prefixLetters: string = HEBREW_PREFIX_LETTERS,
+  prefixLetters?: string,
   maxPrefixLetters: number = PREFIX_STRIP_MAX_LETTERS,
 ): boolean {
   const parts = term.split(" ");
@@ -168,11 +169,16 @@ export function containsTerm(
       if (tok === want) continue;
       if (j === 0 && maxPrefixLetters > 0 && HEBREW_WORD.test(tok) && tok.length > want.length && tok.endsWith(want)) {
         const prefix = tok.slice(0, tok.length - want.length);
-        // With the full default prefix set, short terms (< PREFIX_STRIP_MIN_REMAINDER letters, e.g. רק, כל) collide
-        // with ordinary words that merely begin with a prefix letter (מרק, ברק, שכל), so they accept only the
-        // conjunction ו (ורק, וכל). An explicitly narrowed caller-supplied set (e.g. negation "וש") is used as given.
+        // When the caller omits prefixLetters (default set), short terms (< PREFIX_STRIP_MIN_REMAINDER letters,
+        // e.g. רק, כל) collide with ordinary words that merely begin with a prefix letter (מרק, ברק, שכל), so they
+        // accept only the conjunction ו (ורק, וכל). An explicitly supplied set (e.g. negation "וש", or "" for
+        // exact-token matching) is always used as given.
         const allowed =
-          want.length < PREFIX_STRIP_MIN_REMAINDER && prefixLetters === HEBREW_PREFIX_LETTERS ? "ו" : prefixLetters;
+          prefixLetters !== undefined
+            ? prefixLetters
+            : want.length < PREFIX_STRIP_MIN_REMAINDER
+              ? "ו"
+              : HEBREW_PREFIX_LETTERS;
         if (prefix.length <= maxPrefixLetters && Array.from(prefix).every((c) => allowed.includes(c))) {
           continue;
         }
