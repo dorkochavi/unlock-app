@@ -91,11 +91,11 @@ Inputs: the blueprint and the **declared-objective universe supplied by the call
 
 | Code | Severity | Rule |
 |---|---|---|
-| `BLUEPRINT_CELL_COUNT_INVALID` | ERROR | `min`/`max` not a finite nonneg integer (NaN, negative, fractional). |
+| `BLUEPRINT_CELL_COUNT_INVALID` | ERROR | `min`/`max` not an integer from 0 to `MAX_BLUEPRINT_COUNT` (1,000,000): NaN, negative, fractional, infinite, or above the cap. |
 | `BLUEPRINT_CELL_MIN_GT_MAX` | ERROR | `max` present and `min > max`. |
 | `BLUEPRINT_CELL_DUPLICATE` | ERROR | Same `objectiveId` in more than one cell (reported once per id; never merged or summed). |
 | `BLUEPRINT_OBJECTIVE_UNKNOWN` | ERROR | Cell `objectiveId` not in the declared universe. Such cells are excluded from every total below. |
-| `BLUEPRINT_TOTAL_INVALID` | ERROR | `targetTotal` present but not a nonneg integer. |
+| `BLUEPRINT_TOTAL_INVALID` | ERROR | `targetTotal` present but not an integer from 0 to `MAX_BLUEPRINT_COUNT` (same cap as cells). |
 | `BLUEPRINT_TOTAL_BELOW_MINS` | ERROR | `targetTotal < sum(min)` over valid cells. |
 | `BLUEPRINT_TOTAL_ABOVE_MAXES` | ERROR | Every valid cell has a `max` and `targetTotal > sum(max)`. If any cell is unbounded, this rule is skipped. |
 | `BLUEPRINT_OBJECTIVE_UNALLOCATED` | WARNING | Declared objective with no cell. Informational: "no intent stated", never "should be covered". |
@@ -141,7 +141,7 @@ A pure prototype in C3 **is justified**: every rule above is closed-form integer
 
 - Types: `BlueprintCell {objectiveId; min; max: number | null}`; `Blueprint {id; name; courseId; targetTotal: number | null; cells}`; `DeclaredObjective {id; topicId}`; `CoverageItem {questionId; objectiveIds}`; `BlueprintIssue {code; severity; objectiveId?; message}`.
 - `validateBlueprint(blueprint, declaredObjectives): BlueprintIssue[]` per 2.3.
-- `compareCoverage(blueprint, declaredObjectives, items): CoverageReport` per 2.4; `CoverageReport {totalDistinctQuestions; totalStatus; cells[]; unallocated[]; unlinkedQuestionIds; unknownObjectiveRefs; duplicateQuestionIds; coverage {covered, declared, ratio}; topics[]}`.
+- `compareCoverage(blueprint, declaredObjectives, items): CoverageReport` per 2.4; `CoverageReport {totalDistinctQuestions; totalStatus; cells[]; unallocated[]; unlinkedQuestionIds; unknownObjectiveRefs; duplicateQuestionIds; coverage {covered, declared, ratio}; distribution[]; topics[]}`, where `distribution[]` entries are `{objectiveId, actual, min?, max?}` (min/max only when a valid cell exists).
 - Same input -> deep-equal output; no input mutation.
 
 ### 2.8 Candidate OPEN_QUESTIONS (not filed; OPEN_QUESTIONS.md not edited)
@@ -169,6 +169,7 @@ Smallest-consistent readings where this doc is not explicit (verified against `b
 8. A duplicated declared-universe id is deduped; the smallest `topicId` wins.
 9. `duplicateQuestionIds` lists each repeated id once.
 10. `unknownObjectiveRefs` are deduped per (question, objective) and only from the first occurrence of a question.
-11. Cell counts and `targetTotal` must be safe non-negative integers.
+11. Cell counts and `targetTotal` must be integers from 0 to the named constant `MAX_BLUEPRINT_COUNT` (1,000,000); anything larger is reported as `CELL_COUNT_INVALID` / `TOTAL_INVALID`. This keeps every sum over cells far below `Number.MAX_SAFE_INTEGER`, so sums never lose precision. The cap is a prototype safety bound, not a pedagogical limit.
 12. `CoverageReport` also exposes `distribution[]`: one entry per declared objective `{objectiveId, actual}`, plus `min`/`max` only when a valid cell exists (no per-entry status; status lives in `cells[]`).
 13. Topic `sumMin`/`sumMax` use valid cells only; `sumMax` is null if any valid cell is unbounded or the Topic has none.
+14. Duplicate `questionId` with differing objective sets: canonical sort puts the copy with the empty (or lexicographically smaller) objective set first, so an empty-objective copy wins and the question is counted as unlinked; the linked copy is dropped as a duplicate (tested).

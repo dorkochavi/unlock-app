@@ -10,10 +10,12 @@
  * HARD BOUNDARY: this code states counts only. It never says what an objective "deserves",
  * what amount is "right", or whether a linked question actually tests its objective.
  *
- * BOUNDS (c = cells, u = declared objectives, n = items, l = total links): O((c + u + l) log).
- * No pairwise loops over items.
+ * BOUNDS (c = cells, u = declared objectives, n = items, l = total links): O((c + u + n + l) log)
+ * overall (sorting dominates; topic roll-up is a single grouping pass over the universe).
+ * No pairwise loops over items or over topics x objectives.
  *
- * Interpretation choices where the doc is not explicit are listed in the C3 handoff.
+ * Interpretation choices where the doc is not explicit are listed in
+ * docs/ASSESSMENT_BLUEPRINT_V0_1.md, section "Resolved in the C3 prototype".
  */
 
 export type BlueprintSeverity = "ERROR" | "WARNING";
@@ -125,8 +127,15 @@ function cmp(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/**
+ * Upper bound for any cell min/max and for targetTotal. Larger values are reported as
+ * invalid so that sums over cells (at most MAX * number-of-cells) stay far below
+ * Number.MAX_SAFE_INTEGER and never lose precision.
+ */
+export const MAX_BLUEPRINT_COUNT = 1_000_000;
+
 function isCount(v: unknown): v is number {
-  return typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
+  return typeof v === "number" && Number.isSafeInteger(v) && v >= 0 && v <= MAX_BLUEPRINT_COUNT;
 }
 
 function asArray<T>(v: readonly T[] | null | undefined): readonly T[] {
@@ -251,7 +260,7 @@ export function validateBlueprint(
       code: C.CELL_COUNT_INVALID,
       severity: "ERROR",
       ...withId(id),
-      message: "Cell min or max is not a finite non-negative integer.",
+      message: `Cell min or max is not an integer from 0 to ${MAX_BLUEPRINT_COUNT}.`,
     });
   }
   for (const id of a.minGtMax) {
@@ -284,7 +293,7 @@ export function validateBlueprint(
     issues.push({
       code: C.TOTAL_INVALID,
       severity: "ERROR",
-      message: "Target total is not a finite non-negative integer.",
+      message: `Target total is not an integer from 0 to ${MAX_BLUEPRINT_COUNT}.`,
     });
   } else if (total.kind === "OK") {
     const sumMin = a.valid.reduce((s, c) => s + c.min, 0);
@@ -422,9 +431,17 @@ export function compareCoverage(
           ? "OVER"
           : "OK";
 
-  const topicIds = [...new Set(universe.values())].sort(cmp);
+  // Single grouping pass; universeIds is already sorted by id.
+  const objectivesByTopic = new Map<string, string[]>();
+  for (const id of universeIds) {
+    const t = universe.get(id) as string;
+    const list = objectivesByTopic.get(t);
+    if (list) list.push(id);
+    else objectivesByTopic.set(t, [id]);
+  }
+  const topicIds = [...objectivesByTopic.keys()].sort(cmp);
   const topics: TopicRollup[] = topicIds.map((topicId) => {
-    const objs = universeIds.filter((id) => universe.get(id) === topicId);
+    const objs = objectivesByTopic.get(topicId) as string[];
     const tCells = objs.map((id) => validById.get(id)).filter((c) => c !== undefined);
     return {
       topicId,

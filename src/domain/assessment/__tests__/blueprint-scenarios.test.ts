@@ -59,15 +59,17 @@ describe("blueprint golden scenarios", () => {
       });
 
       it("documents the coverage/quality boundary", () => {
-        expect(s.boundary).toContain("DETERMINISTIC COVERAGE");
-        expect(s.boundary).toContain("PEDAGOGICAL QUALITY");
+        // Coverage facts come first; the quality part must disclaim, never assert.
+        const m = /^DETERMINISTIC COVERAGE: ([\s\S]+?) PEDAGOGICAL QUALITY: ([\s\S]+)$/.exec(s.boundary);
+        expect(m).not.toBeNull();
+        expect(m![2]).toMatch(/\b(not|never|no)\b/i);
         expect(s.notes.length).toBeGreaterThan(0);
       });
     },
   );
 
-  it("balanced has coverage ratio 1; omitted objective has ratio below 1 and O3 at zero", () => {
-    const bal = byId("balanced");
+  it("allocation-within-bounds has coverage ratio 1; omitted objective has ratio below 1 and O3 at zero", () => {
+    const bal = byId("allocation-within-bounds");
     expect(compareCoverage(bal.blueprint, bal.declared, bal.items).coverage.ratio).toBe(1);
     const om = byId("objective-omitted");
     const r = compareCoverage(om.blueprint, om.declared, om.items);

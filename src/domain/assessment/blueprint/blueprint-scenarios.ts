@@ -68,10 +68,10 @@ const q = (questionId: string, ...objectiveIds: string[]): CoverageItem => ({
   objectiveIds,
 });
 
-export const BALANCED: BlueprintScenario = {
-  id: "balanced",
-  title: "תוכנית מאוזנת",
-  blueprint: bp("מבחן-מאוזן", 3, [
+export const ALLOCATION_WITHIN_BOUNDS: BlueprintScenario = {
+  id: "allocation-within-bounds",
+  title: "הקצאה בתוך הגבולות",
+  blueprint: bp("מבחן-בגבולות", 3, [
     { objectiveId: "O1", min: 1, max: 2 },
     { objectiveId: "O2", min: 1, max: 2 },
     { objectiveId: "O3", min: 1, max: 2 },
@@ -328,7 +328,7 @@ export const TOTAL_ABOVE_MAXES: BlueprintScenario = {
 };
 
 export const ALL_SCENARIOS: readonly BlueprintScenario[] = [
-  BALANCED,
+  ALLOCATION_WITHIN_BOUNDS,
   OBJECTIVE_OMITTED,
   OBJECTIVE_OVERREPRESENTED,
   INVALID_ALLOCATION,

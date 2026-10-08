@@ -11,6 +11,7 @@ import {
   type BlueprintCell,
   type CoverageItem,
   type DeclaredObjective,
+  MAX_BLUEPRINT_COUNT,
 } from "../blueprint/blueprint";
 
 const U: DeclaredObjective[] = [
@@ -53,6 +54,24 @@ describe("validateBlueprint", () => {
         );
       });
     }
+    it("counts above MAX_BLUEPRINT_COUNT are invalid; MAX itself is valid (sums stay safe)", () => {
+      expect(MAX_BLUEPRINT_COUNT).toBe(1_000_000);
+      const over = MAX_BLUEPRINT_COUNT + 1;
+      for (const b of [
+        bp([cell("O1", over, null)]),
+        bp([cell("O1", 0, over)]),
+        bp([cell("O1", Number.MAX_SAFE_INTEGER, null)]),
+      ]) {
+        expect(codes(b)).toContain("BLUEPRINT_CELL_COUNT_INVALID");
+      }
+      expect(codes(bp([cell("O1", MAX_BLUEPRINT_COUNT, MAX_BLUEPRINT_COUNT)]))).not.toContain(
+        "BLUEPRINT_CELL_COUNT_INVALID",
+      );
+    });
+    it("targetTotal above MAX_BLUEPRINT_COUNT is TOTAL_INVALID; MAX is accepted", () => {
+      expect(codes(bp([], MAX_BLUEPRINT_COUNT + 1))).toContain("BLUEPRINT_TOTAL_INVALID");
+      expect(codes(bp([], MAX_BLUEPRINT_COUNT))).not.toContain("BLUEPRINT_TOTAL_INVALID");
+    });
     it("non-number min flagged without throwing", () => {
       const weird = { objectiveId: "O1", min: "2", max: null } as unknown as BlueprintCell;
       expect(codes(bp([weird, cell("O2", 0, 1), cell("O3", 0, 1)]))).toContain(
@@ -305,6 +324,14 @@ describe("compareCoverage", () => {
     expect(r.duplicateQuestionIds).toEqual(["q1"]);
     expect(r.totalDistinctQuestions).toBe(1);
     expect(r.cells.map((c) => c.actual)).toEqual([1, 0]);
+  });
+
+  it("duplicate questionId: an empty-objective copy sorts first, wins, and counts as unlinked", () => {
+    const r = compareCoverage(bp([cell("O1", 0, 9)]), U, [item("q1", "O1"), item("q1")]);
+    expect(r.duplicateQuestionIds).toEqual(["q1"]);
+    expect(r.totalDistinctQuestions).toBe(1);
+    expect(r.unlinkedQuestionIds).toEqual(["q1"]);
+    expect(r.cells[0].actual).toBe(0);
   });
 
   it("coverage ratio and distribution", () => {
