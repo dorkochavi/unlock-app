@@ -3,9 +3,9 @@
 PLAN_VERSION: 031
 RUN_ID: 2026-10-09-BROWSER-ISOLATION-STUDY-001
 START_HEAD: `4b28bb9`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `4b28bb9`
-STATUS: **IN PROGRESS** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `f512a4e`
+STATUS: **COMPLETE + STOP** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -18,12 +18,13 @@ No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| C1 | Architecture map + escape paths + options matrix + recommendation + future rendered-audit plan (design doc) | REVIEW_GATE | PENDING |
-| C2 | Prototype decision (gated; default DESIGN ONLY) | REVIEW_GATE | PENDING |
-| Z | Review, verification, backlog routing, Run close | FINAL_GATE | PENDING |
+| C1 | Architecture map + escape paths + options matrix + recommendation + future rendered-audit plan (design doc) | REVIEW_GATE | DONE |
+| C2 | Prototype decision (gated; default DESIGN ONLY) | REVIEW_GATE | DONE |
+| Z | Review, verification, backlog routing, Run close | FINAL_GATE | DONE |
 
 ## History
 
+- BROWSER-ISOLATION-STUDY-001: `docs/RUNS/2026-10-09-BROWSER-ISOLATION-STUDY-001.md`
 - DESIGN-AUDIT-FOLLOWUP-001: `docs/RUNS/2026-10-09-DESIGN-AUDIT-FOLLOWUP-001.md`
 - ASSESSMENT-ENGINE-004: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-004.md`
 - ASSESSMENT-ENGINE-HEBREW-REVIEW-001: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-HEBREW-REVIEW-001.md`
