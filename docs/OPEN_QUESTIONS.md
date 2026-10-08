@@ -890,6 +890,32 @@ AI is not the real-time Learning Engine.
 This question concerns content production/governance, not deterministic learner
 state.
 
+## OQ-049 — Learning Objectives and Assessment Blueprint: Candidate Human Decisions
+
+Status: OPEN (grouped entry; each row is an independent unresolved sub-question)
+
+Source: `docs/ASSESSMENT_BLUEPRINT_V0_1.md` Parts 1.7 and 2.8 (design only; nothing persisted; ledger AE-045, AE-011, AE-028 in `docs/ASSESSMENT_ENGINE.md`). Implementation must not invent these answers (`.claude/rules/auth.md`, Section 4 of `CLAUDE.md`).
+
+| # | Sub-question | Notes |
+|---|---|---|
+| a | Cognitive taxonomy (revised Bloom vs SOLO vs Webb DOK; closed vocabulary or free label) | AE-007; blueprint dimension stays OUT until chosen |
+| b | Intended-difficulty vocabulary (enum vs numeric band; on LO, Question or both) | Intended, never observed; independent of FSRS |
+| c | Question->LO association: mutable authoring link vs snapshotted per immutable QuestionVersion | Historical-coverage reporting depends on it |
+| d | Cross-topic LOs: strict one Topic per LO vs multi-Topic later | v0.1 design decides one required Topic |
+| e | Persistence shape: table vs embedded metadata, join table, FK/archive semantics, backfill (existing questions have zero LOs); blueprint table vs JSON, cardinality per Course, archived LO referenced by a cell | Relates to OQ-023, AE-006 |
+| f | Authoring roles and reuse: who authors LOs and blueprints (default `canAuthorCourse`); per-Course only or reusable across Courses | Fail closed until decided |
+| g | Structured Import support: may import reference/create LOs; unresolved-name behavior | Mirror Topic name resolution or not |
+| h | Mandatory for publish: whether LO becomes required (v0.1: optional, `OBJECTIVE_MISSING` is a warning) | |
+| i | Blueprint mutability: mutable plan vs snapshot when a set is checked against it | |
+| j | Default quick blueprint for short quizzes, and whether code may generate any default | AE 13.3 |
+| k | Multi-objective questions: discount in planning or assume one objective per question | Prototype counts once toward each objective |
+| l | Precedence of blueprint `max` vs lint default `TOPIC_CONCENTRATION` (> 40%) and handling of archived LOs in cells | Wiring decision |
+| m | Comparison set scope: which questions are compared (course, topic, draft batch); whether archived/unpublished count | |
+
+Resolve before:
+
+any persistence, authoring UI, import, or lint wiring for Learning Objectives or Blueprints.
+
 ---
 
 # Platform / Data Lifecycle

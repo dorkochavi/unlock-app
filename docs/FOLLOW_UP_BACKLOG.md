@@ -1590,11 +1590,13 @@ Human acceptance of the prototype and a chosen surface (Section 27.1 group A/E).
 
 # FUB-059 — Linter False-Positive Fixes From Golden Dataset Calibration
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` (narrowed; the false-positive part is `RESOLVED` by Run 2026-10-08-ASSESSMENT-ENGINE-003)
 **Priority:** `LOW` (rises to `MEDIUM` once wiring is planned, FUB-055)
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
-One item for the fix list found by calibration: absolute-term prefix stoplist (`מרק`, `ברק`, `שכל`, `שום`), `חוץ` as standalone negation, English `at least`, a conservative Hebrew suffix fold for overlap/near-duplicate, a significance-aware key-position rule, homoglyph fold, and a short-option overlap rule. Details, re-run instructions and fixtures: `docs/ASSESSMENT_CALIBRATION_V0_1.md` Section 5; integration conditions in its Section 4; ledger AE-001/AE-002/AE-046 in `docs/ASSESSMENT_ENGINE.md`.
+**Update (Run 2026-10-08-ASSESSMENT-ENGINE-003):** RESOLVED in commits `2e379e2`, `ee4494e`, `cdfdcd1`: absolute-term prefix collisions (`מרק`, `ברק`; 2-letter terms accept only `ו`), `חוץ` as standalone negation, English `at least`, homoglyph fold. All 4 golden false positives are gone (0 FP, 0 of 18 CLEAN warn), but the fixes were tuned on the same 89 synthetic cases and carry documented residual limits (recall loss on `בכל/לכל/מכל/ככל`, `שום` homograph, `חוץ מ…` and `at least` residuals; `docs/ASSESSMENT_CALIBRATION_V0_1.md` Section 7). **Still open here:** a conservative Hebrew suffix fold for overlap/near-duplicate, a significance-aware key-position rule, and a short-option overlap rule (calibration Section 5 items 3, 4, 6).
+
+Original scope, one item for the fix list found by calibration: absolute-term prefix stoplist (`מרק`, `ברק`, `שכל`, `שום`), `חוץ` as standalone negation, English `at least`, a conservative Hebrew suffix fold for overlap/near-duplicate, a significance-aware key-position rule, homoglyph fold, and a short-option overlap rule. Details, re-run instructions and fixtures: `docs/ASSESSMENT_CALIBRATION_V0_1.md` Section 5; integration conditions in its Section 4; ledger AE-001/AE-002/AE-046 in `docs/ASSESSMENT_ENGINE.md`.
 
 ## Promotion Trigger
 
@@ -1608,7 +1610,7 @@ Decision to wire lint (FUB-055), or any Run that touches the linter heuristics. 
 **Priority:** `LOW`
 **Area:** `src/domain/assessment/golden/**`
 
-The Hebrew labels of Golden Dataset v0.1 (ground truth, expected codes) were written without review by a Hebrew-fluent annotator. A fluent reviewer should confirm or correct them; annotator recruitment and agreement protocol is a group E decision (`docs/ASSESSMENT_ENGINE.md` 19.5, 27.1). Pointer: `docs/ASSESSMENT_CALIBRATION_V0_1.md` Sections 1 and 6.
+The Hebrew labels of Golden Dataset v0.1 (ground truth, expected codes) were written without review by a Hebrew-fluent annotator. A fluent reviewer should confirm or correct them; annotator recruitment and agreement protocol is a group E decision (`docs/ASSESSMENT_ENGINE.md` 19.5, 27.1). Pointer: `docs/ASSESSMENT_CALIBRATION_V0_1.md` Sections 1 and 6. **Update (Run 003):** still OPEN and human-only; a 17-row review queue (`MODEL_REVIEWED_NOT_HUMAN_APPROVED`) is prepared in `docs/ASSESSMENT_CALIBRATION_V0_1.md` Section 10 for the reviewer. It blocks the Hebrew-label-validity readiness criterion (Section 4).
 
 ## Promotion Trigger
 
@@ -1641,6 +1643,34 @@ The deterministic verifier cannot judge current-state prose claims in canonical 
 ## Promotion Trigger
 
 A Run close where a stale ahead/behind or deploy claim was found by manual review.
+
+---
+
+# FUB-063 — Golden Set Expansion: Real Authored Items and Held-Out Split
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/golden/**`, `docs/ASSESSMENT_CALIBRATION_V0_1.md`
+
+Run 003 readiness recheck found the fixture too small and tuned-on-test (89 synthetic single-author cases). Needs real authored items (with instructor permission) and a held-out split that rule fixes are not tuned on; also add a golden entry pinning the known dropped-prefix recall loss (`בכל/לכל/מכל/ככל`, currently pinned only by a unit test). Blueprint scenarios (`blueprint-scenarios.ts`) are synthetic too and need the same treatment.
+
+## Promotion Trigger
+
+Any threshold change or wiring decision (FUB-055); availability of real items.
+
+---
+
+# FUB-064 — OPTION_COMBINATION_REFERENCE Check (Next Unimplemented-Code Candidate)
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`
+
+Calibration FN disposition (Section 9) names `OPTION_COMBINATION_REFERENCE` (WEAK-COMBINATION-EN-01, "all of the above"-style combination references) as the best next unimplemented-code candidate, under AE-029 and only after the false-positive work. `ARTICLE_MISMATCH` (too noisy) and `OPTION_STYLE_OUTLIER` (no thresholds) stay research.
+
+## Promotion Trigger
+
+AE-029 is scheduled, after FUB-063 evidence exists.
 
 ---
 
