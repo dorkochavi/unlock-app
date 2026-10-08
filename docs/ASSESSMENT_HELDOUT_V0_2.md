@@ -15,6 +15,8 @@ Provenance: corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_AP
 
 ## 2. Method
 
+> Residual contamination note (Run 004 review): the labeler vocabulary quoted documented product-default thresholds that the linter also uses (for example OPTION_COUNT_UNUSUAL "fewer than 3 or more than 6", SET_TOO_SMALL "fewer than 8"), so labels for those few codes are not independent of the linter design. The author-intent notes were withheld from the labeler and were read only after the freeze, for author-vs-labeler disagreement counting; no label was changed.
+
 AUTHOR -> LABEL -> FREEZE -> EVALUATE -> REPORT, with NO TUNING.
 
 1. AUTHOR: a blind author worker wrote the corpus (`corpus.json`, 70 ITEM + 8 SET cases) and a candid per-case intent file (`author-intent.json`). Per the Run plan the author never saw linter code, thresholds, v0.1 cases, misses/false positives or calibration details.
@@ -278,7 +280,7 @@ Tally (70 findings = 44 FN + 4 FP + 22 UNLABELED_EMISSION):
 | NEEDS_HUMAN_HEBREW_REVIEW | 2 | 0 | 0 | 2 |
 | NEEDS_MORE_DATA | 0 | 0 | 1 | 1 |
 
-No clear linter defect (crash, wrong index, mis-implemented rule) was found: every emission traces to a documented threshold or cue list. NOT_IMPLEMENTED codes are filed under HEURISTIC_LIMIT because no other category fits "no rule exists"; each such reason says so. SEMANTIC_ONLY has 0 rows because the 12 semantic-only cases produce no deterministic FN; they are listed in the generated block above.
+No crash, wrong-index or mis-implemented-rule defect was found; most emissions trace to a documented threshold or cue list. Two tokenization behaviours are arguable as tokenizer defects rather than heuristic limits (HO-012: identical token sets for O(log n) and O(n log n); HO-031: 3,000 and 3,000,000 collapse to the same token set), so LIKELY_LINTER_BUG = 0 is defensible but borderline. NOT_IMPLEMENTED codes are filed under HEURISTIC_LIMIT because no other category fits "no rule exists"; each such reason says so. SEMANTIC_ONLY has 0 rows because the 12 semantic-only cases produce no deterministic FN; they are listed in the generated block above.
 
 One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_TOO_SHORT (8 findings on concise Hebrew stems), context-blind absolute-term matching (6 findings: kol, only, bilvad), and the 15-char gate in KEY_LONGEST_OPTION (4 near-miss FN) - candidates for a human-reviewed threshold discussion, not tuned here; (b) the 12 label-question rows should go to a human reviewer before any threshold discussion; (c) the 8-item set eligibility gates interact with MULTIPLE_CHOICE items (HO-077).
 
@@ -416,7 +418,7 @@ Other held-out findings that are not clusters: the 36 NOT_IMPLEMENTED FN (OPTION
 
 ## 12. HUMAN REVIEW QUEUE (for Dor)
 
-Status: MODEL_LABELED_NOT_HUMAN_APPROVED. These rows are questions, not decisions; nothing was changed or approved. Not every case needs review. Only the 9 rows below would change a finding if the answer differs from the current model label. The other label questions (HO-023, 027, 077/4 length imbalance; HO-051, 076/1, 076/9 key leakage; HO-031, 039, 057 code fit) are numerically or mechanically checkable and are left to a model-side relabel.
+Status: MODEL_LABELED_NOT_HUMAN_APPROVED. These rows are questions, not decisions; nothing was changed or approved. Not every case needs review. Only the 9 rows below would change a finding if the answer differs from the current model label. The other label questions (HO-023, 027, 077/4 length imbalance; HO-051, 076/1, 076/9 key leakage; HO-031, 039, 057 code fit) are numerically or mechanically checkable. They are NOT to be relabeled by the model: the model has now seen linter output, so any such relabel would be a post-observation edit, would require a deliberate new freeze, and would end blind status for those rows (see FUB-065).
 
 | caseId | Question for Dor | Why it matters | Current model label |
 |---|---|---|---|
@@ -428,7 +430,7 @@ Status: MODEL_LABELED_NOT_HUMAN_APPROVED. These rows are questions, not decision
 | HO-063 | בשאלה "איזו מהטענות איננה נכונה?" שבה המפתח הוא "כל הציפורים עפות": האם `כל` במפתח הוא פגם? | Decides whether the STEM_NEGATIVE_WORDING FN (`איננה`) and the absolute-term expectation are valid | FLAWED: STEM_NEGATIVE_WORDING, OPTION_ABSOLUTE_TERM |
 | HO-032 | Is a colon-ended cloze stem ("...נקרא:") an acceptable Hebrew question form or a flaw? | Author says flaw, labeler says CLEAN; decides whether STEM_NO_QUESTION_FORM should ever flag cloze stems | CLEAN |
 | HO-069 | Are numeric ranges in non-ascending order ("7 עד 9", "3 עד 4", "12 עד 14", "5 עד 6") a flaw? | Author says flaw, labeler says CLEAN; sizes the OPTION_NUMERIC_UNORDERED family (9 FN) | CLEAN |
-| HO-073 | Keys are strictly longest in 5 of 10 items, exactly at the 0.5 SET_KEY_LENGTH_BIAS threshold: should the set forbid that code, or is there a length bias? | Would flip the only SET_KEY_LENGTH_BIAS FP into a TP (policy as much as Hebrew) | FLAWED set; forbids KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS |
+| HO-073 | Keys are strictly longest in 5 of 10 items, exactly at the 0.5 SET_KEY_LENGTH_BIAS threshold: should the set forbid that code, or is there a length bias? | Would flip the only SET_KEY_LENGTH_BIAS FP into a TP (a policy/threshold question, not a Hebrew-judgment question; the weakest human-judgment row) | FLAWED set; forbids KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS |
 
 Queue size: 9 rows (2 NEEDS_HUMAN_HEBREW_REVIEW, 1 languageReviewRequired, 6 label questions). No FUB is closed by this section.
 
