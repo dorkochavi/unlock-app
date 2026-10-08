@@ -28,6 +28,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | How to interpret telemetry/context-cost signals | `docs/DEVOS_OBSERVABILITY.md` | COLD |
 | Assessment Engine direction (question quality, linter, ingestion, AI policy, Capability Ledger) | `docs/ASSESSMENT_ENGINE.md` | COLD |
 | Assessment linter calibration evidence (Golden Dataset v0.1; code in `src/domain/assessment/golden/`, plain-text ingestion prototype `src/domain/ingestion/`) | `docs/ASSESSMENT_CALIBRATION_V0_1.md` | COLD |
+| Assessment linter held-out evaluation (Golden Dataset v0.2, model-authored, not human-approved; FUB-063/064 evidence, readiness reassessment, human review queue) | `docs/ASSESSMENT_HELDOUT_V0_2.md` | COLD |
 | Learning Objectives and Assessment Blueprint design (v0.1; pure prototype in `src/domain/assessment/blueprint/`, unwired) | `docs/ASSESSMENT_BLUEPRINT_V0_1.md` | COLD |
 | Long Autonomous Run orchestration (Phase 0 identity, gates, recovery) | `.claude/skills/autonomous-run/SKILL.md` | COLD |
 | Human index of how DevOS pieces fit | `docs/CLAUDE_CODE_OPERATING_GUIDE.md` (index only; canonical owners win) | COLD |

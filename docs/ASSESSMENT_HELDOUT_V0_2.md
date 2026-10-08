@@ -11,7 +11,7 @@ Provenance: corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_AP
 - ONE model author and ONE model labeler: no inter-annotator agreement exists; the annotator pool and agreement protocol remain an open question (ASSESSMENT_ENGINE section 19.5).
 - 78 cases cannot support statistics. Every ratio below is INDICATIVE ONLY. A ratio such as `5/5` means "no counter-example in this corpus", not "reliable".
 - "Held-out" means held out from the linter work (no tuning against it), not independent of the model family that wrote both the linter and the corpus.
-- This slice reports measurements and failure classifications only. It writes NO verdict for FUB-064, position rules or integration readiness (Slice A5 owns that).
+- Sections 1-8 (Slice A4) report measurements and failure classifications only. Sections 9-13 (Slice A5) add RECOMMENDATIONS and verdicts (FUB-064, position rules, clusters, human review queue, readiness). They are advisory: no code, threshold, label or test expectation was changed, and nothing here is human-approved.
 
 ## 2. Method
 
@@ -369,3 +369,92 @@ All six sit in families the two weigh differently (negative stems, absolute-word
 ## 8. Regenerating
 
 There is no script. The generated block is produced by `formatHeldOutMarkdown(runHeldOutEvaluation(corpus, labels))`; `src/domain/assessment/__tests__/heldout-eval.test.ts` asserts that this document contains exactly that text, that the frozen files still hash to `freeze-hashes.json`, and that every FN/FP/UNLABELED_EMISSION has exactly one classification row.
+
+## 9. FUB-064 verdict: OPTION_COMBINATION_REFERENCE
+
+**Verdict: IMPLEMENT_NEXT** (recommendation only; nothing implemented; scheduling stays under AE-029). Confidence: low-to-medium, because the evidence is 3 held-out cases plus 1 v0.1 case.
+
+**Did combination-reference flaws appear naturally? Insufficient evidence.** HO-026 (Hebrew, "תשובות א ו-ג נכונות"), HO-027 ("Both a and c") and HO-064 ("Both a and b") are each one deliberately authored flaw in a corpus built as a flaw-injection set (the author intent lists each as a targeted flaw). Three cases written ON PURPOSE show that the pattern is easy to write and easy to label, not that instructors produce it unprompted. What can be said: the blind author wrote it in both languages and in both SINGLE_CHOICE and MULTIPLE_CHOICE items, and none of the other 75 held-out cases contains a combination-style option (read check below), so it did not leak into unrelated items.
+
+**Would a deterministic rule have clear semantics? Yes, if narrow.** Observed surface forms: `Both a and c`, `Both a and b` (English, lower-case ids matching option ids), `תשובות א ו-ג נכונות` (Hebrew letters א/ג standing for ids a/c), and the v0.1 case `Both A and B`. A conservative rule would require (1) a cue word (`both`, `option(s)`, `answer(s)`, `תשובות`, `שתי התשובות`, `שניהם`) AND (2) one or more reference tokens that resolve to an existing option id or its ordinal letter (Latin a-d, Hebrew א-ד) of the same item, appearing in an option other than the referenced ones. Position-dependence is real: such an option only means something relative to option order and breaks under shuffling. That is itself the pedagogical defect, and detecting the reference needs no semantics. Not covered by the narrow form (and not claimed): `שתי התשובות הראשונות` / "the first two answers" (ordinal phrase without ids; needs a Hebrew ordinal list) and `A, B and C` without a cue word.
+
+**False-positive risk (by reading, no new code run).** I read all 568 held-out options for would-be triggers, plus the v0.1 fixture strings:
+
+- Options that legitimately contain `and`/`ו`: HO-028 ("Kind and well-meaning" etc.), HO-023 ("המים מורכבים ממימן וחמצן"), HO-052 ("RAM ... ו-ROM ..."), HO-077/2, HO-078/6, and v0.1 ("Erosion of rock by wind and rain"). None has a cue word plus an id token, so the narrow rule stays silent. A bare `and`/`ו` rule would fire on all of them, so cue word plus resolvable id is mandatory.
+- Single letters that look like ids: HO-013 ("ויטמין A/C/D/K"), HO-073/5 and HO-074/4 (unit names). The letter must resolve to an id of the SAME item and sit behind a cue word; `ויטמין A` has no cue word. Residual risk: an item that really says "option A and B of the protocol" (not seen in either corpus).
+- Neighbouring constructs: `שניהם שווים במשקלם` (HO-058, refers to the two things in the stem, not to options), and `אף אחת מהתשובות` / `כל התשובות נכונות` (already covered by OPTION_NONE_OF_ABOVE / OPTION_ALL_OF_ABOVE; a rule must not double-report them).
+- Result: no would-be false trigger found in the 78 held-out and 89 v0.1 cases under the narrow rule. This is a reading check on small, synthetic, single-author data, not a measured FP rate.
+
+**Pedagogical usefulness:** high in principle (combination options are position-dependent, reward elimination test-wiseness, break when options are shuffled). Each held-out case also shows a second defect the reference exposes (HO-064 marks `a`, `b` and the `d` "Both a and b" all correct; in HO-026 option d says a and c are correct while c is wrong). **Requires semantics?** No to detect the reference; yes to judge whether the combination is logically valid (not claimed).
+
+**Conditions for the implementing Slice:** WARNING-level advisory; explicit cue-word list and id resolution in the spec; a purpose-built negative set (options with `and`/`ו`, `Vitamin A`, `שניהם`); no overlap with ALL/NONE_OF_ABOVE; and evaluation on a fresh held-out batch, not on HO-026/027/064 alone.
+
+## 10. Position rules verdict: KEY_POSITION_IMBALANCE and KEY_POSITION_RUN
+
+Sample: 8 SET cases only (HO-071 to HO-078). All numbers are indicative; no statistic is possible.
+
+| Rule | Held-out evidence | Verdict |
+|---|---|---|
+| KEY_POSITION_IMBALANCE | 5/6 TP, 1 FN (HO-077), 0 FP. Every TP is an extreme set (constant key, 9 of 10 on one position). Only ONE set (HO-073, 10 items) is a labelled balanced negative that forbids it. | **WATCH** (unchanged from v0.1 WATCH, high priority) |
+| KEY_POSITION_RUN | 5/5 TP, 0 FP. HO-073 and HO-078 forbid it; neither fired. | **KEEP** (provisional) |
+
+- **Why the held-out set cannot move IMBALANCE off WATCH:** the v0.1 concern is analytic (fair random placement trips the 1.5/k share in roughly 45% of 8-item sets, calibration section 3). The held-out sets contain no random-fair small set built to probe that, so this result neither confirms nor refutes the fragility. 5/6 on constant or near-constant keys is what almost any rule would score.
+- **HO-077 FN (7 eligible items):** the set has 8 items but item 3 is MULTIPLE_CHOICE, so only 7 SINGLE_CHOICE keyed 4-option items form the group. The rule needs 8, so IMBALANCE stayed silent (and SET_KEY_LENGTH_BIAS for the same eligibility reason) while RUN fired. The labeler counted all 8 items. This is an eligibility-gate design question (should MULTIPLE_CHOICE items count, or should 7 of 8 eligible be analysed?), not a threshold bug. One case: candidate for future evidence only.
+- **Forbidden-code behaviour:** HO-073 forbids both position codes and HO-078 forbids RUN; the linter emitted none (0 FP on these negatives). HO-073 did emit SET_KEY_LENGTH_BIAS, a different code (queue row HO-073 in section 12).
+- **RUN KEEP caveat:** v0.1 flagged analytic growth in RUN noise on long sets (about 37% of random 40-item sets). Not tested here (sets have 8 to 10 items). KEEP means "no evidence against", not "validated".
+- No threshold or rule change is proposed. A significance-aware rule and the treatment of MULTIPLE_CHOICE items in eligibility are candidates for future evidence (FUB-059 residual).
+
+## 11. Cross-cutting findings (recommendations only)
+
+| Cluster | Held-out evidence | Recommendation | Candidate FUB | Evidence strength | Human decision needed? |
+|---|---|---|---|---|---|
+| STEM_TOO_SHORT on concise complete Hebrew stems | 8 findings: 1 FP on CLEAN HO-001 ("מהי בירת אוסטרליה?") and 7 unlabeled (HO-020, 041, 042; items in HO-072, 076 x2, 078). 2 TP on truly fragmentary stems. Every flagged stem is a complete 2-3 word Hebrew question. | Candidate rule revision (word count over-flags terse Hebrew) | FUB-066 | Moderate (many stems, but one author and one corpus) | Yes: what "too short" means for Hebrew, and whether the signal should exist |
+| Context-blind absolute-term matching (`כל`, `only`, `בלבד`, `all`) | 1 FP (HO-011) plus 5 unlabeled over-flags in correct descriptive keys or plausible distractors (HO-027, 051, 052, 055, 077/1). 9/9 labelled absolute cues were caught; 1 genuine cue was unlabeled (HO-015 `שום`). | Candidate rule revision (precision, with a recall trade-off) | FUB-066 (same entry) | Moderate-to-low (6 over-flags, and Run 003 already traded recall for precision here; a fix could trade it back) | Yes: acceptable false-positive rate for an advisory warning (group E) |
+| KEY_LONGEST_OPTION 15-char gate near-misses | 4 FN (HO-029 and HO-049 key +11 chars, HO-073/8 +14, HO-077/2 +12; ratios 1.26 to 1.56) against 18/22 TP and 0 FP. v0.1 already marked this exact threshold WATCH. | Threshold discussion only (no change proposed) | FUB-067 | Low-to-moderate (4 near-misses; no negative sits just under 15, so lowering has no FP evidence either way) | Yes: acceptable FP rate and whether a ratio-only fallback is wanted |
+
+Other held-out findings that are not clusters: the 36 NOT_IMPLEMENTED FN (OPTION_NUMERIC_UNORDERED 9, 8 of them in the single set HO-072; EXPLANATION_NAMES_ONLY_KEY 9, with 2 label questions; OPTION_STYLE_OUTLIER 5; others fewer) remain AE-029 prioritisation inputs; OPTION_OVERLAP_HIGH tokenization (HO-012 `O(log n)` vs `O(n log n)`, HO-031 digit groups) has 2 findings, insufficient for a cluster; the borderline NEAR_DUPLICATE_STEM in HO-075 is NEEDS_MORE_DATA.
+
+## 12. HUMAN REVIEW QUEUE (for Dor)
+
+Status: MODEL_LABELED_NOT_HUMAN_APPROVED. These rows are questions, not decisions; nothing was changed or approved. Not every case needs review. Only the 9 rows below would change a finding if the answer differs from the current model label. The other label questions (HO-023, 027, 077/4 length imbalance; HO-051, 076/1, 076/9 key leakage; HO-031, 039, 057 code fit) are numerically or mechanically checkable and are left to a model-side relabel.
+
+| caseId | Question for Dor | Why it matters | Current model label |
+|---|---|---|---|
+| HO-049 | האם ניקוד רק על אפשרות אחת (המפתח) נחשב פגם סגנוני או רמז למפתח, או שזה מקובל? | NEEDS_HUMAN_HEBREW_REVIEW: decides whether OPTION_STYLE_OUTLIER is a real Hebrew-convention flaw | FLAWED: OPTION_STYLE_OUTLIER, KEY_LONGEST_OPTION |
+| HO-070 | אותה שאלה: ניקוד על אפשרות b בלבד, והמפתח הוא a. פגם סגנוני או לא? | NEEDS_HUMAN_HEBREW_REVIEW: here the niqqud does not point to the key | FLAWED: OPTION_STYLE_OUTLIER |
+| HO-076 | Set marked languageReviewRequired: is the Hebrew natural, and does the key restating stem words (item 1) count as real leakage? | Only languageReviewRequired case; 18 item detections and 4 unlabeled leakage emissions depend on it | FLAWED set: SET_KEY_LENGTH_BIAS, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN |
+| HO-017 | האם ארבע אפשרויות שכולן פותחות ב"תמיד" הן פגם בפני עצמו, או תוכן לגיטימי בשאלה על משולש? | Author says "suspicious but fine", labeler says FLAWED; decides whether this FN is a label error | FLAWED: OPTION_ABSOLUTE_TERM, OPTION_PREFIX_STEM_REPEAT |
+| HO-015 | האם "שום משמעות" באפשרות d הוא רמז מוחלט או ניסוח רגיל? | Real unlabeled `שום` emission; the `שום` homograph was already a Hebrew-judgment topic in FUB-060 | FLAWED: KEY_LONGEST_OPTION (no absolute-term label) |
+| HO-063 | בשאלה "איזו מהטענות איננה נכונה?" שבה המפתח הוא "כל הציפורים עפות": האם `כל` במפתח הוא פגם? | Decides whether the STEM_NEGATIVE_WORDING FN (`איננה`) and the absolute-term expectation are valid | FLAWED: STEM_NEGATIVE_WORDING, OPTION_ABSOLUTE_TERM |
+| HO-032 | Is a colon-ended cloze stem ("...נקרא:") an acceptable Hebrew question form or a flaw? | Author says flaw, labeler says CLEAN; decides whether STEM_NO_QUESTION_FORM should ever flag cloze stems | CLEAN |
+| HO-069 | Are numeric ranges in non-ascending order ("7 עד 9", "3 עד 4", "12 עד 14", "5 עד 6") a flaw? | Author says flaw, labeler says CLEAN; sizes the OPTION_NUMERIC_UNORDERED family (9 FN) | CLEAN |
+| HO-073 | Keys are strictly longest in 5 of 10 items, exactly at the 0.5 SET_KEY_LENGTH_BIAS threshold: should the set forbid that code, or is there a length bias? | Would flip the only SET_KEY_LENGTH_BIAS FP into a TP (policy as much as Hebrew) | FLAWED set; forbids KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS |
+
+Queue size: 9 rows (2 NEEDS_HUMAN_HEBREW_REVIEW, 1 languageReviewRequired, 6 label questions). No FUB is closed by this section.
+
+## 13. INTEGRATION READINESS reassessment (advisory-only integration design)
+
+**Verdict: NOT_READY.** Recommendation only; nothing is wired and AE-031 stays gated. The held-out evidence changes the status of some criteria and moves none to MET.
+
+Deciding reasons:
+
+1. **Precision on fresh data is not as clean as the fixture-fit result.** v0.1 reported 0 FP and 0 of 18 CLEAN warn after rules were tuned on those cases. On never-tuned data: 4 FP, 3 of 20 CLEAN cases warn, 22 unlabeled emissions, in recurring clusters (section 11). The v0.1 "PASS but fixture-fit" is not confirmed; the criterion becomes WATCH.
+2. **Provenance is still model-only.** v0.2 exists and was evaluated blind, but it is `MODEL_AUTHORED_HELD_OUT` with `MODEL_LABELED_NOT_HUMAN_APPROVED` labels: one author, one labeler, 78 cases, no real course content, no inter-annotator agreement. The held-out SPLIT half of exit criterion 2 now exists; the real or cleared items half does not.
+3. **Design and engineering gates are untouched by data:** position-rule significance (exit 3; IMBALANCE WATCH), import-validator naming reconciliation (exit 5, AE-031) and the non-blocking advisory surface (exit 4) cannot be satisfied by held-out results, and nothing is wired. In addition, 36 NOT_IMPLEMENTED FN and 29 cases with a semanticExpectation mean a clean result says little.
+
+| Criterion (calibration section 4) | v0.1 status | Held-out v0.2 effect | Status now |
+|---|---|---|---|
+| Contract clarity, bounded runtime, stable codes, determinism | PASS | Unchanged linter ran once over 78 new cases; no linter defect found (0 LIKELY_LINTER_BUG) | PASS (no new claim) |
+| False-positive behaviour | PASS, fixture-fit | CHANGED: 4 FP, 3/20 CLEAN warn, 22 unlabeled on untuned data | WATCH |
+| Hebrew label validity | PASS with caveat | v0.2 labels are model-only; 2 NEEDS_HUMAN_HEBREW_REVIEW plus HO-076 queued (section 12) | PASS for v0.1 only; v0.2 PENDING |
+| Fixture size and provenance (exit 2) | FAIL | PARTLY CHANGED: a held-out split exists, but model-authored; no real or cleared items | FAIL / OPEN (narrowed; FUB-063 stays open) |
+| Remaining misses | WATCH | 44 FN (36 NOT_IMPLEMENTED, 8 gaps), recall-like 80/124; the 8 gaps sit at known WATCH thresholds | WATCH (larger, same character) |
+| Warning stability | WATCH | Recurring over-flag clusters on fresh data; the Run 003 precision/recall trade-off is visible | WATCH (stronger risk evidence) |
+| Thresholds (exit 6) | WATCH | KEY_LONGEST 15-char gate and position WATCH shown live; no threshold changed | WATCH (unchanged; v0.2 must not be tuned on) |
+| Blocking semantic false confidence | WATCH | 29 cases carry a semanticExpectation (12 semantic-only); the linter is silent on them | WATCH (reinforced) |
+| Exit 1: Hebrew review | MET (caveat) | Covers v0.1 only | MET (v0.1 only) |
+| Exit 3: significance-aware position rule | OPEN | No new probe; HO-077 eligibility question added | OPEN |
+| Exit 4: non-blocking advisory design | OPEN | Not testable by data | OPEN |
+| Exit 5: import-validator naming (DUPLICATE_PROMPT) | OPEN | No effect | OPEN |
+
+The two corpora are never pooled (section 4); this table compares verdict status, not metrics.

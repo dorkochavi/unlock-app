@@ -1646,11 +1646,13 @@ A Run close where a stale ahead/behind or deploy claim was found by manual revie
 
 # FUB-063 — Golden Set Expansion: Real Authored Items and Held-Out Split
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` (partial: a held-out split now exists; real authored items still missing)
 **Priority:** `LOW`
-**Area:** `src/domain/assessment/golden/**`, `docs/ASSESSMENT_CALIBRATION_V0_1.md`
+**Area:** `src/domain/assessment/golden/**`, `docs/ASSESSMENT_CALIBRATION_V0_1.md`, `docs/ASSESSMENT_HELDOUT_V0_2.md`
 
 Run 003 readiness recheck found the fixture too small and tuned-on-test (89 synthetic single-author cases). Needs real authored items (with instructor permission) and a held-out split that rule fixes are not tuned on; also add a golden entry pinning the known dropped-prefix recall loss (`בכל/לכל/מכל/ככל`, currently pinned only by a unit test). Blueprint scenarios (`blueprint-scenarios.ts`) are synthetic too and need the same treatment.
+
+**Update (Run 2026-10-09-ASSESSMENT-ENGINE-004):** a held-out split now EXISTS and was evaluated blind with the unchanged linter: Golden Dataset v0.2 (`src/domain/assessment/golden/heldout-v0-2/`, 78 cases, frozen at `23fbc1c`, evaluated in `b9aaca4`; report `docs/ASSESSMENT_HELDOUT_V0_2.md`). It is `MODEL_AUTHORED_HELD_OUT` with `MODEL_LABELED_NOT_HUMAN_APPROVED` labels: synthetic general-knowledge content, one model author and one model labeler, NOT real authored or instructor-cleared items, NOT human ground truth, no inter-annotator agreement. Headline (indicative only, never pooled with v0.1): 80/124 detections, 44 FN (36 NOT_IMPLEMENTED), 4 FP, 3 of 20 CLEAN cases warned, 22 unlabeled emissions. **Still open:** real or cleared items, human approval of the v0.2 labels (FUB-065), the dropped-prefix golden entry, blueprint scenarios. v0.2 must not be tuned on; a threshold fix needs a fresh split.
 
 ## Promotion Trigger
 
@@ -1666,9 +1668,53 @@ Any threshold change or wiring decision (FUB-055); availability of real items.
 
 Calibration FN disposition (Section 9) names `OPTION_COMBINATION_REFERENCE` (WEAK-COMBINATION-EN-01, "all of the above"-style combination references) as the best next unimplemented-code candidate, under AE-029 and only after the false-positive work. `ARTICLE_MISMATCH` (too noisy) and `OPTION_STYLE_OUTLIER` (no thresholds) stay research.
 
+**Evidence note (Run 2026-10-09-ASSESSMENT-ENGINE-004, A5; recommendation only, `docs/ASSESSMENT_HELDOUT_V0_2.md` section 9):** verdict `IMPLEMENT_NEXT`, low-to-medium confidence. Held-out cases HO-026 (Hebrew), HO-027 and HO-064 (English) were all deliberately authored flaws, so natural frequency is unproven (insufficient evidence). A narrow rule (cue word plus a reference token resolving to an option id of the same item, Latin or Hebrew letters) has clear semantics; reading all 78 held-out and 89 v0.1 cases found no would-be false trigger, but this is a reading check on synthetic data, not a measured FP rate. Not implemented; this item stays open.
+
 ## Promotion Trigger
 
-AE-029 is scheduled, after FUB-063 evidence exists.
+AE-029 is scheduled (held-out evidence from FUB-063 now exists, see the note above).
+
+---
+
+# FUB-065 — Human Review of the v0.2 Held-Out Label Questions
+
+**Status:** `DEFERRED` — human action
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/golden/heldout-v0-2/`, `docs/ASSESSMENT_HELDOUT_V0_2.md` section 12
+
+Nine rows (HO-049, HO-070, HO-076, HO-017, HO-015, HO-063, HO-032, HO-069, HO-073) are genuinely ambiguous Hebrew linguistic/pedagogical label questions that would change a held-out finding (2 NEEDS_HUMAN_HEBREW_REVIEW, 1 languageReviewRequired, 6 label questions). Dor's answers are NOT recorded and no label was changed. Answers that change labels require a deliberate new freeze (hash record update) and a regenerated report; v0.2 may then be called partially human-reviewed, never fully HUMAN_APPROVED on the strength of nine rows.
+
+## Promotion Trigger
+
+Before any threshold discussion based on FUB-066/FUB-067, or before the v0.2 numbers are quoted outside this repository.
+
+---
+
+# FUB-066 — Context-Blind Heuristic Clusters: STEM_TOO_SHORT and OPTION_ABSOLUTE_TERM
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
+
+Held-out v0.2 shows two recurring over-flag clusters (`docs/ASSESSMENT_HELDOUT_V0_2.md` section 11): STEM_TOO_SHORT on complete 2-3 word Hebrew questions (8 findings, one FP on a CLEAN case) and context-blind absolute-term matching on `כל`/`only`/`בלבד`/`all` inside correct descriptive keys (6 findings, one FP). Evidence is moderate and single-author. Any change trades precision against recall (see the Run 003 recall losses) and needs a human decision on the acceptable false-positive rate (group E) and on what "too short" means in Hebrew. Do NOT tune on v0.2; a fix needs a fresh split plus purpose-built negatives.
+
+## Promotion Trigger
+
+A decision to wire lint (FUB-055), or the next Run that touches linter heuristics, after FUB-065 answers exist.
+
+---
+
+# FUB-067 — KEY_LONGEST_OPTION 15-Character Gate and Set Eligibility Near-Misses
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`
+
+Four held-out FN sit just under `KEY_LONGEST_MIN_CHAR_DIFF` (key +11, +11, +12, +14 characters, ratios 1.26 to 1.56; 18/22 TP, 0 FP), as the v0.1 WATCH predicted. Separately, HO-077 shows the 8-item eligibility gate (position and length-bias rules) skipping a set where item 3 is MULTIPLE_CHOICE (7 eligible items). Both are threshold or eligibility-design questions with 4 and 1 cases of evidence: candidates for future evidence only, no change proposed (`docs/ASSESSMENT_HELDOUT_V0_2.md` sections 10 and 11).
+
+## Promotion Trigger
+
+A threshold-discussion Run with a fresh held-out split and near-threshold negatives; or residual FUB-059 position-rule work.
 
 ---
 
