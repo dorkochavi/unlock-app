@@ -154,3 +154,21 @@ A pure prototype in C3 **is justified**: every rule above is closed-form integer
 6. **Multi-objective questions:** should planning discount them, or assume one objective per question?
 7. **Precedence:** blueprint `max` vs lint default 40% concentration; archived LOs in cells.
 8. **Items scope:** which set is compared (course, topic, draft batch); whether archived/unpublished questions count.
+
+### Resolved in the C3 prototype
+
+Smallest-consistent readings where this doc is not explicit (verified against `blueprint.ts`):
+
+1. Duplicate `questionId`: items are canonically sorted by (questionId, sorted objective set) before taking the first, so output is input-order independent.
+2. UNALLOCATED: in `validateBlueprint` = no cell of any kind references the objective; in `compareCoverage` = no VALID cell does.
+3. `TOTAL_ABOVE_MAXES` requires at least one valid cell (an empty plan stays valid) and all valid cells bounded.
+4. Cell defects stack independently per cell; `CELL_DUPLICATE` is emitted once per objective id.
+5. Within a code, issues without `objectiveId` sort before those with one; ties broken by message.
+6. Invalid `targetTotal` => total rules skipped in validation and `totalStatus` is `NOT_EVALUATED` (also when no total is declared).
+7. `max` undefined is treated as null (unbounded); non-string ids are skipped (items) or reported as unknown (cells).
+8. A duplicated declared-universe id is deduped; the smallest `topicId` wins.
+9. `duplicateQuestionIds` lists each repeated id once.
+10. `unknownObjectiveRefs` are deduped per (question, objective) and only from the first occurrence of a question.
+11. Cell counts and `targetTotal` must be safe non-negative integers.
+12. `CoverageReport` also exposes `distribution[]`: one entry per declared objective `{objectiveId, actual}`, plus `min`/`max` only when a valid cell exists (no per-entry status; status lives in `cells[]`).
+13. Topic `sumMin`/`sumMax` use valid cells only; `sumMax` is null if any valid cell is unbounded or the Topic has none.
