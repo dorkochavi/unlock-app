@@ -274,7 +274,7 @@ Status of the 17 rows: `HUMAN_APPROVED: Dor, 2026-10-08` (12 APPROVED, 5 CHANGED
 
 Selection criterion: Golden cases whose ground-truth label depends on Hebrew-fluent judgment (naturalness of wording, negation reading, whether prefix/normalization changes meaning, distractor plausibility, morphology/boundary labels) plus the cases touched by the Run 003 B2 rule fixes. Obvious cases are excluded: structural, English, digit/bidi/zero-width/niqqud/maqaf/gershayim normalization, all/none-of-the-above, and the other Hebrew cases whose label is mechanical. **16 of 89 Golden cases were queued**, plus 1 row with no Golden case (the `בכל/לכל` recall loss, pinned only by a unit test). Hebrew text is copied verbatim from `golden-dataset-v0-1.ts`; options are shown in dataset order with the key marked `[KEY]`.
 
-How Dor records decisions: put `APPROVED`, `CHANGE: <new label or wording>` or `REJECT: <reason>` in the Decision column of each row (or in a commit that edits the fixture), then close FUB-060 in `docs/FOLLOW_UP_BACKLOG.md` yourself. Label changes require regenerating the report. (Historical instruction; completed, see the status line above.)
+(Historical: the decision-recording instruction for this queue was completed; see the status line above.)
 
 | # | Case ID | Stem and options | Expected label / warning | Why review is needed | Question for Dor | Decision |
 |---|---|---|---|---|---|---|
