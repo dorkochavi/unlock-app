@@ -15,7 +15,7 @@ A: fix coarse per-Slice telemetry attribution. B: harden linter false positives,
 | B3-B5 | `b007952`, `7953113` | Recalibration, FN dispositions, 17-row Hebrew review queue, readiness recheck |
 | C1-C2 | `9c366b1`, `8d821e3` | Learning Objectives + Blueprint design (`docs/ASSESSMENT_BLUEPRINT_V0_1.md`) |
 | C3-C4 | `9a9920b`, `86cf398`, `b222245` | Pure `validateBlueprint` / `compareCoverage` prototype, 9 synthetic scenarios, review fixes |
-| L | `4bb6753` | Ledger / routing docs (AE-028, AE-045, FUB-059/063/064, OQ-049, CONTEXT_MAP) |
+| L | `4bb6753` | Ledger / routing docs (AE-028, AE-045, FUB-059/063/064, OQ-050, CONTEXT_MAP) |
 
 ## Slice A finding and telemetry acceptance
 Run 002's coarse attribution was a PARENT PROCESS failure (9 workers, 4 distinct slice_ids; the instruction lived only in §13). Fix: SKILL §7 pre-dispatch item plus WARN-only verifier advisory. The skill change took effect only from this Run's bootstrap; the advisory ran at this Run's close.
@@ -42,7 +42,7 @@ Human Hebrew review queue: 17 rows in `docs/ASSESSMENT_CALIBRATION_V0_1.md` §10
 `docs/ASSESSMENT_BLUEPRINT_V0_1.md`: Part 1 Learning Objectives DESIGNED; Part 2 Blueprint DESIGNED. Pure prototype `src/domain/assessment/blueprint/blueprint.ts` (`validateBlueprint`, `compareCoverage`; `MAX_BLUEPRINT_COUNT = 1_000_000`) PROTOTYPED, unwired; 9 synthetic scenarios. Independent review: 0 material, 5 minor, all addressed in `b222245`.
 
 ## Ledger deltas
-AE-028 IDEA to PROTOTYPED; AE-045 IDEA to DESIGNED; AE-011 stays DESIGNED. Counts before to after: IDEA 15 to 13, DESIGNED 16 to 17, PROTOTYPED 9 to 10; DEFERRED 4, HUMAN_GATE 2; none IMPLEMENTED or VERIFIED. FUB-059 narrowed (FP part resolved, residuals open); FUB-063, FUB-064 new; OQ-049 new (13 sub-questions; note FOLLOW_UP_BACKLOG also mentions a "former OQ-049" for an earlier resolved Topic-name decision, so the id is reused).
+AE-028 IDEA to PROTOTYPED; AE-045 IDEA to DESIGNED; AE-011 stays DESIGNED. Counts before to after: IDEA 15 to 13, DESIGNED 16 to 17, PROTOTYPED 9 to 10; DEFERRED 4, HUMAN_GATE 2; none IMPLEMENTED or VERIFIED. FUB-059 narrowed (FP part resolved, residuals open); FUB-063, FUB-064 new; OQ-050 new (13 sub-questions; note FOLLOW_UP_BACKLOG also mentions a "former OQ-050" for an earlier resolved Topic-name decision, so the id is reused).
 
 ## Verification (evidence class: unit / static, local only; all at or after `4bb6753`)
 - `vitest src/domain`: 32 files / 674 tests pass.
@@ -58,7 +58,7 @@ Linter and blueprint prototypes unwired; FUB-059 residuals; FUB-060 human Hebrew
 
 ## Decision Packet (human)
 1. FUB-060: a fluent Hebrew reviewer approves, edits or rejects the 17 queue rows in CALIBRATION §10. Needed before any instructor-facing wiring.
-2. OQ-049: decide Learning Objective / Blueprint questions (13 sub-questions) before any schema or UI work.
+2. OQ-050: decide Learning Objective / Blueprint questions (13 sub-questions) before any schema or UI work.
 3. Push of the 32 local commits remains a human action (ADR-019).
 
-Optional next steps. NOW: human Hebrew review of the queue (FUB-060). NEXT: FUB-063 real-item golden expansion with held-out split; FUB-064 OPTION_COMBINATION_REFERENCE; decide OQ-049. LATER: wire lint into import (AE-031) only after the human review and a readiness recheck; DOCX/PDF/AI remain gated.
+Optional next steps. NOW: human Hebrew review of the queue (FUB-060). NEXT: FUB-063 real-item golden expansion with held-out split; FUB-064 OPTION_COMBINATION_REFERENCE; decide OQ-050. LATER: wire lint into import (AE-031) only after the human review and a readiness recheck; DOCX/PDF/AI remain gated.

@@ -890,7 +890,7 @@ AI is not the real-time Learning Engine.
 This question concerns content production/governance, not deterministic learner
 state.
 
-## OQ-049 — Learning Objectives and Assessment Blueprint: Candidate Human Decisions
+## OQ-050 — Learning Objectives and Assessment Blueprint: Candidate Human Decisions
 
 Status: OPEN (grouped entry; each row is an independent unresolved sub-question)
 
