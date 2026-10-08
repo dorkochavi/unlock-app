@@ -1,0 +1,13 @@
+{
+  "version": "v0.2-heldout",
+  "provenance": {
+    "corpus": "MODEL_AUTHORED_HELD_OUT",
+    "labels": "MODEL_LABELED_NOT_HUMAN_APPROVED"
+  },
+  "cases": 78,
+  "sha256": {
+    "corpus.json": "6fe54005bf002622caddb4d202ca38d4e97b8c9cb98763a4ca1b9632bed2324b",
+    "labels.json": "564fa862267ff75ebefcc05af0f42eca90a1fb96a3183c1cf1a0001b09bbfeeb",
+    "author-intent.json": "5f60f4632cf443f3d45510dbf8fe97fdb5d4815e663ad85f6122c7f94676d475"
+  }
+}
