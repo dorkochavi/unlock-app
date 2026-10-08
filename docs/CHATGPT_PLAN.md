@@ -1,28 +1,26 @@
-# UNLOCK — DESIGN-AUDIT-FOLLOWUP-001 — Evidence-Backed, No-Decision Fixes from Design Audit 001
+# UNLOCK — BROWSER-ISOLATION-STUDY-001 — Safe Architecture for Rendered Audits Without Hosted Contact
 
-PLAN_VERSION: 030
-RUN_ID: 2026-10-09-DESIGN-AUDIT-FOLLOWUP-001
-START_HEAD: `6c5e2cf`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `c9071f3`
-STATUS: **COMPLETE + STOP** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
+PLAN_VERSION: 031
+RUN_ID: 2026-10-09-BROWSER-ISOLATION-STUDY-001
+START_HEAD: `4b28bb9`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `4b28bb9`
+STATUS: **IN PROGRESS** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Apply only clear, evidence-backed, low-risk fixes from the SOURCE_ONLY Design Audit 001 (2026-10-09; no rendered pass existed, no rendered claim is made) that need NO human product decision: P2-01 (two unlabeled Topic inputs), P2-02 (instructor error paragraphs bypass the shared `Notice`), DS-01 (`setsPadding` regex lost its backslashes). Prepare a Decision Packet (analysis only) for P2-03 (unsaved-edit navigation loss).
+Find the smallest safe architecture that lets UNLOCK run browser/rendered audits (Design Audit 001's missing Pass 1) without contacting hosted Supabase, hosted Postgres, Production APIs or any external application service. READ-ONLY / DESIGN-FIRST: map every escape path from BROWSER → NEXT CLIENT → NEXT SERVER → AUTH → DB → EXTERNAL NETWORK; compare options (local Supabase stack, dedicated test Supabase project, full mocked Next/API data layer, PGlite/local-Postgres-backed harness, expanded existing Q3 mocked-browser technique); recommend; define the future rendered Design Audit plan. A prototype is allowed only if it is completely local, needs no dependency, no real credentials, no schema mutation, deterministically blocks hosted network, fails safe, and an independent reviewer agrees; otherwise DESIGN ONLY.
 
 ## 2. Invariants
-No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; no dependency change; no AI/Google. Preserve existing messages, visual tone and behavior; no duplicated alerts; no new focus behavior; no broad design churn or token/visual redesign; no change to learner flows. NOT decided autonomously: P2-03 mechanism (beforeunload / router guard / modal / autosave / draft persistence), dark-mode policy, non-manager instructor-link intent, revoked-access navigation semantics, UX-01 gating, large design-system refactor. Assessment Engine untouched.
+No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; no dependency change; no AI/Google; never read or print secret values (`.env*`); no dev server, browser or network contact in this study unless a prototype passes the gates above; no product-code change; this is NOT permission to touch hosted state.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| B1 | P2-01: accessible names for the two Topic inputs (natural Hebrew via existing message keys) | REVIEW_GATE | DONE |
-| B2 | P2-02: replace the identified plain error/success paragraphs with shared `Notice`, preserving messages/behavior | REVIEW_GATE | DONE |
-| B3 | DS-01: fix `setsPadding` regex (independently confirm defect red→green) + focused tests | REVIEW_GATE | DONE |
-| B4 | P2-03 Decision Packet + route deferred audit items to backlog (no implementation) | AUTO | DONE |
-| Z | Review, verification, Run close | FINAL_GATE | DONE |
+| C1 | Architecture map + escape paths + options matrix + recommendation + future rendered-audit plan (design doc) | REVIEW_GATE | PENDING |
+| C2 | Prototype decision (gated; default DESIGN ONLY) | REVIEW_GATE | PENDING |
+| Z | Review, verification, backlog routing, Run close | FINAL_GATE | PENDING |
 
 ## History
 
