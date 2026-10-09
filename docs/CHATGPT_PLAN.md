@@ -1,26 +1,25 @@
-# UNLOCK — ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001 — Apply Dor's 9 Held-Out Human Decisions (Post-Evaluation Adjudication)
+# UNLOCK — ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002 — Post-Human-Review Consistency Fix (Decision Taxonomy)
 
-PLAN_VERSION: 032
-RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001
-START_HEAD: `0f32fec`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `94bce38`
-STATUS: **COMPLETE + STOP** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
+PLAN_VERSION: 033
+RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002
+START_HEAD: `131cb28`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `131cb28`
+STATUS: **IN PROGRESS** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Apply Dor's 9 human review decisions (HUMAN_APPROVED, Dor, 2026-10-09) to the Golden Dataset v0.2 held-out labels as a POST-EVALUATION adjudication; recompute held-out metrics with the UNCHANGED linter; keep the original FIRST-BLIND evidence preserved; update provenance, readiness, FUB-064 verdict and FUB-065 truthfully. NOT a linter-tuning Run.
+Verify that all 9 of Dor's held-out decisions (HUMAN_APPROVED, Dor, 2026-10-09) are represented exactly, and remove the incorrect "ambiguity remaining" language: Dor's decisions are definitive; the only open state is a harness accounting convention (a linter emission neither expected nor forbidden is an UNLABELED_EMISSION). Replace the per-case `cause` vocabulary with HUMAN_DECIDED_LABEL_CHANGE / HUMAN_DECIDED_NO_LABEL_CHANGE / HUMAN_DECIDED_BUT_NO_METRIC_EFFECT / TRUE_REMAINING_AMBIGUITY (expected: none). Metrics are expected to be unchanged; recompute only to prove it.
 
 ## 2. Invariants
-No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; no dependency change; no AI/Google. **No edit to `question-lint.ts`, `text-normalize.ts`, thresholds, cue lists, normalization, set-level heuristics, the v0.1 dataset, or UI/import wiring.** The frozen held-out files (`corpus.json`, `labels.json`, `author-intent.json`, `freeze-hashes.json`) stay byte-identical; the corpus is not rewritten. Human decisions are recorded as an overlay (`human-adjudication.json`) applied on top of the frozen labels; FIRST_BLIND numbers stay historical and are never replaced; POST_HUMAN numbers are labeled HUMAN-ADJUDICATED / POST-EVALUATION (blindness no longer fully preserved for the 9 reviewed rows). Only the 9 reviewed rows get `HUMAN_APPROVED`; all others remain `MODEL_LABELED_NOT_HUMAN_APPROVED`. FUB-064 stays recommendation only.
+No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; no dependency change; no AI/Google. No edit to `question-lint.ts`, `text-normalize.ts`, thresholds, cue lists, normalization, set heuristics, the v0.1 dataset, the frozen held-out files (`corpus.json`, `labels.json`, `author-intent.json`, `freeze-hashes.json`), or UI/import wiring. FIRST_BLIND numbers and the first GENERATED block stay byte-identical. The overlay changes only if a decision is mis-represented. If a change is NOT a direct fix of a mis-stated decision (e.g. treating a human-declined expectation as a forbidden code, which would change POST_HUMAN FP/UNLABELED counts), it is not applied: it is surfaced as a human choice.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| H1 | Overlay data + harness support for FIRST_BLIND vs POST_HUMAN + tests + regenerated report block | REVIEW_GATE | DONE |
-| H2 | Docs: provenance, metrics delta, readiness, FUB-064 verdict, FUB-065 resolution, human-derived principles | REVIEW_GATE | DONE |
-| Z | Independent review, verification, Run close | FINAL_GATE | DONE |
+| F1 | Verify the 9 decisions vs overlay/labels; fix taxonomy in harness + test + generated block; prose fixes in held-out doc, Run 001 report, backlog as needed | REVIEW_GATE | PENDING |
+| Z | Independent review, verification, Run close | FINAL_GATE | PENDING |
 
 ## History
 
