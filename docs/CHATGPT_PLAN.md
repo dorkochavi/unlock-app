@@ -2,10 +2,12 @@
 
 PLAN_VERSION: 043
 RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-009
-START_HEAD: RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: STATUS: **IN PROGRESS.** VALIDATION Run (not implementation). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change.
+START_HEAD: `73d8767`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `73d8767`
+STATUS: **IN PROGRESS.** VALIDATION Run (not implementation). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change.
 
-This file is CURRENT EXECUTION ONLY. Historical plan bodies live in  (see "History").
+This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
 AUTHOR → LABEL (independent) → LABEL REVIEW → CONTAMINATION AUDIT → FREEZE (V04_FREEZE_HEAD) → EVALUATE CURRENT LINTER UNCHANGED → CLASSIFY → REPORT → INDEPENDENT REVIEW → CLOSE. Evidence class: FRESH_HELD_OUT_V0_4 (never FIRST_BLIND; never pooled with v0.1/v0.2/v0.3/HUMAN_ADJUDICATED_V0_3).
