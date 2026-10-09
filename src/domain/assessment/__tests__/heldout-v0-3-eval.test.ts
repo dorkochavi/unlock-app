@@ -50,14 +50,14 @@ const EXPECTED_CHECKS: CheckRow[] = [
   ["KEY_POSITION_IMBALANCE", 1, 1, 0, 0, 0],
   ["KEY_POSITION_RUN", 1, 1, 0, 0, 0],
   ["OPTION_ABSOLUTE_TERM", 10, 10, 0, 0, 0],
-  ["OPTION_ALL_OF_ABOVE", 1, 0, 1, 0, 0],
+  ["OPTION_ALL_OF_ABOVE", 1, 1, 0, 0, 0], // Run 008 change: HO3-071 now caught (FUB-077)
   ["OPTION_DUPLICATE_EXACT", 1, 1, 0, 0, 0],
   ["OPTION_LENGTH_IMBALANCE", 3, 3, 0, 0, 0],
   ["OPTION_NUMERIC_UNORDERED", 1, 0, 1, 0, 0],
   ["OPTION_PUNCTUATION_INCONSISTENT", 1, 0, 1, 0, 0],
   ["OPTION_STYLE_OUTLIER", 2, 0, 2, 0, 0],
-  ["STEM_NEGATIVE_WORDING", 1, 1, 0, 1, 1],
-  ["STEM_TOO_SHORT", 9, 5, 4, 0, 1],
+  ["STEM_NEGATIVE_WORDING", 1, 1, 0, 0, 0], // Run 008 change: HO3-005 FP and HO3-058 unlabeled gone (FUB-076)
+  ["STEM_TOO_SHORT", 9, 5, 4, 0, 0], // Run 008 change: HO3-071 unlabeled gone (FUB-075 מהם)
 ];
 
 const EXPECTED_COUNTS = {
@@ -73,14 +73,15 @@ const EXPECTED_COUNTS = {
 
 const EXPECTED_TOTALS = {
   expectedDetections: 37,
-  truePositive: 28,
-  falseNegative: 9,
-  falseNegativeHeuristicGap: 5,
+  // Run 008 change: TP 28->29, FN 9->8 (gap 5->4), FP 1->0, clean-warned 1->0, unlabeled 3->1
+  truePositive: 29,
+  falseNegative: 8,
+  falseNegativeHeuristicGap: 4,
   falseNegativeNotImplemented: 4,
-  falsePositive: 1,
+  falsePositive: 0,
   cleanCases: 38,
-  cleanCasesWithWarningOrError: 1,
-  unlabeledEmissions: 3,
+  cleanCasesWithWarningOrError: 0,
+  unlabeledEmissions: 1,
 };
 
 const EXPECTED_SET_LEVEL = {
@@ -89,12 +90,12 @@ const EXPECTED_SET_LEVEL = {
 };
 
 const EXPECTED_SUMMARY = [
-  "RECALL-LIKE (all labelled detections): 28/37 caught.",
-  "FN count: 9 (5 HEURISTIC_GAP on implemented checks, 4 NOT_IMPLEMENTED checks).",
-  "PRECISION-LIKE (labelled detections vs false alarms): 28/29.",
-  "FP count: 1 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).",
-  "CLEAN cases with a WARNING/ERROR: 1 of 38.",
-  "UNLABELED_EMISSIONS: 3 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).",
+  "RECALL-LIKE (all labelled detections): 29/37 caught.",
+  "FN count: 8 (4 HEURISTIC_GAP on implemented checks, 4 NOT_IMPLEMENTED checks).",
+  "PRECISION-LIKE (labelled detections vs false alarms): 29/29.",
+  "FP count: 0 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).",
+  "CLEAN cases with a WARNING/ERROR: 0 of 38.",
+  "UNLABELED_EMISSIONS: 1 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).",
   "SEMANTIC-ONLY cases: 4 (FLAWED with no deterministic expectation; not assertable against the linter).",
   "Model-authored, model-labeled held-out corpus (NOT human ground truth): all ratios are INDICATIVE ONLY and are never pooled with v0.1.",
 ];
@@ -109,10 +110,11 @@ const EXPECTED_FN_KINDS: Array<readonly [string, string]> = [
   ["HO3-044|STEM_TOO_SHORT", "HEURISTIC_GAP"],
   ["HO3-065|OPTION_STYLE_OUTLIER", "NOT_IMPLEMENTED"],
   ["HO3-070/item3|OPTION_NUMERIC_UNORDERED", "NOT_IMPLEMENTED"],
-  ["HO3-071|OPTION_ALL_OF_ABOVE", "HEURISTIC_GAP"],
+  // Run 008 change: ["HO3-071|OPTION_ALL_OF_ABOVE", "HEURISTIC_GAP"] removed (now TP, FUB-077)
 ];
-const EXPECTED_FP = ["HO3-005|STEM_NEGATIVE_WORDING"];
-const EXPECTED_UNLABELED = ["HO3-048|KEY_LONGEST_OPTION", "HO3-058|STEM_NEGATIVE_WORDING", "HO3-071|STEM_TOO_SHORT"];
+// Run 008 change: HO3-005 FP, HO3-058 and HO3-071|STEM_TOO_SHORT unlabeled removed (FUB-076, FUB-075)
+const EXPECTED_FP: string[] = [];
+const EXPECTED_UNLABELED = ["HO3-048|KEY_LONGEST_OPTION"];
 const EXPECTED_SEMANTIC_ONLY = ["HO3-025", "HO3-028", "HO3-033", "HO3-058"];
 
 interface GroupExpectation {
@@ -145,34 +147,33 @@ const EXPECTED_BY_LANGUAGE: Record<string, GroupExpectation> = {
   },
   HEBREW: {
     cases: [45, 25, 20],
-    totals: [21, 17, 4, 3, 1, 1, 1, 3],
+    totals: [21, 18, 3, 2, 1, 0, 0, 1], // Run 008 change
     checks: [
       ["KEY_LONGEST_OPTION", 3, 3, 0, 0, 1],
       ["KEY_POSITION_IMBALANCE", 1, 1, 0, 0, 0],
       ["KEY_POSITION_RUN", 1, 1, 0, 0, 0],
       ["OPTION_ABSOLUTE_TERM", 5, 5, 0, 0, 0],
-      ["OPTION_ALL_OF_ABOVE", 1, 0, 1, 0, 0],
+      ["OPTION_ALL_OF_ABOVE", 1, 1, 0, 0, 0],
       ["OPTION_DUPLICATE_EXACT", 1, 1, 0, 0, 0],
       ["OPTION_LENGTH_IMBALANCE", 2, 2, 0, 0, 0],
       ["OPTION_STYLE_OUTLIER", 1, 0, 1, 0, 0],
-      ["STEM_NEGATIVE_WORDING", 1, 1, 0, 1, 1],
-      ["STEM_TOO_SHORT", 5, 3, 2, 0, 1],
+      ["STEM_NEGATIVE_WORDING", 1, 1, 0, 0, 0],
+      ["STEM_TOO_SHORT", 5, 3, 2, 0, 0],
     ],
-    fn: ["HO3-040|STEM_TOO_SHORT", "HO3-042|STEM_TOO_SHORT", "HO3-065|OPTION_STYLE_OUTLIER", "HO3-071|OPTION_ALL_OF_ABOVE"],
-    fp: ["HO3-005|STEM_NEGATIVE_WORDING"],
-    unl: ["HO3-048|KEY_LONGEST_OPTION", "HO3-058|STEM_NEGATIVE_WORDING", "HO3-071|STEM_TOO_SHORT"],
+    fn: ["HO3-040|STEM_TOO_SHORT", "HO3-042|STEM_TOO_SHORT", "HO3-065|OPTION_STYLE_OUTLIER"],
+    fp: [],
+    unl: ["HO3-048|KEY_LONGEST_OPTION"],
   },
 };
 const EXPECTED_BY_STRATUM: Record<string, GroupExpectation> = {
   A: {
     cases: [18, 10, 8],
-    totals: [8, 8, 0, 0, 0, 1, 1, 0],
+    totals: [8, 8, 0, 0, 0, 0, 0, 0], // Run 008 change: HO3-005 FP gone
     checks: [
       ["OPTION_ABSOLUTE_TERM", 8, 8, 0, 0, 0],
-      ["STEM_NEGATIVE_WORDING", 0, 0, 0, 1, 0],
     ],
     fn: [],
-    fp: ["HO3-005|STEM_NEGATIVE_WORDING"],
+    fp: [],
     unl: [],
   },
   B: {
@@ -201,34 +202,32 @@ const EXPECTED_BY_STRATUM: Record<string, GroupExpectation> = {
   },
   D: {
     cases: [12, 9, 3],
-    totals: [2, 2, 0, 0, 0, 0, 0, 1],
+    totals: [2, 2, 0, 0, 0, 0, 0, 0], // Run 008 change: HO3-058 unlabeled gone
     checks: [
       ["OPTION_ABSOLUTE_TERM", 2, 2, 0, 0, 0],
-      ["STEM_NEGATIVE_WORDING", 0, 0, 0, 0, 1],
     ],
     fn: [],
     fp: [],
-    unl: ["HO3-058|STEM_NEGATIVE_WORDING"],
+    unl: [],
   },
   E: {
     cases: [8, 1, 7],
-    totals: [10, 7, 3, 1, 2, 0, 0, 1],
+    totals: [10, 8, 2, 0, 2, 0, 0, 0], // Run 008 change
     checks: [
       ["EXPLANATION_MISSING", 1, 1, 0, 0, 0],
       ["KEY_LONGEST_OPTION", 1, 1, 0, 0, 0],
       ["KEY_POSITION_IMBALANCE", 1, 1, 0, 0, 0],
       ["KEY_POSITION_RUN", 1, 1, 0, 0, 0],
-      ["OPTION_ALL_OF_ABOVE", 1, 0, 1, 0, 0],
+      ["OPTION_ALL_OF_ABOVE", 1, 1, 0, 0, 0],
       ["OPTION_DUPLICATE_EXACT", 1, 1, 0, 0, 0],
       ["OPTION_LENGTH_IMBALANCE", 1, 1, 0, 0, 0],
       ["OPTION_NUMERIC_UNORDERED", 1, 0, 1, 0, 0],
       ["OPTION_STYLE_OUTLIER", 1, 0, 1, 0, 0],
       ["STEM_NEGATIVE_WORDING", 1, 1, 0, 0, 0],
-      ["STEM_TOO_SHORT", 0, 0, 0, 0, 1],
     ],
-    fn: ["HO3-065|OPTION_STYLE_OUTLIER", "HO3-070/item3|OPTION_NUMERIC_UNORDERED", "HO3-071|OPTION_ALL_OF_ABOVE"],
+    fn: ["HO3-065|OPTION_STYLE_OUTLIER", "HO3-070/item3|OPTION_NUMERIC_UNORDERED"],
     fp: [],
-    unl: ["HO3-071|STEM_TOO_SHORT"],
+    unl: [],
   },
 };
 
@@ -325,7 +324,7 @@ describe("held-out v0.3 evaluation (first-observed regression guard)", () => {
     expect(row(byLanguage.ENGLISH, "OPTION_ABSOLUTE_TERM")).toMatchObject({ expected: 5, tp: 5, fn: 0, fp: 0, unlabeled: 0 });
     expect(row(byLanguage.HEBREW, "OPTION_ABSOLUTE_TERM")).toMatchObject({ expected: 5, tp: 5, fn: 0, fp: 0, unlabeled: 0 });
     expect(row(byLanguage.ENGLISH, "STEM_TOO_SHORT")).toMatchObject({ expected: 4, tp: 2, fn: 2, fp: 0, unlabeled: 0 });
-    expect(row(byLanguage.HEBREW, "STEM_TOO_SHORT")).toMatchObject({ expected: 5, tp: 3, fn: 2, fp: 0, unlabeled: 1 });
+    expect(row(byLanguage.HEBREW, "STEM_TOO_SHORT")).toMatchObject({ expected: 5, tp: 3, fn: 2, fp: 0, unlabeled: 0 }); // Run 008 change: HO3-071 unlabeled gone
   });
 
   for (const [name, groups, expected] of [

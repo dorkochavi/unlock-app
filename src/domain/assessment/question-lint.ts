@@ -168,6 +168,32 @@ function hasHutzException(tokens: readonly string[]): boolean {
  * "מחוץ" never read as negation. Final letters are folded by norm().
  */
 const NEGATION_TERMS_HE = norm(["לא", "אין", "אינו", "אינה", "אינם", "אינן", "בלתי", "בלא", "ללא", "מלבד"]);
+/**
+ * Run 008 (FUB-076/077/075), human-principle-driven: a negation TOKEN is not by itself a negative-stem flaw. Two narrow,
+ * human-adjudicated subtractions for the Hebrew "לא" only (every other term, English terms, "least", "חוץ מ" unchanged):
+ *  - relative "שלא"/"ושלא" counts only after an earlier selection cue (איזה/בחרו/סמנו...: "choose the one that is NOT");
+ *    otherwise it is an ordinary relative clause ("גוף במנוחה שלא פועל עליו כוח").
+ *  - contrast "ו"+"לא" is silent when the next token is a ל-prefixed word ("ולא לכלי"); "איזה מבנה ולא נמצא" still counts.
+ * Residual: a bare "לא"/"אין" token still fires in non-selecting clauses, and "איזה ... שלא" with a cue still fires.
+ */
+const NEG_NOT = norm(["לא"])[0];
+const SELECTION_CUES = norm(["איזה", "איזו", "אילו", "איזהו", "בחר", "בחרו", "סמן", "סמנו", "זהה", "ציין"]);
+const CONTRAST_NEXT = /^ל[א-ת]{3,}$/;
+function hasHebrewNegation(tokens: readonly string[], term: string): boolean {
+  for (let i = 0; i < tokens.length; i += 1) {
+    if (!containsTerm([tokens[i]], term, NEGATION_HE_PREFIX_LETTERS, NEGATION_HE_PREFIX_MAX)) continue;
+    if (term === NEG_NOT) {
+      const prefix = tokens[i].slice(0, tokens[i].length - term.length);
+      if (prefix === "ש" || prefix === "וש") {
+        if (!tokens.slice(0, i).some((p) => SELECTION_CUES.some((c) => containsTerm([p], c)))) continue;
+      } else if (prefix === "ו" && i + 1 < tokens.length && CONTRAST_NEXT.test(tokens[i + 1])) {
+        continue;
+      }
+    }
+    return true;
+  }
+  return false;
+}
 const NEGATION_HE_PREFIX_LETTERS = "וש";
 const NEGATION_HE_PREFIX_MAX = 2;
 /**
@@ -185,12 +211,12 @@ const ABSOLUTE_TERMS = norm([
  */
 const STEM_LEAD_WORDS = new Set(
   norm([
-    "מה", "מהי", "מהו", "מי", "איזה", "איזו", "כמה", "מדוע", "למה", "היכן", "הגדר", "ציין",
+    "מה", "מהי", "מהו", "מהם", "מהן", "מי", "איזה", "איזו", "כמה", "מדוע", "למה", "היכן", "הגדר", "ציין",
     "what", "which", "who", "how", "where", "why", "when", "define", "name", "list",
   ]),
 );
 const HE_LEAD_WORDS = new Set(
-  norm(["מה", "מהי", "מהו", "מי", "איזה", "איזו", "כמה", "מדוע", "למה", "היכן", "הגדר", "ציין"]),
+  norm(["מה", "מהי", "מהו", "מהם", "מהן", "מי", "איזה", "איזו", "כמה", "מדוע", "למה", "היכן", "הגדר", "ציין"]), // Run 008 / FUB-075: מהם, מהן
 );
 const STEM_LEAD_PREFIXES = new Set(norm(["ו", "ש", "ה", "ב", "ל"]));
 function isExemptShortStem(prompt: string): boolean {
@@ -211,6 +237,8 @@ function isExemptShortStem(prompt: string): boolean {
 const ALL_OF_ABOVE_PHRASES = normPhrases([
   "all of the above", "all of these", "all the above", "all of the answers",
   "כל התשובות", "כל התשובות נכונות", "כולן נכונות", "כולם נכונים", "כל האמור לעיל", 'כל הנ"ל',
+  // Run 008 / FUB-077: quoted and unquoted spellings (all gershayim variants fold to one token).
+  'כל האפשרויות הנ"ל', "כל האפשרויות הנל",
 ]);
 const NONE_OF_ABOVE_PHRASES = normPhrases([
   "none of the above", "none of these", "none of the answers",
@@ -524,7 +552,7 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
 
   const negations =
     NEGATION_TERMS_EN.filter((t) => containsTerm(promptTokens, t, "", 0)).length +
-    NEGATION_TERMS_HE.filter((t) => containsTerm(promptTokens, t, NEGATION_HE_PREFIX_LETTERS, NEGATION_HE_PREFIX_MAX)).length +
+    NEGATION_TERMS_HE.filter((t) => hasHebrewNegation(promptTokens, t)).length +
     (hasNegativeLeast(promptTokens) ? 1 : 0) +
     (hasHutzException(promptTokens) ? 1 : 0);
   if (negations > 0) out.push(issue("STEM_NEGATIVE_WORDING", "WARNING", "ITEM", { metrics: { negationTermCount: negations } }));

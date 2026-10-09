@@ -177,18 +177,19 @@ describe("Dor's 13 decisions encoded on the post-human label", () => {
 });
 
 describe("FRESH_HELD_OUT_V0_3 first-observed totals are unchanged (frozen labels)", () => {
-  it("TP 28 / FN 9 [5 impl, 4 not impl] / FP 1 / UNLABELED 3 / clean warned 1 of 38", () => {
+  // Run 008 change: values below are the CURRENT_LINTER_ON_FROZEN_V0_3 after FUB-075/076/077 (was TP 28 / FN 9 / FP 1 / UNL 3 / clean warned 1).
+  it("TP 29 / FN 8 [4 impl, 4 not impl] / FP 0 / UNLABELED 1 / clean warned 0 of 38", () => {
     const r = cmp.currentLinterOnFrozen;
     expect(r.totals).toMatchObject({
       expectedDetections: 37,
-      truePositive: 28,
-      falseNegative: 9,
-      falseNegativeHeuristicGap: 5,
+      truePositive: 29,
+      falseNegative: 8,
+      falseNegativeHeuristicGap: 4,
       falseNegativeNotImplemented: 4,
-      falsePositive: 1,
-      unlabeledEmissions: 3,
+      falsePositive: 0,
+      unlabeledEmissions: 1,
       cleanCases: 38,
-      cleanCasesWithWarningOrError: 1,
+      cleanCasesWithWarningOrError: 0,
     });
     expect(runHeldOutEvaluation(corpus, labels).totals).toEqual(r.totals);
   });
@@ -196,15 +197,16 @@ describe("FRESH_HELD_OUT_V0_3 first-observed totals are unchanged (frozen labels
 
 describe("HUMAN_ADJUDICATED_V0_3 evaluation (first observed values, recorded not tuned; POST_EVALUATION, NOT BLIND)", () => {
   it("whole-corpus POST_HUMAN totals", () => {
+    // Run 008 change: TP 29->30, FN 9->8 (gap 5->4), FP 3->0, clean-warned 2->0 (HO3-005/058/071 FPs gone; HO3-071 ALL_OF_ABOVE caught)
     expect(cmp.postHuman.totals).toEqual({
       expectedDetections: 38,
-      truePositive: 29,
-      falseNegative: 9,
-      falseNegativeHeuristicGap: 5,
+      truePositive: 30,
+      falseNegative: 8,
+      falseNegativeHeuristicGap: 4,
       falseNegativeNotImplemented: 4,
-      falsePositive: 3,
+      falsePositive: 0,
       cleanCases: 41,
-      cleanCasesWithWarningOrError: 2,
+      cleanCasesWithWarningOrError: 0,
       unlabeledEmissions: 0,
     });
     expect(cmp.postHuman.caseCounts).toMatchObject({ total: 72, item: 70, set: 2, clean: 41, flawed: 31 });
@@ -216,45 +218,42 @@ describe("HUMAN_ADJUDICATED_V0_3 evaluation (first observed values, recorded not
       falseNegative: 0,
       falseNegativeHeuristicGap: 0,
       falseNegativeNotImplemented: 0,
-      falsePositive: 2,
+      falsePositive: 0, // Run 008 change
       cleanCases: 3,
-      cleanCasesWithWarningOrError: 1,
-      unlabeledEmissions: -3,
+      cleanCasesWithWarningOrError: 0, // Run 008 change
+      unlabeledEmissions: -1, // Run 008 change
     });
   });
   it("reviewed-13 subset metrics (frozen labels vs post-human labels on the same 13 cases)", () => {
     expect(sub(labels).totals).toMatchObject({
       expectedDetections: 8,
-      truePositive: 3,
-      falseNegative: 5,
-      falsePositive: 1,
+      truePositive: 4, // Run 008 change
+      falseNegative: 4,
+      falsePositive: 0,
       cleanCases: 1,
-      cleanCasesWithWarningOrError: 1,
-      unlabeledEmissions: 3,
+      cleanCasesWithWarningOrError: 0,
+      unlabeledEmissions: 1,
     });
     const r = sub(post);
     expect(r.caseCounts.total).toBe(13);
     expect(r.caseCounts).toMatchObject({ clean: 4, flawed: 9 });
     expect(r.totals).toEqual({
       expectedDetections: 9,
-      truePositive: 4,
-      falseNegative: 5,
-      falseNegativeHeuristicGap: 5,
+      truePositive: 5, // Run 008 change
+      falseNegative: 4,
+      falseNegativeHeuristicGap: 4,
       falseNegativeNotImplemented: 0,
-      falsePositive: 3,
+      falsePositive: 0,
       cleanCases: 4,
-      cleanCasesWithWarningOrError: 2,
+      cleanCasesWithWarningOrError: 0,
       unlabeledEmissions: 0,
     });
   });
   it("FN / FP / UNLABELED finding lists", () => {
     const key = (f: { ref: string; code: string }) => `${f.ref}|${f.code}`;
     expect(cmp.postHuman.falseNegatives.map(key)).toEqual(cmp.currentLinterOnFrozen.falseNegatives.map(key));
-    expect(cmp.postHuman.falsePositives.map((f) => `${key(f)}|${f.basis}`)).toEqual([
-      "HO3-005|STEM_NEGATIVE_WORDING|FORBIDDEN",
-      "HO3-058|STEM_NEGATIVE_WORDING|FORBIDDEN",
-      "HO3-071|STEM_TOO_SHORT|FORBIDDEN",
-    ]);
+    // Run 008 change: the three human-approved FORBIDDEN false positives (HO3-005/058 STEM_NEGATIVE_WORDING, HO3-071 STEM_TOO_SHORT) no longer fire.
+    expect(cmp.postHuman.falsePositives.map((f) => `${key(f)}|${f.basis}`)).toEqual([]);
     expect(cmp.postHuman.unlabeledEmissions).toEqual([]);
   });
   it("per-rule rows (expected, TP, FN, FP, unlabeled): frozen vs post-human", () => {
@@ -266,19 +265,21 @@ describe("HUMAN_ADJUDICATED_V0_3 evaluation (first observed values, recorded not
     // KEY_STEM_LEXICAL_OVERLAP is neither expected nor emitted anywhere: no row, before or after.
     expect(pair("KEY_STEM_LEXICAL_OVERLAP")).toEqual(["NO_ROW", "NO_ROW"]);
     expect(pair("OPTION_ABSOLUTE_TERM")).toEqual([[10, 10, 0, 0, 0], [10, 10, 0, 0, 0]]);
-    expect(pair("STEM_TOO_SHORT")).toEqual([[9, 5, 4, 0, 1], [9, 5, 4, 1, 0]]);
-    expect(pair("STEM_NEGATIVE_WORDING")).toEqual([[1, 1, 0, 1, 1], [1, 1, 0, 2, 0]]);
-    expect(pair("OPTION_ALL_OF_ABOVE")).toEqual([[1, 0, 1, 0, 0], [1, 0, 1, 0, 0]]);
+    // Run 008 change (FUB-075/076/077): STEM_TOO_SHORT/STEM_NEGATIVE_WORDING no longer emit on the human-approved FORBIDDEN cases; OPTION_ALL_OF_ABOVE is TP.
+    expect(pair("STEM_TOO_SHORT")).toEqual([[9, 5, 4, 0, 0], [9, 5, 4, 0, 0]]);
+    expect(pair("STEM_NEGATIVE_WORDING")).toEqual([[1, 1, 0, 0, 0], [1, 1, 0, 0, 0]]);
+    expect(pair("OPTION_ALL_OF_ABOVE")).toEqual([[1, 1, 0, 0, 0], [1, 1, 0, 0, 0]]);
     expect(pair("KEY_LONGEST_OPTION")).toEqual([[5, 5, 0, 0, 1], [6, 6, 0, 0, 0]]);
   });
   it("per-case delta vs frozen (which findings changed class)", () => {
     const rows = Object.fromEntries(cmp.reviewedCases.map((r) => [r.caseId, r]));
-    expect(rows["HO3-058"].removed).toEqual(["UNL HO3-058 STEM_NEGATIVE_WORDING"]);
-    expect(rows["HO3-058"].added).toEqual(["FP HO3-058 STEM_NEGATIVE_WORDING"]);
+    // Run 008 change: HO3-058 and HO3-071 no longer change finding class (their frozen unlabeled / human FP emissions are gone).
+    expect(rows["HO3-058"].removed).toEqual([]);
+    expect(rows["HO3-058"].added).toEqual([]);
     expect(rows["HO3-048"].removed).toEqual(["UNL HO3-048 KEY_LONGEST_OPTION"]);
     expect(rows["HO3-048"].post).toEqual({ tp: 2, fn: 0, fp: 0, unlabeled: 0 });
-    expect(rows["HO3-071"].removed).toEqual(["UNL HO3-071 STEM_TOO_SHORT"]);
-    expect(rows["HO3-071"].added).toEqual(["FP HO3-071 STEM_TOO_SHORT"]);
+    expect(rows["HO3-071"].removed).toEqual([]);
+    expect(rows["HO3-071"].added).toEqual([]);
     const unchanged = ["HO3-005", "HO3-042", "HO3-040", "HO3-038", "HO3-044", "HO3-025", "HO3-028", "HO3-021", "HO3-004", "HO3-033"];
     for (const id of unchanged) {
       expect(rows[id].removed, id).toEqual([]);

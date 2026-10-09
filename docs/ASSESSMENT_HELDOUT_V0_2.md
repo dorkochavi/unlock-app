@@ -4,7 +4,7 @@ Status: DRAFT evidence artifact. Created in Run `2026-10-09-ASSESSMENT-ENGINE-00
 Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`), UNCHANGED in Run 004 (question-lint.ts was changed later, in Run 005: OPTION_COMBINATION_REFERENCE).
 Provenance: corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_APPROVED` for 69 of 78 rows. **Post-evaluation update (Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001`):** 9 rows (HO-049, 070, 076, 017, 015, 063, 032, 069, 073) are `HUMAN_APPROVED` (Dor, 2026-10-09) as a POST-EVALUATION adjudication, applied as an overlay on the unchanged frozen labels (section 14). The FIRST_BLIND evidence in sections 3-13 is preserved as originally written; the POST_HUMAN metrics (section 14) are HUMAN-ADJUDICATED / POST-EVALUATION, never first-blind, never pooled with v0.1.
 
-> **Evidence naming (corrected after Run 005, `2026-10-09-ASSESSMENT-ENGINE-005`, FUB-064):** HISTORICAL FIRST_BLIND (Run 004, immutable): TP 80 / FN 44 / FP 4 / UNLABELED 22 (124 expected; NOT_IMPLEMENTED FN 36), the frozen corpus evaluated blind with the linter at `b9aaca4`, before OPTION_COMBINATION_REFERENCE existed. That event cannot be recomputed. After Run 005 the linter implements OPTION_COMBINATION_REFERENCE, so every GENERATED block and the FN table below are the frozen v0.2 corpus evaluated with the CURRENT linter (`CURRENT_LINTER_ON_FROZEN_V0_2`, regression evidence): TP 83 / FN 41 / FP 4 / UNLABELED 22 (HO-026, HO-027, HO-064 now TP; NOT_IMPLEMENTED FN 33; no new FP or UNLABELED_EMISSION). Hand-written prose in sections 3-18 predates Run 005 and cites the historical FIRST_BLIND numbers. **Run 006 (`2026-10-09-ASSESSMENT-ENGINE-006`, FUB-066):** OPTION_ABSOLUTE_TERM now fires only for strong adverbs in a distractor, KEY_STEM_LEXICAL_OVERLAP is no longer emitted, and STEM_TOO_SHORT exempts interrogative/imperative first words and trailing ':'. The generated blocks and the section 6 classification table now show `CURRENT_LINTER_ON_FROZEN_V0_2`: TP 79 / FN 45 / FP 2 / UNLABELED 6 (frozen labels, unchanged); the POST_HUMAN overlay numbers are in the POST_HUMAN block. This is HISTORICAL_HELD_OUT regression evidence on already-observed cases and human-adjudicated cases, not fresh validation, and never FIRST_BLIND. Run 005 results on these already-observed cases are HISTORICAL_HELD_OUT regression evidence, not fresh validation.
+> **Evidence naming (corrected after Run 005, `2026-10-09-ASSESSMENT-ENGINE-005`, FUB-064):** HISTORICAL FIRST_BLIND (Run 004, immutable): TP 80 / FN 44 / FP 4 / UNLABELED 22 (124 expected; NOT_IMPLEMENTED FN 36), the frozen corpus evaluated blind with the linter at `b9aaca4`, before OPTION_COMBINATION_REFERENCE existed. That event cannot be recomputed. After Run 005 the linter implements OPTION_COMBINATION_REFERENCE, so every GENERATED block and the FN table below are the frozen v0.2 corpus evaluated with the CURRENT linter (`CURRENT_LINTER_ON_FROZEN_V0_2`, regression evidence): TP 83 / FN 41 / FP 4 / UNLABELED 22 (HO-026, HO-027, HO-064 now TP; NOT_IMPLEMENTED FN 33; no new FP or UNLABELED_EMISSION). Hand-written prose in sections 3-18 predates Run 005 and cites the historical FIRST_BLIND numbers. **Run 006 (`2026-10-09-ASSESSMENT-ENGINE-006`, FUB-066):** OPTION_ABSOLUTE_TERM now fires only for strong adverbs in a distractor, KEY_STEM_LEXICAL_OVERLAP is no longer emitted, and STEM_TOO_SHORT exempts interrogative/imperative first words and trailing ':'. The generated blocks and the section 6 classification table now show `CURRENT_LINTER_ON_FROZEN_V0_2`: TP 79 / FN 45 / FP 2 / UNLABELED 6 (frozen labels, unchanged); the POST_HUMAN overlay numbers are in the POST_HUMAN block. This is HISTORICAL_HELD_OUT regression evidence on already-observed cases and human-adjudicated cases, not fresh validation, and never FIRST_BLIND. Run 005 results on these already-observed cases are HISTORICAL_HELD_OUT regression evidence, not fresh validation. **Run 008 (2026-10-09-ASSESSMENT-ENGINE-008):** CURRENT_LINTER_ON_FROZEN_V0_2 UNLABELED_EMISSION is now 5 (HO-073/item8 STEM_NEGATIVE_WORDING contrast "ולא" is now silent, FUB-076); this is regression evidence, not FIRST_BLIND, and the historical FIRST_BLIND figures are untouched.
 
 ## 1. Non-claims
 
@@ -51,7 +51,7 @@ Untouched-linter proof (as of Run 004; no longer empty for question-lint.ts afte
 - PRECISION-LIKE (labelled detections vs false alarms): 79/81.
 - FP count: 2 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).
 - CLEAN cases with a WARNING/ERROR: 1 of 20.
-- UNLABELED_EMISSIONS: 6 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).
+- UNLABELED_EMISSIONS: 5 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).
 - SEMANTIC-ONLY cases: 12 (FLAWED with no deterministic expectation; not assertable against the linter).
 - Model-authored, model-labeled held-out corpus (NOT human ground truth): all ratios are INDICATIVE ONLY and are never pooled with v0.1.
 
@@ -72,7 +72,7 @@ Untouched-linter proof (as of Run 004; no longer empty for question-lint.ts afte
 | FN (HEURISTIC_GAP / NOT_IMPLEMENTED) | 45 (12 / 33) |
 | FP | 2 |
 | CLEAN cases with a WARNING/ERROR | 1 of 20 |
-| UNLABELED_EMISSION | 6 |
+| UNLABELED_EMISSION | 5 |
 
 ## Set-level behaviour (generated)
 
@@ -85,7 +85,7 @@ Untouched-linter proof (as of Run 004; no longer empty for question-lint.ts afte
 |---|---|---|---|---|---|---|
 | HO-071 | FLAWED | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | 2/0/0 | 0/1/0 | 0 |
 | HO-072 | FLAWED | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | 2/0/0 | 0/8/0 | 0 |
-| HO-073 | FLAWED | - | SET_KEY_LENGTH_BIAS | 0/0/1 | 0/2/0 | 1 |
+| HO-073 | FLAWED | - | SET_KEY_LENGTH_BIAS | 0/0/1 | 0/2/0 | 0 |
 | HO-074 | FLAWED | DUPLICATE_STEM_EXACT, DUPLICATE_STEM_NORMALIZED, NEAR_DUPLICATE_STEM, KEY_POSITION_IMBALANCE | DUPLICATE_STEM_EXACT, DUPLICATE_STEM_NORMALIZED, KEY_POSITION_IMBALANCE, NEAR_DUPLICATE_STEM | 4/0/0 | 0/5/0 | 0 |
 | HO-075 | FLAWED | STEM_TEMPLATE_REPEATED, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, NEAR_DUPLICATE_STEM, STEM_TEMPLATE_REPEATED | 3/0/0 | 0/0/0 | 1 |
 | HO-076 | FLAWED | SET_KEY_LENGTH_BIAS, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS | 3/0/0 | 18/0/0 | 0 |
@@ -125,7 +125,7 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | OPTION_WHITESPACE_ANOMALY | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
 | SET_KEY_LENGTH_BIAS | yes | 2 | 1 | 1 | 1 | 0 | 1/2 | 1/2 |
 | STEM_DOUBLE_NEGATIVE | NO | 2 | 0 | 2 | 0 | 0 | n/a | 0/2 |
-| STEM_NEGATIVE_WORDING | yes | 7 | 6 | 1 | 0 | 1 | 6/6 | 6/7 |
+| STEM_NEGATIVE_WORDING | yes | 7 | 6 | 1 | 0 | 0 | 6/6 | 6/7 |
 | STEM_NO_QUESTION_FORM | NO | 3 | 0 | 3 | 0 | 0 | n/a | 0/3 |
 | STEM_TEMPLATE_REPEATED | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
 | STEM_TOO_SHORT | yes | 2 | 2 | 0 | 0 | 0 | 2/2 | 2/2 |
@@ -194,7 +194,6 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | HO-023 | ITEM | OPTION_LENGTH_IMBALANCE |
 | HO-027 | ITEM | OPTION_LENGTH_IMBALANCE |
 | HO-031 | ITEM | OPTION_OVERLAP_HIGH |
-| HO-073/item8 | ITEM_IN_SET | STEM_NEGATIVE_WORDING |
 | HO-075 | SET | NEAR_DUPLICATE_STEM |
 | HO-077/item4 | ITEM_IN_SET | OPTION_LENGTH_IMBALANCE |
 
@@ -254,7 +253,7 @@ One category per finding. Evidence is the actual case text and linter metrics. `
 
 Categories: LIKELY_LINTER_BUG | LIKELY_HEURISTIC_LIMIT | LIKELY_LABEL_QUESTION | SEMANTIC_ONLY | NEEDS_HUMAN_HEBREW_REVIEW | NEEDS_MORE_DATA.
 
-Tally (53 findings = 45 FN + 2 FP + 6 UNLABELED_EMISSION, CURRENT_LINTER_ON_FROZEN_V0_2 after Run 006 / FUB-066; Run 005 removed the 3 OPTION_COMBINATION_REFERENCE NOT_IMPLEMENTED FN rows, Run 006 removed 18 FP/UNLABELED_EMISSION rows of the context-sensitive warnings and added 4 OPTION_ABSOLUTE_TERM weak-tier FN rows as SEMANTIC_ONLY; the Run 004 first-blind tally was 67 findings = 41 FN + 4 FP + 22 UNLABELED_EMISSION after Run 005 and is historical):
+Tally (52 findings = 45 FN + 2 FP + 5 UNLABELED_EMISSION, CURRENT_LINTER_ON_FROZEN_V0_2 after Run 008 / FUB-076 (was 53 = 45 + 2 + 6 after Run 006 / FUB-066); Run 005 removed the 3 OPTION_COMBINATION_REFERENCE NOT_IMPLEMENTED FN rows, Run 006 removed 18 FP/UNLABELED_EMISSION rows of the context-sensitive warnings and added 4 OPTION_ABSOLUTE_TERM weak-tier FN rows as SEMANTIC_ONLY; the Run 004 first-blind tally was 67 findings = 41 FN + 4 FP + 22 UNLABELED_EMISSION after Run 005 and is historical):
 
 | Category | FN | FP | UNL | Total |
 |---|---|---|---|---|
@@ -322,7 +321,6 @@ One-line recommendations (written for the Run 004 first-blind tally; Run 006 act
 | UNL | HO-023 | OPTION_LENGTH_IMBALANCE | LIKELY_LABEL_QUESTION | Options 38 vs 13 chars (ratio 3.08) is a true length imbalance the labeler did not list |
 | UNL | HO-027 | OPTION_LENGTH_IMBALANCE | LIKELY_LABEL_QUESTION | Options 28 vs 6 chars is a true imbalance the labeler did not list |
 | UNL | HO-031 | OPTION_OVERLAP_HIGH | LIKELY_HEURISTIC_LIMIT | '3,000 ק"מ' vs '3,000,000 ק"מ' tokenize to the same set (digit groups collapse); magnitude difference is invisible |
-| UNL | HO-073/item8 | STEM_NEGATIVE_WORDING | LIKELY_HEURISTIC_LIMIT | 'ולא' in 'ולא לתרכובת' is a contrastive 'and not', not a negated question; the cue matcher cannot tell |
 | UNL | HO-075 | NEAR_DUPLICATE_STEM | NEEDS_MORE_DATA | Items 7 and 8 score exactly 0.80 (= threshold) because of the shared template; a single borderline instance |
 | UNL | HO-077/item4 | OPTION_LENGTH_IMBALANCE | LIKELY_LABEL_QUESTION | Options 69 vs 16 chars (ratio 4.3) is a true imbalance; the labeler listed only KEY_LONGEST_OPTION |
 <!-- CLASSIFICATION:END -->
@@ -475,7 +473,7 @@ These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor 
 | FN NOT_IMPLEMENTED | 33 | 33 | 33 | 0 |
 | FP | 2 | 2 | 2 | 0 |
 | CLEAN cases with a WARNING/ERROR | 1 of 20 | 1 of 20 | 1 of 20 | 0 |
-| UNLABELED_EMISSION | 6 | 6 | 6 | 0 |
+| UNLABELED_EMISSION | 5 | 5 | 5 | 0 |
 | SET-scope codes (expected / TP / FN / FP) | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 0 / 0 / 0 / 0 |
 | ITEM codes inside SET cases (expected / TP / FN / FP) | 46 / 26 / 20 / 0 | 46 / 26 / 20 / 0 | 46 / 26 / 20 / 0 | 0 / 0 / 0 / 0 |
 
@@ -493,7 +491,7 @@ Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TR
 | HO-063 | CHANGED | 0/2/0/0 | 0/1/0/0 | FN HO-063 OPTION_ABSOLUTE_TERM | - | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
 | HO-032 | APPROVED | 0/0/0/0 | 0/0/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 | HO-069 | CHANGED | 0/0/0/0 | 0/1/0/0 | - | FN HO-069 OPTION_NUMERIC_UNORDERED | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
-| HO-073 | APPROVED | 0/2/1/1 | 0/2/1/1 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
+| HO-073 | APPROVED | 0/2/1/0 | 0/2/1/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 <!-- GENERATED:END -->
 
 ## 15. Why the metrics moved (prose companion to the generated delta)

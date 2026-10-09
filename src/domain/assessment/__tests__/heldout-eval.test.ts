@@ -64,7 +64,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["OPTION_WHITESPACE_ANOMALY", 1, 1, 0, 0, 0],
   ["SET_KEY_LENGTH_BIAS", 2, 1, 1, 1, 0],
   ["STEM_DOUBLE_NEGATIVE", 2, 0, 2, 0, 0],
-  ["STEM_NEGATIVE_WORDING", 7, 6, 1, 0, 1],
+  ["STEM_NEGATIVE_WORDING", 7, 6, 1, 0, 0], // Run 008 change: HO-073/item8 (ולא לתרכובת) no longer emits; unlabeled 1 -> 0
   ["STEM_NO_QUESTION_FORM", 3, 0, 3, 0, 0],
   ["STEM_TEMPLATE_REPEATED", 1, 1, 0, 0, 0],
   ["STEM_TOO_SHORT", 2, 2, 0, 0, 0],
@@ -90,7 +90,7 @@ const EXPECTED_TOTALS = {
   falsePositive: 2,
   cleanCases: 20,
   cleanCasesWithWarningOrError: 1,
-  unlabeledEmissions: 6
+  unlabeledEmissions: 5 // Run 008 change: 6 -> 5 (HO-073/item8 STEM_NEGATIVE_WORDING silent)
 };
 
 const EXPECTED_SET_LEVEL = {
@@ -114,7 +114,7 @@ const EXPECTED_SUMMARY = [
   "PRECISION-LIKE (labelled detections vs false alarms): 79/81.",
   "FP count: 2 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).",
   "CLEAN cases with a WARNING/ERROR: 1 of 20.",
-  "UNLABELED_EMISSIONS: 6 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).",
+  "UNLABELED_EMISSIONS: 5 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).",
   "SEMANTIC-ONLY cases: 12 (FLAWED with no deterministic expectation; not assertable against the linter).",
   "Model-authored, model-labeled held-out corpus (NOT human ground truth): all ratios are INDICATIVE ONLY and are never pooled with v0.1."
 ];
@@ -175,7 +175,7 @@ const EXPECTED_UNLABELED = [
   "HO-023|OPTION_LENGTH_IMBALANCE",
   "HO-027|OPTION_LENGTH_IMBALANCE",
   "HO-031|OPTION_OVERLAP_HIGH",
-  "HO-073/item8|STEM_NEGATIVE_WORDING",
+  // Run 008 change: "HO-073/item8|STEM_NEGATIVE_WORDING" removed (FUB-076 contrast-ולא subtraction)
   "HO-075|NEAR_DUPLICATE_STEM",
   "HO-077/item4|OPTION_LENGTH_IMBALANCE",
 ];
@@ -399,7 +399,7 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
     expect(p.caseCounts).toEqual(EXPECTED_COUNTS);
     expect(p.totals).toEqual({
       expectedDetections: 122, truePositive: 79, falseNegative: 43, falseNegativeHeuristicGap: 10, falseNegativeNotImplemented: 33,
-      falsePositive: 2, cleanCases: 20, cleanCasesWithWarningOrError: 1, unlabeledEmissions: 6,
+      falsePositive: 2, cleanCases: 20, cleanCasesWithWarningOrError: 1, unlabeledEmissions: 5, // Run 008 change: 6 -> 5
     });
     // FUB-066: the HO-076 item-1 final-forbidden emission (KEY_STEM_LEXICAL_OVERLAP) no longer exists; no set-level movement.
     expect(p.setLevel).toEqual(EXPECTED_SET_LEVEL);
