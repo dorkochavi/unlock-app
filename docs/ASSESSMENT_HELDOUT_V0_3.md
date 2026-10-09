@@ -4,7 +4,7 @@ Status: DRAFT evidence artifact. Created in Run `2026-10-09-ASSESSMENT-ENGINE-00
 Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`), FROZEN (unchanged) throughout Run 007.
 Evidence identity: `FRESH_HELD_OUT_V0_3`. Corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_APPROVED`. `HUMAN_ADJUDICATED_V0_3`: none at Run 007 close; now exists as a separate post-evaluation overlay, see section 11.
 
-> Pointer (Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001`): Dor adjudicated all 13 queued rows post-evaluation (not blind). Sections 1-10 below are the unchanged Run 007 record; the human results, rule reassessment and routing are in section 11 and are never pooled with the numbers here.
+> Pointer (Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001`): Dor adjudicated all 13 queued rows post-evaluation (not blind). Sections 1-10 below are the Run 007 record, with no metric, label or conclusion changed (annotation-only edits: this pointer, the evidence-identity line, the section 6 heading and the readiness pending-review bullet); the human results, rule reassessment and routing are in section 11 and are never pooled with the numbers here.
 
 Evidence terms used here (never pooled): `FRESH_HELD_OUT_V0_3` (this report); `FIRST_BLIND` (historical, Run 004 only, v0.2); `CURRENT_LINTER_ON_FROZEN_V0_2` (regression evidence); `POST_HUMAN` (v0.2, 9 rows adjudicated by Dor); `CONTRACT_TEST` (Run 006 pre-registered tests); `HUMAN_ADJUDICATED_V0_3` (does not exist yet).
 
@@ -222,7 +222,7 @@ Readiness is not changed by optimism: NOT_READY (recommendation only; nothing is
 
 ## 11. HUMAN_ADJUDICATED_V0_3 (post-evaluation human adjudication)
 
-Added by Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001` (Slices H1 overlay + evaluation, H2 this section). Sections 1-10 above are the frozen Run 007 record and are not rewritten; the only edits to them are pointer lines referring here. Everything in this section is a SEPARATE evidence class and is never pooled with `FRESH_HELD_OUT_V0_3`.
+Added by Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001` (Slices H1 overlay + evaluation, H2 this section). Sections 1-10 above are the Run 007 record and are not rewritten. The only edits to them are annotations referring here: the pointer line under the title, the evidence-identity line (`HUMAN_ADJUDICATED_V0_3` now exists; no `FRESH_HELD_OUT_V0_3` number changed), the section 6 heading, and the readiness pending-review bullet. Everything in this section is a SEPARATE evidence class and is never pooled with `FRESH_HELD_OUT_V0_3`.
 
 ### 11.1 Provenance and non-blind status
 
@@ -324,4 +324,4 @@ No signal is validated; n is 9 versus 17, labels mostly model-made, the corpus i
 
 Routing (the backlog is the single home for status): FUB-066 stays `RESOLVED_IMPLEMENTATION` with a human-adjudication annotation; FUB-074 open (fixtures 033 and 021 positive, 025/028/058 negative); FUB-075, FUB-076, FUB-077 promotion triggers met and reframed. See `docs/FOLLOW_UP_BACKLOG.md` and the Run report `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md` for the single recommended next Run.
 
-Evidence class actually exercised: unit-level local (`vitest run src/domain/assessment`: 9 files, 330 tests passed at `35651e4`) over model-authored data with a single-reviewer post-evaluation human overlay. Not blind, not integration, not hosted, not real-course data.
+Evidence class actually exercised: unit-level local (`vitest run src/domain/assessment`: 9 files, 330 tests passed at `35651e4` and again after the type-only change in `cabe39a`) over model-authored data with a single-reviewer post-evaluation human overlay. Not blind, not integration, not hosted, not real-course data.

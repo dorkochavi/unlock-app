@@ -1,11 +1,11 @@
 # UNLOCK — ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 — Human Adjudication of Queued v0.3 Cases
 
-PLAN_VERSION: 040
+PLAN_VERSION: 041
 RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001
 START_HEAD: `32ca933`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `32ca933`
-STATUS: **IN PROGRESS.** Evidence/adjudication Run, NOT implementation. Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `cabe39a`
+STATUS: **COMPLETE — STOP.** Run report: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`. Evidence/adjudication Run, NOT implementation. Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -22,14 +22,14 @@ VERIFY FROZEN V0.3 → RECORD DOR'S 13 DECISIONS (POST-EVALUATION, NOT BLIND) �
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| H1 | Verify freeze + packet consistency; overlay file; generic POST_HUMAN v0.3 evaluation + tests; commit | AUTO | PENDING |
-| H2 | Report section, rule reassessment, FUB routing, docs content | AUTO | PENDING |
-| Z | Independent general review | REVIEW_GATE | PENDING |
-| Z2 | Reconcile docs, verification, Run close | FINAL_GATE | PENDING |
+| H1 | Verify freeze + packet consistency; overlay file; generic POST_HUMAN v0.3 evaluation + tests; commit | AUTO | DONE (`35651e4`, overlay + evaluation) |
+| H2 | Report section, rule reassessment, FUB routing, docs content | AUTO | DONE (`4b6ba07`, docs) |
+| Z | Independent general review | REVIEW_GATE | DONE (KEEP; 0 blocker / 0 material / 3 minor, fixed) |
+| Z2 | Reconcile docs, verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
-- ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md` (in progress)
+- ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`
 - ASSESSMENT-ENGINE-007: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`
 - ASSESSMENT-ENGINE-006: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-006.md`
 - ASSESSMENT-ENGINE-005: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-005.md`

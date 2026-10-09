@@ -1,7 +1,7 @@
 # Run Report — 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001
 
-Status: `DRAFT` (H1 and H2 complete; Slices Z/Z2 and Run close pending, to be finalized by the closer). Local only; no push, merge, deploy, tag, hosted mutation, migration, schema or dependency change.
-START_HEAD `32ca933` (= `origin/main` at Run start). H1 commit `35651e4`. LAST_VERIFIED_HEAD `35651e4`. Commits are unpushed and not deployed; `origin/main` is not Production.
+Status: `COMPLETE`. Local only; no push, merge, deploy, tag, hosted mutation, migration, schema or dependency change.
+START_HEAD `32ca933` (= `origin/main` at Run start). H1 commit `35651e4`; H2 docs `4b6ba07`; type-only fix `cabe39a`. LAST_VERIFIED_HEAD `cabe39a` (the last code-affecting commit; tests, typecheck and eslint fresh there; later commits docs-only). At close prep (before the closing commit) `git rev-list --left-right --count HEAD...origin/main` was 4 ahead / 0 behind: commits are unpushed and not deployed; `origin/main` is not Production.
 
 ## Goal
 Record Dor's 13 post-evaluation decisions on the queued v0.3 cases as a separate additive overlay, recompute `HUMAN_ADJUDICATED_V0_3` with the unchanged linter, reassess the affected rules from that evidence, and route the findings. No linter, normalizer, threshold or frozen-data change.
@@ -10,9 +10,11 @@ Record Dor's 13 post-evaluation decisions on the queued v0.3 cases as a separate
 | Slice | Content | Status |
 |---|---|---|
 | H1 | Overlay `human-adjudication.json` (13/13), generic overlay support in the harness `heldout-eval.ts` (additive), tests `heldout-v0-3-human-adjudication.test.ts`, HUMAN_ADJUDICATED_V0_3 evaluation (commit `35651e4`) | DONE |
-| H2 | Docs: report section 11 in `docs/ASSESSMENT_HELDOUT_V0_3.md`, rule reassessment, backlog FUB-066/074/075/076/077, pointers in `ASSESSMENT_ENGINE.md` and `CONTEXT_MAP.md`, this report, `DEV_STATUS.md` | DONE (this commit) |
-| Z | Independent review / final verification | PENDING (closer) |
-| Z2 | Run close: Plan status, DEV_STATUS finalization, final Git state | PENDING (closer) |
+| H2 | Docs: report section 11 in `docs/ASSESSMENT_HELDOUT_V0_3.md`, rule reassessment, backlog FUB-066/074/075/076/077, pointers in `ASSESSMENT_ENGINE.md` and `CONTEXT_MAP.md`, this report, `DEV_STATUS.md` (commit `4b6ba07`) | DONE |
+| Z | Independent general review (unlock-reviewer) | DONE: KEEP, 0 blocker / 0 material / 3 minor, all fixed |
+| Z2 | Fix the 3 minors; Run close: Plan status, DEV_STATUS finalization, final Git state | DONE |
+
+Z minors fixed: (1) `HumanDecision.semanticDecision` in `heldout-eval.ts` typed honestly as `string | { decision: string; concern?: string } | null` (additive type change, no behavior change; the `as unknown as` cast in the adjudication test removed; commit `cabe39a`); (2) `docs/ASSESSMENT_HELDOUT_V0_3.md` pointer and section 11.1 reworded to list exactly the annotation-only edits to sections 1-10 (pointer line, evidence-identity line, section 6 heading, readiness pending-review bullet; no `FRESH_HELD_OUT_V0_3` number changed); (3) Run report/Plan/DEV_STATUS finalized.
 
 ## Provenance
 `HUMAN_APPROVED_POST_EVALUATION`, reviewer Dor, 2026-10-09. Decisions were made after seeing the question, options, key, frozen model label, frozen linter emissions and why the case mattered: POST-EVALUATION, NOT blind, single reviewer, 13 of 72 synthetic cases. These cases are observed; any later fix tested on them is CONTRACT_TEST / regression evidence, not fresh validation.
@@ -52,8 +54,17 @@ Prioritization basis: human-confirmed defect (all four), deterministic tractabil
 - `question-lint.ts`: NO change. `text-normalize.ts`: NO change. Threshold: NO change.
 - Frozen v0.3 corpus, labels, author-intent, label-review and hashes: NO change. v0.2: NO change. Previous overlays: NO change.
 - Schema, dependencies, hosted, push, deploy: NO.
-- Disclosure: `src/domain/assessment/golden/heldout-eval.ts` received additive generic overlay support in H1 (commit `35651e4`, test and data support only; not product code, not the linter).
-- H2 changes only docs (verify with `git diff 35651e4 --stat`).
+- `git diff 32ca933 --stat -- src` lists exactly: `heldout-eval.ts` (additive generic overlay support in H1 `35651e4`, plus the type-only `semanticDecision` widening in `cabe39a`; harness, not product code, not the linter), the new test `__tests__/heldout-v0-3-human-adjudication.test.ts`, and the new overlay `golden/heldout-v0-3/human-adjudication.json`. No other `src` path changed.
+- H2 and the close changed only docs (verify with `git diff cabe39a --stat`).
 
 ## Verification (unit-level local, no upgrade of evidence class)
-`npx vitest run src/domain/assessment`: 9 files, 330 tests passed at `35651e4` (re-run at H2 start). H2 is docs-only, so that evidence stays fresh. No typecheck/lint/schema/build/browser re-run (no code change). Human decisions are `HUMAN_APPROVED_POST_EVALUATION` and not automated evidence; no blind, integration, hosted or real-course evidence.
+- `npx vitest run src/domain/assessment`: 9 files, 330 tests passed at `cabe39a` (also at `35651e4`); includes v0.2/v0.3 held-out suites and the new adjudication test.
+- Typecheck (`npm run typecheck`): clean at `cabe39a`. ESLint on the two changed TS files: clean.
+- Freshness: the only code change after `35651e4` is the type-only fix in `cabe39a`, after which all three were re-run; later commits are docs-only, so this evidence stays fresh. No schema/build/browser run (no relevant change).
+- Class: unit-level local over model-authored synthetic data plus a single-reviewer post-evaluation human overlay (`HUMAN_APPROVED_POST_EVALUATION`, Dor). Not blind, not fresh, not integration, not hosted, not real-course; human decisions are not automated evidence.
+
+## Mechanism evidence (autonomous-run; `node .claude/telemetry/summarize.mjs`)
+- 1 session, 80 events, 58 tool calls (3 tool failures); compactions 0; highest ending context usage 26%; prompt-cache hit ratio about 98%.
+- Subagents dispatched 4 (H1 1, H2 1, Z 2); hand-back size measured for 15 of 18 completions, 612 characters total (about 41 average): hand-offs stayed compact. STOP/ESCALATE events: 0.
+- Per-slice attribution via `CURRENT_SLICE` worked (H1, H2, Z attributed; 0 unattributed events). Context misses and unnecessary rechecks are not automatically inferred.
+- Provisional call: KEEP (thin parent plus fresh scoped workers held isolation with no compaction and no STOP/ESCALATE; the independent review earned its dispatch by finding 3 real minors). Provisional only: single small docs/evidence-heavy Run, not a basis for wider policy.
