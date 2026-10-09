@@ -778,3 +778,30 @@ export function formatPostHumanMarkdown(c: PostHumanComparison): string {
   lines.push("<!-- GENERATED:END -->");
   return lines.join("\n");
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Generic breakdown helper (Run 2026-10-09-ASSESSMENT-ENGINE-007, Slice E1). Pure; changes no existing export.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Pure. Evaluates each group of cases (caseId -> group name) with the unchanged `runHeldOutEvaluation`, so every metric
+ * of a group is computed by exactly the same rules as the whole-corpus report. Cases absent from `groupOf` are placed in
+ * the group "UNGROUPED". Groups are returned in sorted-key order.
+ */
+export function runHeldOutEvaluationByGroup(
+  corpus: HeldOutCorpus,
+  labels: HeldOutLabels,
+  groupOf: Readonly<Record<string, string>>,
+): Record<string, HeldOutReport> {
+  const groupName = (caseId: string): string => groupOf[caseId] ?? "UNGROUPED";
+  const names = Array.from(new Set(corpus.cases.map((c) => groupName(c.caseId)))).sort();
+  const out: Record<string, HeldOutReport> = {};
+  for (const g of names) {
+    const ids = new Set(corpus.cases.filter((c) => groupName(c.caseId) === g).map((c) => c.caseId));
+    out[g] = runHeldOutEvaluation(
+      { cases: corpus.cases.filter((c) => ids.has(c.caseId)) },
+      { labels: labels.labels.filter((l) => ids.has(l.caseId)) },
+    );
+  }
+  return out;
+}
