@@ -485,8 +485,13 @@ export interface HumanDecision {
   humanReasoning: string;
   humanRule: string;
   humanNotes?: string;
-  /** `ref|code` findings that the decision touched (without forbidding), used to flag remaining ambiguity. */
+  /**
+   * `ref|code` findings that the decision touched (declined/removed as an expectation, without an explicit forbid).
+   * If the linter still emits one, the harness counts it as UNLABELED_EMISSION: an accounting convention, not human uncertainty.
+   */
   touchedFindings?: string[];
+  /** Explicit marker for a decision that is genuinely unresolved. Absent (undefined) for all 9 decisions: every one is definitive. */
+  trueAmbiguity?: boolean;
 }
 export interface HumanAdjudicationOverlay {
   version: string;
@@ -567,7 +572,16 @@ export interface PostHumanCaseRow {
   /** Findings (`KIND ref code`) present only in FIRST_BLIND / only in POST_HUMAN. */
   removed: string[];
   added: string[];
-  cause: "human label correction" | "no change" | "ambiguity remaining";
+  /** Did the applied human decision actually change the label (label / expected / forbidden codes)? Derived from before/after labels. */
+  labelEffect: "HUMAN_DECIDED_LABEL_CHANGE" | "HUMAN_DECIDED_NO_LABEL_CHANGE";
+  /** Does any FN/FP/UNL finding, or any TP/FN/FP/UNL count, differ between FIRST_BLIND and POST_HUMAN for this case? */
+  metricEffect: "METRIC_EFFECT" | "HUMAN_DECIDED_BUT_NO_METRIC_EFFECT";
+  /**
+   * Touched `ref|code` findings that are still UNLABELED_EMISSIONs after adjudication. Accounting note ONLY: a declined or
+   * removed expectation that was not explicitly forbidden is counted as UNLABELED_EMISSION by harness convention. This is NOT
+   * human ambiguity; the human decision is definitive.
+   */
+  declinedEmissionsLeftUnlabeled: string[];
 }
 export interface PostHumanComparison {
   firstBlind: HeldOutReport;
@@ -579,6 +593,8 @@ export interface PostHumanComparison {
     setLevel: HeldOutReport["setLevel"];
   };
   reviewedCases: PostHumanCaseRow[];
+  /** Count of decisions with an explicit `trueAmbiguity: true`. 0 for all 9 decisions (all are definitive). */
+  trueRemainingAmbiguity: number;
 }
 
 function diffNumbers<T extends object>(post: T, first: T): T {
@@ -626,11 +642,19 @@ export function compareFirstBlindAndPostHuman(
     const removed = Array.from(ka).filter((x) => !kb.has(x));
     const added = Array.from(kb).filter((x) => !ka.has(x));
     const touched = new Set(d.touchedFindings ?? []);
-    const unlabeledTouched = b.unlabeledEmissions.some((f) => touched.has(`${f.ref}|${f.code}`));
-    const cause: PostHumanCaseRow["cause"] = unlabeledTouched
-      ? "ambiguity remaining"
-      : d.decision === "CHANGED" ? "human label correction" : "no change";
-    return { caseId: d.caseId, decision: d.decision, first: counts(a), post: counts(b), removed, added, cause };
+    const declinedEmissionsLeftUnlabeled = b.unlabeledEmissions
+      .map((f) => `${f.ref}|${f.code}`)
+      .filter((x) => touched.has(x));
+    const before = labels.labels.find((l) => l.caseId === d.caseId);
+    const after = post.labels.find((l) => l.caseId === d.caseId);
+    const labelEffect: PostHumanCaseRow["labelEffect"] =
+      JSON.stringify(before) !== JSON.stringify(after) ? "HUMAN_DECIDED_LABEL_CHANGE" : "HUMAN_DECIDED_NO_LABEL_CHANGE";
+    const first = counts(a);
+    const postCounts = counts(b);
+    const metricChanged =
+      removed.length > 0 || added.length > 0 || (Object.keys(first) as Array<keyof CaseCounts>).some((k) => first[k] !== postCounts[k]);
+    const metricEffect: PostHumanCaseRow["metricEffect"] = metricChanged ? "METRIC_EFFECT" : "HUMAN_DECIDED_BUT_NO_METRIC_EFFECT";
+    return { caseId: d.caseId, decision: d.decision, first, post: postCounts, removed, added, labelEffect, metricEffect, declinedEmissionsLeftUnlabeled };
   });
   return {
     firstBlind,
@@ -641,6 +665,7 @@ export function compareFirstBlindAndPostHuman(
       setLevel: diffNumbers(postHuman.setLevel, firstBlind.setLevel),
     },
     reviewedCases,
+    trueRemainingAmbiguity: overlay.decisions.filter((d) => d.trueAmbiguity === true).length,
   };
 }
 
@@ -688,15 +713,15 @@ export function formatPostHumanMarkdown(c: PostHumanComparison): string {
   lines.push("### The 9 reviewed cases (generated)");
   lines.push("");
   lines.push(
-    "Counts are TP/FN/FP/UNLABELED per case. Cause: human label correction (a finding changed because the label changed), no change, or ambiguity remaining (an UNLABELED_EMISSION on a code the human decision touched without forbidding it).",
+    "Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TRUE_REMAINING_AMBIGUITY = " + String(c.trueRemainingAmbiguity) + ". Label effect: HUMAN_DECIDED_LABEL_CHANGE (the applied decision changed the label) or HUMAN_DECIDED_NO_LABEL_CHANGE. Metric effect: METRIC_EFFECT (a finding or a TP/FN/FP/UNL count differs from FIRST_BLIND) or HUMAN_DECIDED_BUT_NO_METRIC_EFFECT. \"Declined emissions left UNLABELED by convention\" lists a linter emission whose expectation the human declined or removed without ruling it forbidden: the harness counts that as UNLABELED_EMISSION. This is a harness accounting convention (a declined expectation was not a forbid), not human uncertainty.",
   );
   lines.push("");
-  lines.push("| Case | Decision | FIRST_BLIND TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Cause |");
-  lines.push("|---|---|---|---|---|---|---|");
+  lines.push("| Case | Decision | FIRST_BLIND TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Label effect | Metric effect | Declined emissions left UNLABELED by convention |");
+  lines.push("|---|---|---|---|---|---|---|---|---|");
   const cc = (x: CaseCounts): string => `${x.tp}/${x.fn}/${x.fp}/${x.unlabeled}`;
   for (const r of c.reviewedCases) {
     lines.push(
-      `| ${r.caseId} | ${r.decision} | ${cc(r.first)} | ${cc(r.post)} | ${r.removed.join(", ") || "-"} | ${r.added.join(", ") || "-"} | ${r.cause} |`,
+      `| ${r.caseId} | ${r.decision} | ${cc(r.first)} | ${cc(r.post)} | ${r.removed.join(", ") || "-"} | ${r.added.join(", ") || "-"} | ${r.labelEffect} | ${r.metricEffect} | ${r.declinedEmissionsLeftUnlabeled.map((x) => x.replace("|", " ")).join(", ") || "-"} |`,
     );
   }
   lines.push("<!-- GENERATED:END -->");

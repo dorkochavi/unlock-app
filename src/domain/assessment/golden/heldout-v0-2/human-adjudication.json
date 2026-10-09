@@ -93,7 +93,7 @@
         "languageReviewRequired": true
       },
       "patch": {},
-      "humanReasoning": "Set stays FLAWED with the existing set-level codes and languageReviewRequired true. Dor's condition was: reject item-1 lexical/key leakage IF it is currently expected or implied merely because the answer repeats entities/words from the stem. Condition not met; no lexical-leakage code was expected at item 1 (itemCodes['1'] is KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE), so no label change.",
+      "humanReasoning": "Set stays FLAWED with the existing set-level codes and languageReviewRequired true. Dor's decision is definitive: item-1 lexical/key leakage based only on natural stem overlap is rejected. No lexical-leakage code is expected at item 1 (itemCodes['1'] is KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE), so there is no label change. The linter's KEY_STEM_LEXICAL_OVERLAP emission at item 1 is a context-blind heuristic limit and is counted as UNLABELED_EMISSION by harness convention only (no per-item forbidden list exists in the SET label format).",
       "humanRule": "Lexical overlap with the stem is not leakage by itself; leakage requires an asymmetry or wording cue that helps identify the answer without mastering the content.",
       "humanNotes": "The set contains genuine Hebrew-quality issues: 'מהי תפקיד הנשיא במדינת ישראל?' is grammatically unnatural (expected 'מהו תפקיד…') and 'הקלטת חום באטמוספרה' is wrong/unnatural wording ('לכידת חום…' would be natural). Corpus NOT edited.",
       "touchedFindings": [
@@ -164,7 +164,7 @@
         ],
         "rationale": "Negative stem (human-approved). 'kol' is substantive content of the false proposition, not an absolute-term flaw."
       },
-      "humanReasoning": "'איזו מהטענות הבאות איננה נכונה?' is genuine negative wording; 'כל הציפורים עפות' uses 'כל' as substantive content that makes the proposition false, integral to what is assessed. Dor said 'Remove', not 'forbid': OPTION_ABSOLUTE_TERM is NOT added to forbiddenCodes, so a linter emission becomes an UNLABELED_EMISSION (ambiguity remaining).",
+      "humanReasoning": "'איזו מהטענות הבאות איננה נכונה?' is genuine negative wording; 'כל הציפורים עפות' uses 'כל' as substantive content that makes the proposition false, integral to what is assessed. Dor's decision is definitive: remove the expectation. He did not additionally rule the code forbidden, and OPTION_ABSOLUTE_TERM is NOT added to forbiddenCodes, so the linter's context-blind emission is counted as an UNLABELED_EMISSION by harness accounting convention only (not human uncertainty).",
       "humanRule": "'כל' is not automatically an absolute-term flaw when it is integral to the proposition.",
       "touchedFindings": [
         "HO-063|OPTION_ABSOLUTE_TERM"

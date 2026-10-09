@@ -31,7 +31,8 @@ CHANGED: HO-017 (to CLEAN; removed OPTION_ABSOLUTE_TERM and OPTION_PREFIX_STEM_R
 | UNLABELED_EMISSION | 22 | 23 | +1 |
 | SET-scope expected / TP / FN / FP | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 0 |
 
-Causes: HO-017 and HO-069 are human label corrections; HO-063, HO-015 and HO-076 are ambiguity remaining; HO-049, HO-070, HO-032 and HO-073 are no change. The linter's output is unchanged, so the FP rise is a label effect, not a linter regression.
+Causes: HO-017, HO-063 and HO-069 are HUMAN_DECIDED_LABEL_CHANGE (metric effect); HO-049, HO-070, HO-076, HO-015, HO-032 and HO-073 are HUMAN_DECIDED_NO_LABEL_CHANGE with HUMAN_DECIDED_BUT_NO_METRIC_EFFECT; TRUE_REMAINING_AMBIGUITY is 0 (all 9 decisions are definitive). The linter's output is unchanged, so the FP rise is a label effect, not a linter regression.
+Corrected in Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002: the earlier "ambiguity remaining" label described a harness accounting state, not human uncertainty.
 
 ## Readiness and verdicts (recommendations only)
 Integration readiness stays NOT_READY (9 of 78 labels human-approved by a single reviewer; model-authored corpus; 5 FP post-human; 36 NOT_IMPLEMENTED FN; 12 semantic-only; position-rule significance, import-validator reconciliation and advisory design untouched). FUB-064 OPTION_COMBINATION_REFERENCE: IMPLEMENT_NEXT reaffirmed (low-to-medium); its 3 cases were not human-reviewed; WATCH is defensible; no code. FUB-065 RESOLVED for the 9 queued rows only (`HUMAN_APPROVED: Dor, 2026-10-09`); the other 69 rows remain MODEL_LABELED_NOT_HUMAN_APPROVED.

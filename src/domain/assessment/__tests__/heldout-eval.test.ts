@@ -427,12 +427,28 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
     expect(p.falsePositives.find((f) => f.ref === "HO-017")?.basis).toBe("CLEAN_CASE");
   });
 
-  it("reports the per-case table for the 9 reviewed cases with the expected causes", () => {
-    expect(cmp.reviewedCases.map((r) => [r.caseId, r.cause])).toEqual([
-      ["HO-049", "no change"], ["HO-070", "no change"], ["HO-076", "ambiguity remaining"], ["HO-017", "human label correction"],
-      ["HO-015", "ambiguity remaining"], ["HO-063", "ambiguity remaining"], ["HO-032", "no change"],
-      ["HO-069", "human label correction"], ["HO-073", "no change"],
+  it("reports the per-case taxonomy for the 9 reviewed cases (all decisions definitive)", () => {
+    const LC = "HUMAN_DECIDED_LABEL_CHANGE";
+    const NLC = "HUMAN_DECIDED_NO_LABEL_CHANGE";
+    const ME = "METRIC_EFFECT";
+    const NME = "HUMAN_DECIDED_BUT_NO_METRIC_EFFECT";
+    expect(cmp.reviewedCases.map((r) => [r.caseId, r.labelEffect, r.metricEffect, r.declinedEmissionsLeftUnlabeled])).toEqual([
+      ["HO-049", NLC, NME, []],
+      ["HO-070", NLC, NME, []],
+      ["HO-076", NLC, NME, ["HO-076/item1|KEY_STEM_LEXICAL_OVERLAP"]],
+      ["HO-017", LC, ME, []],
+      ["HO-015", NLC, NME, ["HO-015|OPTION_ABSOLUTE_TERM"]],
+      ["HO-063", LC, ME, ["HO-063|OPTION_ABSOLUTE_TERM"]],
+      ["HO-032", NLC, NME, []],
+      ["HO-069", LC, ME, []],
+      ["HO-073", NLC, NME, []],
     ]);
+    expect(cmp.trueRemainingAmbiguity).toBe(0);
+    const out = formatPostHumanMarkdown(cmp);
+    expect(out).toContain("TRUE_REMAINING_AMBIGUITY = 0");
+    expect(out).toContain("not human uncertainty");
+    expect(out.toLowerCase()).not.toContain("ambiguity remaining");
+    expect(JSON.stringify(cmp.reviewedCases).toLowerCase()).not.toContain("ambiguity remaining");
     const row = (id: string) => cmp.reviewedCases.find((r) => r.caseId === id)!;
     expect([row("HO-017").first, row("HO-017").post]).toEqual([{ tp: 1, fn: 1, fp: 0, unlabeled: 0 }, { tp: 0, fn: 0, fp: 1, unlabeled: 0 }]);
     expect([row("HO-063").first, row("HO-063").post]).toEqual([{ tp: 1, fn: 1, fp: 0, unlabeled: 0 }, { tp: 0, fn: 1, fp: 0, unlabeled: 1 }]);
