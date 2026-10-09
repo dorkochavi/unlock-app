@@ -4,7 +4,7 @@ PLAN_VERSION: 035
 RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-005
 START_HEAD: `db5bfc7`
 RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: see Run report (Run-close commit)
+LAST_VERIFIED_HEAD: `eccfd75`
 STATUS: **COMPLETE + STOP** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").

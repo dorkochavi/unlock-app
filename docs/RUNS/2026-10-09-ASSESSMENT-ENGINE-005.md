@@ -1,7 +1,7 @@
 # Run Report — 2026-10-09-ASSESSMENT-ENGINE-005
 
 Status: `COMPLETE` (local only; no push, merge, deploy, tag, hosted mutation, migration, schema or dependency change; no AI API; no UI/import wiring).
-START_HEAD `db5bfc7`; PRE_REGISTERED_TEST_HEAD `b66c59e`. Commits unpushed and not deployed.
+START_HEAD `db5bfc7`; PRE_REGISTERED_TEST_HEAD `b66c59e`; LAST_VERIFIED_HEAD `eccfd75`. Commits unpushed and not deployed.
 
 ## Decision
 Gate A: IMPLEMENT. Gate B: KEEP (advisory WARNING, unwired). FUB-064: RESOLVED_IMPLEMENTED.
