@@ -1,0 +1,317 @@
+{
+  "version": "v0.3-human-adjudication-1",
+  "reviewer": "Dor",
+  "reviewDate": "2026-10-09",
+  "provenance": "HUMAN_APPROVED_POST_EVALUATION",
+  "evaluationStatus": "POST_EVALUATION, NOT BLIND: decisions were made after seeing question, options, key, frozen model label, frozen linter emissions and why the case mattered. Not held-out evidence for these 13 cases.",
+  "coverage": "13/13 queued v0.3 cases",
+  "decisions": [
+    {
+      "caseId": "HO3-005",
+      "decision": "APPROVED",
+      "finalJudgement": "CLEAN",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "addForbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ]
+      },
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "FORBIDDEN"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "The Hebrew \"שלא\" is relative/content negation inside the physical condition. The question does not ask the learner to select what is NOT true or perform negative-stem reasoning.",
+      "humanRule": "Negation token != negative-stem flaw. Content/relative negation is not sufficient."
+    },
+    {
+      "caseId": "HO3-058",
+      "decision": "CHANGED",
+      "finalJudgement": "CLEAN",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Stem names the distractor category ('ולא לכלי כתיבה'), giving away that עט/עיפרון are the excluded options; the contrast phrasing is a cue.",
+        "languageReviewRequired": true
+      },
+      "patch": {
+        "label": "CLEAN",
+        "addForbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ],
+        "semanticExpectation": null
+      },
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "FORBIDDEN"
+      },
+      "semanticDecision": {
+        "decision": "REJECTED / NOT_A_FLAW",
+        "concern": "semantic cue concern (stem names the excluded category)"
+      },
+      "humanReasoning": "\"ולא\" expresses natural category contrast. It is not negative-stem reasoning. Explicitly distinguishing musical instruments from writing tools defines the classification task; it does not by itself leak the key.",
+      "humanRule": "Contrast wording != negative-stem flaw. Explicit category contrast != cue by itself."
+    },
+    {
+      "caseId": "HO3-048",
+      "decision": "CHANGED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_TOO_SHORT"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Stem 'מימי הביניים' is a bare noun phrase.",
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "addExpectedCodes": [
+          "KEY_LONGEST_OPTION"
+        ]
+      },
+      "deterministicDecision": {
+        "STEM_TOO_SHORT": "EXPECTED / APPROVED",
+        "KEY_LONGEST_OPTION": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "\"מימי הביניים\" is a noun-phrase fragment rather than a well-formed question. The key is also strongly isolated by length and specificity relative to the three short distractors.",
+      "humanRule": "Length alone is not always a flaw, but strong isolated length + specificity asymmetry can create a real test-taking cue."
+    },
+    {
+      "caseId": "HO3-071",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "OPTION_ALL_OF_ABOVE"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "addForbiddenCodes": [
+          "STEM_TOO_SHORT"
+        ]
+      },
+      "deterministicDecision": {
+        "OPTION_ALL_OF_ABOVE": "EXPECTED / APPROVED",
+        "STEM_TOO_SHORT": "FORBIDDEN"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "\"מהם גזי חממה?\" is a valid complete short Hebrew question. \"כל האפשרויות הנ\\\"ל\" is clearly an all-of-the-above option.",
+      "humanRule": "Valid Hebrew interrogative morphology must not be rejected merely because the stem has fewer than four words. Also record: מה / מהו / מהי / מהם / מהן are members of the same broad interrogative family for future design consideration (NOT implemented in this Run).",
+      "designNote": "Future design consideration only, NOT implemented in this Run: מה / מהו / מהי / מהם / מהן are members of the same broad interrogative family."
+    },
+    {
+      "caseId": "HO3-042",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_TOO_SHORT"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Stem 'במה' is a single ambiguous word (in what / stage) and not a well-formed question; options mix homographs.",
+        "languageReviewRequired": true
+      },
+      "patch": {},
+      "deterministicDecision": {
+        "STEM_TOO_SHORT": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "\"במה\" alone is ambiguous/incomplete. It can lexically represent either a noun (\"stage\") or an interrogative form, but by itself it does not form a sufficiently well-defined question here.",
+      "humanRule": "Morphological ability to be interrogative is not sufficient for short-stem exemption. The complete utterance must function as a clear question/instruction."
+    },
+    {
+      "caseId": "HO3-040",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_TOO_SHORT"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Stem 'שמי הלילה' is a bare noun phrase; 'שמי' only resembles a prefixed interrogative.",
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "deterministicDecision": {
+        "STEM_TOO_SHORT": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "\"שמי הלילה\" is a noun phrase, not a question. The current prefix mechanism falsely treats its first word as interrogative-like.",
+      "humanRule": "Morphological resemblance alone must not exempt a short stem."
+    },
+    {
+      "caseId": "HO3-038",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_TOO_SHORT"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Stem 'List of birds' is a noun phrase, not a question, despite the imperative-looking first word.",
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "deterministicDecision": {
+        "STEM_TOO_SHORT": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "\"List of birds\" is a noun phrase / label in this context, not a complete imperative. The fact that \"List\" can be a command verb is insufficient.",
+      "humanRule": "A lead word that can begin an imperative does not automatically make the entire short stem well-formed."
+    },
+    {
+      "caseId": "HO3-044",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_TOO_SHORT"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Stem 'Name tags' is a noun phrase; 'Name' looks imperative but nothing is asked.",
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "deterministicDecision": {
+        "STEM_TOO_SHORT": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "\"Name tags\" is a noun phrase. \"Name\" can be an imperative verb in other contexts, but is not functioning as one here.",
+      "humanRule": "Lexical form alone is insufficient for short-stem exemption."
+    },
+    {
+      "caseId": "HO3-025",
+      "decision": "CHANGED",
+      "finalJudgement": "CLEAN",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Stem already defines proportional representation ('מנדטים מחולקים לפי חלקן ... בקולות') and key c merely restates it (circular; stem leaks the key).",
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "label": "CLEAN",
+        "semanticExpectation": null
+      },
+      "deterministicDecision": {},
+      "semanticDecision": {
+        "decision": "REJECTED / NOT_A_FLAW",
+        "concern": "semantic stem/key leakage concern; no deterministic code expected"
+      },
+      "humanReasoning": "The key naturally restates the definition supplied by the stem. Semantic overlap in a definition question is not itself leakage.",
+      "humanRule": "Restating the concept defined by the stem is not automatically leakage. Leakage requires an asymmetric cue that can identify the key without the intended knowledge."
+    },
+    {
+      "caseId": "HO3-028",
+      "decision": "CHANGED",
+      "finalJudgement": "CLEAN",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Key 'Merge sort' echoes the stem verb 'merges' (name leak); borderline since the name is the standard term.",
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "label": "CLEAN",
+        "semanticExpectation": null
+      },
+      "deterministicDecision": {},
+      "semanticDecision": {
+        "decision": "REJECTED / NOT_A_FLAW",
+        "concern": "semantic leakage concern; no deterministic code expected"
+      },
+      "humanReasoning": "\"Merge sort\" naturally shares vocabulary with the defining operation \"merges\". This is the standard technical term, not an unfair cue by itself.",
+      "humanRule": "A standard term sharing vocabulary with its defining behavior is not leakage by itself."
+    },
+    {
+      "caseId": "HO3-021",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "KEY_LONGEST_OPTION"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Key c restates the stem phrase 'תופעת הגאות והשפל' and is the longest option: self-referential key echoing the stem (lexical leakage).",
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "deterministicDecision": {
+        "KEY_LONGEST_OPTION": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT",
+        "concern": "semantic stem-key leakage (key uniquely repeats distinctive stem phrase \"תופעת הגאות והשפל\")"
+      },
+      "humanReasoning": "The key is materially longer and more specific than the distractors. Separately, it uniquely repeats the distinctive stem phrase \"תופעת הגאות והשפל\", creating asymmetric stem-key echo.",
+      "humanRule": "Stem-key echo is a real defect when the key uniquely mirrors distinctive stem wording in a way the distractors do not. IMPORTANT: this does NOT authorize restoring broad deterministic KEY_STEM_LEXICAL_OVERLAP.",
+      "humanNotes": "Does NOT authorize restoring broad deterministic KEY_STEM_LEXICAL_OVERLAP."
+    },
+    {
+      "caseId": "HO3-004",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "deterministicDecision": {
+        "OPTION_ABSOLUTE_TERM": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "BORDERLINE_ACCEPTED_TP",
+        "concern": "human note"
+      },
+      "humanReasoning": "\"בהכרח\" is semantically part of the misconception claim, but its strong, asymmetric absolute wording also makes the distractor easier to reject.",
+      "humanRule": "Strong absolute wording can be a valid warning when it appears asymmetrically in a distractor, even where it is also part of misconception content.",
+      "humanNotes": "BORDERLINE_ACCEPTED_TP"
+    },
+    {
+      "caseId": "HO3-033",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": "Distractor b is implausible and recycles the stem's own term ('התחממות גלובלית ... קרינת הירח'), and d uses the exclusive 'בלבד'; weak distractors with a circular option.",
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "deterministicDecision": {
+        "OPTION_ABSOLUTE_TERM": "NONE (no deterministic expectation)"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT (weak-distractor/implausibility); weak-tier \"בלבד\" cue APPROVED AS CONTEXTUAL SEMANTIC CONCERN",
+        "concern": "distractor b implausible/circular and weak; \"בלבד\" further weakens distractor d in context"
+      },
+      "humanReasoning": "Distractor b is implausible/circular and weak. \"בלבד\" further weakens distractor d in context, but the token alone is not sufficient for deterministic ownership.",
+      "humanRule": "Weak absolute terms can contribute to a cue, but the flaw is contextual. Weak-tier tokens alone remain semantic/human territory.",
+      "humanNotes": "OPTION_ABSOLUTE_TERM has NO deterministic expectation for this case (weak-tier token alone is semantic/human territory); semanticExpectation retained as the approved contextual concern."
+    }
+  ]
+}

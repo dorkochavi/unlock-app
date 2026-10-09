@@ -487,11 +487,17 @@ export interface HumanDecision {
     addForbiddenCodes?: string[];
     /** Same, for items inside a SET case (key = 1-based item number). SET labels only. */
     addForbiddenItemCodes?: Record<string, string[]>;
+    /** Replaces the semantic expectation (e.g. `null` when the human rejects a semantic-only concern). Absent = unchanged. */
+    semanticExpectation?: string | null;
     rationale?: string;
   };
   humanReasoning: string;
   humanRule: string;
   humanNotes?: string;
+  /** Free-text record of the human's semantic (non-deterministic) decision. Documentation only; never read by the harness. */
+  semanticDecision?: string;
+  /** Free-text design note (future consideration, NOT implemented). Documentation only; never read by the harness. */
+  designNote?: string;
   /**
    * `ref|code` findings that the decision touched (declined/removed as an expectation, without an explicit forbid).
    * If the linter still emits one, the harness counts it as UNLABELED_EMISSION: an accounting convention, not human uncertainty.
@@ -523,8 +529,12 @@ function withoutForbidAdditions(next: HeldOutLabel, frozen: HeldOutLabel): HeldO
 }
 
 /** Pure. Applies the overlay on top of the frozen labels (inputs are not mutated). Throws on any invalid overlay. */
-export function applyHumanAdjudication(labels: HeldOutLabels, overlay: HumanAdjudicationOverlay): ProvenancedLabels {
-  const allowed = new Set(HUMAN_REVIEWED_CASE_IDS);
+export function applyHumanAdjudication(
+  labels: HeldOutLabels,
+  overlay: HumanAdjudicationOverlay,
+  allowedCaseIds: readonly string[] = HUMAN_REVIEWED_CASE_IDS,
+): ProvenancedLabels {
+  const allowed = new Set(allowedCaseIds);
   const byId = new Map(labels.labels.map((l) => [l.caseId, l]));
   const seen = new Set<string>();
   const patched = new Map<string, HeldOutLabel>();
@@ -575,6 +585,7 @@ export function applyHumanAdjudication(labels: HeldOutLabels, overlay: HumanAdju
       next.forbiddenItemCodes = merged;
     }
     if (d.patch.label !== undefined) next.label = d.patch.label;
+    if (d.patch.semanticExpectation !== undefined) next.semanticExpectation = d.patch.semanticExpectation;
     if (d.patch.rationale !== undefined) next.rationale = d.patch.rationale;
     // Forbidden-only additions are precision flags, not label changes: the human decision itself is unchanged.
     const changed = JSON.stringify(withoutForbidAdditions(next, frozen)) !== JSON.stringify(frozen);
@@ -669,15 +680,16 @@ export function compareFrozenAndPostHuman(
   corpus: HeldOutCorpus,
   labels: HeldOutLabels,
   overlay: HumanAdjudicationOverlay,
+  allowedCaseIds: readonly string[] = HUMAN_REVIEWED_CASE_IDS,
 ): PostHumanComparison {
-  const post = applyHumanAdjudication(labels, overlay);
+  const post = applyHumanAdjudication(labels, overlay, allowedCaseIds);
   const currentLinterOnFrozen = runHeldOutEvaluation(corpus, labels);
   const postHuman = runHeldOutEvaluation(corpus, post);
   const withoutFinalForbidden: HumanAdjudicationOverlay = {
     ...overlay,
     decisions: overlay.decisions.map((d) => ({ ...d, patch: { ...d.patch, addForbiddenCodes: undefined, addForbiddenItemCodes: undefined } })),
   };
-  const postHumanBeforeFinalForbidden = runHeldOutEvaluation(corpus, applyHumanAdjudication(labels, withoutFinalForbidden));
+  const postHumanBeforeFinalForbidden = runHeldOutEvaluation(corpus, applyHumanAdjudication(labels, withoutFinalForbidden, allowedCaseIds));
   const counts = (r: HeldOutReport): CaseCounts => ({
     tp: r.totals.truePositive, fn: r.totals.falseNegative, fp: r.totals.falsePositive, unlabeled: r.totals.unlabeledEmissions,
   });
