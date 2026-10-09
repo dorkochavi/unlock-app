@@ -1734,44 +1734,52 @@ Group C (AI provider/semantic critic) decision, or a decision to surface lint ou
 
 # FUB-075 — STEM_TOO_SHORT Exemption Classification and Interrogative-Family Completeness
 
-**Status:** `DEFERRED` (promotion trigger MET 2026-10-09; recommended for the next deterministic hardening Run)
+**Status:** `PARTIALLY_RESOLVED_IMPLEMENTATION` (interrogative family done in Run 2026-10-09-ASSESSMENT-ENGINE-008; whole-utterance classification open, DEFER_AS_SEMANTIC_OR_FUTURE_DESIGN)
 **Priority:** `MEDIUM`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
 Source: Run 2026-10-09-ASSESSMENT-ENGINE-007 (`docs/ASSESSMENT_HELDOUT_V0_3.md`), human-adjudicated in Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 (HUMAN_ADJUDICATED_V0_3, Dor, post-evaluation, not blind; section 11). Reframed from "lookalike and lead-word completeness": the evidence is two separable parts of one mechanism (first-word whitelist plus single-prefix exemption) that errs in both directions.
 (1) Exemption too permissive (human-approved lost TPs): HO3-038 `List of birds`, 040 `שמי הלילה`, 042 `במה`, 044 `Name tags`. (2) Lead list incomplete (human-forbidden emission): HO3-071 `מהם גזי חממה?` is valid; מה / מהו / מהי / מהם / מהן are one interrogative family (design note, not implemented). The 4-word threshold is not implicated and not concluded wrong. Dor's principle: the complete short utterance must function as a clear question or instruction; morphological or lexical resemblance and growing the whitelist are not the criterion. Part (2) is mechanical; part (1) needs its own design decision (a descriptive, post-hoc, unvalidated scratch pass over the v0.3 short stems is in section 11.5b of the report: terminal punctuation separates this corpus but is confounded by authoring convention). These 5 cases are now observed, so any fix is CONTRACT_TEST / regression evidence and validation needs a fresh batch.
 
+## Run 008 Partial Closure
+
+Run 2026-10-09-ASSESSMENT-ENGINE-008 (LAST_VERIFIED_HEAD `ab784dc`): part (2) implemented: מהם, מהן added to the lead words (HO3-071 FP gone). Side effect: the single-prefix rule also exempts non-words like במהם/למהם (unpinned). Part (1) NOT fixed and not marked resolved: HO3-038/040/042/044 lost TPs remain. Deferred because 38 distinct stems under 4 words (v0.1 1, v0.2 10, v0.3 27) show terminal punctuation separates v0.3 only by authoring convention and would regress valid unpunctuated stems ('מי כתב המלט', 'Name three planets'); telling 'List of birds'/'Name tags' from 'List two primes' needs semantics or a word list. Only micro-rule considered: a lone lead word is never exempt (fixes only 'במה', n=1); not selected, needs Dor's decision. Evidence is contract and frozen-set regression only; validation needs a fresh batch (v0.4).
+
 ## Promotion Trigger
 
-MET (human adjudication done). Next Run that touches STEM_TOO_SHORT, with pre-registered contract tests and a fresh held-out batch for validation. Related WATCH: FUB-066.
+Whole-utterance part: a human design decision plus a fresh held-out batch. Related WATCH: FUB-066.
 
 ---
 
 # FUB-076 — STEM_NEGATIVE_WORDING Defines "Negative Stem" as Any Negation Token
 
-**Status:** `DEFERRED` (promotion trigger MET 2026-10-09; recommended for the next deterministic hardening Run, needs a design decision)
+**Status:** `PARTIALLY_RESOLVED_IMPLEMENTATION` (narrow subtraction in Run 2026-10-09-ASSESSMENT-ENGINE-008; not closed)
 **Priority:** `MEDIUM`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
 Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, human-adjudicated in Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 (HUMAN_ADJUDICATED_V0_3, Dor, post-evaluation, not blind; `docs/ASSESSMENT_HELDOUT_V0_3.md` section 11): HO3-005 (`שלא`, relative/content negation) and HO3-058 (`ולא`, contrast) are human-confirmed false positives. Reframed from "relative-clause/contrast edge": the rule matches any Hebrew negation token with an optional ו/ש/וש prefix anywhere in the stem, so `שלא`/`ולא` fire by design; Dor's principle is that a negation token is not a negative-stem flaw and contrast wording is not one either. The work is to define a narrow negative-stem condition (for example negation in the question-asking frame, "which is NOT / except"), which is a design decision, not a phrase-list tweak. One unreviewed TP exists, so recall impact is unmeasured. The 13 cases are observed: fixes are CONTRACT_TEST / regression, validation needs a fresh batch.
 
+## Run 008 Partial Closure
+
+Run 2026-10-09-ASSESSMENT-ENGINE-008 (LAST_VERIFIED_HEAD `ab784dc`): narrow subtraction, Hebrew `לא` only: relative שלא/ושלא counts only after an earlier selection cue (closed list: איזה איזו אילו איזהו בחר בחרו סמן סמנו זהה ציין); ו+לא is silent when the next token matches `/^ל[א-ת]{3,}$/` (contrast); everything else unchanged. HO3-005 and HO3-058 FPs fixed; HO-073/item8 (`ולא לתרכובת`, unlabeled) newly silent; no lost labeled TP. The general 'negation must be in an interrogative frame' rule was rejected (would break about 18 existing contract/TP prompts). Not closed: the condition 'no lexical-token-only negation logic remains' is NOT met. Residual WATCH: bare `לא`/`אין` in non-selecting clauses still fire; the cue list is closed (e.g. 'מי מהבאים שלא', 'מצאו/קבעו ... שלא', 'מהם ... שלא' are now silent where they fired before); the cue check has no sentence boundary; CONTRAST_NEXT treats any ל-initial 4+ letter word incl. verbs as contrast ('ולא לומדים'); `שאינו`, English `not` as relative/contrast and 'אבל לא' untouched. Backlog note: add a negative test row for 'מי מהבאים שלא' only with the next fresh batch (not now, to avoid post-hoc tuning). Evidence is contract and frozen-set regression; validation needs a fresh batch.
+
 ## Promotion Trigger
 
-MET (human adjudication done). Next Run that touches STEM_NEGATIVE_WORDING, after the narrow-definition design decision.
+Remaining work: a fresh held-out batch (v0.4) with Hebrew negation-frame cases, then a decision on the residuals above.
 
 ---
 
 # FUB-077 — OPTION_ALL_OF_ABOVE Phrase Coverage
 
-**Status:** `DEFERRED` (promotion trigger MET 2026-10-09; low-risk ride-along for the next deterministic hardening Run)
+**Status:** `RESOLVED_IMPLEMENTED` (Run 2026-10-09-ASSESSMENT-ENGINE-008; fresh validation pending)
 **Priority:** `LOW`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
 Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, human-confirmed in Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 (HO3-071: `כל האפשרויות הנ"ל` is the expected all-of-above; HUMAN_ADJUDICATED_V0_3, post-evaluation, not blind). The closed whole-token phrase list in `ALL_OF_ABOVE_PHRASES` has `כל התשובות` and `כל הנ"ל` but not this variant. Highly tractable and deterministic; n=1, so coverage of other Hebrew variants is unmeasured. Fix would be CONTRACT_TEST / regression; validation needs a fresh batch.
 
-## Promotion Trigger
+## Run 008 Closure
 
-MET (human adjudication done). Next Run that touches OPTION_ALL_OF_ABOVE.
+Run 2026-10-09-ASSESSMENT-ENGINE-008 (LAST_VERIFIED_HEAD `ab784dc`): `כל האפשרויות הנ"ל` and `כל האפשרויות הנל` added to `ALL_OF_ABOVE_PHRASES` (whole token sequence; apostrophe `הנ'ל` not matched). HO3-071 all-of-above miss is now a TP; no FP, no lost TP. n=1: other Hebrew variants unmeasured; contract and frozen-set regression evidence only, fresh validation pending.
 
 ---
 

@@ -3,9 +3,9 @@
 PLAN_VERSION: 042
 RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-008
 START_HEAD: `b0bbbc0`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `b0bbbc0`
-STATUS: **IN PROGRESS.** Deterministic hardening of `question-lint.ts` justified by HUMAN_ADJUDICATED_V0_3 (post-evaluation, not blind). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change. No semantic critic. No KEY_STEM_LEXICAL_OVERLAP; weak-tier absolute terms stay semantic.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `ab784dc`
+STATUS: **COMPLETE — STOP.** Deterministic hardening of `question-lint.ts` justified by HUMAN_ADJUDICATED_V0_3 (post-evaluation, not blind). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change. No semantic critic. No KEY_STEM_LEXICAL_OVERLAP; weak-tier absolute terms stay semantic.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -20,16 +20,16 @@ EVIDENCE RECHECK → DESIGN GATES → PRE-REGISTER TESTS (commit) → IMPLEMENT 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Design gate: exact contracts for FUB-077/075-safe/076; decision on 075 risky part | AUTO | PENDING |
-| B | Pre-register contract tests; commit (PRE_REGISTERED_TEST_HEAD) | AUTO | PENDING |
-| C | Implement in question-lint.ts (one pass) | AUTO | PENDING |
-| D | Regression metrics before→after | AUTO | PENDING |
-| Z | Independent review (review-commit) + fixes | REVIEW_GATE | PENDING |
-| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | PENDING |
+| A | Design gate: exact contracts for FUB-077/075-safe/076; decision on 075 risky part | AUTO | DONE |
+| B | Pre-register contract tests; commit (PRE_REGISTERED_TEST_HEAD) | AUTO | DONE |
+| C | Implement in question-lint.ts (one pass) | AUTO | DONE |
+| D | Regression metrics before→after | AUTO | DONE |
+| Z | Independent review (review-commit) + fixes | REVIEW_GATE | DONE |
+| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
-- ASSESSMENT-ENGINE-008: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-008.md` (pending until close)
+- ASSESSMENT-ENGINE-008: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-008.md` (Run report; COMPLETE)
 - ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`
 - ASSESSMENT-ENGINE-007: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`
 - ASSESSMENT-ENGINE-006: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-006.md`
