@@ -1,0 +1,232 @@
+{
+  "version": "v0.2-human-adjudication-1",
+  "reviewer": "Dor",
+  "reviewDate": "2026-10-09",
+  "provenance": "HUMAN_APPROVED",
+  "evaluationStatus": "POST_EVALUATION (held-out blindness no longer fully preserved for these 9 rows)",
+  "decisions": [
+    {
+      "caseId": "HO-049",
+      "decision": "APPROVED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "OPTION_STYLE_OUTLIER",
+          "KEY_LONGEST_OPTION"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "humanReasoning": "Only one option is typographically differentiated by niqqud, which is a real style inconsistency. Because that option is also the key it may act as an unintended cue, but a style outlier stays conceptually distinct from automatic key leakage.",
+      "humanRule": "Do NOT introduce a generic 'formatting implies key leakage' rule."
+    },
+    {
+      "caseId": "HO-070",
+      "decision": "APPROVED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "humanReasoning": "Only option b has niqqud while the key is a. A style outlier can be a defect without being a key cue.",
+      "humanRule": "Do not add key leakage for a style outlier on a non-key option."
+    },
+    {
+      "caseId": "HO-076",
+      "decision": "APPROVED_PARTIAL",
+      "before": {
+        "label": "FLAWED",
+        "expectedSetCodes": [
+          "SET_KEY_LENGTH_BIAS",
+          "KEY_POSITION_IMBALANCE",
+          "KEY_POSITION_RUN"
+        ],
+        "forbiddenSetCodes": [
+          "SET_TOO_SMALL"
+        ],
+        "itemCodes": {
+          "1": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "2": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "3": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "4": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "5": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "6": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "7": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "8": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ],
+          "9": [
+            "KEY_LONGEST_OPTION",
+            "OPTION_LENGTH_IMBALANCE"
+          ]
+        },
+        "semanticExpectation": "Item 8 stem gender error (מהי תפקיד) and option ids out of order; item 6 \"הקלטת חום\" and item 9 \"סלע קמיעי\" odd Hebrew; item 9 terminology uncertain.",
+        "languageReviewRequired": true
+      },
+      "patch": {},
+      "humanReasoning": "Set stays FLAWED with the existing set-level codes and languageReviewRequired true. Dor's condition was: reject item-1 lexical/key leakage IF it is currently expected or implied merely because the answer repeats entities/words from the stem. Condition not met; no lexical-leakage code was expected at item 1 (itemCodes['1'] is KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE), so no label change.",
+      "humanRule": "Lexical overlap with the stem is not leakage by itself; leakage requires an asymmetry or wording cue that helps identify the answer without mastering the content.",
+      "humanNotes": "The set contains genuine Hebrew-quality issues: 'מהי תפקיד הנשיא במדינת ישראל?' is grammatically unnatural (expected 'מהו תפקיד…') and 'הקלטת חום באטמוספרה' is wrong/unnatural wording ('לכידת חום…' would be natural). Corpus NOT edited.",
+      "touchedFindings": [
+        "HO-076/item1|KEY_STEM_LEXICAL_OVERLAP"
+      ]
+    },
+    {
+      "caseId": "HO-017",
+      "decision": "CHANGED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "OPTION_ABSOLUTE_TERM",
+          "OPTION_PREFIX_STEM_REPEAT"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "label": "CLEAN",
+        "removeExpectedCodes": [
+          "OPTION_ABSOLUTE_TERM",
+          "OPTION_PREFIX_STEM_REPEAT"
+        ],
+        "rationale": "Human-adjudicated CLEAN: 'tamid' appears symmetrically in all four options and is natural content for the mathematical proposition."
+      },
+      "humanReasoning": "'תמיד' appears symmetrically in all four options; it is not a cue and is natural content for the mathematical proposition. No other expected code or semantic expectation remains, so the label becomes CLEAN (harness convention: any emitted WARNING/ERROR on a CLEAN case counts as FP).",
+      "humanRule": "An absolute term is not a flaw merely because it exists; symmetric use across all options is not an answer cue."
+    },
+    {
+      "caseId": "HO-015",
+      "decision": "APPROVED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "KEY_LONGEST_OPTION"
+        ],
+        "forbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "humanReasoning": "'אין לו שום משמעות סטטיסטית' is natural Hebrew; 'שום' is not automatically an absolute-term defect. OPTION_ABSOLUTE_TERM is not added.",
+      "humanRule": "Hebrew words such as 'שום' need syntactic/semantic context.",
+      "touchedFindings": [
+        "HO-015|OPTION_ABSOLUTE_TERM"
+      ]
+    },
+    {
+      "caseId": "HO-063",
+      "decision": "CHANGED",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_NEGATIVE_WORDING",
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "removeExpectedCodes": [
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "rationale": "Negative stem (human-approved). 'kol' is substantive content of the false proposition, not an absolute-term flaw."
+      },
+      "humanReasoning": "'איזו מהטענות הבאות איננה נכונה?' is genuine negative wording; 'כל הציפורים עפות' uses 'כל' as substantive content that makes the proposition false, integral to what is assessed. Dor said 'Remove', not 'forbid': OPTION_ABSOLUTE_TERM is NOT added to forbiddenCodes, so a linter emission becomes an UNLABELED_EMISSION (ambiguity remaining).",
+      "humanRule": "'כל' is not automatically an absolute-term flaw when it is integral to the proposition.",
+      "touchedFindings": [
+        "HO-063|OPTION_ABSOLUTE_TERM"
+      ]
+    },
+    {
+      "caseId": "HO-032",
+      "decision": "APPROVED",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "humanReasoning": "'התהליך שבו מים נוזליים הופכים לאדים נקרא:' is a valid Hebrew completion/cloze stem. STEM_NO_QUESTION_FORM is not added; frozen label already CLEAN.",
+      "humanRule": "Valid completion stems ending in ':' are acceptable question forms."
+    },
+    {
+      "caseId": "HO-069",
+      "decision": "CHANGED",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      },
+      "patch": {
+        "label": "FLAWED",
+        "addExpectedCodes": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "rationale": "Human-adjudicated FLAWED: comparable numeric ranges are in random order; use a consistent ascending/descending order."
+      },
+      "humanReasoning": "When all options are comparable numeric ranges, random ordering adds scanning cost; use a consistent ascending/descending order. This approves the quality concept only: OPTION_NUMERIC_UNORDERED is a documented NOT_IMPLEMENTED check, so it counts as an FN (NOT_IMPLEMENTED), and it does not approve every existing OPTION_NUMERIC_UNORDERED finding automatically.",
+      "humanRule": "Comparable numeric options should be consistently ordered."
+    },
+    {
+      "caseId": "HO-073",
+      "decision": "APPROVED",
+      "before": {
+        "label": "FLAWED",
+        "expectedSetCodes": [],
+        "forbiddenSetCodes": [
+          "KEY_POSITION_IMBALANCE",
+          "KEY_POSITION_RUN",
+          "SET_KEY_LENGTH_BIAS"
+        ],
+        "itemCodes": {
+          "8": [
+            "OPTION_ABSOLUTE_TERM",
+            "KEY_LONGEST_OPTION"
+          ]
+        },
+        "semanticExpectation": "Item 3 Hebrew gender error \"איזו כוכב לכת\" (should be איזה); item 4 malformed \"עצמות וחזקות\" (should be עצמות חזקות).",
+        "languageReviewRequired": false
+      },
+      "patch": {},
+      "humanReasoning": "5 of 10 keys strictly longest, exactly at a 0.5 threshold, is not enough by itself to establish a meaningful set-level key-length bias. Frozen label already forbids SET_KEY_LENGTH_BIAS (no data change); the current emission REMAINS a false positive for this case. Threshold NOT tuned. Other labels of the case unchanged.",
+      "humanRule": "Set-level statistical warnings must consider sample size / strength of evidence."
+    }
+  ]
+}

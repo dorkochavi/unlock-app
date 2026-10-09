@@ -456,3 +456,249 @@ export function formatHeldOutMarkdown(r: HeldOutReport): string {
   lines.push("<!-- GENERATED:END -->");
   return lines.join("\n");
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Post-evaluation human adjudication (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001, Slice H1).
+// The frozen labels stay untouched. A separate overlay (human-adjudication.json, deliberately NOT in the freeze hashes)
+// patches 9 labels in code. FIRST_BLIND results stay reproducible from the frozen labels; POST_HUMAN is a separate set.
+// This is NOT linter tuning: no linter, threshold, cue list or corpus is changed by anything below.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** The only case ids a human adjudication overlay may touch. */
+export const HUMAN_REVIEWED_CASE_IDS: readonly string[] = [
+  "HO-049", "HO-070", "HO-076", "HO-017", "HO-015", "HO-063", "HO-032", "HO-069", "HO-073",
+];
+export const MODEL_PROVENANCE = "MODEL_LABELED_NOT_HUMAN_APPROVED";
+export const HUMAN_PROVENANCE = "HUMAN_APPROVED";
+
+export interface HumanDecision {
+  caseId: string;
+  decision: "APPROVED" | "CHANGED" | "APPROVED_PARTIAL";
+  /** Snapshot copied from the frozen label; validated against it. */
+  before: Record<string, unknown>;
+  patch: {
+    label?: "CLEAN" | "FLAWED";
+    removeExpectedCodes?: string[];
+    addExpectedCodes?: string[];
+    rationale?: string;
+  };
+  humanReasoning: string;
+  humanRule: string;
+  humanNotes?: string;
+  /** `ref|code` findings that the decision touched (without forbidding), used to flag remaining ambiguity. */
+  touchedFindings?: string[];
+}
+export interface HumanAdjudicationOverlay {
+  version: string;
+  reviewer: string;
+  reviewDate: string;
+  provenance: string;
+  evaluationStatus: string;
+  decisions: HumanDecision[];
+}
+export interface ProvenancedLabels extends HeldOutLabels {
+  provenanceById: Record<string, string>;
+}
+
+/** Pure. Applies the overlay on top of the frozen labels (inputs are not mutated). Throws on any invalid overlay. */
+export function applyHumanAdjudication(labels: HeldOutLabels, overlay: HumanAdjudicationOverlay): ProvenancedLabels {
+  const allowed = new Set(HUMAN_REVIEWED_CASE_IDS);
+  const byId = new Map(labels.labels.map((l) => [l.caseId, l]));
+  const seen = new Set<string>();
+  const patched = new Map<string, HeldOutLabel>();
+  for (const d of overlay.decisions) {
+    const where = `human adjudication ${d.caseId}`;
+    if (seen.has(d.caseId)) throw new Error(`${where}: duplicate decision`);
+    seen.add(d.caseId);
+    if (!allowed.has(d.caseId)) throw new Error(`${where}: not one of the 9 reviewed case ids`);
+    const frozen = byId.get(d.caseId);
+    if (!frozen) throw new Error(`${where}: no such frozen label`);
+    for (const [k, v] of Object.entries(d.before)) {
+      if (JSON.stringify((frozen as unknown as Record<string, unknown>)[k]) !== JSON.stringify(v)) {
+        throw new Error(`${where}: before.${k} does not match the frozen label`);
+      }
+    }
+    const next: HeldOutLabel = JSON.parse(JSON.stringify(frozen)) as HeldOutLabel;
+    const expected = next.expectedCodes ?? [];
+    const removes = d.patch.removeExpectedCodes ?? [];
+    const adds = d.patch.addExpectedCodes ?? [];
+    for (const code of removes) {
+      if (!expected.includes(code)) throw new Error(`${where}: removed code ${code} was not expected`);
+    }
+    let after = expected.filter((c) => !removes.includes(c));
+    for (const code of adds) if (!after.includes(code)) after = [...after, code];
+    if (removes.length + adds.length > 0) {
+      if (next.scope !== "ITEM") throw new Error(`${where}: code patches apply to ITEM labels only`);
+      next.expectedCodes = after;
+    }
+    if (d.patch.label !== undefined) next.label = d.patch.label;
+    if (d.patch.rationale !== undefined) next.rationale = d.patch.rationale;
+    const changed = JSON.stringify(next) !== JSON.stringify(frozen);
+    if (d.decision === "CHANGED" && !changed) throw new Error(`${where}: CHANGED decision changes nothing`);
+    if (d.decision !== "CHANGED" && changed) throw new Error(`${where}: ${d.decision} decision must not change the label`);
+    if (next.label === "CLEAN") {
+      const codes = [...(next.expectedCodes ?? []), ...(next.expectedSetCodes ?? []), ...Object.values(next.itemCodes ?? {}).flat()];
+      if (codes.length > 0 || next.semanticExpectation !== null) {
+        throw new Error(`${where}: CLEAN label must have no expected codes or semantic expectation`);
+      }
+    }
+    patched.set(d.caseId, next);
+  }
+  const provenanceById: Record<string, string> = {};
+  const out = labels.labels.map((l) => {
+    const p = patched.get(l.caseId);
+    provenanceById[l.caseId] = p ? overlay.provenance : MODEL_PROVENANCE;
+    return p ?? l;
+  });
+  return { labels: out, provenanceById };
+}
+
+export interface CaseCounts {
+  tp: number;
+  fn: number;
+  fp: number;
+  unlabeled: number;
+}
+export interface PostHumanCaseRow {
+  caseId: string;
+  decision: HumanDecision["decision"];
+  first: CaseCounts;
+  post: CaseCounts;
+  /** Findings (`KIND ref code`) present only in FIRST_BLIND / only in POST_HUMAN. */
+  removed: string[];
+  added: string[];
+  cause: "human label correction" | "no change" | "ambiguity remaining";
+}
+export interface PostHumanComparison {
+  firstBlind: HeldOutReport;
+  postHuman: HeldOutReport;
+  /** post - first for every numeric metric. */
+  delta: {
+    caseCounts: HeldOutReport["caseCounts"];
+    totals: HeldOutReport["totals"];
+    setLevel: HeldOutReport["setLevel"];
+  };
+  reviewedCases: PostHumanCaseRow[];
+}
+
+function diffNumbers<T extends object>(post: T, first: T): T {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(post)) {
+    const f = (first as Record<string, unknown>)[k];
+    out[k] = typeof v === "number" ? v - (f as number) : diffNumbers(v as object, f as object);
+  }
+  return out as T;
+}
+
+function findingKeys(r: HeldOutReport): string[] {
+  const k = (kind: string, f: { ref: string; code: string }): string => `${kind} ${f.ref} ${f.code}`;
+  return [
+    ...r.falseNegatives.map((f) => k("FN", f)),
+    ...r.falsePositives.map((f) => k("FP", f)),
+    ...r.unlabeledEmissions.map((f) => k("UNL", f)),
+  ];
+}
+
+function caseSlice(corpus: HeldOutCorpus, labels: HeldOutLabels, caseId: string): HeldOutReport {
+  return runHeldOutEvaluation(
+    { cases: corpus.cases.filter((c) => c.caseId === caseId) },
+    { labels: labels.labels.filter((l) => l.caseId === caseId) },
+  );
+}
+
+/** Pure. FIRST_BLIND (frozen labels) vs POST_HUMAN (overlay applied), delta, and the per-case table of the 9 reviewed cases. */
+export function compareFirstBlindAndPostHuman(
+  corpus: HeldOutCorpus,
+  labels: HeldOutLabels,
+  overlay: HumanAdjudicationOverlay,
+): PostHumanComparison {
+  const post = applyHumanAdjudication(labels, overlay);
+  const firstBlind = runHeldOutEvaluation(corpus, labels);
+  const postHuman = runHeldOutEvaluation(corpus, post);
+  const counts = (r: HeldOutReport): CaseCounts => ({
+    tp: r.totals.truePositive, fn: r.totals.falseNegative, fp: r.totals.falsePositive, unlabeled: r.totals.unlabeledEmissions,
+  });
+  const reviewedCases = overlay.decisions.map((d): PostHumanCaseRow => {
+    const a = caseSlice(corpus, labels, d.caseId);
+    const b = caseSlice(corpus, post, d.caseId);
+    const ka = new Set(findingKeys(a));
+    const kb = new Set(findingKeys(b));
+    const removed = Array.from(ka).filter((x) => !kb.has(x));
+    const added = Array.from(kb).filter((x) => !ka.has(x));
+    const touched = new Set(d.touchedFindings ?? []);
+    const unlabeledTouched = b.unlabeledEmissions.some((f) => touched.has(`${f.ref}|${f.code}`));
+    const cause: PostHumanCaseRow["cause"] = unlabeledTouched
+      ? "ambiguity remaining"
+      : d.decision === "CHANGED" ? "human label correction" : "no change";
+    return { caseId: d.caseId, decision: d.decision, first: counts(a), post: counts(b), removed, added, cause };
+  });
+  return {
+    firstBlind,
+    postHuman,
+    delta: {
+      caseCounts: diffNumbers(postHuman.caseCounts, firstBlind.caseCounts),
+      totals: diffNumbers(postHuman.totals, firstBlind.totals),
+      setLevel: diffNumbers(postHuman.setLevel, firstBlind.setLevel),
+    },
+    reviewedCases,
+  };
+}
+
+/** Deterministic Markdown rendering of the SECOND generated block of docs/ASSESSMENT_HELDOUT_V0_2.md. */
+export function formatPostHumanMarkdown(c: PostHumanComparison): string {
+  const a = c.firstBlind;
+  const b = c.postHuman;
+  const d = c.delta;
+  const sgn = (n: number): string => (n > 0 ? `+${n}` : String(n));
+  const lines: string[] = [];
+  lines.push("<!-- GENERATED:BEGIN formatPostHumanMarkdown (src/domain/assessment/golden/heldout-eval.ts) -->");
+  lines.push("## POST-HUMAN-ADJUDICATION / POST-EVALUATION metrics (generated)");
+  lines.push("");
+  lines.push(
+    "These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The FIRST_BLIND column is the original blind result. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.",
+  );
+  lines.push("");
+  lines.push("| Measure | FIRST_BLIND | POST_HUMAN | DELTA |");
+  lines.push("|---|---|---|---|");
+  const row = (name: string, x: number, y: number, dd: number): void => {
+    lines.push(`| ${name} | ${x} | ${y} | ${sgn(dd)} |`);
+  };
+  row("CLEAN cases", a.caseCounts.clean, b.caseCounts.clean, d.caseCounts.clean);
+  row("FLAWED cases", a.caseCounts.flawed, b.caseCounts.flawed, d.caseCounts.flawed);
+  row("SEMANTIC-ONLY cases", a.caseCounts.semanticOnly, b.caseCounts.semanticOnly, d.caseCounts.semanticOnly);
+  row("Expected deterministic detections", a.totals.expectedDetections, b.totals.expectedDetections, d.totals.expectedDetections);
+  row("TP", a.totals.truePositive, b.totals.truePositive, d.totals.truePositive);
+  row("FN (total)", a.totals.falseNegative, b.totals.falseNegative, d.totals.falseNegative);
+  row("FN HEURISTIC_GAP", a.totals.falseNegativeHeuristicGap, b.totals.falseNegativeHeuristicGap, d.totals.falseNegativeHeuristicGap);
+  row("FN NOT_IMPLEMENTED", a.totals.falseNegativeNotImplemented, b.totals.falseNegativeNotImplemented, d.totals.falseNegativeNotImplemented);
+  row("FP", a.totals.falsePositive, b.totals.falsePositive, d.totals.falsePositive);
+  lines.push(
+    `| CLEAN cases with a WARNING/ERROR | ${a.totals.cleanCasesWithWarningOrError} of ${a.totals.cleanCases} | ${b.totals.cleanCasesWithWarningOrError} of ${b.totals.cleanCases} | ${sgn(d.totals.cleanCasesWithWarningOrError)} |`,
+  );
+  row("UNLABELED_EMISSION", a.totals.unlabeledEmissions, b.totals.unlabeledEmissions, d.totals.unlabeledEmissions);
+  type Lvl = { expected: number; tp: number; fn: number; fp: number };
+  const lvl = (name: string, x: Lvl, y: Lvl, dd: Lvl): void => {
+    lines.push(
+      `| ${name} (expected / TP / FN / FP) | ${x.expected} / ${x.tp} / ${x.fn} / ${x.fp} | ${y.expected} / ${y.tp} / ${y.fn} / ${y.fp} | ${sgn(dd.expected)} / ${sgn(dd.tp)} / ${sgn(dd.fn)} / ${sgn(dd.fp)} |`,
+    );
+  };
+  lvl("SET-scope codes", a.setLevel.setScope, b.setLevel.setScope, d.setLevel.setScope);
+  lvl("ITEM codes inside SET cases", a.setLevel.itemInSet, b.setLevel.itemInSet, d.setLevel.itemInSet);
+  lines.push("");
+  lines.push("### The 9 reviewed cases (generated)");
+  lines.push("");
+  lines.push(
+    "Counts are TP/FN/FP/UNLABELED per case. Cause: human label correction (a finding changed because the label changed), no change, or ambiguity remaining (an UNLABELED_EMISSION on a code the human decision touched without forbidding it).",
+  );
+  lines.push("");
+  lines.push("| Case | Decision | FIRST_BLIND TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Cause |");
+  lines.push("|---|---|---|---|---|---|---|");
+  const cc = (x: CaseCounts): string => `${x.tp}/${x.fn}/${x.fp}/${x.unlabeled}`;
+  for (const r of c.reviewedCases) {
+    lines.push(
+      `| ${r.caseId} | ${r.decision} | ${cc(r.first)} | ${cc(r.post)} | ${r.removed.join(", ") || "-"} | ${r.added.join(", ") || "-"} | ${r.cause} |`,
+    );
+  }
+  lines.push("<!-- GENERATED:END -->");
+  return lines.join("\n");
+}

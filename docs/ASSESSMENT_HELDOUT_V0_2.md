@@ -460,3 +460,47 @@ Deciding reasons:
 | Exit 5: import-validator naming (DUPLICATE_PROMPT) | OPEN | No effect | OPEN |
 
 The two corpora are never pooled (section 4); this table compares verdict status, not metrics.
+
+## 14. Post-evaluation human adjudication (generated)
+
+On 2026-10-09 Dor (human) reviewed 9 of the 78 held-out cases; the decisions are applied in code as an overlay (`heldout-v0-2/human-adjudication.json`) on top of the frozen labels, which stay byte-identical.
+The FIRST_BLIND results above remain the original blind evaluation; the block below is a separate POST_HUMAN set, not pooled with them or with v0.1.
+Blindness caveat: these 9 rows were adjudicated after the evaluation, so held-out blindness no longer fully holds for them; the other 69 labels remain MODEL_LABELED_NOT_HUMAN_APPROVED.
+
+<!-- GENERATED:BEGIN formatPostHumanMarkdown (src/domain/assessment/golden/heldout-eval.ts) -->
+## POST-HUMAN-ADJUDICATION / POST-EVALUATION metrics (generated)
+
+These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The FIRST_BLIND column is the original blind result. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.
+
+| Measure | FIRST_BLIND | POST_HUMAN | DELTA |
+|---|---|---|---|
+| CLEAN cases | 20 | 20 | 0 |
+| FLAWED cases | 58 | 58 | 0 |
+| SEMANTIC-ONLY cases | 12 | 12 | 0 |
+| Expected deterministic detections | 124 | 122 | -2 |
+| TP | 80 | 78 | -2 |
+| FN (total) | 44 | 44 | 0 |
+| FN HEURISTIC_GAP | 8 | 8 | 0 |
+| FN NOT_IMPLEMENTED | 36 | 36 | 0 |
+| FP | 4 | 5 | +1 |
+| CLEAN cases with a WARNING/ERROR | 3 of 20 | 4 of 20 | +1 |
+| UNLABELED_EMISSION | 22 | 23 | +1 |
+| SET-scope codes (expected / TP / FN / FP) | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 0 / 0 / 0 / 0 |
+| ITEM codes inside SET cases (expected / TP / FN / FP) | 46 / 27 / 19 / 0 | 46 / 27 / 19 / 0 | 0 / 0 / 0 / 0 |
+
+### The 9 reviewed cases (generated)
+
+Counts are TP/FN/FP/UNLABELED per case. Cause: human label correction (a finding changed because the label changed), no change, or ambiguity remaining (an UNLABELED_EMISSION on a code the human decision touched without forbidding it).
+
+| Case | Decision | FIRST_BLIND TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Cause |
+|---|---|---|---|---|---|---|
+| HO-049 | APPROVED | 0/2/0/0 | 0/2/0/0 | - | - | no change |
+| HO-070 | APPROVED | 0/1/0/0 | 0/1/0/0 | - | - | no change |
+| HO-076 | APPROVED_PARTIAL | 21/0/0/4 | 21/0/0/4 | - | - | ambiguity remaining |
+| HO-017 | CHANGED | 1/1/0/0 | 0/0/1/0 | FN HO-017 OPTION_PREFIX_STEM_REPEAT | FP HO-017 OPTION_ABSOLUTE_TERM | human label correction |
+| HO-015 | APPROVED | 1/0/0/1 | 1/0/0/1 | - | - | ambiguity remaining |
+| HO-063 | CHANGED | 1/1/0/0 | 0/1/0/1 | - | UNL HO-063 OPTION_ABSOLUTE_TERM | ambiguity remaining |
+| HO-032 | APPROVED | 0/0/0/0 | 0/0/0/0 | - | - | no change |
+| HO-069 | CHANGED | 0/0/0/0 | 0/1/0/0 | - | FN HO-069 OPTION_NUMERIC_UNORDERED | human label correction |
+| HO-073 | APPROVED | 1/1/1/1 | 1/1/1/1 | - | - | no change |
+<!-- GENERATED:END -->

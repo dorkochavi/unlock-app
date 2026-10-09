@@ -14,11 +14,16 @@ import { describe, expect, it } from "vitest";
 
 import { IMPLEMENTED_ITEM_CODES, IMPLEMENTED_SET_CODES } from "../golden/calibration";
 import {
+  applyHumanAdjudication,
+  compareFirstBlindAndPostHuman,
   formatHeldOutMarkdown,
+  formatPostHumanMarkdown,
+  HUMAN_REVIEWED_CASE_IDS,
   KNOWN_NOT_IMPLEMENTED_CODES,
   runHeldOutEvaluation,
   type HeldOutCorpus,
   type HeldOutLabels,
+  type HumanAdjudicationOverlay,
 } from "../golden/heldout-eval";
 
 const DIR = "../golden/heldout-v0-2/";
@@ -283,5 +288,171 @@ describe("docs/ASSESSMENT_HELDOUT_V0_2.md", () => {
     expect([...keys].sort()).toEqual([...want].sort());
     const cats = new Set(["LIKELY_LINTER_BUG", "LIKELY_HEURISTIC_LIMIT", "LIKELY_LABEL_QUESTION", "SEMANTIC_ONLY", "NEEDS_HUMAN_HEBREW_REVIEW", "NEEDS_MORE_DATA"]);
     for (const l of rows) expect(cats.has(l.split("|")[4].trim()), l).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Post-evaluation human adjudication (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001, Slice H1).
+// POST_HUMAN numbers are the FIRST observed values (recorded, not tuned). They are not FIRST_BLIND and never pooled.
+// ---------------------------------------------------------------------------------------------------------------------
+const overlayRaw = readRaw("human-adjudication.json");
+const overlay = JSON.parse(overlayRaw) as HumanAdjudicationOverlay;
+const post = applyHumanAdjudication(labels, overlay);
+const cmp = compareFirstBlindAndPostHuman(corpus, labels, overlay);
+const postLabel = (id: string) => post.labels.find((l) => l.caseId === id)!;
+const frozenLabel = (id: string) => labels.labels.find((l) => l.caseId === id)!;
+
+describe("human adjudication overlay (post-evaluation)", () => {
+  it("is LF-only UTF-8 JSON with literal Hebrew and is not part of the freeze hashes", () => {
+    expect(overlayRaw.includes("\r")).toBe(false);
+    expect(overlayRaw.endsWith("}\n")).toBe(true);
+    expect(overlayRaw.includes("\\u05")).toBe(false);
+    expect(overlayRaw).toContain("מהי תפקיד");
+    const rec = JSON.parse(readRaw("freeze-hashes.json")) as { sha256: Record<string, string> };
+    expect(Object.keys(rec.sha256)).not.toContain("human-adjudication.json");
+    expect(overlay.provenance).toBe("HUMAN_APPROVED");
+    expect(overlay.reviewer).toBe("Dor");
+    expect(overlay.reviewDate).toBe("2026-10-09");
+  });
+
+  it("touches exactly the 9 reviewed ids and changes only three labels", () => {
+    expect(overlay.decisions.map((d) => d.caseId).sort()).toEqual([...HUMAN_REVIEWED_CASE_IDS].sort());
+    expect(HUMAN_REVIEWED_CASE_IDS).toHaveLength(9);
+    const changed = labels.labels.filter((l) => JSON.stringify(l) !== JSON.stringify(postLabel(l.caseId))).map((l) => l.caseId);
+    expect(changed.sort()).toEqual(["HO-017", "HO-063", "HO-069"]);
+    expect(post.labels).toHaveLength(78);
+  });
+
+  it("carries HUMAN_APPROVED provenance for exactly the 9 reviewed cases", () => {
+    const human = Object.entries(post.provenanceById).filter(([, p]) => p === "HUMAN_APPROVED").map(([id]) => id);
+    expect(human.sort()).toEqual([...HUMAN_REVIEWED_CASE_IDS].sort());
+    const others = Object.entries(post.provenanceById).filter(([id]) => !HUMAN_REVIEWED_CASE_IDS.includes(id));
+    expect(others).toHaveLength(69);
+    for (const [, p] of others) expect(p).toBe("MODEL_LABELED_NOT_HUMAN_APPROVED");
+  });
+
+  it("applies each of the 9 decisions exactly", () => {
+    // HO-017: CLEAN, no expected codes.
+    expect(postLabel("HO-017").label).toBe("CLEAN");
+    expect(postLabel("HO-017").expectedCodes).toEqual([]);
+    expect(postLabel("HO-017").forbiddenCodes).toEqual([]);
+    // HO-063: negative wording kept, absolute term removed but NOT forbidden.
+    expect(postLabel("HO-063").label).toBe("FLAWED");
+    expect(postLabel("HO-063").expectedCodes).toEqual(["STEM_NEGATIVE_WORDING"]);
+    expect(postLabel("HO-063").forbiddenCodes).toEqual([]);
+    // HO-069: FLAWED with the (NOT_IMPLEMENTED) numeric-order check.
+    expect(postLabel("HO-069").label).toBe("FLAWED");
+    expect(postLabel("HO-069").expectedCodes).toEqual(["OPTION_NUMERIC_UNORDERED"]);
+    // The other six are recorded approvals: labels unchanged.
+    for (const id of ["HO-049", "HO-070", "HO-076", "HO-015", "HO-032", "HO-073"]) expect(postLabel(id), id).toEqual(frozenLabel(id));
+    expect(postLabel("HO-049").expectedCodes).toEqual(["OPTION_STYLE_OUTLIER", "KEY_LONGEST_OPTION"]);
+    expect(postLabel("HO-070").expectedCodes).toEqual(["OPTION_STYLE_OUTLIER"]);
+    expect(postLabel("HO-015").expectedCodes).toEqual(["KEY_LONGEST_OPTION"]);
+    expect(postLabel("HO-032").label).toBe("CLEAN");
+    expect(postLabel("HO-076").languageReviewRequired).toBe(true);
+    expect(postLabel("HO-076").itemCodes?.["1"]).toEqual(["KEY_LONGEST_OPTION", "OPTION_LENGTH_IMBALANCE"]);
+    expect(postLabel("HO-073").forbiddenSetCodes).toEqual(["KEY_POSITION_IMBALANCE", "KEY_POSITION_RUN", "SET_KEY_LENGTH_BIAS"]);
+    const d = (id: string) => overlay.decisions.find((x) => x.caseId === id)!;
+    expect(d("HO-076").decision).toBe("APPROVED_PARTIAL");
+    expect(d("HO-076").patch).toEqual({});
+    expect(d("HO-017").decision).toBe("CHANGED");
+    expect(d("HO-063").decision).toBe("CHANGED");
+    expect(d("HO-069").decision).toBe("CHANGED");
+  });
+
+  it("does not mutate the frozen labels and leaves FIRST_BLIND untouched", () => {
+    expect(runHeldOutEvaluation(corpus, labels)).toEqual(report);
+    expect(cmp.firstBlind).toEqual(report);
+    expect(cmp.firstBlind.totals).toEqual(EXPECTED_TOTALS);
+    expect(cmp.firstBlind.setLevel).toEqual(EXPECTED_SET_LEVEL);
+    expect(cmp.firstBlind.summary).toEqual(EXPECTED_SUMMARY);
+  });
+
+  it("rejects invalid overlays", () => {
+    const clone = (): HumanAdjudicationOverlay => JSON.parse(overlayRaw) as HumanAdjudicationOverlay;
+    const o1 = clone();
+    o1.decisions[0].caseId = "HO-001";
+    expect(() => applyHumanAdjudication(labels, o1)).toThrow(/not one of the 9/);
+    const o2 = clone();
+    o2.decisions.find((d) => d.caseId === "HO-063")!.patch.removeExpectedCodes = ["OPTION_NUMERIC_UNORDERED"];
+    expect(() => applyHumanAdjudication(labels, o2)).toThrow(/was not expected/);
+    const o3 = clone();
+    o3.decisions.find((d) => d.caseId === "HO-049")!.decision = "CHANGED";
+    expect(() => applyHumanAdjudication(labels, o3)).toThrow(/changes nothing/);
+    const o4 = clone();
+    o4.decisions.find((d) => d.caseId === "HO-017")!.patch.removeExpectedCodes = ["OPTION_ABSOLUTE_TERM"];
+    expect(() => applyHumanAdjudication(labels, o4)).toThrow(/CLEAN label must have no expected codes/);
+    const o5 = clone();
+    o5.decisions.find((d) => d.caseId === "HO-070")!.before.label = "CLEAN";
+    expect(() => applyHumanAdjudication(labels, o5)).toThrow(/does not match the frozen label/);
+    const o6 = clone();
+    o6.decisions.push(o6.decisions[0]);
+    expect(() => applyHumanAdjudication(labels, o6)).toThrow(/duplicate/);
+  });
+});
+
+describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", () => {
+  const p = cmp.postHuman;
+  const keys = (fs: Array<{ ref: string; code: string }>): string[] => fs.map(key);
+
+  it("matches the exact POST_HUMAN counts, totals and set-level split", () => {
+    expect(p.integrityFindings).toEqual([]);
+    expect(p.caseCounts).toEqual(EXPECTED_COUNTS);
+    expect(p.totals).toEqual({
+      expectedDetections: 122, truePositive: 78, falseNegative: 44, falseNegativeHeuristicGap: 8, falseNegativeNotImplemented: 36,
+      falsePositive: 5, cleanCases: 20, cleanCasesWithWarningOrError: 4, unlabeledEmissions: 23,
+    });
+    expect(p.setLevel).toEqual(EXPECTED_SET_LEVEL);
+    expect(cmp.delta.totals).toEqual({
+      expectedDetections: -2, truePositive: -2, falseNegative: 0, falseNegativeHeuristicGap: 0, falseNegativeNotImplemented: 0,
+      falsePositive: 1, cleanCases: 0, cleanCasesWithWarningOrError: 1, unlabeledEmissions: 1,
+    });
+    expect(cmp.delta.setLevel).toEqual({ setScope: { expected: 0, tp: 0, fn: 0, fp: 0 }, itemInSet: { expected: 0, tp: 0, fn: 0, fp: 0 } });
+  });
+
+  it("differs from FIRST_BLIND only in the findings caused by the three label changes", () => {
+    const expectedFn = EXPECTED_FN
+      .filter((k) => k !== "HO-017|OPTION_PREFIX_STEM_REPEAT")
+      .flatMap((k) => (k === "HO-070|OPTION_STYLE_OUTLIER" ? ["HO-069|OPTION_NUMERIC_UNORDERED", k] : [k]));
+    expect(keys(p.falseNegatives)).toEqual(expectedFn);
+    expect(keys(p.falsePositives)).toEqual([
+      "HO-001|STEM_TOO_SHORT", "HO-011|OPTION_ABSOLUTE_TERM", "HO-012|OPTION_OVERLAP_HIGH", "HO-017|OPTION_ABSOLUTE_TERM", "HO-073|SET_KEY_LENGTH_BIAS",
+    ]);
+    expect(keys(p.unlabeledEmissions)).toEqual([...EXPECTED_UNLABELED.slice(0, 12), "HO-063|OPTION_ABSOLUTE_TERM", ...EXPECTED_UNLABELED.slice(12)]);
+    expect(p.semanticOnlyCases.map((s) => s.caseId)).toEqual(EXPECTED_SEMANTIC_ONLY);
+    // HO-069's new expectation is a documented NOT_IMPLEMENTED check.
+    expect(p.falseNegatives.find((f) => f.ref === "HO-069")?.kind).toBe("NOT_IMPLEMENTED");
+    // HO-073 SET_KEY_LENGTH_BIAS stays a forbidden false positive; HO-017 is a CLEAN-case false positive.
+    expect(p.falsePositives.find((f) => f.ref === "HO-073")?.basis).toBe("FORBIDDEN");
+    expect(p.falsePositives.find((f) => f.ref === "HO-017")?.basis).toBe("CLEAN_CASE");
+  });
+
+  it("reports the per-case table for the 9 reviewed cases with the expected causes", () => {
+    expect(cmp.reviewedCases.map((r) => [r.caseId, r.cause])).toEqual([
+      ["HO-049", "no change"], ["HO-070", "no change"], ["HO-076", "ambiguity remaining"], ["HO-017", "human label correction"],
+      ["HO-015", "ambiguity remaining"], ["HO-063", "ambiguity remaining"], ["HO-032", "no change"],
+      ["HO-069", "human label correction"], ["HO-073", "no change"],
+    ]);
+    const row = (id: string) => cmp.reviewedCases.find((r) => r.caseId === id)!;
+    expect([row("HO-017").first, row("HO-017").post]).toEqual([{ tp: 1, fn: 1, fp: 0, unlabeled: 0 }, { tp: 0, fn: 0, fp: 1, unlabeled: 0 }]);
+    expect([row("HO-063").first, row("HO-063").post]).toEqual([{ tp: 1, fn: 1, fp: 0, unlabeled: 0 }, { tp: 0, fn: 1, fp: 0, unlabeled: 1 }]);
+    expect([row("HO-069").first, row("HO-069").post]).toEqual([{ tp: 0, fn: 0, fp: 0, unlabeled: 0 }, { tp: 0, fn: 1, fp: 0, unlabeled: 0 }]);
+    for (const id of ["HO-049", "HO-070", "HO-076", "HO-015", "HO-032", "HO-073"]) expect(row(id).first, id).toEqual(row(id).post);
+  });
+
+  it("is deterministic", () => {
+    expect(compareFirstBlindAndPostHuman(corpus, labels, overlay)).toEqual(cmp);
+  });
+});
+
+describe("docs/ASSESSMENT_HELDOUT_V0_2.md post-human block", () => {
+  const doc = readFileSync(fileURLToPath(new URL("../../../../docs/ASSESSMENT_HELDOUT_V0_2.md", import.meta.url)), "utf8").replace(/\r\n/g, "\n");
+
+  it("embeds the current POST_HUMAN generated block (drift guard) and keeps the FIRST_BLIND block", () => {
+    expect(doc).toContain(formatPostHumanMarkdown(cmp));
+    expect(doc).toContain(formatHeldOutMarkdown(report));
+    expect(formatPostHumanMarkdown(cmp)).toContain("HUMAN-ADJUDICATED / POST-EVALUATION metrics");
+    expect(formatPostHumanMarkdown(cmp)).toContain("not FIRST-BLIND metrics");
+    expect(doc.split("<!-- GENERATED:BEGIN formatPostHumanMarkdown").length - 1).toBe(1);
   });
 });
