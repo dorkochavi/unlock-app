@@ -1,34 +1,35 @@
-# UNLOCK — ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 — Human Adjudication of Queued v0.3 Cases
+# UNLOCK — ASSESSMENT-ENGINE-008 — Human-Confirmed Deterministic Hardening
 
-PLAN_VERSION: 041
-RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001
-START_HEAD: `32ca933`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `cabe39a`
-STATUS: **COMPLETE — STOP.** Run report: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`. Evidence/adjudication Run, NOT implementation. Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
+PLAN_VERSION: 042
+RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-008
+START_HEAD: `b0bbbc0`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `b0bbbc0`
+STATUS: **IN PROGRESS.** Deterministic hardening of `question-lint.ts` justified by HUMAN_ADJUDICATED_V0_3 (post-evaluation, not blind). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change. No semantic critic. No KEY_STEM_LEXICAL_OVERLAP; weak-tier absolute terms stay semantic.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-VERIFY FROZEN V0.3 → RECORD DOR'S 13 DECISIONS (POST-EVALUATION, NOT BLIND) → SEPARATE HUMAN OVERLAY → RECOMPUTE HUMAN_ADJUDICATED_V0_3 → REASSESS RULE VERDICTS → ROUTE FUBs → CLOSE. Evidence identities stay separate: FRESH_HELD_OUT_V0_3 (frozen model-labeled, unchanged) vs HUMAN_ADJUDICATED_V0_3 (current linter through Dor's decisions; not a fresh blind evaluation). Never pooled.
+EVIDENCE RECHECK → DESIGN GATES → PRE-REGISTER TESTS (commit) → IMPLEMENT LOWEST-RISK FIXES (one pass) → REGRESSION CHECK → REVIEW → CLOSE. Targets: FUB-077 (OPTION_ALL_OF_ABOVE phrase), FUB-075 safe interrogative family (מהם/מהן), FUB-076 (STEM_NEGATIVE_WORDING narrowing). FUB-075 whole-utterance short-stem classification: Gate A chooses IMPLEMENT_NARROW_STRUCTURAL_RULE or DEFER; defer unless confidence is high.
 
 ## 2. Hard invariants
-- Immutable: heldout-v0-3 corpus/labels/author-intent/label-review/freeze-hashes, heldout-v0-2, existing human overlays, FIRST_BLIND record, `question-lint.ts`, `text-normalize.ts`, thresholds, rule lists, lint behavior. Dor's decisions live in a SEPARATE overlay only.
-- Freeze hashes recomputed and matched before the overlay is written; drift = STOP.
-- Packet factual mismatch = HUMAN_DECISION_PACKET_CONFLICT (STOP); Dor's decisions are never reinterpreted.
-- Only the 13 queued cases are HUMAN_APPROVED. Semantic cases are not converted to deterministic expectations without Dor's approval.
-- Detailed decisions live in the machine-readable overlay (one fact, one home); docs summarize and point.
+- Immutable: heldout-v0-3 corpus/labels/human overlay/freeze hashes, heldout-v0-2, v0.1 labels, FIRST_BLIND records, previous human overlays. No schema/dependency/API/UI change. No metric-chasing; one implementation pass; no corpus or label edits.
+- Reruns on frozen sets are REGRESSION evidence only (never FIRST_BLIND or fresh validation).
+- Integration readiness is not set READY by this Run.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| H1 | Verify freeze + packet consistency; overlay file; generic POST_HUMAN v0.3 evaluation + tests; commit | AUTO | DONE (`35651e4`, overlay + evaluation) |
-| H2 | Report section, rule reassessment, FUB routing, docs content | AUTO | DONE (`4b6ba07`, docs) |
-| Z | Independent general review | REVIEW_GATE | DONE (KEEP; 0 blocker / 0 material / 3 minor, fixed) |
-| Z2 | Reconcile docs, verification, Run close | FINAL_GATE | DONE |
+| A | Design gate: exact contracts for FUB-077/075-safe/076; decision on 075 risky part | AUTO | PENDING |
+| B | Pre-register contract tests; commit (PRE_REGISTERED_TEST_HEAD) | AUTO | PENDING |
+| C | Implement in question-lint.ts (one pass) | AUTO | PENDING |
+| D | Regression metrics before→after | AUTO | PENDING |
+| Z | Independent review (review-commit) + fixes | REVIEW_GATE | PENDING |
+| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | PENDING |
 
 ## History
 
+- ASSESSMENT-ENGINE-008: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-008.md` (pending until close)
 - ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`
 - ASSESSMENT-ENGINE-007: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`
 - ASSESSMENT-ENGINE-006: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-006.md`
