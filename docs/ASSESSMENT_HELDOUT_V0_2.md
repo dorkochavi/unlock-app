@@ -4,7 +4,7 @@ Status: DRAFT evidence artifact. Created in Run `2026-10-09-ASSESSMENT-ENGINE-00
 Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`), UNCHANGED in Run 004 (question-lint.ts was changed later, in Run 005: OPTION_COMBINATION_REFERENCE).
 Provenance: corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_APPROVED` for 69 of 78 rows. **Post-evaluation update (Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001`):** 9 rows (HO-049, 070, 076, 017, 015, 063, 032, 069, 073) are `HUMAN_APPROVED` (Dor, 2026-10-09) as a POST-EVALUATION adjudication, applied as an overlay on the unchanged frozen labels (section 14). The FIRST_BLIND evidence in sections 3-13 is preserved as originally written; the POST_HUMAN metrics (section 14) are HUMAN-ADJUDICATED / POST-EVALUATION, never first-blind, never pooled with v0.1.
 
-> **Evidence naming (corrected after Run 005, `2026-10-09-ASSESSMENT-ENGINE-005`, FUB-064):** HISTORICAL FIRST_BLIND (Run 004, immutable): TP 80 / FN 44 / FP 4 / UNLABELED 22 (124 expected; NOT_IMPLEMENTED FN 36), the frozen corpus evaluated blind with the linter at `b9aaca4`, before OPTION_COMBINATION_REFERENCE existed. That event cannot be recomputed. After Run 005 the linter implements OPTION_COMBINATION_REFERENCE, so every GENERATED block and the FN table below are the frozen v0.2 corpus evaluated with the CURRENT linter (`CURRENT_LINTER_ON_FROZEN_V0_2`, regression evidence): TP 83 / FN 41 / FP 4 / UNLABELED 22 (HO-026, HO-027, HO-064 now TP; NOT_IMPLEMENTED FN 33; no new FP or UNLABELED_EMISSION). Hand-written prose in sections 3-18 predates Run 005 and cites the historical FIRST_BLIND numbers. Run 005 results on these already-observed cases are HISTORICAL_HELD_OUT regression evidence, not fresh validation.
+> **Evidence naming (corrected after Run 005, `2026-10-09-ASSESSMENT-ENGINE-005`, FUB-064):** HISTORICAL FIRST_BLIND (Run 004, immutable): TP 80 / FN 44 / FP 4 / UNLABELED 22 (124 expected; NOT_IMPLEMENTED FN 36), the frozen corpus evaluated blind with the linter at `b9aaca4`, before OPTION_COMBINATION_REFERENCE existed. That event cannot be recomputed. After Run 005 the linter implements OPTION_COMBINATION_REFERENCE, so every GENERATED block and the FN table below are the frozen v0.2 corpus evaluated with the CURRENT linter (`CURRENT_LINTER_ON_FROZEN_V0_2`, regression evidence): TP 83 / FN 41 / FP 4 / UNLABELED 22 (HO-026, HO-027, HO-064 now TP; NOT_IMPLEMENTED FN 33; no new FP or UNLABELED_EMISSION). Hand-written prose in sections 3-18 predates Run 005 and cites the historical FIRST_BLIND numbers. **Run 006 (`2026-10-09-ASSESSMENT-ENGINE-006`, FUB-066):** OPTION_ABSOLUTE_TERM now fires only for strong adverbs in a distractor, KEY_STEM_LEXICAL_OVERLAP is no longer emitted, and STEM_TOO_SHORT exempts interrogative/imperative first words and trailing ':'. The generated blocks and the section 6 classification table now show `CURRENT_LINTER_ON_FROZEN_V0_2`: TP 79 / FN 45 / FP 2 / UNLABELED 6 (frozen labels, unchanged); the POST_HUMAN overlay numbers are in the POST_HUMAN block. This is HISTORICAL_HELD_OUT regression evidence on already-observed cases and human-adjudicated cases, not fresh validation, and never FIRST_BLIND. Run 005 results on these already-observed cases are HISTORICAL_HELD_OUT regression evidence, not fresh validation.
 
 ## 1. Non-claims
 
@@ -46,12 +46,12 @@ Untouched-linter proof (as of Run 004; no longer empty for question-lint.ts afte
 <!-- GENERATED:BEGIN formatHeldOutMarkdown (src/domain/assessment/golden/heldout-eval.ts) -->
 ## Headline (generated)
 
-- RECALL-LIKE (all labelled detections): 83/124 caught.
-- FN count: 41 (8 HEURISTIC_GAP on implemented checks, 33 NOT_IMPLEMENTED checks).
-- PRECISION-LIKE (labelled detections vs false alarms): 83/87.
-- FP count: 4 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).
-- CLEAN cases with a WARNING/ERROR: 3 of 20.
-- UNLABELED_EMISSIONS: 22 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).
+- RECALL-LIKE (all labelled detections): 79/124 caught.
+- FN count: 45 (12 HEURISTIC_GAP on implemented checks, 33 NOT_IMPLEMENTED checks).
+- PRECISION-LIKE (labelled detections vs false alarms): 79/81.
+- FP count: 2 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).
+- CLEAN cases with a WARNING/ERROR: 1 of 20.
+- UNLABELED_EMISSIONS: 6 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).
 - SEMANTIC-ONLY cases: 12 (FLAWED with no deterministic expectation; not assertable against the linter).
 - Model-authored, model-labeled held-out corpus (NOT human ground truth): all ratios are INDICATIVE ONLY and are never pooled with v0.1.
 
@@ -68,29 +68,29 @@ Untouched-linter proof (as of Run 004; no longer empty for question-lint.ts afte
 | SEMANTIC-ONLY cases | 12 |
 | languageReviewRequired | 1 |
 | Expected deterministic detections | 124 |
-| TP | 83 |
-| FN (HEURISTIC_GAP / NOT_IMPLEMENTED) | 41 (8 / 33) |
-| FP | 4 |
-| CLEAN cases with a WARNING/ERROR | 3 of 20 |
-| UNLABELED_EMISSION | 22 |
+| TP | 79 |
+| FN (HEURISTIC_GAP / NOT_IMPLEMENTED) | 45 (12 / 33) |
+| FP | 2 |
+| CLEAN cases with a WARNING/ERROR | 1 of 20 |
+| UNLABELED_EMISSION | 6 |
 
 ## Set-level behaviour (generated)
 
 | Level | Expected | TP | FN | FP |
 |---|---|---|---|---|
 | SET-scope codes (lintQuestionSet) | 17 | 15 | 2 | 1 |
-| ITEM codes inside SET cases (lintQuestionItem per item) | 46 | 27 | 19 | 0 |
+| ITEM codes inside SET cases (lintQuestionItem per item) | 46 | 26 | 20 | 0 |
 
 | SET case | Label | Expected set codes | Emitted set codes | Set TP/FN/FP | Item TP/FN/FP | Unlabeled |
 |---|---|---|---|---|---|---|
 | HO-071 | FLAWED | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | 2/0/0 | 0/1/0 | 0 |
-| HO-072 | FLAWED | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | 2/0/0 | 0/8/0 | 1 |
-| HO-073 | FLAWED | - | SET_KEY_LENGTH_BIAS | 0/0/1 | 1/1/0 | 1 |
+| HO-072 | FLAWED | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | 2/0/0 | 0/8/0 | 0 |
+| HO-073 | FLAWED | - | SET_KEY_LENGTH_BIAS | 0/0/1 | 0/2/0 | 1 |
 | HO-074 | FLAWED | DUPLICATE_STEM_EXACT, DUPLICATE_STEM_NORMALIZED, NEAR_DUPLICATE_STEM, KEY_POSITION_IMBALANCE | DUPLICATE_STEM_EXACT, DUPLICATE_STEM_NORMALIZED, KEY_POSITION_IMBALANCE, NEAR_DUPLICATE_STEM | 4/0/0 | 0/5/0 | 0 |
 | HO-075 | FLAWED | STEM_TEMPLATE_REPEATED, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, NEAR_DUPLICATE_STEM, STEM_TEMPLATE_REPEATED | 3/0/0 | 0/0/0 | 1 |
-| HO-076 | FLAWED | SET_KEY_LENGTH_BIAS, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS | 3/0/0 | 18/0/0 | 4 |
-| HO-077 | FLAWED | SET_KEY_LENGTH_BIAS, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_RUN | 1/2/0 | 3/1/0 | 2 |
-| HO-078 | FLAWED | - | - | 0/0/0 | 5/3/0 | 1 |
+| HO-076 | FLAWED | SET_KEY_LENGTH_BIAS, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_IMBALANCE, KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS | 3/0/0 | 18/0/0 | 0 |
+| HO-077 | FLAWED | SET_KEY_LENGTH_BIAS, KEY_POSITION_IMBALANCE, KEY_POSITION_RUN | KEY_POSITION_RUN | 1/2/0 | 3/1/0 | 1 |
+| HO-078 | FLAWED | - | - | 0/0/0 | 5/3/0 | 0 |
 
 ## Per-check results (generated)
 
@@ -107,10 +107,10 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | KEY_LONGEST_OPTION | yes | 22 | 18 | 4 | 0 | 0 | 18/18 | 18/22 |
 | KEY_POSITION_IMBALANCE | yes | 6 | 5 | 1 | 0 | 0 | 5/5 | 5/6 |
 | KEY_POSITION_RUN | yes | 5 | 5 | 0 | 0 | 0 | 5/5 | 5/5 |
-| KEY_STEM_LEXICAL_OVERLAP | yes | 1 | 0 | 1 | 0 | 3 | n/a | 0/1 |
+| KEY_STEM_LEXICAL_OVERLAP | yes | 1 | 0 | 1 | 0 | 0 | n/a | 0/1 |
 | NEAR_DUPLICATE_STEM | yes | 1 | 1 | 0 | 0 | 1 | 1/1 | 1/1 |
 | OPTIONS_TOO_FEW | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
-| OPTION_ABSOLUTE_TERM | yes | 9 | 9 | 0 | 1 | 6 | 9/10 | 9/9 |
+| OPTION_ABSOLUTE_TERM | yes | 9 | 5 | 4 | 0 | 0 | 5/5 | 5/9 |
 | OPTION_ALL_OF_ABOVE | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
 | OPTION_COMBINATION_REFERENCE | yes | 3 | 3 | 0 | 0 | 0 | 3/3 | 3/3 |
 | OPTION_COUNT_UNUSUAL | NO | 1 | 0 | 1 | 0 | 0 | n/a | 0/1 |
@@ -128,12 +128,13 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | STEM_NEGATIVE_WORDING | yes | 7 | 6 | 1 | 0 | 1 | 6/6 | 6/7 |
 | STEM_NO_QUESTION_FORM | NO | 3 | 0 | 3 | 0 | 0 | n/a | 0/3 |
 | STEM_TEMPLATE_REPEATED | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
-| STEM_TOO_SHORT | yes | 2 | 2 | 0 | 1 | 7 | 2/3 | 2/2 |
+| STEM_TOO_SHORT | yes | 2 | 2 | 0 | 0 | 0 | 2/2 | 2/2 |
 
 ## False negatives (generated)
 
 | Ref | Level | Code | Kind |
 |---|---|---|---|
+| HO-017 | ITEM | OPTION_ABSOLUTE_TERM | HEURISTIC_GAP |
 | HO-017 | ITEM | OPTION_PREFIX_STEM_REPEAT | NOT_IMPLEMENTED |
 | HO-022 | ITEM | STEM_DOUBLE_NEGATIVE | NOT_IMPLEMENTED |
 | HO-022 | ITEM | EXPLANATION_NAMES_ONLY_KEY | NOT_IMPLEMENTED |
@@ -145,12 +146,14 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | HO-034 | ITEM | OPTION_NUMERIC_UNORDERED | NOT_IMPLEMENTED |
 | HO-035 | ITEM | OPTION_PUNCTUATION_INCONSISTENT | NOT_IMPLEMENTED |
 | HO-039 | ITEM | OPTION_COUNT_UNUSUAL | NOT_IMPLEMENTED |
+| HO-048 | ITEM | OPTION_ABSOLUTE_TERM | HEURISTIC_GAP |
 | HO-049 | ITEM | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED |
 | HO-049 | ITEM | KEY_LONGEST_OPTION | HEURISTIC_GAP |
 | HO-055 | ITEM | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP |
 | HO-057 | ITEM | STEM_NO_QUESTION_FORM | NOT_IMPLEMENTED |
 | HO-057 | ITEM | EXPLANATION_NAMES_ONLY_KEY | NOT_IMPLEMENTED |
 | HO-063 | ITEM | STEM_NEGATIVE_WORDING | HEURISTIC_GAP |
+| HO-063 | ITEM | OPTION_ABSOLUTE_TERM | HEURISTIC_GAP |
 | HO-067 | ITEM | OPTION_PUNCTUATION_INCONSISTENT | NOT_IMPLEMENTED |
 | HO-068 | ITEM | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED |
 | HO-070 | ITEM | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED |
@@ -163,6 +166,7 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | HO-072/item7 | ITEM_IN_SET | OPTION_NUMERIC_UNORDERED | NOT_IMPLEMENTED |
 | HO-072/item8 | ITEM_IN_SET | OPTION_NUMERIC_UNORDERED | NOT_IMPLEMENTED |
 | HO-072/item9 | ITEM_IN_SET | OPTION_NUMERIC_UNORDERED | NOT_IMPLEMENTED |
+| HO-073/item8 | ITEM_IN_SET | OPTION_ABSOLUTE_TERM | HEURISTIC_GAP |
 | HO-073/item8 | ITEM_IN_SET | KEY_LONGEST_OPTION | HEURISTIC_GAP |
 | HO-074/item3 | ITEM_IN_SET | EXPLANATION_NAMES_ONLY_KEY | NOT_IMPLEMENTED |
 | HO-074/item4 | ITEM_IN_SET | EXPLANATION_NAMES_ONLY_KEY | NOT_IMPLEMENTED |
@@ -180,8 +184,6 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 
 | Ref | Level | Code | Basis |
 |---|---|---|---|
-| HO-001 | ITEM | STEM_TOO_SHORT | CLEAN_CASE |
-| HO-011 | ITEM | OPTION_ABSOLUTE_TERM | FORBIDDEN |
 | HO-012 | ITEM | OPTION_OVERLAP_HIGH | CLEAN_CASE |
 | HO-073 | SET | SET_KEY_LENGTH_BIAS | FORBIDDEN |
 
@@ -189,28 +191,12 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 
 | Ref | Level | Code |
 |---|---|---|
-| HO-015 | ITEM | OPTION_ABSOLUTE_TERM |
-| HO-020 | ITEM | STEM_TOO_SHORT |
 | HO-023 | ITEM | OPTION_LENGTH_IMBALANCE |
-| HO-027 | ITEM | OPTION_ABSOLUTE_TERM |
 | HO-027 | ITEM | OPTION_LENGTH_IMBALANCE |
 | HO-031 | ITEM | OPTION_OVERLAP_HIGH |
-| HO-041 | ITEM | STEM_TOO_SHORT |
-| HO-042 | ITEM | STEM_TOO_SHORT |
-| HO-051 | ITEM | KEY_STEM_LEXICAL_OVERLAP |
-| HO-051 | ITEM | OPTION_ABSOLUTE_TERM |
-| HO-052 | ITEM | OPTION_ABSOLUTE_TERM |
-| HO-055 | ITEM | OPTION_ABSOLUTE_TERM |
-| HO-072/item3 | ITEM_IN_SET | STEM_TOO_SHORT |
 | HO-073/item8 | ITEM_IN_SET | STEM_NEGATIVE_WORDING |
 | HO-075 | SET | NEAR_DUPLICATE_STEM |
-| HO-076/item1 | ITEM_IN_SET | KEY_STEM_LEXICAL_OVERLAP |
-| HO-076/item4 | ITEM_IN_SET | STEM_TOO_SHORT |
-| HO-076/item6 | ITEM_IN_SET | STEM_TOO_SHORT |
-| HO-076/item9 | ITEM_IN_SET | KEY_STEM_LEXICAL_OVERLAP |
-| HO-077/item1 | ITEM_IN_SET | OPTION_ABSOLUTE_TERM |
 | HO-077/item4 | ITEM_IN_SET | OPTION_LENGTH_IMBALANCE |
-| HO-078/item8 | ITEM_IN_SET | STEM_TOO_SHORT |
 
 ## Semantic-only cases (generated)
 
@@ -268,20 +254,20 @@ One category per finding. Evidence is the actual case text and linter metrics. `
 
 Categories: LIKELY_LINTER_BUG | LIKELY_HEURISTIC_LIMIT | LIKELY_LABEL_QUESTION | SEMANTIC_ONLY | NEEDS_HUMAN_HEBREW_REVIEW | NEEDS_MORE_DATA.
 
-Tally (67 findings = 41 FN + 4 FP + 22 UNLABELED_EMISSION; Run 005 removed the 3 OPTION_COMBINATION_REFERENCE NOT_IMPLEMENTED FN rows):
+Tally (53 findings = 45 FN + 2 FP + 6 UNLABELED_EMISSION, CURRENT_LINTER_ON_FROZEN_V0_2 after Run 006 / FUB-066; Run 005 removed the 3 OPTION_COMBINATION_REFERENCE NOT_IMPLEMENTED FN rows, Run 006 removed 18 FP/UNLABELED_EMISSION rows of the context-sensitive warnings and added 4 OPTION_ABSOLUTE_TERM weak-tier FN rows as SEMANTIC_ONLY; the Run 004 first-blind tally was 67 findings = 41 FN + 4 FP + 22 UNLABELED_EMISSION after Run 005 and is historical):
 
 | Category | FN | FP | UNL | Total |
 |---|---|---|---|---|
 | LIKELY_LINTER_BUG | 0 | 0 | 0 | 0 |
-| LIKELY_HEURISTIC_LIMIT | 35 (27 NOT_IMPLEMENTED + 8 threshold/cue gaps) | 3 | 14 | 52 |
-| LIKELY_LABEL_QUESTION | 4 | 1 | 7 | 12 |
-| SEMANTIC_ONLY | 0 | 0 | 0 | 0 |
+| LIKELY_HEURISTIC_LIMIT | 35 (27 NOT_IMPLEMENTED + 8 threshold/cue gaps) | 1 | 2 | 38 |
+| LIKELY_LABEL_QUESTION | 4 | 1 | 3 | 8 |
+| SEMANTIC_ONLY | 4 | 0 | 0 | 4 |
 | NEEDS_HUMAN_HEBREW_REVIEW | 2 | 0 | 0 | 2 |
 | NEEDS_MORE_DATA | 0 | 0 | 1 | 1 |
 
-No crash, wrong-index or mis-implemented-rule defect was found; most emissions trace to a documented threshold or cue list. Two tokenization behaviours are arguable as tokenizer defects rather than heuristic limits (HO-012: identical token sets for O(log n) and O(n log n); HO-031: 3,000 and 3,000,000 collapse to the same token set), so LIKELY_LINTER_BUG = 0 is defensible but borderline. NOT_IMPLEMENTED codes are filed under HEURISTIC_LIMIT because no other category fits "no rule exists"; each such reason says so. SEMANTIC_ONLY has 0 rows because the 12 semantic-only cases produce no deterministic FN; they are listed in the generated block above.
+No crash, wrong-index or mis-implemented-rule defect was found; most emissions trace to a documented threshold or cue list. Two tokenization behaviours are arguable as tokenizer defects rather than heuristic limits (HO-012: identical token sets for O(log n) and O(n log n); HO-031: 3,000 and 3,000,000 collapse to the same token set), so LIKELY_LINTER_BUG = 0 is defensible but borderline. NOT_IMPLEMENTED codes are filed under HEURISTIC_LIMIT because no other category fits "no rule exists"; each such reason says so. The 4 SEMANTIC_ONLY rows are the weak-tier OPTION_ABSOLUTE_TERM FN created by Run 006 (HO-017, HO-063 frozen-label-only; HO-048, HO-073/item8 real recall losses); the 12 semantic-only cases produce no deterministic FN and are listed in the generated block above.
 
-One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_TOO_SHORT (8 findings on concise Hebrew stems), context-blind absolute-term matching (6 findings: kol, only, bilvad), and the 15-char gate in KEY_LONGEST_OPTION (4 near-miss FN) - candidates for a human-reviewed threshold discussion, not tuned here; (b) the 12 label-question rows should go to a human reviewer before any threshold discussion; (c) the 8-item set eligibility gates interact with MULTIPLE_CHOICE items (HO-077).
+One-line recommendations (written for the Run 004 first-blind tally; Run 006 acted on the STEM_TOO_SHORT and absolute-term clusters, see Run 006 note in the header): (a) recurring clusters are the 4-word minimum in STEM_TOO_SHORT (8 findings on concise Hebrew stems), context-blind absolute-term matching (6 findings: kol, only, bilvad), and the 15-char gate in KEY_LONGEST_OPTION (4 near-miss FN) - candidates for a human-reviewed threshold discussion, not tuned here; (b) the 12 label-question rows should go to a human reviewer before any threshold discussion; (c) the 8-item set eligibility gates interact with MULTIPLE_CHOICE items (HO-077).
 
 <!-- CLASSIFICATION:BEGIN -->
 | Type | Ref | Code | Category | Reason |
@@ -327,32 +313,18 @@ One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_
 | FN | HO-078/item2 | STEM_DOUBLE_NEGATIVE | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-078/item3 | OPTION_STYLE_OUTLIER | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-078/item5 | STEM_NO_QUESTION_FORM | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
-| FP | HO-001 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | Complete Hebrew question 'מהי בירת אוסטרליה?' has 3 words (< 4); word count over-flags terse Hebrew stems |
-| FP | HO-011 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'כל' in 'כל הכוח' is a quantifier inside a descriptive key, not an absolute claim; term list is context-blind |
+| FN | HO-017 | OPTION_ABSOLUTE_TERM | SEMANTIC_ONLY | Weak-tier absolute term (כל/רק/בלבד/all/only) is no longer emitted deterministically; routed to HUMAN_REVIEW / AI_OPTIONAL in Run 006 (FUB-066). Frozen-label only: HO-017 was relabeled CLEAN post-human (symmetric 'תמיד'); intended loss. |
+| FN | HO-048 | OPTION_ABSOLUTE_TERM | SEMANTIC_ONLY | Weak-tier absolute term (כל/רק/בלבד/all/only) is no longer emitted deterministically; routed to HUMAN_REVIEW / AI_OPTIONAL in Run 006 (FUB-066). Real recall loss (frozen-label expectation, not changed). |
+| FN | HO-063 | OPTION_ABSOLUTE_TERM | SEMANTIC_ONLY | Weak-tier absolute term (כל/רק/בלבד/all/only) is no longer emitted deterministically; routed to HUMAN_REVIEW / AI_OPTIONAL in Run 006 (FUB-066). Frozen-label only: the OPTION_ABSOLUTE_TERM expectation was removed post-human ('כל' integral to the proposition); intended loss. |
+| FN | HO-073/item8 | OPTION_ABSOLUTE_TERM | SEMANTIC_ONLY | Weak-tier absolute term (כל/רק/בלבד/all/only) is no longer emitted deterministically; routed to HUMAN_REVIEW / AI_OPTIONAL in Run 006 (FUB-066). Real recall loss (frozen-label expectation, not changed). |
 | FP | HO-012 | OPTION_OVERLAP_HIGH | LIKELY_HEURISTIC_LIMIT | O(log n) vs O(n log n) have identical token sets (similarity 1.0); set-based Jaccard ignores order and symbols |
 | FP | HO-073 | SET_KEY_LENGTH_BIAS | LIKELY_LABEL_QUESTION | Keys are strictly longest in 5 of 10 items, exactly at the 0.5 threshold; the labeler forbade the code, the observed data arguably supports it **Post-human:** forbidden-code label approved; this stays a human-approved FP (5 of 10 at exactly 0.5 is not enough evidence; sample-size caveat). |
-| UNL | HO-015 | OPTION_ABSOLUTE_TERM | LIKELY_LABEL_QUESTION | Distractor d contains 'שום' (no significance at all), a real absolute cue the labeler did not list; author intent says clean **Post-human:** Dor decided definitively (HUMAN_DECIDED_NO_LABEL_CHANGE): 'שום' is natural Hebrew here and no absolute-term expectation is added. The first-blind LIKELY_LABEL_QUESTION is resolved in favor of the existing label. The emission is a context-blind heuristic limit (evidence for FUB-066), ruled FORBIDDEN in Run 003, so it counts as FP in POST_HUMAN_FINAL. |
-| UNL | HO-020 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 2-word complete stem; concise-stem over-flag (same pattern as HO-001) |
 | UNL | HO-023 | OPTION_LENGTH_IMBALANCE | LIKELY_LABEL_QUESTION | Options 38 vs 13 chars (ratio 3.08) is a true length imbalance the labeler did not list |
-| UNL | HO-027 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'only' in 'only in trace amounts' qualifies a quantity, not an absolute claim; context-blind term list |
 | UNL | HO-027 | OPTION_LENGTH_IMBALANCE | LIKELY_LABEL_QUESTION | Options 28 vs 6 chars is a true imbalance the labeler did not list |
 | UNL | HO-031 | OPTION_OVERLAP_HIGH | LIKELY_HEURISTIC_LIMIT | '3,000 ק"מ' vs '3,000,000 ק"מ' tokenize to the same set (digit groups collapse); magnitude difference is invisible |
-| UNL | HO-041 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
-| UNL | HO-042 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
-| UNL | HO-051 | KEY_STEM_LEXICAL_OVERLAP | LIKELY_LABEL_QUESTION | Key repeats 2 stem tokens vs 1 in distractors; author intent explicitly notes this leakage, labeler omitted it |
-| UNL | HO-051 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'כל אזרח' is a quantifier in a descriptive key, not an absolute cue |
-| UNL | HO-052 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'בלבד' (only) inside a descriptive key sentence; context-blind term list |
-| UNL | HO-055 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'only' in 'added and removed only from the top' is part of a correct definition |
-| UNL | HO-072/item3 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
 | UNL | HO-073/item8 | STEM_NEGATIVE_WORDING | LIKELY_HEURISTIC_LIMIT | 'ולא' in 'ולא לתרכובת' is a contrastive 'and not', not a negated question; the cue matcher cannot tell |
 | UNL | HO-075 | NEAR_DUPLICATE_STEM | NEEDS_MORE_DATA | Items 7 and 8 score exactly 0.80 (= threshold) because of the shared template; a single borderline instance |
-| UNL | HO-076/item1 | KEY_STEM_LEXICAL_OVERLAP | LIKELY_LABEL_QUESTION | Key (93 chars) restates 2 stem tokens, distractors 0; real leakage the labeler did not list (set flagged languageReviewRequired) **Post-human:** Dor decided definitively (HUMAN_DECIDED_NO_LABEL_CHANGE): item-1 lexical/key leakage based only on natural stem overlap is rejected, so the existing label stands. The first-blind LIKELY_LABEL_QUESTION is resolved in favor of the existing label. The emission is a context-blind heuristic limit (evidence for FUB-066), ruled FORBIDDEN in Run 003 (per-item forbidden code added by the overlay), so it counts as FP in POST_HUMAN_FINAL. |
-| UNL | HO-076/item4 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
-| UNL | HO-076/item6 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
-| UNL | HO-076/item9 | KEY_STEM_LEXICAL_OVERLAP | LIKELY_LABEL_QUESTION | Key restates 3 stem tokens vs 1 in a distractor; real leakage the labeler did not list |
-| UNL | HO-077/item1 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'all' in 'encrypts all web traffic' is a content quantifier in a plausible distractor; context-blind term list |
 | UNL | HO-077/item4 | OPTION_LENGTH_IMBALANCE | LIKELY_LABEL_QUESTION | Options 69 vs 16 chars (ratio 4.3) is a true imbalance; the labeler listed only KEY_LONGEST_OPTION |
-| UNL | HO-078/item8 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
 <!-- CLASSIFICATION:END -->
 
 ## 7. Author-vs-labeler agreement
@@ -497,15 +469,15 @@ These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor 
 | FLAWED cases | 58 | 58 | 58 | 0 |
 | SEMANTIC-ONLY cases | 12 | 12 | 12 | 0 |
 | Expected deterministic detections | 124 | 122 | 122 | -2 |
-| TP | 83 | 81 | 81 | -2 |
-| FN (total) | 41 | 41 | 41 | 0 |
-| FN HEURISTIC_GAP | 8 | 8 | 8 | 0 |
+| TP | 79 | 79 | 79 | 0 |
+| FN (total) | 45 | 43 | 43 | -2 |
+| FN HEURISTIC_GAP | 12 | 10 | 10 | -2 |
 | FN NOT_IMPLEMENTED | 33 | 33 | 33 | 0 |
-| FP | 4 | 5 | 8 | +4 |
-| CLEAN cases with a WARNING/ERROR | 3 of 20 | 4 of 20 | 4 of 20 | +1 |
-| UNLABELED_EMISSION | 22 | 23 | 20 | -2 |
+| FP | 2 | 2 | 2 | 0 |
+| CLEAN cases with a WARNING/ERROR | 1 of 20 | 1 of 20 | 1 of 20 | 0 |
+| UNLABELED_EMISSION | 6 | 6 | 6 | 0 |
 | SET-scope codes (expected / TP / FN / FP) | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 0 / 0 / 0 / 0 |
-| ITEM codes inside SET cases (expected / TP / FN / FP) | 46 / 27 / 19 / 0 | 46 / 27 / 19 / 0 | 46 / 27 / 19 / 1 | 0 / 0 / 0 / +1 |
+| ITEM codes inside SET cases (expected / TP / FN / FP) | 46 / 26 / 20 / 0 | 46 / 26 / 20 / 0 | 46 / 26 / 20 / 0 | 0 / 0 / 0 / 0 |
 
 ### The 9 reviewed cases (generated)
 
@@ -515,13 +487,13 @@ Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TR
 |---|---|---|---|---|---|---|---|---|
 | HO-049 | APPROVED | 0/2/0/0 | 0/2/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 | HO-070 | APPROVED | 0/1/0/0 | 0/1/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
-| HO-076 | APPROVED_PARTIAL | 21/0/0/4 | 21/0/1/3 | UNL HO-076/item1 KEY_STEM_LEXICAL_OVERLAP | FP HO-076/item1 KEY_STEM_LEXICAL_OVERLAP | HUMAN_DECIDED_NO_LABEL_CHANGE | METRIC_EFFECT | - |
-| HO-017 | CHANGED | 1/1/0/0 | 0/0/1/0 | FN HO-017 OPTION_PREFIX_STEM_REPEAT | FP HO-017 OPTION_ABSOLUTE_TERM | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
-| HO-015 | APPROVED | 1/0/0/1 | 1/0/1/0 | UNL HO-015 OPTION_ABSOLUTE_TERM | FP HO-015 OPTION_ABSOLUTE_TERM | HUMAN_DECIDED_NO_LABEL_CHANGE | METRIC_EFFECT | - |
-| HO-063 | CHANGED | 1/1/0/0 | 0/1/1/0 | - | FP HO-063 OPTION_ABSOLUTE_TERM | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
+| HO-076 | APPROVED_PARTIAL | 21/0/0/0 | 21/0/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
+| HO-017 | CHANGED | 0/2/0/0 | 0/0/0/0 | FN HO-017 OPTION_ABSOLUTE_TERM, FN HO-017 OPTION_PREFIX_STEM_REPEAT | - | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
+| HO-015 | APPROVED | 1/0/0/0 | 1/0/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
+| HO-063 | CHANGED | 0/2/0/0 | 0/1/0/0 | FN HO-063 OPTION_ABSOLUTE_TERM | - | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
 | HO-032 | APPROVED | 0/0/0/0 | 0/0/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 | HO-069 | CHANGED | 0/0/0/0 | 0/1/0/0 | - | FN HO-069 OPTION_NUMERIC_UNORDERED | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
-| HO-073 | APPROVED | 1/1/1/1 | 1/1/1/1 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
+| HO-073 | APPROVED | 0/2/1/1 | 0/2/1/1 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 <!-- GENERATED:END -->
 
 ## 15. Why the metrics moved (prose companion to the generated delta)

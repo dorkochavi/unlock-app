@@ -803,8 +803,8 @@ describe("Slice B2: linter false-positive rule fixes (and counter-examples that 
     for (const w of ["רק", "ורק", "רק זה נכון", "כל", "וכל", "כל התאים", "וכל התאים", "בלבד"]) expect(abs(w)).toBe(false);
   });
   it("PINS: weak-tier terms (ב/ל/מ/כ + כל, ורק, וכל) never fire (FUB-066 weak tier leaves deterministic ownership)", () => {
-    // Accepted trade-off of the 2-letter-term restriction: a legitimate absolute like 'לכל התאים' is now missed
-    // (no Golden case; see ASSESSMENT_CALIBRATION_V0_1 known limits). If prefix handling is refined, update deliberately.
+    // Weak-tier terms (כל/רק/בלבד and prefixed forms) are routed to HUMAN_REVIEW / AI_OPTIONAL (FUB-066), so a prefixed
+    // 'לכל התאים' is intentionally not emitted deterministically. If the tiering is revisited, update deliberately.
     for (const w of ["בכל התאים", "לכל התאים", "מכל התאים", "ככל התאים", "בכל", "לכל", "מכל", "ככל"]) expect(abs(w)).toBe(false);
     for (const w of ["ורק", "וכל", "וכל התאים", "ורק זה נכון"]) expect(abs(w)).toBe(false);
   });

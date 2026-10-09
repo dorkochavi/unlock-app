@@ -246,19 +246,25 @@ const itemCases: GoldenCase[] = [
     id: "WEAK-LEAKAGE-HE-01", scope: "ITEM", tags: ["weak", "hebrew", "lexical-leakage"],
     description: "Key repeats two content words of the stem; distractors repeat none.",
     input: q("איזה גורם משפיע על קביעת המחירים בשוק חופשי?", ["מזג האוויר", "ביקוש והיצע בשוק חופשי", "צבע השטרות", "גובה הבניינים"], 1),
-    expected: exp(["KEY_STEM_LEXICAL_OVERLAP"], []),
+    expected: exp(["KEY_STEM_LEXICAL_OVERLAP"], [], {
+      knownMiss: { codes: ["KEY_STEM_LEXICAL_OVERLAP"], kind: "HEURISTIC_GAP", reason: "Moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066): KEY_STEM_LEXICAL_OVERLAP is no longer emitted deterministically." },
+    }),
   },
   {
     id: "WEAK-LEAKAGE-HE-PREFIX-01", scope: "ITEM", tags: ["weak", "hebrew", "lexical-leakage", "prefix"],
     description: "Leaked words differ only by attached prefixes (ה/ו/ב) from the stem.",
     input: q("מי אישרה את ההחלטה בנושא התקציב השנתי?", ["מורה בבית ספר", "ועדת התקציב השנתי", "נהג אוטובוס", "שחקן כדורסל"], 1),
-    expected: exp(["KEY_STEM_LEXICAL_OVERLAP"], []),
+    expected: exp(["KEY_STEM_LEXICAL_OVERLAP"], [], {
+      knownMiss: { codes: ["KEY_STEM_LEXICAL_OVERLAP"], kind: "HEURISTIC_GAP", reason: "Moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066): KEY_STEM_LEXICAL_OVERLAP is no longer emitted deterministically." },
+    }),
   },
   {
     id: "WEAK-LEAKAGE-EN-01", scope: "ITEM", tags: ["weak", "english", "lexical-leakage"],
     description: "English key repeats two stem words.",
     input: q("Which process converts sunlight into chemical energy in plants?", ["Digestion of food in the stomach", "Sunlight conversion into chemical energy", "Erosion of rock by wind and rain", "Evaporation of water from lakes"], 1),
-    expected: exp(["KEY_STEM_LEXICAL_OVERLAP"], ["KEY_LONGEST_OPTION", "OPTION_LENGTH_IMBALANCE"]),
+    expected: exp(["KEY_STEM_LEXICAL_OVERLAP"], ["KEY_LONGEST_OPTION", "OPTION_LENGTH_IMBALANCE"], {
+      knownMiss: { codes: ["KEY_STEM_LEXICAL_OVERLAP"], kind: "HEURISTIC_GAP", reason: "Moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066): KEY_STEM_LEXICAL_OVERLAP is no longer emitted deterministically." },
+    }),
   },
   {
     id: "WEAK-LEAKAGE-HE-INFLECTION-01", scope: "ITEM", tags: ["weak", "hebrew", "lexical-leakage", "inflection"],
@@ -283,7 +289,7 @@ const itemCases: GoldenCase[] = [
     description: "Key is the only complete sentence with a final period; distractors are bare nouns (style outlier cue).",
     input: q("איזה פריט משמש לכתיבה על דף נייר?", ["עט", "שולחן", "הוא משמש לכתיבה על דף נייר ולרישום הערות.", "כיסא"], 2),
     expected: exp(["OPTION_STYLE_OUTLIER", "KEY_LONGEST_OPTION", "OPTION_LENGTH_IMBALANCE", "KEY_STEM_LEXICAL_OVERLAP"], [], {
-      knownMiss: { codes: ["OPTION_STYLE_OUTLIER"], kind: "NOT_IMPLEMENTED", reason: "OPTION_STYLE_OUTLIER is a documented but unimplemented code (AE-029); the length and leakage checks fire only as incidental partial signals." },
+      knownMiss: { codes: ["OPTION_STYLE_OUTLIER", "KEY_STEM_LEXICAL_OVERLAP"], kind: "NOT_IMPLEMENTED", reason: "OPTION_STYLE_OUTLIER is a documented but unimplemented code (AE-029); the length check fires only as an incidental partial signal. KEY_STEM_LEXICAL_OVERLAP moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066); the single-kind knownMiss shape cannot also express it as HEURISTIC_GAP, so the harness reports it as 'marked NOT_IMPLEMENTED but is implemented' (accepted exact exception in golden-calibration.test.ts)." },
     }),
   },
 

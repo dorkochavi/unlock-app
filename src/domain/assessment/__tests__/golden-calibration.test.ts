@@ -63,7 +63,7 @@ const EXPECTED_COUNTS = {
   set: 17,
   clean: 18,
   unsupportedSemantic: 6,
-  withKnownMiss: 5,
+  withKnownMiss: 8,
   withKnownFalsePositive: 0,
 };
 
@@ -71,8 +71,8 @@ const EXPECTED_TOTALS = {
   expectedDetections: 73,
   truePositive: 64,
   falseNegative: 9,
-  falseNegativeHeuristicGap: 3,
-  falseNegativeNotImplemented: 2,
+  falseNegativeHeuristicGap: 6,
+  falseNegativeNotImplemented: 3,
   falsePositive: 0,
   cleanCases: 18,
   cleanCasesWithWarningOrError: 0,
@@ -80,7 +80,7 @@ const EXPECTED_TOTALS = {
 
 const EXPECTED_SUMMARY = [
   "RECALL-LIKE (all labelled detections): 64/73 caught.",
-  "FN count: 9 (3 HEURISTIC_GAP on implemented checks, 2 NOT_IMPLEMENTED checks).",
+  "FN count: 9 (6 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).",
   "PRECISION-LIKE (labelled detections vs false alarms): 64/64.",
   "FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: NO, see undocumented findings).",
   "CLEAN cases with a WARNING/ERROR: 0 of 18.",
@@ -89,6 +89,9 @@ const EXPECTED_SUMMARY = [
 ];
 
 const EXPECTED_KNOWN_MISS_IDS = [
+  "WEAK-LEAKAGE-HE-01",
+  "WEAK-LEAKAGE-HE-PREFIX-01",
+  "WEAK-LEAKAGE-EN-01",
   "WEAK-LEAKAGE-HE-INFLECTION-01",
   "WEAK-GRAMMAR-CUE-EN-01",
   "WEAK-STYLE-CUE-HE-01",
@@ -144,17 +147,12 @@ describe("Golden Dataset v0.1 hygiene", () => {
 describe("calibration report (regression guard)", () => {
   const report = runCalibration(GOLDEN_DATASET_V0_1);
 
-  it("has no undocumented disagreement except the FUB-066 contract-driven KEY_STEM_LEXICAL_OVERLAP misses", () => {
-    // FUB-066 (Run 2026-10-09-ASSESSMENT-ENGINE-006): KEY_STEM_LEXICAL_OVERLAP no longer emits, so the 4 v0.1 cases that
-    // label it as expected now miss. The v0.1 dataset labels are frozen (not edited), hence these are the ONLY accepted
-    // undocumented findings: 4 misses plus one harness side effect (WEAK-STYLE-CUE-HE-01 carries a NOT_IMPLEMENTED
-    // knownMiss for another code, so its newly missed implemented KEY_STEM_LEXICAL_OVERLAP also triggers the cross-check).
-    // Any other disagreement (miss, false alarm, stale documentation) must still fail here.
+  it("has no undocumented disagreement except one accepted single-kind knownMiss harness quirk", () => {
+    // FUB-066 (Run 2026-10-09-ASSESSMENT-ENGINE-006): the 4 v0.1 KEY_STEM_LEXICAL_OVERLAP misses are documented via knownMiss.
+    // The only remaining finding: WEAK-STYLE-CUE-HE-01 has one knownMiss entry (single kind) already NOT_IMPLEMENTED for
+    // OPTION_STYLE_OUTLIER, so the implemented-but-moved KEY_STEM_LEXICAL_OVERLAP listed in the same entry trips the
+    // cross-check. Any other disagreement (miss, false alarm, stale documentation) must still fail here.
     expect(report.undocumentedFindings).toEqual([
-      "WEAK-LEAKAGE-HE-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
-      "WEAK-LEAKAGE-HE-PREFIX-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
-      "WEAK-LEAKAGE-EN-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
-      "WEAK-STYLE-CUE-HE-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
       "WEAK-STYLE-CUE-HE-01: KEY_STEM_LEXICAL_OVERLAP marked NOT_IMPLEMENTED but is implemented",
     ]);
   });

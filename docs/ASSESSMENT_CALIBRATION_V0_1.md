@@ -5,6 +5,8 @@ Subject: the UNWIRED deterministic question linter `src/domain/assessment/questi
 
 > **Pointer (Run 2026-10-09-ASSESSMENT-ENGINE-004):** held-out evidence now exists. Golden Dataset v0.2 (78 model-authored cases, model labels NOT human-approved) was evaluated blind with the unchanged linter; see `docs/ASSESSMENT_HELDOUT_V0_2.md`. Readiness reassessment there: **still NOT_READY** (fresh-data false positives, model-only provenance, open design gates). Since 2026-10-09, 9 of the 78 v0.2 rows are also human-adjudicated (Dor, a post-evaluation overlay; the other 69 labels stay model-only); readiness remains **NOT_READY**. v0.1 and v0.2 are never pooled; the v0.1 text and numbers below are unchanged.
 
+> **Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066) update:** the generated sections below now reflect the Run 006 linter (CALIBRATION/REGRESSION evidence on a synthetic, tuned fixture; not validation). OPTION_ABSOLUTE_TERM: strong adverbs in a distractor only (weak tier כל/שום/רק/בלבד/all/only/every/none routed to HUMAN_REVIEW / AI_OPTIONAL), v0.1 3 TP / 0 FN / 0 FP unchanged. KEY_STEM_LEXICAL_OVERLAP: emission stopped (SEMANTIC_ONLY; AI_REQUIRED / HUMAN_REVIEW), v0.1 4 TP / 1 FN -> 0 TP / 5 FN; the 4 newly missed cases (WEAK-LEAKAGE-HE-01, WEAK-LEAKAGE-HE-PREFIX-01, WEAK-LEAKAGE-EN-01, WEAK-STYLE-CUE-HE-01) are documented as knownMiss with their labels unchanged. STEM_TOO_SHORT: interrogative/imperative first word or trailing ':' exempt, v0.1 1 TP / 0 FN / 0 FP unchanged. Sections 2-4 and 10 below are the Run 003 narrative and predate this change.
+
 ## 1. What this is (and is not)
 
 - An **evaluation fixture**, not training data. Synthetic general-knowledge content only (no Ruppin or other real course content, no student data), Hebrew-first with an English and a mixed-script slice.
@@ -33,10 +35,10 @@ There is no script. The generated sections (between the `GENERATED` markers) are
 <!-- GENERATED:BEGIN formatCalibrationMarkdown (src/domain/assessment/golden/calibration.ts) -->
 ## Headline (generated)
 
-- RECALL-LIKE (all labelled detections): 68/73 caught.
-- FN count: 5 (3 HEURISTIC_GAP on implemented checks, 2 NOT_IMPLEMENTED checks).
-- PRECISION-LIKE (labelled detections vs false alarms): 68/68.
-- FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: yes).
+- RECALL-LIKE (all labelled detections): 64/73 caught.
+- FN count: 9 (6 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).
+- PRECISION-LIKE (labelled detections vs false alarms): 64/64.
+- FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: NO, see undocumented findings).
 - CLEAN cases with a WARNING/ERROR: 0 of 18.
 - UNSUPPORTED SEMANTIC CASES: 6 (intentionally not asserted against the linter).
 - Tiny synthetic fixture: all ratios are INDICATIVE ONLY, not statistics. Thresholds remain product-design defaults.
@@ -50,7 +52,7 @@ There is no script. The generated sections (between the `GENERATED` markers) are
 | SET cases | 17 |
 | CLEAN cases (no WARNING/ERROR is correct) | 18 |
 | UNSUPPORTED SEMANTIC CASES | 6 |
-| Cases with a KNOWN_MISS | 5 |
+| Cases with a KNOWN_MISS | 8 |
 | Cases with a KNOWN_FALSE_POSITIVE | 0 |
 
 ## Per-check results (generated)
@@ -70,7 +72,7 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 | KEY_LONGEST_OPTION | yes | 3 | 3 | 0 | 0 | 19 | 3/3 | 3/3 |
 | KEY_POSITION_IMBALANCE | yes | 1 | 1 | 0 | 0 | 4 | 1/1 | 1/1 |
 | KEY_POSITION_RUN | yes | 1 | 1 | 0 | 0 | 4 | 1/1 | 1/1 |
-| KEY_STEM_LEXICAL_OVERLAP | yes | 5 | 4 | 1 | 0 | 16 | 4/4 | 4/5 |
+| KEY_STEM_LEXICAL_OVERLAP | yes | 5 | 0 | 5 | 0 | 16 | n/a | 0/5 |
 | NEAR_DUPLICATE_STEM | yes | 3 | 2 | 1 | 0 | 5 | 2/2 | 2/3 |
 | OPTIONS_TOO_FEW | yes | 2 | 2 | 0 | 0 | 16 | 2/2 | 2/2 |
 | OPTIONS_TOO_MANY | yes | 1 | 1 | 0 | 0 | 16 | 1/1 | 1/1 |
@@ -101,9 +103,12 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 
 | Case | Codes | Kind | Reason |
 |---|---|---|---|
+| WEAK-LEAKAGE-HE-01 | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP | Moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066): KEY_STEM_LEXICAL_OVERLAP is no longer emitted deterministically. |
+| WEAK-LEAKAGE-HE-PREFIX-01 | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP | Moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066): KEY_STEM_LEXICAL_OVERLAP is no longer emitted deterministically. |
+| WEAK-LEAKAGE-EN-01 | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP | Moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066): KEY_STEM_LEXICAL_OVERLAP is no longer emitted deterministically. |
 | WEAK-LEAKAGE-HE-INFLECTION-01 | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP | Only exact prefix-stripped tokens match; inflection/morphology (מחיר/מחירי, עלייה/עולים) is not unified, so overlap counts 1 < 2. |
 | WEAK-GRAMMAR-CUE-EN-01 | ARTICLE_MISMATCH | NOT_IMPLEMENTED | ARTICLE_MISMATCH is a documented but unimplemented code (AE-029). |
-| WEAK-STYLE-CUE-HE-01 | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED | OPTION_STYLE_OUTLIER is a documented but unimplemented code (AE-029); the length and leakage checks fire only as incidental partial signals. |
+| WEAK-STYLE-CUE-HE-01 | OPTION_STYLE_OUTLIER, KEY_STEM_LEXICAL_OVERLAP | NOT_IMPLEMENTED | OPTION_STYLE_OUTLIER is a documented but unimplemented code (AE-029); the length check fires only as an incidental partial signal. KEY_STEM_LEXICAL_OVERLAP moved to semantic/human review in Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066); the single-kind knownMiss shape cannot also express it as HEURISTIC_GAP, so the harness reports it as 'marked NOT_IMPLEMENTED but is implemented' (accepted exact exception in golden-calibration.test.ts). |
 | OVERLAP-OPTIONS-HE-BOUNDARY-01 | OPTION_OVERLAP_HIGH | HEURISTIC_GAP | Boundary: Jaccard 0.833 < OPTION_OVERLAP_JACCARD 0.85 for short options; a single extra word on a 5-word option is a large relative change. |
 | SET-NEAR-DUP-INFLECTION-01 | NEAR_DUPLICATE_STEM | HEURISTIC_GAP | Gender/number inflections change the tokens, so Jaccard falls below the threshold (documented expected miss, ASSESSMENT_ENGINE section 19.4). |
 
@@ -199,7 +204,7 @@ Status: items 1 and 2 applied in Run 003 B2 (`2e379e2`, with recall/residual cos
 
 Accepted costs and residuals, deliberately documented rather than hidden. All are WARNING-only heuristic limits.
 
-- **2-letter-term prefix recall loss.** `רק`/`כל` accept only the conjunction `ו` as an attached prefix, so `בכל` / `לכל` / `מכל` / `ככל` (e.g. "לכל התאים") no longer trigger `OPTION_ABSOLUTE_TERM`, while `ורק` / `וכל` do. Pinned by a unit test in `question-lint.test.ts`; no Golden case.
+- **2-letter-term prefix recall loss (superseded by Run 006: all weak-tier terms now leave deterministic ownership).** `רק`/`כל` accept only the conjunction `ו` as an attached prefix, so `בכל` / `לכל` / `מכל` / `ככל` (e.g. "לכל התאים") no longer trigger `OPTION_ABSOLUTE_TERM`, while `ורק` / `וכל` do. Pinned by a unit test in `question-lint.test.ts`; no Golden case.
 - **`שום` homograph.** `שום` is both "garlic" and the absolute "no/any"; it remains ambiguous, so a garlic option is a possible false positive and a prefixed absolute use is a possible miss.
 - **`חוץ מ…` next-token residual.** `חוץ` counts as negation only in the exception phrase before a `מ`-initial next token; a noun phrase whose next word happens to start with `מ` can still warn, and an exception phrase with a different continuation is missed.
 - **`at least` idiom ignored.** `least` is not negation after `at`; a rare genuinely negative use is missed.
