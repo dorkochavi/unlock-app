@@ -1,28 +1,29 @@
-# UNLOCK — ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002 — Post-Human-Review Consistency Fix (Decision Taxonomy)
+# UNLOCK — ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003 — Final Forbidden Decisions (3 emissions)
 
-PLAN_VERSION: 033
-RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002
-START_HEAD: `131cb28`
+PLAN_VERSION: 034
+RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003
+START_HEAD: `e742b49`
 RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `4084291`
+LAST_VERIFIED_HEAD: `e742b49` + Run-close commit (see Git)
 STATUS: **COMPLETE + STOP** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/Google contact.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-Verify that all 9 of Dor's held-out decisions (HUMAN_APPROVED, Dor, 2026-10-09) are represented exactly, and remove the incorrect "ambiguity remaining" language: Dor's decisions are definitive; the only open state is a harness accounting convention (a linter emission neither expected nor forbidden is an UNLABELED_EMISSION). Replace the per-case `cause` vocabulary with HUMAN_DECIDED_LABEL_CHANGE / HUMAN_DECIDED_NO_LABEL_CHANGE / HUMAN_DECIDED_BUT_NO_METRIC_EFFECT / TRUE_REMAINING_AMBIGUITY (expected: none). Metrics are expected to be unchanged; recompute only to prove it.
+Apply Dor's final precision decisions: mark exactly three post-human emissions FORBIDDEN (HO-015 OPTION_ABSOLUTE_TERM, HO-063 OPTION_ABSOLUTE_TERM, HO-076 item 1 KEY_STEM_LEXICAL_OVERLAP) in the post-evaluation overlay so they count as FP in POST_HUMAN. Accounting only; no linter tuning.
 
 ## 2. Invariants
-No push/merge/rebase/tag/deploy/force; no hosted mutation; no migration/schema; no dependency change; no AI/Google. No edit to `question-lint.ts`, `text-normalize.ts`, thresholds, cue lists, normalization, set heuristics, the v0.1 dataset, the frozen held-out files (`corpus.json`, `labels.json`, `author-intent.json`, `freeze-hashes.json`), or UI/import wiring. FIRST_BLIND numbers and the first GENERATED block stay byte-identical. The overlay changes only if a decision is mis-represented. If a change is NOT a direct fix of a mis-stated decision (e.g. treating a human-declined expectation as a forbidden code, which would change POST_HUMAN FP/UNLABELED counts), it is not applied: it is surfaced as a human choice.
+No edit to `question-lint.ts`, `text-normalize.ts`, thresholds, cue lists, normalization, the v0.1 dataset, or the frozen held-out files. FIRST_BLIND and the first GENERATED block stay byte-identical. Only 9 of 78 rows are human-reviewed.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| F1 | Verify the 9 decisions vs overlay/labels; fix taxonomy in harness + test + generated block; prose fixes in held-out doc, Run 001 report, backlog as needed | REVIEW_GATE | DONE |
+| G1 | Overlay forbidden additions (+ per-item forbidden support), three-state generated block, tests, prose | REVIEW_GATE | DONE |
 | Z | Independent review, verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
+- ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003.md`
 - ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002.md`
 - ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001.md`
 - BROWSER-ISOLATION-STUDY-001: `docs/RUNS/2026-10-09-BROWSER-ISOLATION-STUDY-001.md`

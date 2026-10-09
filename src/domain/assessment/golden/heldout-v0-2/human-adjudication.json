@@ -92,13 +92,16 @@
         "semanticExpectation": "Item 8 stem gender error (מהי תפקיד) and option ids out of order; item 6 \"הקלטת חום\" and item 9 \"סלע קמיעי\" odd Hebrew; item 9 terminology uncertain.",
         "languageReviewRequired": true
       },
-      "patch": {},
-      "humanReasoning": "Set stays FLAWED with the existing set-level codes and languageReviewRequired true. Dor's decision is definitive: item-1 lexical/key leakage based only on natural stem overlap is rejected. No lexical-leakage code is expected at item 1 (itemCodes['1'] is KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE), so there is no label change. The linter's KEY_STEM_LEXICAL_OVERLAP emission at item 1 is a context-blind heuristic limit and is counted as UNLABELED_EMISSION by harness convention only (no per-item forbidden list exists in the SET label format).",
+      "patch": {
+        "addForbiddenItemCodes": {
+          "1": [
+            "KEY_STEM_LEXICAL_OVERLAP"
+          ]
+        }
+      },
+      "humanReasoning": "Set stays FLAWED with the existing set-level codes and languageReviewRequired true. Dor's decision is definitive: item-1 lexical/key leakage based only on natural stem overlap is rejected. No lexical-leakage code is expected at item 1 (itemCodes['1'] is KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE), so there is no expectation change. Final precision decision (Run HELDOUT-HUMAN-REVIEW-003): KEY_STEM_LEXICAL_OVERLAP at item 1 is FORBIDDEN (per-item forbidden list added by the overlay only; frozen labels untouched), so the linter's emission counts as FP in POST_HUMAN_FINAL.",
       "humanRule": "Lexical overlap with the stem is not leakage by itself; leakage requires an asymmetry or wording cue that helps identify the answer without mastering the content.",
-      "humanNotes": "The set contains genuine Hebrew-quality issues: 'מהי תפקיד הנשיא במדינת ישראל?' is grammatically unnatural (expected 'מהו תפקיד…') and 'הקלטת חום באטמוספרה' is wrong/unnatural wording ('לכידת חום…' would be natural). Corpus NOT edited.",
-      "touchedFindings": [
-        "HO-076/item1|KEY_STEM_LEXICAL_OVERLAP"
-      ]
+      "humanNotes": "The set contains genuine Hebrew-quality issues: 'מהי תפקיד הנשיא במדינת ישראל?' is grammatically unnatural (expected 'מהו תפקיד…') and 'הקלטת חום באטמוספרה' is wrong/unnatural wording ('לכידת חום…' would be natural). Corpus NOT edited."
     },
     {
       "caseId": "HO-017",
@@ -138,12 +141,13 @@
         "semanticExpectation": null,
         "languageReviewRequired": false
       },
-      "patch": {},
-      "humanReasoning": "'אין לו שום משמעות סטטיסטית' is natural Hebrew; 'שום' is not automatically an absolute-term defect. OPTION_ABSOLUTE_TERM is not added.",
-      "humanRule": "Hebrew words such as 'שום' need syntactic/semantic context.",
-      "touchedFindings": [
-        "HO-015|OPTION_ABSOLUTE_TERM"
-      ]
+      "patch": {
+        "addForbiddenCodes": [
+          "OPTION_ABSOLUTE_TERM"
+        ]
+      },
+      "humanReasoning": "'אין לו שום משמעות סטטיסטית' is natural Hebrew; 'שום' is not an absolute-term quality flaw. OPTION_ABSOLUTE_TERM is not added as an expected code. Final precision decision (Run HELDOUT-HUMAN-REVIEW-003): the emission is FORBIDDEN, so the linter's OPTION_ABSOLUTE_TERM emission counts as FP in POST_HUMAN_FINAL.",
+      "humanRule": "Hebrew words such as 'שום' need syntactic/semantic context."
     },
     {
       "caseId": "HO-063",
@@ -162,13 +166,13 @@
         "removeExpectedCodes": [
           "OPTION_ABSOLUTE_TERM"
         ],
-        "rationale": "Negative stem (human-approved). 'kol' is substantive content of the false proposition, not an absolute-term flaw."
+        "rationale": "Negative stem (human-approved). 'kol' is substantive content of the false proposition, not an absolute-term flaw.",
+        "addForbiddenCodes": [
+          "OPTION_ABSOLUTE_TERM"
+        ]
       },
-      "humanReasoning": "'איזו מהטענות הבאות איננה נכונה?' is genuine negative wording; 'כל הציפורים עפות' uses 'כל' as substantive content that makes the proposition false, integral to what is assessed. Dor's decision is definitive: remove the expectation. He did not additionally rule the code forbidden, and OPTION_ABSOLUTE_TERM is NOT added to forbiddenCodes, so the linter's context-blind emission is counted as an UNLABELED_EMISSION by harness accounting convention only (not human uncertainty).",
-      "humanRule": "'כל' is not automatically an absolute-term flaw when it is integral to the proposition.",
-      "touchedFindings": [
-        "HO-063|OPTION_ABSOLUTE_TERM"
-      ]
+      "humanReasoning": "'איזו מהטענות הבאות איננה נכונה?' is genuine negative wording (STEM_NEGATIVE_WORDING stays expected); 'כל הציפורים עפות' uses 'כל' as substantive content integral to the proposition being assessed, not an unintended answer cue. Dor's decisions: remove the OPTION_ABSOLUTE_TERM expectation (Run 001/002) and, as a final precision decision (Run HELDOUT-HUMAN-REVIEW-003), rule OPTION_ABSOLUTE_TERM FORBIDDEN, so the linter's emission counts as FP in POST_HUMAN_FINAL.",
+      "humanRule": "'כל' is not automatically an absolute-term flaw when it is integral to the proposition."
     },
     {
       "caseId": "HO-032",

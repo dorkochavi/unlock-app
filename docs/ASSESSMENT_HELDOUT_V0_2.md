@@ -305,7 +305,7 @@ One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_
 | FN | HO-055 | KEY_STEM_LEXICAL_OVERLAP | LIKELY_HEURISTIC_LIMIT | Key shares only 1 content token (stack) with the stem; the rule needs at least 2 |
 | FN | HO-057 | STEM_NO_QUESTION_FORM | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-057 | EXPLANATION_NAMES_ONLY_KEY | LIKELY_LABEL_QUESTION | Explanation repeats the stem term, not the key text; label code is a loose fit; NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
-| FN | HO-063 | STEM_NEGATIVE_WORDING | LIKELY_HEURISTIC_LIMIT | Hebrew negation cue list has no form of 'איננה' (only אינה/אינו/...); author intent also calls the item suspicious-but-fine **Post-human:** Dor decided definitively (HUMAN_DECIDED_LABEL_CHANGE): the item's OPTION_ABSOLUTE_TERM expectation was removed ('כל' is integral to the proposition) and STEM_NEGATIVE_WORDING is kept. The linter's OPTION_ABSOLUTE_TERM emission is a context-blind heuristic limit (evidence for FUB-066), left UNLABELED only by harness convention (a removed expectation was not a forbid), not human ambiguity. |
+| FN | HO-063 | STEM_NEGATIVE_WORDING | LIKELY_HEURISTIC_LIMIT | Hebrew negation cue list has no form of 'איננה' (only אינה/אינו/...); author intent also calls the item suspicious-but-fine **Post-human:** Dor decided definitively (HUMAN_DECIDED_LABEL_CHANGE): the item's OPTION_ABSOLUTE_TERM expectation was removed ('כל' is integral to the proposition) and STEM_NEGATIVE_WORDING is kept. The linter's OPTION_ABSOLUTE_TERM emission is a context-blind heuristic limit ruled FORBIDDEN in Run 003, so it counts as FP in POST_HUMAN_FINAL (evidence for FUB-066). |
 | FN | HO-064 | OPTION_COMBINATION_REFERENCE | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists); combination option referencing other options |
 | FN | HO-067 | OPTION_PUNCTUATION_INCONSISTENT | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-068 | OPTION_STYLE_OUTLIER | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
@@ -335,7 +335,7 @@ One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_
 | FP | HO-011 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'כל' in 'כל הכוח' is a quantifier inside a descriptive key, not an absolute claim; term list is context-blind |
 | FP | HO-012 | OPTION_OVERLAP_HIGH | LIKELY_HEURISTIC_LIMIT | O(log n) vs O(n log n) have identical token sets (similarity 1.0); set-based Jaccard ignores order and symbols |
 | FP | HO-073 | SET_KEY_LENGTH_BIAS | LIKELY_LABEL_QUESTION | Keys are strictly longest in 5 of 10 items, exactly at the 0.5 threshold; the labeler forbade the code, the observed data arguably supports it **Post-human:** forbidden-code label approved; this stays a human-approved FP (5 of 10 at exactly 0.5 is not enough evidence; sample-size caveat). |
-| UNL | HO-015 | OPTION_ABSOLUTE_TERM | LIKELY_LABEL_QUESTION | Distractor d contains 'שום' (no significance at all), a real absolute cue the labeler did not list; author intent says clean **Post-human:** Dor decided definitively (HUMAN_DECIDED_NO_LABEL_CHANGE): 'שום' is natural Hebrew here and no absolute-term expectation is added. The first-blind LIKELY_LABEL_QUESTION is resolved in favor of the existing label. The emission is a context-blind heuristic limit (evidence for FUB-066), left UNLABELED only by harness convention (a declined expectation was not a forbid), not human ambiguity. |
+| UNL | HO-015 | OPTION_ABSOLUTE_TERM | LIKELY_LABEL_QUESTION | Distractor d contains 'שום' (no significance at all), a real absolute cue the labeler did not list; author intent says clean **Post-human:** Dor decided definitively (HUMAN_DECIDED_NO_LABEL_CHANGE): 'שום' is natural Hebrew here and no absolute-term expectation is added. The first-blind LIKELY_LABEL_QUESTION is resolved in favor of the existing label. The emission is a context-blind heuristic limit (evidence for FUB-066), ruled FORBIDDEN in Run 003, so it counts as FP in POST_HUMAN_FINAL. |
 | UNL | HO-020 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 2-word complete stem; concise-stem over-flag (same pattern as HO-001) |
 | UNL | HO-023 | OPTION_LENGTH_IMBALANCE | LIKELY_LABEL_QUESTION | Options 38 vs 13 chars (ratio 3.08) is a true length imbalance the labeler did not list |
 | UNL | HO-027 | OPTION_ABSOLUTE_TERM | LIKELY_HEURISTIC_LIMIT | 'only' in 'only in trace amounts' qualifies a quantity, not an absolute claim; context-blind term list |
@@ -350,7 +350,7 @@ One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_
 | UNL | HO-072/item3 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
 | UNL | HO-073/item8 | STEM_NEGATIVE_WORDING | LIKELY_HEURISTIC_LIMIT | 'ולא' in 'ולא לתרכובת' is a contrastive 'and not', not a negated question; the cue matcher cannot tell |
 | UNL | HO-075 | NEAR_DUPLICATE_STEM | NEEDS_MORE_DATA | Items 7 and 8 score exactly 0.80 (= threshold) because of the shared template; a single borderline instance |
-| UNL | HO-076/item1 | KEY_STEM_LEXICAL_OVERLAP | LIKELY_LABEL_QUESTION | Key (93 chars) restates 2 stem tokens, distractors 0; real leakage the labeler did not list (set flagged languageReviewRequired) **Post-human:** Dor decided definitively (HUMAN_DECIDED_NO_LABEL_CHANGE): item-1 lexical/key leakage based only on natural stem overlap is rejected, so the existing label stands. The first-blind LIKELY_LABEL_QUESTION is resolved in favor of the existing label. The emission is a context-blind heuristic limit (evidence for FUB-066), left UNLABELED only by harness convention (the SET label format has no per-item forbidden list), not human ambiguity. |
+| UNL | HO-076/item1 | KEY_STEM_LEXICAL_OVERLAP | LIKELY_LABEL_QUESTION | Key (93 chars) restates 2 stem tokens, distractors 0; real leakage the labeler did not list (set flagged languageReviewRequired) **Post-human:** Dor decided definitively (HUMAN_DECIDED_NO_LABEL_CHANGE): item-1 lexical/key leakage based only on natural stem overlap is rejected, so the existing label stands. The first-blind LIKELY_LABEL_QUESTION is resolved in favor of the existing label. The emission is a context-blind heuristic limit (evidence for FUB-066), ruled FORBIDDEN in Run 003 (per-item forbidden code added by the overlay), so it counts as FP in POST_HUMAN_FINAL. |
 | UNL | HO-076/item4 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
 | UNL | HO-076/item6 | STEM_TOO_SHORT | LIKELY_HEURISTIC_LIMIT | 3-word complete stem; concise-stem over-flag |
 | UNL | HO-076/item9 | KEY_STEM_LEXICAL_OVERLAP | LIKELY_LABEL_QUESTION | Key restates 3 stem tokens vs 1 in a distractor; real leakage the labeler did not list |
@@ -495,21 +495,21 @@ Blindness caveat: these 9 rows were adjudicated after the evaluation, so held-ou
 
 These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The FIRST_BLIND column is the original blind result. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.
 
-| Measure | FIRST_BLIND | POST_HUMAN | DELTA |
-|---|---|---|---|
-| CLEAN cases | 20 | 20 | 0 |
-| FLAWED cases | 58 | 58 | 0 |
-| SEMANTIC-ONLY cases | 12 | 12 | 0 |
-| Expected deterministic detections | 124 | 122 | -2 |
-| TP | 80 | 78 | -2 |
-| FN (total) | 44 | 44 | 0 |
-| FN HEURISTIC_GAP | 8 | 8 | 0 |
-| FN NOT_IMPLEMENTED | 36 | 36 | 0 |
-| FP | 4 | 5 | +1 |
-| CLEAN cases with a WARNING/ERROR | 3 of 20 | 4 of 20 | +1 |
-| UNLABELED_EMISSION | 22 | 23 | +1 |
-| SET-scope codes (expected / TP / FN / FP) | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 0 / 0 / 0 / 0 |
-| ITEM codes inside SET cases (expected / TP / FN / FP) | 46 / 27 / 19 / 0 | 46 / 27 / 19 / 0 | 0 / 0 / 0 / 0 |
+| Measure | FIRST_BLIND | POST_HUMAN_BEFORE_FINAL_FORBIDDEN | POST_HUMAN_FINAL | DELTA (FINAL - FIRST_BLIND) |
+|---|---|---|---|---|
+| CLEAN cases | 20 | 20 | 20 | 0 |
+| FLAWED cases | 58 | 58 | 58 | 0 |
+| SEMANTIC-ONLY cases | 12 | 12 | 12 | 0 |
+| Expected deterministic detections | 124 | 122 | 122 | -2 |
+| TP | 80 | 78 | 78 | -2 |
+| FN (total) | 44 | 44 | 44 | 0 |
+| FN HEURISTIC_GAP | 8 | 8 | 8 | 0 |
+| FN NOT_IMPLEMENTED | 36 | 36 | 36 | 0 |
+| FP | 4 | 5 | 8 | +4 |
+| CLEAN cases with a WARNING/ERROR | 3 of 20 | 4 of 20 | 4 of 20 | +1 |
+| UNLABELED_EMISSION | 22 | 23 | 20 | -2 |
+| SET-scope codes (expected / TP / FN / FP) | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 17 / 15 / 2 / 1 | 0 / 0 / 0 / 0 |
+| ITEM codes inside SET cases (expected / TP / FN / FP) | 46 / 27 / 19 / 0 | 46 / 27 / 19 / 0 | 46 / 27 / 19 / 1 | 0 / 0 / 0 / +1 |
 
 ### The 9 reviewed cases (generated)
 
@@ -519,10 +519,10 @@ Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TR
 |---|---|---|---|---|---|---|---|---|
 | HO-049 | APPROVED | 0/2/0/0 | 0/2/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 | HO-070 | APPROVED | 0/1/0/0 | 0/1/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
-| HO-076 | APPROVED_PARTIAL | 21/0/0/4 | 21/0/0/4 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | HO-076/item1 KEY_STEM_LEXICAL_OVERLAP |
+| HO-076 | APPROVED_PARTIAL | 21/0/0/4 | 21/0/1/3 | UNL HO-076/item1 KEY_STEM_LEXICAL_OVERLAP | FP HO-076/item1 KEY_STEM_LEXICAL_OVERLAP | HUMAN_DECIDED_NO_LABEL_CHANGE | METRIC_EFFECT | - |
 | HO-017 | CHANGED | 1/1/0/0 | 0/0/1/0 | FN HO-017 OPTION_PREFIX_STEM_REPEAT | FP HO-017 OPTION_ABSOLUTE_TERM | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
-| HO-015 | APPROVED | 1/0/0/1 | 1/0/0/1 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | HO-015 OPTION_ABSOLUTE_TERM |
-| HO-063 | CHANGED | 1/1/0/0 | 0/1/0/1 | - | UNL HO-063 OPTION_ABSOLUTE_TERM | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | HO-063 OPTION_ABSOLUTE_TERM |
+| HO-015 | APPROVED | 1/0/0/1 | 1/0/1/0 | UNL HO-015 OPTION_ABSOLUTE_TERM | FP HO-015 OPTION_ABSOLUTE_TERM | HUMAN_DECIDED_NO_LABEL_CHANGE | METRIC_EFFECT | - |
+| HO-063 | CHANGED | 1/1/0/0 | 0/1/1/0 | - | FP HO-063 OPTION_ABSOLUTE_TERM | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
 | HO-032 | APPROVED | 0/0/0/0 | 0/0/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 | HO-069 | CHANGED | 0/0/0/0 | 0/1/0/0 | - | FN HO-069 OPTION_NUMERIC_UNORDERED | HUMAN_DECIDED_LABEL_CHANGE | METRIC_EFFECT | - |
 | HO-073 | APPROVED | 1/1/1/1 | 1/1/1/1 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
@@ -532,11 +532,11 @@ Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TR
 
 The generated POST_HUMAN block above is authoritative for numbers; this section explains causes only. Of the 9 reviewed rows:
 
-- **HUMAN_DECIDED_LABEL_CHANGE with metric effect (HO-017, HO-063, HO-069):** HO-017 became CLEAN, so the OPTION_ABSOLUTE_TERM detection that was a TP is now a CLEAN-case FP (+1 FP, +1 CLEAN-case-with-warning, TP -1) and the NOT_IMPLEMENTED OPTION_PREFIX_STEM_REPEAT FN disappeared with its expectation. HO-063 lost its OPTION_ABSOLUTE_TERM expectation (TP -1), and the still-emitted code is now an UNLABELED_EMISSION (+1). HO-069 became FLAWED with OPTION_NUMERIC_UNORDERED, which adds one NOT_IMPLEMENTED FN. The two NOT_IMPLEMENTED changes cancel, so total FN stays 44 (8 heuristic + 36 NOT_IMPLEMENTED) while expected detections fall 124 to 122 and TP 80 to 78.
-- **HUMAN_DECIDED_NO_LABEL_CHANGE with HUMAN_DECIDED_BUT_NO_METRIC_EFFECT (HO-049, HO-070, HO-076, HO-015, HO-032, HO-073):** Dor's decisions confirmed the existing labels, so no finding or count moved. HO-073's SET_KEY_LENGTH_BIAS stays a forbidden-code FP, now human-approved. HO-076 keeps its set-level codes and languageReviewRequired; item-1 leakage based only on natural stem overlap is rejected.
+- **HUMAN_DECIDED_LABEL_CHANGE with metric effect (HO-017, HO-063, HO-069):** HO-017 became CLEAN, so the OPTION_ABSOLUTE_TERM detection that was a TP is now a CLEAN-case FP (+1 FP, +1 CLEAN-case-with-warning, TP -1) and the NOT_IMPLEMENTED OPTION_PREFIX_STEM_REPEAT FN disappeared with its expectation. HO-063 lost its OPTION_ABSOLUTE_TERM expectation (TP -1); the still-emitted code was an UNLABELED_EMISSION in POST_HUMAN_BEFORE_FINAL_FORBIDDEN and became an FP only with the final forbidden decision (Run 003, below). HO-069 became FLAWED with OPTION_NUMERIC_UNORDERED, which adds one NOT_IMPLEMENTED FN. The two NOT_IMPLEMENTED changes cancel, so total FN stays 44 (8 heuristic + 36 NOT_IMPLEMENTED) while expected detections fall 124 to 122 and TP 80 to 78.
+- **HUMAN_DECIDED_NO_LABEL_CHANGE with HUMAN_DECIDED_BUT_NO_METRIC_EFFECT (HO-049, HO-070, HO-032, HO-073):** Dor's decisions confirmed the existing labels, so no finding or count moved. HO-073's SET_KEY_LENGTH_BIAS stays a forbidden-code FP, now human-approved. 
 - **TRUE_REMAINING_AMBIGUITY: none (0).** All 9 decisions are definitive.
 
-**Accounting convention, not human ambiguity.** Three linter emissions remain UNLABELED_EMISSION after adjudication: HO-015 OPTION_ABSOLUTE_TERM, HO-063 OPTION_ABSOLUTE_TERM and HO-076 item-1 KEY_STEM_LEXICAL_OVERLAP. Dor's definitive rules say these are not defects ('שום' and an integral 'כל' need context; natural stem overlap is not leakage). The harness counts an emission as FP only for an explicitly forbidden code or a warning on a CLEAN case; a declined or removed expectation that was not explicitly forbidden is counted as UNLABELED_EMISSION. POST_HUMAN FP (5) and UNLABELED (23) would therefore change only if Dor additionally ruled these three codes forbidden for those cases. That would be a separate human choice and is NOT applied; for the HO-076 item-1 case the SET label format has no per-item forbidden list, so it would also need a harness extension. The linter output is unchanged.
+**Final forbidden decisions (Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003`).** Dor's final precision decisions rule exactly three linter emissions FORBIDDEN (real false positives, not flaws): HO-015 OPTION_ABSOLUTE_TERM ('שום' is natural Hebrew), HO-063 OPTION_ABSOLUTE_TERM ('כל' is integral to the assessed proposition; STEM_NEGATIVE_WORDING stays expected) and HO-076 item-1 KEY_STEM_LEXICAL_OVERLAP (natural stem repetition is not leakage without asymmetry or a cue). The overlay adds them as forbidden codes (`addForbiddenCodes`; for the SET case a per-item `addForbiddenItemCodes`, overlay-only; the frozen labels are untouched), so they move from UNLABELED_EMISSION to FP. Three states are reported: FIRST_BLIND (FP 4, UNLABELED 22), POST_HUMAN_BEFORE_FINAL_FORBIDDEN (FP 5, UNLABELED 23) and POST_HUMAN_FINAL (FP 8, UNLABELED 20; ITEM-in-SET FP 0 to 1). No linter, threshold, cue list, corpus or earlier human decision changed; the linter output is identical. HO-015 and HO-076 keep NO_LABEL_CHANGE (expectations unchanged; forbidden additions are precision flags shown as METRIC_EFFECT). Still only 9 of 78 rows are human-reviewed.
 - SET-scope counts (17 / 15 / 2 / 1) did not change.
 
 Reading the movement honestly: FP went up (4 to 5) because a human judged a model-flagged item CLEAN. That is a precision signal about the linter against a better label, not noise. The linter output for that case is byte-identical before and after; only the label changed, so this is not a linter regression. Expected detections fell only because expectations were removed. Neither movement is a tuning result and neither is first-blind.
@@ -545,7 +545,7 @@ Reading the movement honestly: FP went up (4 to 5) because a human judged a mode
 
 These are human judgments about what counts as a quality defect. They are NOT linter changes: no rule, threshold or test expectation was changed to implement them (only the post-evaluation overlay records the label effects). They are evidence and design input for FUB-066 (context-blind clusters), FUB-067 (set eligibility and significance) and AE-029 check design. Single reviewer; not inter-annotator agreed.
 
-1. **Lexical overlap with the stem is not leakage by itself.** Leakage needs an asymmetry or a wording cue that helps identify the answer without mastering the content (HO-076). Caution for KEY_STEM_LEXICAL_OVERLAP; the item-1 emission is a context-blind heuristic limit (evidence for FUB-066), left UNLABELED only by harness convention.
+1. **Lexical overlap with the stem is not leakage by itself.** Leakage needs an asymmetry or a wording cue that helps identify the answer without mastering the content (HO-076). Caution for KEY_STEM_LEXICAL_OVERLAP; the item-1 emission is a context-blind heuristic limit (evidence for FUB-066), ruled FORBIDDEN in Run 003 (FP in POST_HUMAN_FINAL).
 2. **An absolute term is not a flaw merely because it exists.** Symmetric use across all options is not an answer cue (HO-017). Evidence for FUB-066.
 3. **Hebrew 'שום' and 'כל' need syntactic and semantic context.** 'כל' integral to the proposition under assessment is not an absolute-term flaw (HO-063); 'שום' in natural phrasing is not automatically a flaw (HO-015). Evidence for FUB-066.
 4. **A completion/cloze stem ending in ':' is an acceptable question form** (HO-032); a future STEM_NO_QUESTION_FORM check must not require '?'.
@@ -561,12 +561,12 @@ Numeric-ordering concept (approves the concept, not every existing OPTION_NUMERI
 Deciding reasons:
 
 1. **Provenance is still essentially model-only.** 9 of 78 labels are human-approved (11.5 percent), by one reviewer. The corpus is model-authored synthetic content; there are no real or instructor-cleared items and no inter-annotator agreement. Exit criterion 2 stays FAIL / OPEN.
-2. **Precision on never-tuned data is still not clean, and the better labels made it slightly worse.** POST_HUMAN: 5 FP and 4 of 20 CLEAN cases warned (FIRST_BLIND: 4 FP, 3 of 20); 23 unlabeled emissions. Dor's rules 1-4 confirm that absolute-term and short-stem behaviour is context-blind, which is a design gap, not yet a fix.
+2. **Precision on never-tuned data is still not clean, and the better labels made it slightly worse.** POST_HUMAN_FINAL: 8 FP and 4 of 20 CLEAN cases warned (FIRST_BLIND: 4 FP, 3 of 20; before the final forbidden decisions: 5 FP); 20 unlabeled emissions. Dor's rules 1-4 confirm that absolute-term and short-stem behaviour is context-blind, which is a design gap, not yet a fix.
 3. **Large blind spots and open design gates are untouched.** 36 NOT_IMPLEMENTED FN remain (plus 8 heuristic gaps); 12 cases are semantic-only and 29 carry a semantic expectation, so a clean lint says little; position-rule significance (exit 3) has a human principle (HO-073, sample size) but no rule, evidence set or threshold; the import-validator naming reconciliation (DUPLICATE_PROMPT, exit 5) and the advisory-only surface design (exit 4) are not addressed by data.
 
 | Criterion | Status after human review |
 |---|---|
-| False-positive behaviour | WATCH (5 FP, 4/20 CLEAN warned post-human; 4 FP and 3/20 first-blind) |
+| False-positive behaviour | WATCH (8 FP, 4/20 CLEAN warned post-human final; 4 FP and 3/20 first-blind) |
 | FN behaviour | WATCH (44 FN: 36 NOT_IMPLEMENTED, 8 heuristic; total unchanged) |
 | Label provenance (exit 2) | FAIL / OPEN (9/78 human, one reviewer; narrowed slightly, not met) |
 | Hebrew label validity | v0.2 PARTLY (9 rows human-reviewed; HO-076 Hebrew corpus defects recorded, not corrected) |
@@ -577,7 +577,7 @@ Deciding reasons:
 | Advisory-only design (exit 4) | OPEN |
 
 **What human review improved:** label quality of 9 rows (3 relabeled, 5 confirmed, 1 partial), three context-sensitivity rules (absolute terms, lexical overlap, completion stems), the style-outlier-vs-leakage distinction, the set-level sample-size principle and the numeric-ordering concept.
-**What it did NOT solve:** model-authored corpus provenance (69 rows still model-labeled), absence of real or cleared items, unimplemented checks, semantic-only cases, position-rule significance, advisory integration design, import-validator reconciliation, the HO-076 Hebrew text defects (corpus not corrected), and the context-blind HO-015, HO-063 and HO-076 item-1 emissions (Dor's decisions are definitive; they remain UNLABELED only by harness convention and are evidence for FUB-066).
+**What it did NOT solve:** model-authored corpus provenance (69 rows still model-labeled), absence of real or cleared items, unimplemented checks, semantic-only cases, position-rule significance, advisory integration design, import-validator reconciliation, the HO-076 Hebrew text defects (corpus not corrected), and the context-blind HO-015, HO-063 and HO-076 item-1 emissions (Dor's decisions are definitive; they are now human-ruled FP in POST_HUMAN_FINAL and evidence for FUB-066).
 
 ## 18. FUB-064 verdict, reassessed post-human: OPTION_COMBINATION_REFERENCE
 

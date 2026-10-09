@@ -54,6 +54,8 @@ export interface HeldOutLabel {
   expectedSetCodes?: string[];
   forbiddenSetCodes?: string[];
   itemCodes?: Record<string, string[]>;
+  /** Per-item forbidden codes inside a SET case (key = 1-based item number). Absent in the frozen labels; only a post-human overlay adds it. */
+  forbiddenItemCodes?: Record<string, string[]>;
   semanticExpectation: string | null;
   rationale: string;
   confidence: string;
@@ -287,7 +289,7 @@ export function runHeldOutEvaluation(corpus: HeldOutCorpus, labels: HeldOutLabel
         if (emitted.size > 0) itemEmission = true;
         const r = compare({
           caseId: c.caseId, ref: `${c.caseId}/item${num}`, level: "ITEM_IN_SET", clean, emitted,
-          expected: labeledIdx[String(num)] ?? [], forbidden: [], implemented: implItem,
+          expected: labeledIdx[String(num)] ?? [], forbidden: lab.forbiddenItemCodes?.[String(num)] ?? [], implemented: implItem,
         });
         ic.expected += r.expected; ic.tp += r.tp; ic.fn += r.fn; ic.fp += r.fp; ic.unlabeled += r.unlabeled;
       });
@@ -480,6 +482,10 @@ export interface HumanDecision {
     label?: "CLEAN" | "FLAWED";
     removeExpectedCodes?: string[];
     addExpectedCodes?: string[];
+    /** Final precision decision: the human ruled the emission a real false positive (not a flaw). ITEM labels only. */
+    addForbiddenCodes?: string[];
+    /** Same, for items inside a SET case (key = 1-based item number). SET labels only. */
+    addForbiddenItemCodes?: Record<string, string[]>;
     rationale?: string;
   };
   humanReasoning: string;
@@ -503,6 +509,16 @@ export interface HumanAdjudicationOverlay {
 }
 export interface ProvenancedLabels extends HeldOutLabels {
   provenanceById: Record<string, string>;
+}
+
+/** Restores the frozen forbidden fields on a copy, so forbidden-only additions do not count as a label change. */
+function withoutForbidAdditions(next: HeldOutLabel, frozen: HeldOutLabel): HeldOutLabel {
+  const out: HeldOutLabel = JSON.parse(JSON.stringify(next)) as HeldOutLabel;
+  if (frozen.forbiddenCodes === undefined) delete out.forbiddenCodes;
+  else out.forbiddenCodes = frozen.forbiddenCodes;
+  if (frozen.forbiddenItemCodes === undefined) delete out.forbiddenItemCodes;
+  else out.forbiddenItemCodes = frozen.forbiddenItemCodes;
+  return out;
 }
 
 /** Pure. Applies the overlay on top of the frozen labels (inputs are not mutated). Throws on any invalid overlay. */
@@ -536,9 +552,31 @@ export function applyHumanAdjudication(labels: HeldOutLabels, overlay: HumanAdju
       if (next.scope !== "ITEM") throw new Error(`${where}: code patches apply to ITEM labels only`);
       next.expectedCodes = after;
     }
+    const addForbidden = d.patch.addForbiddenCodes ?? [];
+    if (addForbidden.length > 0) {
+      if (next.scope !== "ITEM") throw new Error(`${where}: addForbiddenCodes applies to ITEM labels only`);
+      for (const code of addForbidden) {
+        if ((next.expectedCodes ?? []).includes(code)) throw new Error(`${where}: cannot forbid expected code ${code}`);
+      }
+      next.forbiddenCodes = Array.from(new Set([...(next.forbiddenCodes ?? []), ...addForbidden]));
+    }
+    const addForbiddenItems = d.patch.addForbiddenItemCodes ?? {};
+    if (Object.keys(addForbiddenItems).length > 0) {
+      if (next.scope !== "SET") throw new Error(`${where}: addForbiddenItemCodes applies to SET labels only`);
+      const merged: Record<string, string[]> = { ...(next.forbiddenItemCodes ?? {}) };
+      for (const [idx, codes] of Object.entries(addForbiddenItems)) {
+        if (!Object.prototype.hasOwnProperty.call(next.itemCodes ?? {}, idx)) throw new Error(`${where}: forbidden item index ${idx} is not a labeled item`);
+        for (const code of codes) {
+          if ((next.itemCodes?.[idx] ?? []).includes(code)) throw new Error(`${where}: cannot forbid expected code ${code} at item ${idx}`);
+        }
+        merged[idx] = Array.from(new Set([...(merged[idx] ?? []), ...codes]));
+      }
+      next.forbiddenItemCodes = merged;
+    }
     if (d.patch.label !== undefined) next.label = d.patch.label;
     if (d.patch.rationale !== undefined) next.rationale = d.patch.rationale;
-    const changed = JSON.stringify(next) !== JSON.stringify(frozen);
+    // Forbidden-only additions are precision flags, not label changes: the human decision itself is unchanged.
+    const changed = JSON.stringify(withoutForbidAdditions(next, frozen)) !== JSON.stringify(frozen);
     if (d.decision === "CHANGED" && !changed) throw new Error(`${where}: CHANGED decision changes nothing`);
     if (d.decision !== "CHANGED" && changed) throw new Error(`${where}: ${d.decision} decision must not change the label`);
     if (next.label === "CLEAN") {
@@ -572,7 +610,7 @@ export interface PostHumanCaseRow {
   /** Findings (`KIND ref code`) present only in FIRST_BLIND / only in POST_HUMAN. */
   removed: string[];
   added: string[];
-  /** Did the applied human decision actually change the label (label / expected / forbidden codes)? Derived from before/after labels. */
+  /** Did the applied human decision change the label or its expected codes? Forbidden-code (precision) additions are excluded; they show up as METRIC_EFFECT. */
   labelEffect: "HUMAN_DECIDED_LABEL_CHANGE" | "HUMAN_DECIDED_NO_LABEL_CHANGE";
   /** Does any FN/FP/UNL finding, or any TP/FN/FP/UNL count, differ between FIRST_BLIND and POST_HUMAN for this case? */
   metricEffect: "METRIC_EFFECT" | "HUMAN_DECIDED_BUT_NO_METRIC_EFFECT";
@@ -586,6 +624,8 @@ export interface PostHumanCaseRow {
 export interface PostHumanComparison {
   firstBlind: HeldOutReport;
   postHuman: HeldOutReport;
+  /** POST_HUMAN with the final precision (forbidden) additions withheld: the state before Run HELDOUT-HUMAN-REVIEW-003. */
+  postHumanBeforeFinalForbidden: HeldOutReport;
   /** post - first for every numeric metric. */
   delta: {
     caseCounts: HeldOutReport["caseCounts"];
@@ -631,6 +671,11 @@ export function compareFirstBlindAndPostHuman(
   const post = applyHumanAdjudication(labels, overlay);
   const firstBlind = runHeldOutEvaluation(corpus, labels);
   const postHuman = runHeldOutEvaluation(corpus, post);
+  const withoutFinalForbidden: HumanAdjudicationOverlay = {
+    ...overlay,
+    decisions: overlay.decisions.map((d) => ({ ...d, patch: { ...d.patch, addForbiddenCodes: undefined, addForbiddenItemCodes: undefined } })),
+  };
+  const postHumanBeforeFinalForbidden = runHeldOutEvaluation(corpus, applyHumanAdjudication(labels, withoutFinalForbidden));
   const counts = (r: HeldOutReport): CaseCounts => ({
     tp: r.totals.truePositive, fn: r.totals.falseNegative, fp: r.totals.falsePositive, unlabeled: r.totals.unlabeledEmissions,
   });
@@ -648,7 +693,9 @@ export function compareFirstBlindAndPostHuman(
     const before = labels.labels.find((l) => l.caseId === d.caseId);
     const after = post.labels.find((l) => l.caseId === d.caseId);
     const labelEffect: PostHumanCaseRow["labelEffect"] =
-      JSON.stringify(before) !== JSON.stringify(after) ? "HUMAN_DECIDED_LABEL_CHANGE" : "HUMAN_DECIDED_NO_LABEL_CHANGE";
+      before && after && JSON.stringify(withoutForbidAdditions(after, before)) !== JSON.stringify(before)
+        ? "HUMAN_DECIDED_LABEL_CHANGE"
+        : "HUMAN_DECIDED_NO_LABEL_CHANGE";
     const first = counts(a);
     const postCounts = counts(b);
     const metricChanged =
@@ -659,6 +706,7 @@ export function compareFirstBlindAndPostHuman(
   return {
     firstBlind,
     postHuman,
+    postHumanBeforeFinalForbidden,
     delta: {
       caseCounts: diffNumbers(postHuman.caseCounts, firstBlind.caseCounts),
       totals: diffNumbers(postHuman.totals, firstBlind.totals),
@@ -673,6 +721,7 @@ export function compareFirstBlindAndPostHuman(
 export function formatPostHumanMarkdown(c: PostHumanComparison): string {
   const a = c.firstBlind;
   const b = c.postHuman;
+  const m = c.postHumanBeforeFinalForbidden;
   const d = c.delta;
   const sgn = (n: number): string => (n > 0 ? `+${n}` : String(n));
   const lines: string[] = [];
@@ -683,32 +732,32 @@ export function formatPostHumanMarkdown(c: PostHumanComparison): string {
     "These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The FIRST_BLIND column is the original blind result. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.",
   );
   lines.push("");
-  lines.push("| Measure | FIRST_BLIND | POST_HUMAN | DELTA |");
-  lines.push("|---|---|---|---|");
-  const row = (name: string, x: number, y: number, dd: number): void => {
-    lines.push(`| ${name} | ${x} | ${y} | ${sgn(dd)} |`);
+  lines.push("| Measure | FIRST_BLIND | POST_HUMAN_BEFORE_FINAL_FORBIDDEN | POST_HUMAN_FINAL | DELTA (FINAL - FIRST_BLIND) |");
+  lines.push("|---|---|---|---|---|");
+  const row = (name: string, x: number, y: number, dd: number, mid: number): void => {
+    lines.push(`| ${name} | ${x} | ${mid} | ${y} | ${sgn(dd)} |`);
   };
-  row("CLEAN cases", a.caseCounts.clean, b.caseCounts.clean, d.caseCounts.clean);
-  row("FLAWED cases", a.caseCounts.flawed, b.caseCounts.flawed, d.caseCounts.flawed);
-  row("SEMANTIC-ONLY cases", a.caseCounts.semanticOnly, b.caseCounts.semanticOnly, d.caseCounts.semanticOnly);
-  row("Expected deterministic detections", a.totals.expectedDetections, b.totals.expectedDetections, d.totals.expectedDetections);
-  row("TP", a.totals.truePositive, b.totals.truePositive, d.totals.truePositive);
-  row("FN (total)", a.totals.falseNegative, b.totals.falseNegative, d.totals.falseNegative);
-  row("FN HEURISTIC_GAP", a.totals.falseNegativeHeuristicGap, b.totals.falseNegativeHeuristicGap, d.totals.falseNegativeHeuristicGap);
-  row("FN NOT_IMPLEMENTED", a.totals.falseNegativeNotImplemented, b.totals.falseNegativeNotImplemented, d.totals.falseNegativeNotImplemented);
-  row("FP", a.totals.falsePositive, b.totals.falsePositive, d.totals.falsePositive);
+  row("CLEAN cases", a.caseCounts.clean, b.caseCounts.clean, d.caseCounts.clean, m.caseCounts.clean);
+  row("FLAWED cases", a.caseCounts.flawed, b.caseCounts.flawed, d.caseCounts.flawed, m.caseCounts.flawed);
+  row("SEMANTIC-ONLY cases", a.caseCounts.semanticOnly, b.caseCounts.semanticOnly, d.caseCounts.semanticOnly, m.caseCounts.semanticOnly);
+  row("Expected deterministic detections", a.totals.expectedDetections, b.totals.expectedDetections, d.totals.expectedDetections, m.totals.expectedDetections);
+  row("TP", a.totals.truePositive, b.totals.truePositive, d.totals.truePositive, m.totals.truePositive);
+  row("FN (total)", a.totals.falseNegative, b.totals.falseNegative, d.totals.falseNegative, m.totals.falseNegative);
+  row("FN HEURISTIC_GAP", a.totals.falseNegativeHeuristicGap, b.totals.falseNegativeHeuristicGap, d.totals.falseNegativeHeuristicGap, m.totals.falseNegativeHeuristicGap);
+  row("FN NOT_IMPLEMENTED", a.totals.falseNegativeNotImplemented, b.totals.falseNegativeNotImplemented, d.totals.falseNegativeNotImplemented, m.totals.falseNegativeNotImplemented);
+  row("FP", a.totals.falsePositive, b.totals.falsePositive, d.totals.falsePositive, m.totals.falsePositive);
   lines.push(
-    `| CLEAN cases with a WARNING/ERROR | ${a.totals.cleanCasesWithWarningOrError} of ${a.totals.cleanCases} | ${b.totals.cleanCasesWithWarningOrError} of ${b.totals.cleanCases} | ${sgn(d.totals.cleanCasesWithWarningOrError)} |`,
+    `| CLEAN cases with a WARNING/ERROR | ${a.totals.cleanCasesWithWarningOrError} of ${a.totals.cleanCases} | ${m.totals.cleanCasesWithWarningOrError} of ${m.totals.cleanCases} | ${b.totals.cleanCasesWithWarningOrError} of ${b.totals.cleanCases} | ${sgn(d.totals.cleanCasesWithWarningOrError)} |`,
   );
-  row("UNLABELED_EMISSION", a.totals.unlabeledEmissions, b.totals.unlabeledEmissions, d.totals.unlabeledEmissions);
+  row("UNLABELED_EMISSION", a.totals.unlabeledEmissions, b.totals.unlabeledEmissions, d.totals.unlabeledEmissions, m.totals.unlabeledEmissions);
   type Lvl = { expected: number; tp: number; fn: number; fp: number };
-  const lvl = (name: string, x: Lvl, y: Lvl, dd: Lvl): void => {
+  const lvl = (name: string, x: Lvl, y: Lvl, dd: Lvl, mid: Lvl): void => {
     lines.push(
-      `| ${name} (expected / TP / FN / FP) | ${x.expected} / ${x.tp} / ${x.fn} / ${x.fp} | ${y.expected} / ${y.tp} / ${y.fn} / ${y.fp} | ${sgn(dd.expected)} / ${sgn(dd.tp)} / ${sgn(dd.fn)} / ${sgn(dd.fp)} |`,
+      `| ${name} (expected / TP / FN / FP) | ${x.expected} / ${x.tp} / ${x.fn} / ${x.fp} | ${mid.expected} / ${mid.tp} / ${mid.fn} / ${mid.fp} | ${y.expected} / ${y.tp} / ${y.fn} / ${y.fp} | ${sgn(dd.expected)} / ${sgn(dd.tp)} / ${sgn(dd.fn)} / ${sgn(dd.fp)} |`,
     );
   };
-  lvl("SET-scope codes", a.setLevel.setScope, b.setLevel.setScope, d.setLevel.setScope);
-  lvl("ITEM codes inside SET cases", a.setLevel.itemInSet, b.setLevel.itemInSet, d.setLevel.itemInSet);
+  lvl("SET-scope codes", a.setLevel.setScope, b.setLevel.setScope, d.setLevel.setScope, m.setLevel.setScope);
+  lvl("ITEM codes inside SET cases", a.setLevel.itemInSet, b.setLevel.itemInSet, d.setLevel.itemInSet, m.setLevel.itemInSet);
   lines.push("");
   lines.push("### The 9 reviewed cases (generated)");
   lines.push("");
