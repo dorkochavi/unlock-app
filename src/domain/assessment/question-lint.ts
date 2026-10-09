@@ -41,13 +41,13 @@
  *   OPTION_DUPLICATE_EXACT, OPTION_DUPLICATE_NORMALIZED, CORRECT_IDS_TOO_MANY, CORRECT_COUNT_INVALID,
  *   CORRECT_ID_UNKNOWN.
  * Implemented ITEM WARNINGS: TEXT_TRUNCATED, STEM_TOO_SHORT, STEM_NEGATIVE_WORDING, OPTION_ALL_OF_ABOVE,
- *   OPTION_NONE_OF_ABOVE, OPTION_ABSOLUTE_TERM, KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE,
+ *   OPTION_NONE_OF_ABOVE, OPTION_COMBINATION_REFERENCE, OPTION_ABSOLUTE_TERM, KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE,
  *   KEY_STEM_LEXICAL_OVERLAP, OPTION_OVERLAP_HIGH, OPTION_WHITESPACE_ANOMALY, EXPLANATION_MISSING.
  * Implemented SET WARNINGS: SET_TOO_SMALL, SET_ITEMS_TRUNCATED, DUPLICATE_STEM_EXACT,
  *   DUPLICATE_STEM_NORMALIZED, NEAR_DUPLICATE_STEM, SET_ANALYSIS_TRUNCATED, KEY_POSITION_IMBALANCE,
  *   KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS, STEM_TEMPLATE_REPEATED.
  * NOT implemented (documented in section 10.3/11.1): STEM_NO_QUESTION_FORM, STEM_DOUBLE_NEGATIVE,
- *   OPTION_COMBINATION_REFERENCE, OPTION_STYLE_OUTLIER, OPTION_PREFIX_STEM_REPEAT, ARTICLE_MISMATCH,
+ *   OPTION_STYLE_OUTLIER, OPTION_PREFIX_STEM_REPEAT, ARTICLE_MISMATCH,
  *   OPTION_NUMERIC_UNORDERED, OPTION_COUNT_UNUSUAL, OPTION_PUNCTUATION_INCONSISTENT,
  *   EXPLANATION_NAMES_ONLY_KEY, NEAR_DUPLICATE_ITEM, SET_OPTION_COUNT_MIXED, ALL_OR_NONE_OVERUSE,
  *   QUESTION_TYPE_MONO, and every META check (PROVENANCE_*, TOPIC_*, OBJECTIVE_*, COGNITIVE_*,
@@ -185,6 +185,73 @@ const NONE_OF_ABOVE_PHRASES = normPhrases([
   "אף אחת מהתשובות", "אף אחד מהתשובות", "אף תשובה", "אף אחד מהאמור", "אף אחת מהן", "אף אחד מהם",
   "אין תשובה נכונה", "אין אף תשובה",
 ]);
+/**
+ * OPTION_COMBINATION_REFERENCE (FUB-064): an option that is wholly a reference to a combination of OTHER options
+ * ("Both a and c", "תשובות א ו-ג נכונות"). Shape: [filler] cue [filler] >= 2 distinct references [filler], nothing else.
+ * Bare "and"/"or"/"ו" never trigger it; a letter without a cue, or with extra content words, is ordinary text.
+ */
+const COMBO_CUES = new Set(
+  norm([
+    "both", "option", "options", "answer", "answers", "choice", "choices",
+    "תשובה", "תשובות", "אפשרות", "אפשרויות", "התשובות", "האפשרויות",
+  ]),
+);
+const COMBO_JOINERS = new Set(norm(["and", "or", "או", "ו"]));
+const COMBO_FILLER = new Set(
+  norm(["the", "of", "are", "is", "only", "correct", "true", "right", "together", "נכונות", "נכונים", "נכונה", "נכון", "בלבד", "הן", "הם"]),
+);
+/** Ordinal positions of Hebrew letters used as option labels (vav is excluded as a reference: it is the conjunction). */
+const HE_LABELS = "אבגדהוזח";
+const HE_REF = /^ו?-?([אבגדהזח])$/;
+const LATIN_REF = /^[a-z]$/;
+const MAX_LATIN_ORDINAL = 8;
+
+/** Index of the option a single reference token points to, or -1. Id match (case-insensitive) wins over ordinal letter. */
+function resolveOptionRef(token: string, idIndex: ReadonlyMap<string, number>, optionCount: number): number {
+  const he = HE_REF.exec(token);
+  if (he) {
+    const pos = HE_LABELS.indexOf(he[1]);
+    return pos < optionCount ? pos : -1;
+  }
+  if (!LATIN_REF.test(token)) return -1;
+  const byId = idIndex.get(token);
+  if (byId !== undefined) return byId;
+  const pos = token.charCodeAt(0) - 97;
+  return pos < MAX_LATIN_ORDINAL && pos < optionCount ? pos : -1;
+}
+
+function isCombinationReference(tokens: readonly string[], self: number, idIndex: ReadonlyMap<string, number>, optionCount: number): boolean {
+  const refs = new Set<number>();
+  let cueBeforeRef = false;
+  let sawCue = false;
+  let runState: "before" | "in" | "after" = "before";
+  for (const t of tokens) {
+    const isCue = COMBO_CUES.has(t);
+    const isRefShape = HE_REF.test(t) || LATIN_REF.test(t);
+    if (isRefShape && (sawCue || runState === "in")) {
+      if (runState === "after") return false;
+      const target = resolveOptionRef(t, idIndex, optionCount);
+      if (target < 0 || target === self) return false;
+      if (runState === "before") cueBeforeRef = sawCue;
+      runState = "in";
+      refs.add(target);
+      continue;
+    }
+    if (isCue) {
+      sawCue = true;
+      if (runState === "in") runState = "after";
+      continue;
+    }
+    if (COMBO_JOINERS.has(t)) continue;
+    if (COMBO_FILLER.has(t)) {
+      if (runState === "in") runState = "after";
+      continue;
+    }
+    return false;
+  }
+  return cueBeforeRef && refs.size >= 2;
+}
+
 const STOP_WORDS = new Set(
   norm([
     "the", "and", "for", "with", "that", "this", "from", "are", "was", "what", "which", "who", "how",
@@ -462,6 +529,17 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   if (allIdx.length > 0) out.push(issue("OPTION_ALL_OF_ABOVE", "WARNING", "ITEM", optRefs(allIdx, ids)));
   if (noneIdx.length > 0) out.push(issue("OPTION_NONE_OF_ABOVE", "WARNING", "ITEM", optRefs(noneIdx, ids)));
   if (absIdx.length > 0) out.push(issue("OPTION_ABSOLUTE_TERM", "WARNING", "ITEM", optRefs(absIdx, ids)));
+
+  const idIndex = new Map<string, number>();
+  ids.forEach((id, i) => {
+    const key = id.toLowerCase();
+    if (!idIndex.has(key)) idIndex.set(key, i);
+  });
+  const comboIdx: number[] = [];
+  item.options.forEach((opt, i) => {
+    if (nonEmpty(i) && isCombinationReference(tokenize(opt.content), i, idIndex, item.options.length)) comboIdx.push(i);
+  });
+  if (comboIdx.length > 0) out.push(issue("OPTION_COMBINATION_REFERENCE", "WARNING", "ITEM", optRefs(comboIdx, ids)));
 
   const lengths = item.options.map((o) => measureLength(o.content));
 

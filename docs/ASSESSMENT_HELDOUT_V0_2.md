@@ -1,8 +1,10 @@
 # Assessment Linter Held-Out Evaluation - Golden Dataset v0.2
 
 Status: DRAFT evidence artifact. Created in Run `2026-10-09-ASSESSMENT-ENGINE-004`, Slice A4 (FUB-063).
-Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`), UNCHANGED in this Run.
+Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`), UNCHANGED in Run 004 (question-lint.ts was changed later, in Run 005: OPTION_COMBINATION_REFERENCE).
 Provenance: corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_APPROVED` for 69 of 78 rows. **Post-evaluation update (Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001`):** 9 rows (HO-049, 070, 076, 017, 015, 063, 032, 069, 073) are `HUMAN_APPROVED` (Dor, 2026-10-09) as a POST-EVALUATION adjudication, applied as an overlay on the unchanged frozen labels (section 14). The FIRST_BLIND evidence in sections 3-13 is preserved as originally written; the POST_HUMAN metrics (section 14) are HUMAN-ADJUDICATED / POST-EVALUATION, never first-blind, never pooled with v0.1.
+
+> **Run 005 note (`2026-10-09-ASSESSMENT-ENGINE-005`, FUB-064):** OPTION_COMBINATION_REFERENCE was implemented after this evaluation was observed. The GENERATED blocks and the FN table below are regenerated against the current linter, so they show HO-026, HO-027 and HO-064 as TP (TP 80 to 83, FN 44 to 41, NOT_IMPLEMENTED FN 36 to 33; no new FP or UNLABELED_EMISSION). The ORIGINAL blind result (TP 80 / FN 44 / FP 4 / UNLABELED 22) is the Run 004 state at `b9aaca4` and its Run report; hand-written prose in sections 3-18 predates Run 005 and cites those original numbers. Run 005 results on these cases are HISTORICAL_HELD_OUT regression evidence, not fresh validation.
 
 ## 1. Non-claims
 
@@ -25,7 +27,7 @@ AUTHOR -> LABEL -> FREEZE -> EVALUATE -> REPORT, with NO TUNING.
 4. EVALUATE: `runHeldOutEvaluation` (`src/domain/assessment/golden/heldout-eval.ts`) runs the unchanged linter once over the frozen data. The numbers in the test are the FIRST-RUN observed results, recorded as a regression guard, not targets.
 5. REPORT: this document. The author/labeler statements above are Run-plan facts; they cannot be verified from the repository alone.
 
-Untouched-linter proof: `git diff 536b94f -- src/domain/assessment/question-lint.ts src/domain/assessment/text-normalize.ts src/domain/assessment/golden/heldout-v0-2 src/domain/assessment/golden/golden-dataset-v0-1.ts` is empty.
+Untouched-linter proof (as of Run 004; no longer empty for question-lint.ts after Run 005): `git diff 536b94f -- src/domain/assessment/question-lint.ts src/domain/assessment/text-normalize.ts src/domain/assessment/golden/heldout-v0-2 src/domain/assessment/golden/golden-dataset-v0-1.ts` is empty.
 
 ### Conventions (mirror v0.1 `calibration.ts`; differences marked)
 
@@ -44,9 +46,9 @@ Untouched-linter proof: `git diff 536b94f -- src/domain/assessment/question-lint
 <!-- GENERATED:BEGIN formatHeldOutMarkdown (src/domain/assessment/golden/heldout-eval.ts) -->
 ## Headline (generated)
 
-- RECALL-LIKE (all labelled detections): 80/124 caught.
-- FN count: 44 (8 HEURISTIC_GAP on implemented checks, 36 NOT_IMPLEMENTED checks).
-- PRECISION-LIKE (labelled detections vs false alarms): 80/84.
+- RECALL-LIKE (all labelled detections): 83/124 caught.
+- FN count: 41 (8 HEURISTIC_GAP on implemented checks, 33 NOT_IMPLEMENTED checks).
+- PRECISION-LIKE (labelled detections vs false alarms): 83/87.
 - FP count: 4 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).
 - CLEAN cases with a WARNING/ERROR: 3 of 20.
 - UNLABELED_EMISSIONS: 22 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).
@@ -66,8 +68,8 @@ Untouched-linter proof: `git diff 536b94f -- src/domain/assessment/question-lint
 | SEMANTIC-ONLY cases | 12 |
 | languageReviewRequired | 1 |
 | Expected deterministic detections | 124 |
-| TP | 80 |
-| FN (HEURISTIC_GAP / NOT_IMPLEMENTED) | 44 (8 / 36) |
+| TP | 83 |
+| FN (HEURISTIC_GAP / NOT_IMPLEMENTED) | 41 (8 / 33) |
 | FP | 4 |
 | CLEAN cases with a WARNING/ERROR | 3 of 20 |
 | UNLABELED_EMISSION | 22 |
@@ -110,7 +112,7 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | OPTIONS_TOO_FEW | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
 | OPTION_ABSOLUTE_TERM | yes | 9 | 9 | 0 | 1 | 6 | 9/10 | 9/9 |
 | OPTION_ALL_OF_ABOVE | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
-| OPTION_COMBINATION_REFERENCE | NO | 3 | 0 | 3 | 0 | 0 | n/a | 0/3 |
+| OPTION_COMBINATION_REFERENCE | yes | 3 | 3 | 0 | 0 | 0 | 3/3 | 3/3 |
 | OPTION_COUNT_UNUSUAL | NO | 1 | 0 | 1 | 0 | 0 | n/a | 0/1 |
 | OPTION_DUPLICATE_EXACT | yes | 1 | 1 | 0 | 0 | 0 | 1/1 | 1/1 |
 | OPTION_LENGTH_IMBALANCE | yes | 15 | 15 | 0 | 0 | 3 | 15/15 | 15/15 |
@@ -135,8 +137,6 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | HO-017 | ITEM | OPTION_PREFIX_STEM_REPEAT | NOT_IMPLEMENTED |
 | HO-022 | ITEM | STEM_DOUBLE_NEGATIVE | NOT_IMPLEMENTED |
 | HO-022 | ITEM | EXPLANATION_NAMES_ONLY_KEY | NOT_IMPLEMENTED |
-| HO-026 | ITEM | OPTION_COMBINATION_REFERENCE | NOT_IMPLEMENTED |
-| HO-027 | ITEM | OPTION_COMBINATION_REFERENCE | NOT_IMPLEMENTED |
 | HO-029 | ITEM | OPTION_PUNCTUATION_INCONSISTENT | NOT_IMPLEMENTED |
 | HO-029 | ITEM | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED |
 | HO-029 | ITEM | KEY_LONGEST_OPTION | HEURISTIC_GAP |
@@ -151,7 +151,6 @@ TP = caught, FN = missed, FP = false alarm (forbidden, or any code on a CLEAN ca
 | HO-057 | ITEM | STEM_NO_QUESTION_FORM | NOT_IMPLEMENTED |
 | HO-057 | ITEM | EXPLANATION_NAMES_ONLY_KEY | NOT_IMPLEMENTED |
 | HO-063 | ITEM | STEM_NEGATIVE_WORDING | HEURISTIC_GAP |
-| HO-064 | ITEM | OPTION_COMBINATION_REFERENCE | NOT_IMPLEMENTED |
 | HO-067 | ITEM | OPTION_PUNCTUATION_INCONSISTENT | NOT_IMPLEMENTED |
 | HO-068 | ITEM | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED |
 | HO-070 | ITEM | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED |
@@ -251,13 +250,13 @@ The v0.1 corpus is DEV/CALIBRATION data: the linter was iterated against it (Run
 | RECALL-LIKE | 67/73 | 80/124 |
 | PRECISION-LIKE | 67/67 | 80/84 |
 
-Reading notes (no verdict): most of the v0.2 FN (36 of 44) are NOT_IMPLEMENTED codes, i.e. checks the linter documents as absent; the 8 heuristic-gap FN sit at threshold gates (section 6). The 4 FP and 22 UNLABELED_EMISSION show an over-flag side that the calibrated v0.1 corpus did not show (v0.1 FP = 0 after the Run 003 fixes).
+Reading notes (no verdict): most of the v0.2 FN (36 of 44 (originally; 33 of 41 after Run 005)) are NOT_IMPLEMENTED codes, i.e. checks the linter documents as absent; the 8 heuristic-gap FN sit at threshold gates (section 6). The 4 FP and 22 UNLABELED_EMISSION show an over-flag side that the calibrated v0.1 corpus did not show (v0.1 FP = 0 after the Run 003 fixes).
 
 ## 5. Raw numbers for the position and combination checks (no verdict)
 
 | Check | Held-out cases carrying the code in labels | Expected | TP | FN | FP | Unlabeled | v0.1 for reference (expected/TP/FN/FP) |
 |---|---|---|---|---|---|---|---|
-| OPTION_COMBINATION_REFERENCE (NOT_IMPLEMENTED) | 3 (HO-026, HO-027, HO-064) | 3 | 0 | 3 | 0 | 0 | 1/0/1/0 |
+| OPTION_COMBINATION_REFERENCE (implemented in Run 005; originally NOT_IMPLEMENTED) | 3 (HO-026, HO-027, HO-064) | 3 | 3 | 0 | 0 | 0 | 1/1/0/0 |
 | KEY_POSITION_IMBALANCE | 6 (HO-071, 072, 074, 075, 076, 077) | 6 | 5 | 1 (HO-077) | 0 | 0 | 1/1/0/0 |
 | KEY_POSITION_RUN | 5 (HO-071, 072, 075, 076, 077) | 5 | 5 | 0 | 0 | 0 | 1/1/0/0 |
 
@@ -269,12 +268,12 @@ One category per finding. Evidence is the actual case text and linter metrics. `
 
 Categories: LIKELY_LINTER_BUG | LIKELY_HEURISTIC_LIMIT | LIKELY_LABEL_QUESTION | SEMANTIC_ONLY | NEEDS_HUMAN_HEBREW_REVIEW | NEEDS_MORE_DATA.
 
-Tally (70 findings = 44 FN + 4 FP + 22 UNLABELED_EMISSION):
+Tally (67 findings = 41 FN + 4 FP + 22 UNLABELED_EMISSION; Run 005 removed the 3 OPTION_COMBINATION_REFERENCE NOT_IMPLEMENTED FN rows):
 
 | Category | FN | FP | UNL | Total |
 |---|---|---|---|---|
 | LIKELY_LINTER_BUG | 0 | 0 | 0 | 0 |
-| LIKELY_HEURISTIC_LIMIT | 38 (30 NOT_IMPLEMENTED + 8 threshold/cue gaps) | 3 | 14 | 55 |
+| LIKELY_HEURISTIC_LIMIT | 35 (27 NOT_IMPLEMENTED + 8 threshold/cue gaps) | 3 | 14 | 52 |
 | LIKELY_LABEL_QUESTION | 4 | 1 | 7 | 12 |
 | SEMANTIC_ONLY | 0 | 0 | 0 | 0 |
 | NEEDS_HUMAN_HEBREW_REVIEW | 2 | 0 | 0 | 2 |
@@ -290,8 +289,6 @@ One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_
 | FN | HO-017 | OPTION_PREFIX_STEM_REPEAT | LIKELY_LABEL_QUESTION | Author intent says suspicious-but-fine (a shared absolute word in ALL options gives no cue); also NOT_IMPLEMENTED check (documented gap, no linter rule exists) **Post-human (Dor, 2026-10-09):** HO-017 relabeled CLEAN (symmetric 'תמיד'); this FN no longer exists post-human, and its OPTION_ABSOLUTE_TERM TP became a CLEAN-case FP. |
 | FN | HO-022 | STEM_DOUBLE_NEGATIVE | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-022 | EXPLANATION_NAMES_ONLY_KEY | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
-| FN | HO-026 | OPTION_COMBINATION_REFERENCE | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists); combination option referencing other options |
-| FN | HO-027 | OPTION_COMBINATION_REFERENCE | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists); combination option referencing other options |
 | FN | HO-029 | OPTION_PUNCTUATION_INCONSISTENT | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-029 | OPTION_STYLE_OUTLIER | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-029 | KEY_LONGEST_OPTION | LIKELY_HEURISTIC_LIMIT | Key 38 vs next 27 chars: ratio 1.41 passes 1.2 but char difference 11 is below the 15 minimum |
@@ -306,7 +303,6 @@ One-line recommendations: (a) recurring clusters are the 4-word minimum in STEM_
 | FN | HO-057 | STEM_NO_QUESTION_FORM | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-057 | EXPLANATION_NAMES_ONLY_KEY | LIKELY_LABEL_QUESTION | Explanation repeats the stem term, not the key text; label code is a loose fit; NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-063 | STEM_NEGATIVE_WORDING | LIKELY_HEURISTIC_LIMIT | Hebrew negation cue list has no form of 'איננה' (only אינה/אינו/...); author intent also calls the item suspicious-but-fine **Post-human:** Dor decided definitively (HUMAN_DECIDED_LABEL_CHANGE): the item's OPTION_ABSOLUTE_TERM expectation was removed ('כל' is integral to the proposition) and STEM_NEGATIVE_WORDING is kept. The linter's OPTION_ABSOLUTE_TERM emission is a context-blind heuristic limit ruled FORBIDDEN in Run 003, so it counts as FP in POST_HUMAN_FINAL (evidence for FUB-066). |
-| FN | HO-064 | OPTION_COMBINATION_REFERENCE | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists); combination option referencing other options |
 | FN | HO-067 | OPTION_PUNCTUATION_INCONSISTENT | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-068 | OPTION_STYLE_OUTLIER | LIKELY_HEURISTIC_LIMIT | NOT_IMPLEMENTED check (documented gap, no linter rule exists) |
 | FN | HO-070 | OPTION_STYLE_OUTLIER | NEEDS_HUMAN_HEBREW_REVIEW | Niqqud on one option only; Hebrew-convention judgment, author intent calls it 'subtle'; NOT_IMPLEMENTED check (documented gap, no linter rule exists) **Post-human:** label approved unchanged; a style outlier on a non-key option is still a defect. |
@@ -501,10 +497,10 @@ These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor 
 | FLAWED cases | 58 | 58 | 58 | 0 |
 | SEMANTIC-ONLY cases | 12 | 12 | 12 | 0 |
 | Expected deterministic detections | 124 | 122 | 122 | -2 |
-| TP | 80 | 78 | 78 | -2 |
-| FN (total) | 44 | 44 | 44 | 0 |
+| TP | 83 | 81 | 81 | -2 |
+| FN (total) | 41 | 41 | 41 | 0 |
 | FN HEURISTIC_GAP | 8 | 8 | 8 | 0 |
-| FN NOT_IMPLEMENTED | 36 | 36 | 36 | 0 |
+| FN NOT_IMPLEMENTED | 33 | 33 | 33 | 0 |
 | FP | 4 | 5 | 8 | +4 |
 | CLEAN cases with a WARNING/ERROR | 3 of 20 | 4 of 20 | 4 of 20 | +1 |
 | UNLABELED_EMISSION | 22 | 23 | 20 | -2 |

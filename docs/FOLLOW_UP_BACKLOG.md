@@ -1662,7 +1662,7 @@ Any threshold change or wiring decision (FUB-055); availability of real items.
 
 # FUB-064 — OPTION_COMBINATION_REFERENCE Check (Next Unimplemented-Code Candidate)
 
-**Status:** `DEFERRED`
+**Status:** `RESOLVED_IMPLEMENTED` (Run 2026-10-09-ASSESSMENT-ENGINE-005; Decision Gate B: KEEP, advisory WARNING, still unwired)
 **Priority:** `LOW`
 **Area:** `src/domain/assessment/question-lint.ts`
 
@@ -1671,6 +1671,8 @@ Calibration FN disposition (Section 9) names `OPTION_COMBINATION_REFERENCE` (WEA
 **Evidence note (Run 2026-10-09-ASSESSMENT-ENGINE-004, A5; recommendation only, `docs/ASSESSMENT_HELDOUT_V0_2.md` section 9):** verdict `IMPLEMENT_NEXT`, low-to-medium confidence. Held-out cases HO-026 (Hebrew), HO-027 and HO-064 (English) were all deliberately authored flaws, so natural frequency is unproven (insufficient evidence). A narrow rule (cue word plus a reference token resolving to an option id of the same item, Latin or Hebrew letters) has clear semantics; reading all 78 held-out and 89 v0.1 cases found no would-be false trigger, but this is a reading check on synthetic data, not a measured FP rate. Not implemented; this item stays open.
 
 **Post-human reassessment (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001, `docs/ASSESSMENT_HELDOUT_V0_2.md` section 18):** verdict `IMPLEMENT_NEXT` REAFFIRMED (low-to-medium confidence). HO-026/027/064 were not among the 9 human-reviewed rows (labels still model-only; 3 deliberately authored cases); Dor's context principles favor the narrow cue-word plus option-reference rule over a bare 'and' pattern; detection is deterministic and needs no semantics. No code change.
+
+**Closure (Run 2026-10-09-ASSESSMENT-ENGINE-005):** implemented the narrow rule (contract: `docs/CHATGPT_PLAN.md` history / Run report; pre-registered contract tests at `b66c59e`, `option-combination-reference.test.ts`, unchanged after implementation). Effect on the unchanged corpora: exactly HO-026, HO-027, HO-064 and v0.1 WEAK-COMBINATION-EN-01 now fire (TP); no other item of the 143 v0.2 items or 89 v0.1 fixtures emits it; none of the 9 human-reviewed cases changed. Evidence classes: CONTRACT_TEST + CALIBRATION/REGRESSION + HISTORICAL_HELD_OUT (observed) + HUMAN_ADJUDICATED regression; NOT fresh held-out validation, and natural frequency of the flaw remains unproven (4 deliberately authored cases). Not covered (route to FUB-066 or a later fresh batch if wanted): ordinal phrases, cue-less "A and B only", numeric references. FUB-066 (context-blind absolute-term / lexical-overlap work) is untouched.
 
 ## Promotion Trigger
 

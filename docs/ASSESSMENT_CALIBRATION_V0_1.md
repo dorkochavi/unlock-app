@@ -33,9 +33,9 @@ There is no script. The generated sections (between the `GENERATED` markers) are
 <!-- GENERATED:BEGIN formatCalibrationMarkdown (src/domain/assessment/golden/calibration.ts) -->
 ## Headline (generated)
 
-- RECALL-LIKE (all labelled detections): 67/73 caught.
-- FN count: 6 (3 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).
-- PRECISION-LIKE (labelled detections vs false alarms): 67/67.
+- RECALL-LIKE (all labelled detections): 68/73 caught.
+- FN count: 5 (3 HEURISTIC_GAP on implemented checks, 2 NOT_IMPLEMENTED checks).
+- PRECISION-LIKE (labelled detections vs false alarms): 68/68.
 - FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: yes).
 - CLEAN cases with a WARNING/ERROR: 0 of 18.
 - UNSUPPORTED SEMANTIC CASES: 6 (intentionally not asserted against the linter).
@@ -50,7 +50,7 @@ There is no script. The generated sections (between the `GENERATED` markers) are
 | SET cases | 17 |
 | CLEAN cases (no WARNING/ERROR is correct) | 18 |
 | UNSUPPORTED SEMANTIC CASES | 6 |
-| Cases with a KNOWN_MISS | 6 |
+| Cases with a KNOWN_MISS | 5 |
 | Cases with a KNOWN_FALSE_POSITIVE | 0 |
 
 ## Per-check results (generated)
@@ -76,7 +76,7 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 | OPTIONS_TOO_MANY | yes | 1 | 1 | 0 | 0 | 16 | 1/1 | 1/1 |
 | OPTION_ABSOLUTE_TERM | yes | 3 | 3 | 0 | 0 | 16 | 3/3 | 3/3 |
 | OPTION_ALL_OF_ABOVE | yes | 3 | 3 | 0 | 0 | 18 | 3/3 | 3/3 |
-| OPTION_COMBINATION_REFERENCE | NO | 1 | 0 | 1 | 0 | 0 | n/a | 0/1 |
+| OPTION_COMBINATION_REFERENCE | yes | 1 | 1 | 0 | 0 | 16 | 1/1 | 1/1 |
 | OPTION_DUPLICATE_EXACT | yes | 1 | 1 | 0 | 0 | 26 | 1/1 | 1/1 |
 | OPTION_DUPLICATE_NORMALIZED | yes | 10 | 10 | 0 | 0 | 18 | 10/10 | 10/10 |
 | OPTION_EMPTY | yes | 1 | 1 | 0 | 0 | 16 | 1/1 | 1/1 |
@@ -104,7 +104,6 @@ TP = caught, FN = missed, FP = false alarm. NEG = cases labelled as a negative f
 | WEAK-LEAKAGE-HE-INFLECTION-01 | KEY_STEM_LEXICAL_OVERLAP | HEURISTIC_GAP | Only exact prefix-stripped tokens match; inflection/morphology (מחיר/מחירי, עלייה/עולים) is not unified, so overlap counts 1 < 2. |
 | WEAK-GRAMMAR-CUE-EN-01 | ARTICLE_MISMATCH | NOT_IMPLEMENTED | ARTICLE_MISMATCH is a documented but unimplemented code (AE-029). |
 | WEAK-STYLE-CUE-HE-01 | OPTION_STYLE_OUTLIER | NOT_IMPLEMENTED | OPTION_STYLE_OUTLIER is a documented but unimplemented code (AE-029); the length and leakage checks fire only as incidental partial signals. |
-| WEAK-COMBINATION-EN-01 | OPTION_COMBINATION_REFERENCE | NOT_IMPLEMENTED | OPTION_COMBINATION_REFERENCE is a documented but unimplemented code (AE-029). |
 | OVERLAP-OPTIONS-HE-BOUNDARY-01 | OPTION_OVERLAP_HIGH | HEURISTIC_GAP | Boundary: Jaccard 0.833 < OPTION_OVERLAP_JACCARD 0.85 for short options; a single extra word on a 5-word option is a large relative change. |
 | SET-NEAR-DUP-INFLECTION-01 | NEAR_DUPLICATE_STEM | HEURISTIC_GAP | Gender/number inflections change the tokens, so Jaccard falls below the threshold (documented expected miss, ASSESSMENT_ENGINE section 19.4). |
 

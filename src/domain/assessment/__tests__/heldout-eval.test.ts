@@ -51,7 +51,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["OPTIONS_TOO_FEW", 1, 1, 0, 0, 0],
   ["OPTION_ABSOLUTE_TERM", 9, 9, 0, 1, 6],
   ["OPTION_ALL_OF_ABOVE", 1, 1, 0, 0, 0],
-  ["OPTION_COMBINATION_REFERENCE", 3, 0, 3, 0, 0],
+  ["OPTION_COMBINATION_REFERENCE", 3, 3, 0, 0, 0],
   ["OPTION_COUNT_UNUSUAL", 1, 0, 1, 0, 0],
   ["OPTION_DUPLICATE_EXACT", 1, 1, 0, 0, 0],
   ["OPTION_LENGTH_IMBALANCE", 15, 15, 0, 0, 3],
@@ -83,10 +83,10 @@ const EXPECTED_COUNTS = {
 
 const EXPECTED_TOTALS = {
   expectedDetections: 124,
-  truePositive: 80,
-  falseNegative: 44,
+  truePositive: 83,
+  falseNegative: 41,
   falseNegativeHeuristicGap: 8,
-  falseNegativeNotImplemented: 36,
+  falseNegativeNotImplemented: 33,
   falsePositive: 4,
   cleanCases: 20,
   cleanCasesWithWarningOrError: 3,
@@ -109,9 +109,9 @@ const EXPECTED_SET_LEVEL = {
 };
 
 const EXPECTED_SUMMARY = [
-  "RECALL-LIKE (all labelled detections): 80/124 caught.",
-  "FN count: 44 (8 HEURISTIC_GAP on implemented checks, 36 NOT_IMPLEMENTED checks).",
-  "PRECISION-LIKE (labelled detections vs false alarms): 80/84.",
+  "RECALL-LIKE (all labelled detections): 83/124 caught.",
+  "FN count: 41 (8 HEURISTIC_GAP on implemented checks, 33 NOT_IMPLEMENTED checks).",
+  "PRECISION-LIKE (labelled detections vs false alarms): 83/87.",
   "FP count: 4 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).",
   "CLEAN cases with a WARNING/ERROR: 3 of 20.",
   "UNLABELED_EMISSIONS: 22 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).",
@@ -124,8 +124,6 @@ const EXPECTED_FN = [
   "HO-017|OPTION_PREFIX_STEM_REPEAT",
   "HO-022|STEM_DOUBLE_NEGATIVE",
   "HO-022|EXPLANATION_NAMES_ONLY_KEY",
-  "HO-026|OPTION_COMBINATION_REFERENCE",
-  "HO-027|OPTION_COMBINATION_REFERENCE",
   "HO-029|OPTION_PUNCTUATION_INCONSISTENT",
   "HO-029|OPTION_STYLE_OUTLIER",
   "HO-029|KEY_LONGEST_OPTION",
@@ -140,7 +138,6 @@ const EXPECTED_FN = [
   "HO-057|STEM_NO_QUESTION_FORM",
   "HO-057|EXPLANATION_NAMES_ONLY_KEY",
   "HO-063|STEM_NEGATIVE_WORDING",
-  "HO-064|OPTION_COMBINATION_REFERENCE",
   "HO-067|OPTION_PUNCTUATION_INCONSISTENT",
   "HO-068|OPTION_STYLE_OUTLIER",
   "HO-070|OPTION_STYLE_OUTLIER",
@@ -415,7 +412,7 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
     expect(p.integrityFindings).toEqual([]);
     expect(p.caseCounts).toEqual(EXPECTED_COUNTS);
     expect(p.totals).toEqual({
-      expectedDetections: 122, truePositive: 78, falseNegative: 44, falseNegativeHeuristicGap: 8, falseNegativeNotImplemented: 36,
+      expectedDetections: 122, truePositive: 81, falseNegative: 41, falseNegativeHeuristicGap: 8, falseNegativeNotImplemented: 33,
       falsePositive: 8, cleanCases: 20, cleanCasesWithWarningOrError: 4, unlabeledEmissions: 20,
     });
     // The only set-level movement is the HO-076 item-1 final-forbidden emission (ITEM-in-SET FP 0 -> 1).

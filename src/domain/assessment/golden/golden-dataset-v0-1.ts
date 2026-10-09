@@ -322,9 +322,7 @@ const itemCases: GoldenCase[] = [
     id: "WEAK-COMBINATION-EN-01", scope: "ITEM", tags: ["weak", "english", "combination-reference"],
     description: "Option 'Both A and B' (combination reference, also an all-of-the-above relative).",
     input: q("Which of these animals are reptiles?", ["Lizard", "Snake", "Both A and B", "Frog"], 2),
-    expected: exp(["OPTION_COMBINATION_REFERENCE"], [], {
-      knownMiss: { codes: ["OPTION_COMBINATION_REFERENCE"], kind: "NOT_IMPLEMENTED", reason: "OPTION_COMBINATION_REFERENCE is a documented but unimplemented code (AE-029)." },
-    }),
+    expected: exp(["OPTION_COMBINATION_REFERENCE"], []),
   },
 
   // ---- Negative wording ----

@@ -35,7 +35,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["OPTIONS_TOO_MANY", 1, 1, 0, 0, 16],
   ["OPTION_ABSOLUTE_TERM", 3, 3, 0, 0, 16],
   ["OPTION_ALL_OF_ABOVE", 3, 3, 0, 0, 18],
-  ["OPTION_COMBINATION_REFERENCE", 1, 0, 1, 0, 0],
+  ["OPTION_COMBINATION_REFERENCE", 1, 1, 0, 0, 16],
   ["OPTION_DUPLICATE_EXACT", 1, 1, 0, 0, 26],
   ["OPTION_DUPLICATE_NORMALIZED", 10, 10, 0, 0, 18],
   ["OPTION_EMPTY", 1, 1, 0, 0, 16],
@@ -63,25 +63,25 @@ const EXPECTED_COUNTS = {
   set: 17,
   clean: 18,
   unsupportedSemantic: 6,
-  withKnownMiss: 6,
+  withKnownMiss: 5,
   withKnownFalsePositive: 0,
 };
 
 const EXPECTED_TOTALS = {
   expectedDetections: 73,
-  truePositive: 67,
-  falseNegative: 6,
+  truePositive: 68,
+  falseNegative: 5,
   falseNegativeHeuristicGap: 3,
-  falseNegativeNotImplemented: 3,
+  falseNegativeNotImplemented: 2,
   falsePositive: 0,
   cleanCases: 18,
   cleanCasesWithWarningOrError: 0,
 };
 
 const EXPECTED_SUMMARY = [
-  "RECALL-LIKE (all labelled detections): 67/73 caught.",
-  "FN count: 6 (3 HEURISTIC_GAP on implemented checks, 3 NOT_IMPLEMENTED checks).",
-  "PRECISION-LIKE (labelled detections vs false alarms): 67/67.",
+  "RECALL-LIKE (all labelled detections): 68/73 caught.",
+  "FN count: 5 (3 HEURISTIC_GAP on implemented checks, 2 NOT_IMPLEMENTED checks).",
+  "PRECISION-LIKE (labelled detections vs false alarms): 68/68.",
   "FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: yes).",
   "CLEAN cases with a WARNING/ERROR: 0 of 18.",
   "UNSUPPORTED SEMANTIC CASES: 6 (intentionally not asserted against the linter).",
@@ -92,7 +92,6 @@ const EXPECTED_KNOWN_MISS_IDS = [
   "WEAK-LEAKAGE-HE-INFLECTION-01",
   "WEAK-GRAMMAR-CUE-EN-01",
   "WEAK-STYLE-CUE-HE-01",
-  "WEAK-COMBINATION-EN-01",
   "OVERLAP-OPTIONS-HE-BOUNDARY-01",
   "SET-NEAR-DUP-INFLECTION-01",
 ];
@@ -176,7 +175,7 @@ describe("calibration report (regression guard)", () => {
 
   it("keeps unimplemented checks identifiable", () => {
     const notImpl = report.checks.filter((c) => !c.implemented).map((c) => c.code);
-    expect(notImpl).toEqual(["ARTICLE_MISMATCH", "OPTION_COMBINATION_REFERENCE", "OPTION_STYLE_OUTLIER"]);
+    expect(notImpl).toEqual(["ARTICLE_MISMATCH", "OPTION_STYLE_OUTLIER"]);
   });
 });
 
