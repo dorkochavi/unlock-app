@@ -1,0 +1,985 @@
+{
+  "changes": [
+    {
+      "caseId": "HO4-001",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "after": [],
+      "reason": "Neutralized: 10.3 OPTION_STYLE_OUTLIER (>0.6 x median, no absolute floor) literally fires here, so forbidding it contradicts the rule text; ambiguity about a minimum absolute difference is left unresolved rather than invented."
+    },
+    {
+      "caseId": "HO4-001",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Clean. Multi-word option (14 chars) among 4-5 char options deviates in length but only 9 chars absolute; treated as natural content, not a style outlier.",
+      "after": "Clean by content: natural multi-word option (13 chars) among 4-5 char options. Literal 10.3 threshold (>0.6 x median 4.5) would flag it, but the doc has no absolute floor, so the code is neither expected nor forbidden.",
+      "reason": "Recomputed length: option c is 13 chars (not 14); removed claim that style outlier must not fire."
+    },
+    {
+      "caseId": "HO4-001",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "low",
+      "reason": "Literal rule vs natural content is ambiguous."
+    },
+    {
+      "caseId": "HO4-001",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Ambiguity in OPTION_STYLE_OUTLIER floor."
+    },
+    {
+      "caseId": "HO4-003",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "Author intent says CLEAN; doc 10.3 bare-noun rule supports FLAWED but severity is mild."
+    },
+    {
+      "caseId": "HO4-003",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-006",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "OPTION_NUMERIC_UNORDERED",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "after": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "reason": "Neutralized: 10.3 OPTION_STYLE_OUTLIER (>0.6 x median, no absolute floor) literally fires here, so forbidding it contradicts the rule text; ambiguity about a minimum absolute difference is left unresolved rather than invented. (options 2,3,9,11: length 2 vs median 1.)"
+    },
+    {
+      "caseId": "HO4-006",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "Author intent CLEAN (emphasized NOT is acceptable); 10.3 STEM_NEGATIVE_WORDING is a plain word match on \"not\" with no emphasis exemption."
+    },
+    {
+      "caseId": "HO4-006",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-007",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "after": [],
+      "reason": "Neutralized: contrast/relative negation is arguably descriptive content, but the 10.3 STEM_NEGATIVE_WORDING rule (listed negation word, prefix heuristic) literally licenses firing; forbidding it asserted more than the doc says, and the same structure was treated inconsistently across 007/008/015/062/063/064. Neither expected nor forbidden now."
+    },
+    {
+      "caseId": "HO4-007",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Relative-clause negation; rule text ambiguous."
+    },
+    {
+      "caseId": "HO4-008",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING",
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "after": [
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "reason": "Neutralized: contrast/relative negation is arguably descriptive content, but the 10.3 STEM_NEGATIVE_WORDING rule (listed negation word, prefix heuristic) literally licenses firing; forbidding it asserted more than the doc says, and the same structure was treated inconsistently across 007/008/015/062/063/064. Neither expected nor forbidden now."
+    },
+    {
+      "caseId": "HO4-008",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "low",
+      "reason": "Intent says FLAWED (long multi-clause stem); doc has no deterministic stem-length check, so CLEAN-by-doc kept but uncertain."
+    },
+    {
+      "caseId": "HO4-008",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-009",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING",
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "after": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "reason": "Corpus options reordered ascending (see corpus change), so OPTION_NUMERIC_UNORDERED no longer applies."
+    },
+    {
+      "caseId": "HO4-009",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Negative selection stem; options 9,15,11,21 all numeric and unsorted. \"all\" in stem is an instruction.",
+      "after": "Negative selection stem (אינם ראשוניים); options 9,11,15,21 all numeric and sorted after reorder. \"all\" in stem is an instruction. Plural אינם is not in the 10.3 example list, so the negation expectation rests on the seed list being extensible.",
+      "reason": "Updated for corpus reorder; flagged negation list ambiguity."
+    },
+    {
+      "caseId": "HO4-009",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "אינם not listed explicitly in 10.3 examples."
+    },
+    {
+      "caseId": "HO4-009",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Intent CLEAN vs negation-word expectation."
+    },
+    {
+      "caseId": "HO4-010",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "after": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION"
+      ],
+      "reason": "Neutralized: 10.3 OPTION_STYLE_OUTLIER (>0.6 x median, no absolute floor) literally fires here, so forbidding it contradicts the rule text; ambiguity about a minimum absolute difference is left unresolved rather than invented. (16 chars vs median 9.)"
+    },
+    {
+      "caseId": "HO4-013",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "Intent CLEAN (all/none as content; key longer for content reasons); label follows literal KEY_LONGEST (45 vs 26, 1.73x, diff 19) and style thresholds."
+    },
+    {
+      "caseId": "HO4-013",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-015",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "after": [],
+      "reason": "Neutralized: contrast/relative negation is arguably descriptive content, but the 10.3 STEM_NEGATIVE_WORDING rule (listed negation word, prefix heuristic) literally licenses firing; forbidding it asserted more than the doc says, and the same structure was treated inconsistently across 007/008/015/062/063/064. Neither expected nor forbidden now."
+    },
+    {
+      "caseId": "HO4-016",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key is 52 chars vs 10-12 for others. Key echoes stem wording asymmetrically (semantic leakage, not deterministic).",
+      "after": "Key is 52 chars vs 9-11 for others. Key echoes stem wording asymmetrically (semantic leakage, not deterministic).",
+      "reason": "Recomputed: distractors are 11, 10, 9 chars."
+    },
+    {
+      "caseId": "HO4-019",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "Intent CLEAN (legit absolute in key); label follows literal KEY_LONGEST (77 vs 53, 1.45x, diff 24)."
+    },
+    {
+      "caseId": "HO4-019",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-021",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Absolute appears only in the key as legitimate content; shared prefix is 2 tokens; lengths 37-45.",
+      "after": "Absolute appears only in the key as legitimate content; shared prefix is 2 tokens; lengths 38-45.",
+      "reason": "Recomputed lengths 41,39,45,38."
+    },
+    {
+      "caseId": "HO4-022",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key is 70 chars vs 10-13 for others.",
+      "after": "Key is 71 chars vs 10-12 for others.",
+      "reason": "Recomputed: key 71 chars, distractors 12,12,10."
+    },
+    {
+      "caseId": "HO4-023",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key 125 chars vs next 65; sole outlier. Ratio vs shortest 2.6 < 3. \"only\" is weak/legit.",
+      "after": "Key 124 chars vs next 65; sole outlier. Ratio vs shortest 2.6 < 3. \"only\" is weak/legit.",
+      "reason": "Recomputed key length 124."
+    },
+    {
+      "caseId": "HO4-023",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "Intent CLEAN (two-clause contrast needs length); literal KEY_LONGEST fires (124 vs 65)."
+    },
+    {
+      "caseId": "HO4-023",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-045",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "OPTION_NUMERIC_UNORDERED",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "after": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "reason": "Neutralized: 10.3 OPTION_STYLE_OUTLIER (>0.6 x median, no absolute floor) literally fires here, so forbidding it contradicts the rule text; ambiguity about a minimum absolute difference is left unresolved rather than invented. (options 4,5,6,20: length 2 vs median 1.)"
+    },
+    {
+      "caseId": "HO4-045",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "Style-outlier floor ambiguity."
+    },
+    {
+      "caseId": "HO4-049",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Intent CLEAN (browser explicitly labeled) vs literal length thresholds (27 vs 5-7, ratio 5.4)."
+    },
+    {
+      "caseId": "HO4-052",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "after": [
+        "STEM_NEGATIVE_WORDING",
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "reason": "Recomputed: longest 48 / shortest 16 = 3.0 (>= 3.0) and diff 32 >= 20, so OPTION_LENGTH_IMBALANCE is licensed; it was missing."
+    },
+    {
+      "caseId": "HO4-052",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Negation word plus lexical negative is a semantic double negative; only one listed negation word. Key 47 chars vs next 25.",
+      "after": "Negation word plus lexical negative is a semantic double negative; only one listed negation word. Key 48 chars vs next 25 (1.92x, diff 23); longest/shortest 48/16 = 3.0.",
+      "reason": "Recomputed key length 48 and ratio."
+    },
+    {
+      "caseId": "HO4-055",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Distractors with strong absolutes; key b is 39 chars vs median 22.5 (sole outlier).",
+      "after": "Distractors with strong absolutes; key b is 39 chars vs median 23 (sole outlier).",
+      "reason": "Median of 21,39,19,25 is 23."
+    },
+    {
+      "caseId": "HO4-057",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key 31 chars vs 5-8; key restates the stem.",
+      "after": "Key 31 chars vs 5-7; key restates the stem.",
+      "reason": "Recomputed distractor lengths 6,7,5."
+    },
+    {
+      "caseId": "HO4-062",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Same structure as 015/007 (contrast or exclusion clause that is the content tested); author intent CLEAN. Treating it as FLAWED while 015 is CLEAN was inconsistent, and quality definitions do not demand STEM_NEGATIVE_WORDING even though the word match may fire."
+    },
+    {
+      "caseId": "HO4-062",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "after": [],
+      "reason": "Consistency with 007/015: negation as content is neither expected nor forbidden."
+    },
+    {
+      "caseId": "HO4-062",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "low",
+      "reason": "Rule text literally licenses a word-match warning; quality view says content."
+    },
+    {
+      "caseId": "HO4-062",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Subjective."
+    },
+    {
+      "caseId": "HO4-063",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Same structure as 015/007 (contrast or exclusion clause that is the content tested); author intent CLEAN. Treating it as FLAWED while 015 is CLEAN was inconsistent, and quality definitions do not demand STEM_NEGATIVE_WORDING even though the word match may fire."
+    },
+    {
+      "caseId": "HO4-063",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "after": [],
+      "reason": "Consistency with 007/015: negation as content is neither expected nor forbidden."
+    },
+    {
+      "caseId": "HO4-063",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "low",
+      "reason": "Rule text literally licenses a word-match warning; quality view says content."
+    },
+    {
+      "caseId": "HO4-063",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": true,
+      "after": true,
+      "reason": "Subjective."
+    },
+    {
+      "caseId": "HO4-062",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "\"and is not a fish\" selects by exclusion.",
+      "after": "\"and is not a fish\" is exclusion content in a relative predicate; STEM_NEGATIVE_WORDING may fire literally (ואינו) but is not expected or forbidden. Arguable.",
+      "reason": "Updated for CLEAN."
+    },
+    {
+      "caseId": "HO4-063",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "\"and not of the lungs\" selects by exclusion; arguable contrast.",
+      "after": "\"and not of the lungs\" is the contrast being tested, same structure as HO4-015; STEM_NEGATIVE_WORDING may fire literally (ולא) but is not expected or forbidden. Arguable.",
+      "reason": "Updated for CLEAN."
+    },
+    {
+      "caseId": "HO4-064",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "STEM_NEGATIVE_WORDING",
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "after": [
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "reason": "Neutralized: contrast/relative negation is arguably descriptive content, but the 10.3 STEM_NEGATIVE_WORDING rule (listed negation word, prefix heuristic) literally licenses firing; forbidding it asserted more than the doc says, and the same structure was treated inconsistently across 007/008/015/062/063/064. Neither expected nor forbidden now."
+    },
+    {
+      "caseId": "HO4-064",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "low",
+      "reason": "Intent FLAWED (very long stem); doc has no stem-length check."
+    },
+    {
+      "caseId": "HO4-064",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-065",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "high",
+      "after": "medium",
+      "reason": "Intent CLEAN (moderate imbalance); literal OPTION_LENGTH_IMBALANCE fires (75/12 = 6.25, diff 63)."
+    },
+    {
+      "caseId": "HO4-065",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Genuine disagreement with author intent."
+    },
+    {
+      "caseId": "HO4-009",
+      "file": "corpus.json",
+      "field": "item.answerOptions / item.correctOptionIds",
+      "before": {
+        "options": [
+          "9",
+          "15",
+          "11",
+          "21"
+        ],
+        "correctOptionIds": [
+          "a",
+          "b",
+          "d"
+        ]
+      },
+      "after": {
+        "options": [
+          "9",
+          "11",
+          "15",
+          "21"
+        ],
+        "correctOptionIds": [
+          "a",
+          "c",
+          "d"
+        ]
+      },
+      "reason": "Author intent is an otherwise well-formed negative multi-select; the accidentally unsorted numeric options (OPTION_NUMERIC_UNORDERED) were an authoring slip. Reordered ascending; the keyed set is still {9,15,21}."
+    }
+  ],
+  "unchanged_disagreements": [
+    {
+      "caseId": "HO4-003",
+      "note": "Intent CLEAN (terse but unambiguous) vs label FLAWED (bare noun stem: STEM_TOO_SHORT + STEM_NO_QUESTION_FORM per 10.3 and FUB-066 which says it fires on bare nouns). Label kept; consistent with 041/039/035/061."
+    },
+    {
+      "caseId": "HO4-004",
+      "note": "Intent CLEAN (imperative define stem, key longer by necessity) vs label FLAWED (no ? so STEM_NO_QUESTION_FORM; key 102 vs 85 = exactly 1.20x, diff 17 >= 15 so KEY_LONGEST_OPTION at the boundary). Recomputed, label kept; already humanReviewRecommended."
+    },
+    {
+      "caseId": "HO4-006",
+      "note": "Intent CLEAN (emphasized NOT) vs label FLAWED (STEM_NEGATIVE_WORDING is DET word match, no emphasis exemption in 10.3/19.7). Label kept."
+    },
+    {
+      "caseId": "HO4-008",
+      "note": "Intent FLAWED (30-word stem, late negation) vs label CLEAN (no 10.3 code for stem length; negation is content). Label kept, flagged low confidence for human review."
+    },
+    {
+      "caseId": "HO4-009",
+      "note": "Intent CLEAN (emphasized negative instruction is the point) vs label FLAWED (STEM_NEGATIVE_WORDING on אינם; no emphasis exemption). Unsorted-option defect was removed from the corpus; negation expectation kept as consistent with 005/006/051."
+    },
+    {
+      "caseId": "HO4-013",
+      "note": "Intent CLEAN vs label FLAWED (KEY_LONGEST_OPTION and OPTION_STYLE_OUTLIER fire literally: 45 vs 26, ratio 1.73, diff 19; 45 is 84% above median 24.5). Label kept."
+    },
+    {
+      "caseId": "HO4-019",
+      "note": "Intent CLEAN vs label FLAWED (KEY_LONGEST_OPTION fires literally: 77 vs 53, 1.45x, diff 24). Absolute term is in the key and correctly not expected. Label kept."
+    },
+    {
+      "caseId": "HO4-023",
+      "note": "Intent CLEAN (key longer because contrast needs two clauses) vs label FLAWED (KEY_LONGEST 124 vs 65, STYLE_OUTLIER 124 vs median 62). Label kept."
+    },
+    {
+      "caseId": "HO4-031",
+      "note": "Intent CLEAN vs label FLAWED (imperative without ? fires STEM_NO_QUESTION_FORM under literal 10.3; 19.7 item 4 only exempts \":\"-ending cloze stems). Treated consistently with 004/040/042; all hr=true."
+    },
+    {
+      "caseId": "HO4-040",
+      "note": "Intent CLEAN vs label FLAWED (imperative without ?; same policy as 004/031/042)."
+    },
+    {
+      "caseId": "HO4-042",
+      "note": "Intent CLEAN vs label FLAWED (STEM_NO_QUESTION_FORM only; stem ends with \".\" not \":\"). TOO_SHORT kept forbidden because first word is an imperative per FUB-066, though the slash form is uncertain. Same policy as 004/031/040."
+    },
+    {
+      "caseId": "HO4-049",
+      "note": "Intent CLEAN (browser explicitly labeled as application) vs label FLAWED (OPTION_LENGTH_IMBALANCE 27/5 = 5.4, diff 22; STYLE_OUTLIER 27 vs median 7). Label kept on literal thresholds."
+    },
+    {
+      "caseId": "HO4-064",
+      "note": "Intent FLAWED (28-word stem with negation mid-way, clues overwhelm question) vs label CLEAN (no 10.3 code for stem length; negation not selecting). Label kept, low confidence, hr."
+    },
+    {
+      "caseId": "HO4-065",
+      "note": "Intent CLEAN (moderate imbalance, key shorter) vs label FLAWED (OPTION_LENGTH_IMBALANCE 75 vs 12 fires literally; STYLE_OUTLIER not expected because two options deviate). Label kept."
+    },
+    {
+      "caseId": "HO4-073",
+      "note": "Intent CLEAN vs label FLAWED solely on informational QUESTION_TYPE_MONO (9 SC items, n>=8), applied consistently to 074/075; key positions b,d,a,c,b,a,d,c,a verified (a=3/9 = 0.33 <= 0.375, no run), 0 key-longest items. Already hr=true."
+    }
+  ],
+  "replacementCycle": {
+    "labelsReplacedFor": [
+      "HO4-001",
+      "HO4-003",
+      "HO4-004",
+      "HO4-006",
+      "HO4-017",
+      "HO4-019",
+      "HO4-032",
+      "HO4-033",
+      "HO4-040",
+      "HO4-041",
+      "HO4-046",
+      "HO4-056",
+      "HO4-059",
+      "HO4-065",
+      "HO4-073",
+      "HO4-074",
+      "HO4-075"
+    ],
+    "changes": [
+      {
+        "caseId": "HO4-074",
+        "file": "labels.json",
+        "field": "languageReviewRequired",
+        "before": true,
+        "after": false,
+        "reason": "Set is entirely English; Hebrew language review is not applicable."
+      }
+    ],
+    "unchangedDisagreements": [
+      {
+        "caseId": "HO4-001",
+        "note": "Intent CLEAN, but literal 10.3 (sole option >0.6 x median: 11 vs median 5) fires OPTION_STYLE_OUTLIER; kept as expected per the doc, low confidence, human review. Differs from the pre-replacement item treatment (neutral), consistent with other sole-outlier labels such as HO4-012."
+      },
+      {
+        "caseId": "HO4-003",
+        "note": "Intent CLEAN (terse noun phrase), doc rules fire STEM_TOO_SHORT and STEM_NO_QUESTION_FORM; label follows the doc, not the intent."
+      },
+      {
+        "caseId": "HO4-004",
+        "note": "Intent CLEAN; imperative stem without ? fires STEM_NO_QUESTION_FORM (consistent with HO4-031/042). STEM_TOO_SHORT forbidden relies on Define being treated as an imperative lead word; low confidence."
+      },
+      {
+        "caseId": "HO4-006",
+        "note": "Intent CLEAN; capitalized NOT still fires STEM_NEGATIVE_WORDING (DET word match) and 35,63,52,84 fires OPTION_NUMERIC_UNORDERED."
+      },
+      {
+        "caseId": "HO4-017",
+        "note": "Intent CLEAN; key 78 vs next 63 gives ratio 1.238 and diff 15, exactly at both KEY_LONGEST_OPTION thresholds, so it fires. Boundary case, medium confidence."
+      },
+      {
+        "caseId": "HO4-019",
+        "note": "Intent CLEAN; key 105 chars vs next 69 (1.52x) fires KEY_LONGEST_OPTION and is sole style outlier."
+      },
+      {
+        "caseId": "HO4-040",
+        "note": "Intent CLEAN; imperative stem without ? fires STEM_NO_QUESTION_FORM per the strict doc rule (19.7 exempts only \":\" stems)."
+      },
+      {
+        "caseId": "HO4-059",
+        "note": "Besides EXPLANATION_MISSING the sole 8-char option vs median 4.5 (78%) literally fires OPTION_STYLE_OUTLIER though not the intended flaw; medium confidence."
+      },
+      {
+        "caseId": "HO4-073",
+        "note": "Intent healthy set, but QUESTION_TYPE_MONO (9 single-type items) and item 7 style outlier (7 vs median 3) fire. Item 9 descending 366..360 treated as ordered (doc says \"not sorted\", ambiguous), not expected; low confidence."
+      },
+      {
+        "caseId": "HO4-074",
+        "note": "Item 8 Aluminum (8) vs median 5 is exactly 0.6, not > 0.6, so OPTION_STYLE_OUTLIER is not expected there."
+      }
+    ]
+  },
+  "replacementCycle2": {
+    "labelsReplacedFor": [
+      "HO4-005",
+      "HO4-011",
+      "HO4-012",
+      "HO4-013",
+      "HO4-018",
+      "HO4-021",
+      "HO4-028",
+      "HO4-073",
+      "HO4-074",
+      "HO4-075"
+    ],
+    "changes": [
+      {
+        "caseId": "HO4-013",
+        "file": "corpus.json",
+        "field": "answerOptions a,b",
+        "before": [
+          "בהנחה ששאר הגורמים קבועים, העלאת מחיר מקטינה בדרך כלל את הכמות המבוקשת",
+          "העלאת מחיר תמיד מגדילה את הכמות המבוקשת"
+        ],
+        "after": [
+          "העלאת מחיר מקטינה בדרך כלל את הכמות המבוקשת",
+          "העלאת מחיר מגדילה את הכמות המבוקשת"
+        ],
+        "reason": "Item failed its CLEAN intent: key was 70 chars vs 39-43 (1.63x, diff 27 -> KEY_LONGEST_OPTION) and distractor b carried the strong absolute תמיד (OPTION_ABSOLUTE_TERM). Key shortened to 43 chars (tie with c, no margin) and b made a plain misconception without the strong absolute; weak-tier all/none wording stays in c and d."
+      },
+      {
+        "caseId": "HO4-073",
+        "file": "corpus.json",
+        "field": "set[9].answerOptions/correctOptionIds",
+        "before": "a:366,b:365,c:364,d:360 key a",
+        "after": "a:360,b:364,c:365,d:366 key d",
+        "reason": "Item 9 numeric options were descending (366,365,364,360); doc OPTION_NUMERIC_UNORDERED ('not sorted') does not define direction, which left a CLEAN-intent set ambiguous. Reordered ascending (matches HO4-033/043 convention); key positions now 2,4,1,3,2,1,4,3,4 (max share 3/9=0.33 <=0.375, no run)."
+      },
+      {
+        "caseId": "HO4-005",
+        "file": "labels.json",
+        "field": "confidence",
+        "before": "medium",
+        "after": "low",
+        "reason": "Sole multi-word option among short names: literal 10.3 style outlier on natural content, same ambiguity and treatment as HO4-001 (low confidence)."
+      },
+      {
+        "caseId": "HO4-012",
+        "file": "labels.json",
+        "field": "forbiddenCodes",
+        "before": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "after": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_NUMERIC_UNORDERED",
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "reason": "Added explicit negatives for numeric ordering (200,301,500 + text option) and weak-tier 'None'."
+      },
+      {
+        "caseId": "HO4-012",
+        "file": "labels.json",
+        "field": "rationale",
+        "before": "Stem contains 'not'; option d is 'None of the above'. Lengths 3,3,3,17 (median 3): d deviates >0.6x median so style outlier; key diff 14 <15 so no KEY_LONGEST; ratio 5.67 but diff 14 <20 so no imbalance. STEM_DOUBLE_NEGATIVE unclear (negated option?) so left unlabelled.",
+        "after": "Stem contains 'not'; option d is 'None of the above' (17 chars). Lengths 3,3,3,17 (median 3): d deviates >0.6x median so style outlier; key diff 14 <15 so no KEY_LONGEST; ratio 5.67 but diff 14 <20 so no imbalance. Options are not all numeric (no NUMERIC_UNORDERED); 'none' is weak-tier, not emitted. STEM_DOUBLE_NEGATIVE ('not' in stem plus a possibly negated option 'None') is undefined by the doc, so neither expected nor forbidden.",
+        "reason": "Recomputed lengths and documented the unresolved STEM_DOUBLE_NEGATIVE reading."
+      },
+      {
+        "caseId": "HO4-013",
+        "file": "labels.json",
+        "field": "label",
+        "before": "FLAWED",
+        "after": "CLEAN",
+        "reason": "Relabelled for the edited item so it matches the CLEAN intent."
+      },
+      {
+        "caseId": "HO4-013",
+        "file": "labels.json",
+        "field": "expectedCodes",
+        "before": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_ABSOLUTE_TERM",
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "after": [],
+        "reason": "Relabelled for the edited item so it matches the CLEAN intent."
+      },
+      {
+        "caseId": "HO4-013",
+        "file": "labels.json",
+        "field": "forbiddenCodes",
+        "before": [
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_OVERLAP_HIGH",
+          "STEM_NEGATIVE_WORDING",
+          "STEM_DOUBLE_NEGATIVE"
+        ],
+        "after": [
+          "OPTION_ABSOLUTE_TERM",
+          "KEY_LONGEST_OPTION",
+          "OPTION_STYLE_OUTLIER",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_OVERLAP_HIGH",
+          "STEM_NEGATIVE_WORDING",
+          "STEM_DOUBLE_NEGATIVE"
+        ],
+        "reason": "Relabelled for the edited item so it matches the CLEAN intent."
+      },
+      {
+        "caseId": "HO4-013",
+        "file": "labels.json",
+        "field": "rationale",
+        "before": "Key a is 70 chars vs next 43 (1.63x, diff 27). Distractor b contains strong absolute תמיד. Option a deviates from median 41.5 by >0.6x so style outlier. Ratio 1.79 <3; max Jaccard 0.36; stem has no negation (אין only in option d).",
+        "after": "After the corpus edit: lengths 43,34,43,40 (median 41.5): key ties c, no 1.2x margin; max deviation 0.18; ratio 1.26. No strong absolute in a distractor (c 'כל' and d 'שום' are weak tier, not emitted; 'בדרך כלל' token כלל is not כל). Max Jaccard a-b 5/9=0.56 <0.85. Stem has '?' and no negation (אין only in option d, stem has none so no double negative).",
+        "reason": "Relabelled for the edited item so it matches the CLEAN intent."
+      },
+      {
+        "caseId": "HO4-013",
+        "file": "labels.json",
+        "field": "confidence",
+        "before": "medium",
+        "after": "medium",
+        "reason": "Relabelled for the edited item so it matches the CLEAN intent."
+      },
+      {
+        "caseId": "HO4-018",
+        "file": "labels.json",
+        "field": "forbiddenCodes",
+        "before": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_STYLE_OUTLIER",
+          "STEM_NEGATIVE_WORDING"
+        ],
+        "after": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE",
+          "STEM_NEGATIVE_WORDING"
+        ],
+        "reason": "Removed OPTION_STYLE_OUTLIER from forbidden: 'IP' (Latin) in the key alone is a possible script outlier per 10.3, unresolved."
+      },
+      {
+        "caseId": "HO4-018",
+        "file": "labels.json",
+        "field": "rationale",
+        "before": "Distractor b contains strong absolute תמיד (c has weak בלבד, not emitted). Key (27) is not longest (d=39); ratio 1.5; no deviation >0.6x median 28.5.",
+        "after": "Distractor b contains strong absolute תמיד (c has weak בלבד, not emitted). Key (27) is not longest (d=39); ratio 1.5; Hebrew-length deviations from median 28.5 are <=0.37. The key alone contains Latin 'IP' among all-Hebrew options; 10.3 lists script as a style-outlier dimension, so OPTION_STYLE_OUTLIER is ambiguous and left neither expected nor forbidden.",
+        "reason": "Documented the script ambiguity."
+      },
+      {
+        "caseId": "HO4-018",
+        "file": "labels.json",
+        "field": "humanReviewRecommended",
+        "before": false,
+        "after": true,
+        "reason": "Ambiguity about script-based style outlier."
+      },
+      {
+        "caseId": "HO4-021",
+        "file": "labels.json",
+        "field": "forbiddenCodes",
+        "before": [
+          "OPTION_ABSOLUTE_TERM",
+          "KEY_LONGEST_OPTION",
+          "OPTION_OVERLAP_HIGH",
+          "STEM_TOO_SHORT",
+          "STEM_DOUBLE_NEGATIVE",
+          "OPTION_LENGTH_IMBALANCE"
+        ],
+        "after": [
+          "OPTION_ABSOLUTE_TERM",
+          "KEY_LONGEST_OPTION",
+          "OPTION_OVERLAP_HIGH",
+          "STEM_TOO_SHORT",
+          "STEM_DOUBLE_NEGATIVE",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_STYLE_OUTLIER",
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "reason": "Added explicit negatives verified by recomputation: lengths 40,28,39,27 (max deviation 0.19, so no style outlier); stem ends with '?'."
+      },
+      {
+        "caseId": "HO4-028",
+        "file": "labels.json",
+        "field": "languageReviewRequired",
+        "before": false,
+        "after": true,
+        "reason": "Hebrew prompt; consistent with other Hebrew items (e.g. HO4-033)."
+      },
+      {
+        "caseId": "HO4-073",
+        "file": "labels.json",
+        "field": "rationale",
+        "before": "9 SINGLE_CHOICE items (n>=8) so QUESTION_TYPE_MONO. Key positions b,d,a,c,b,a,d,c,a: max share 3/9=0.33 <0.375, no run. No key strictly longest in any item (0/9). No shared 3-token stem starts. Item 9 numeric options 366,365,364,360 are descending; whether descending counts as sorted is unclear, left unlabelled. Item 1 has π among digits (script difference ambiguous).",
+        "after": "9 SINGLE_CHOICE items (n>=8) so QUESTION_TYPE_MONO (doc: informational). After the item-9 reorder keys are b,d,a,c,b,a,d,c,d (positions 2,4,1,3,2,1,4,3,4): max share 3/9=0.33 <0.375, no run. Strictly-longest key in 0/9 items (ties-inclusive 4/9), so no SET_KEY_LENGTH_BIAS under any reading. No shared 3-token stem starts. Item 9 options 360,364,365,366 ascending. Item 1 has π among digits (script/numeric-parse ambiguity) and item 5 'מילת יחס' is exactly 0.6 x median, so no item-level expectations. Intent CLEAN, but MONO fires literally.",
+        "reason": "Recomputed after the item-9 reorder."
+      },
+      {
+        "caseId": "HO4-073",
+        "file": "labels.json",
+        "field": "humanReviewRecommended",
+        "before": true,
+        "after": true,
+        "reason": "Recomputed after the item-9 reorder."
+      },
+      {
+        "caseId": "HO4-074",
+        "file": "labels.json",
+        "field": "confidence",
+        "before": "medium",
+        "after": "medium",
+        "reason": "Item-level style outliers are natural-content literal firings (HO4-001 treatment); recommend human review."
+      },
+      {
+        "caseId": "HO4-074",
+        "file": "labels.json",
+        "field": "humanReviewRecommended",
+        "before": false,
+        "after": true,
+        "reason": "Item-level style outliers are natural-content literal firings (HO4-001 treatment); recommend human review."
+      },
+      {
+        "caseId": "HO4-074",
+        "file": "labels.json",
+        "field": "rationale",
+        "before": "Key is b in all 9 items: share 1.0 >0.375 and run of 9. All SINGLE_CHOICE, n=9. Key strictly longest in 2/9 only. Style outliers by literal median rule: item 6 (South Korea 11 vs median 6.5), item 7 (Carbon dioxide 14 vs median 7). Item 9 options 10,0,32,100 unsorted. Item 3/7 key ratios have diff <15 so no KEY_LONGEST.",
+        "after": "Key is b in all 9 items: share 1.0 >0.375 and run of 9. All SINGLE_CHOICE, n=9 (MONO). Key strictly longest in 2/9 (ties-inclusive 3/9) so no SET_KEY_LENGTH_BIAS. Style outliers by literal median rule: item 6 (South Korea 11 vs median 6.5, 0.69) and item 7 (Carbon dioxide 14 vs median 7, 1.0) - natural content, same ambiguity as HO4-001. Item 8 Aluminum is exactly 0.6, not expected. Item 9 options 10,0,32,100 unsorted. Item 3/7 key ratios have diff <15 so no KEY_LONGEST.",
+        "reason": "Item-level style outliers are natural-content literal firings (HO4-001 treatment); recommend human review."
+      },
+      {
+        "caseId": "HO4-075",
+        "file": "labels.json",
+        "field": "rationale",
+        "before": "Keys c,c,c,c,c,c,a,c,c,d: c share 0.8, run of 6 (items 1-6). All SINGLE_CHOICE, n=10. Key strictly longest in exactly 5/10 (items 4-8): literal threshold >=50% would fire SET_KEY_LENGTH_BIAS but 19.7 item 6 says exactly 5/10 is not enough, so left unlabelled. Item 1 stem has 3 words with lead מהי (likely exempt as interrogative; unclear if in list), left unlabelled. Item 4 'שקל חדש' (7 vs median 4) style outlier; items 3 and 9 numeric unsorted.",
+        "after": "Keys c,c,c,c,c,c,a,c,c,d: c share 0.8, run of 6 (items 1-6). All SINGLE_CHOICE, n=10 (MONO). Key strictly longest in exactly 5/10 (items 4-8; ties-inclusive 6/10; margin-based 0/10): literal >=50% could fire SET_KEY_LENGTH_BIAS but 19.7 item 6 says exactly 5/10 is not enough, so neither expected nor forbidden. Item 1 stem has 3 words with interrogative lead מהי (exempt per FUB-066), left unlabelled. Item 4 'שקל חדש' (7 vs median 4, 0.75) style outlier; items 3 and 9 numeric unsorted.",
+        "reason": "Added the definitional ambiguity of key-longest counting."
+      }
+    ],
+    "unchangedDisagreements": [
+      {
+        "caseId": "HO4-005",
+        "note": "Intent FLAWED (unemphasized negation) agrees via STEM_NEGATIVE_WORDING; OPTION_STYLE_OUTLIER on 'ארצות הברית' is a natural-content literal firing, low confidence, human review."
+      },
+      {
+        "caseId": "HO4-011",
+        "note": "Hebrew 'כל התשובות נכונות' is not in the doc's quoted examples (only the Run 008 variants are); expected per the all-of-the-above pattern concept, medium confidence."
+      },
+      {
+        "caseId": "HO4-012",
+        "note": "STEM_DOUBLE_NEGATIVE ('not' in stem plus option 'None of the above') is undefined; left unlabelled."
+      },
+      {
+        "caseId": "HO4-018",
+        "note": "Latin 'IP' in the key only: OPTION_STYLE_OUTLIER (script dimension) unresolved, neither expected nor forbidden."
+      },
+      {
+        "caseId": "HO4-028",
+        "note": "OPTION_NUMERIC_UNORDERED on years follows the literal 'all plain numbers, not sorted' rule; 19.7 speaks of numeric-range options, so medium confidence and human review."
+      },
+      {
+        "caseId": "HO4-073",
+        "note": "Intent CLEAN but label FLAWED: all 9 items are SINGLE_CHOICE so QUESTION_TYPE_MONO (informational, n>=8) fires literally. No corpus change made to add a MULTIPLE_CHOICE item (would reshuffle position statistics). Low confidence, human review."
+      },
+      {
+        "caseId": "HO4-074",
+        "note": "Boundary: item 8 Aluminum deviates exactly 0.6 x median (not >), so no expectation there."
+      },
+      {
+        "caseId": "HO4-075",
+        "note": "SET_KEY_LENGTH_BIAS: strict count exactly 5/10 at the 50% threshold; 19.7 item 6 says not enough, 11.1 literal says >=50%. Left unlabelled rather than forced."
+      }
+    ]
+  },
+  "replacementCycle3": {
+    "labelsReplacedFor": [
+      "HO4-002",
+      "HO4-018",
+      "HO4-033",
+      "HO4-037",
+      "HO4-071",
+      "HO4-073",
+      "HO4-074",
+      "HO4-075"
+    ],
+    "changes": [
+      {
+        "caseId": "HO4-073",
+        "file": "labels.json",
+        "field": "confidence/humanReviewRecommended/rationale",
+        "before": "medium/false",
+        "after": "low/true",
+        "reason": "Literal QUESTION_TYPE_MONO contradicts CLEAN author intent; flagged as subjective rather than forced."
+      },
+      {
+        "caseId": "HO4-075",
+        "file": "labels.json",
+        "field": "forbiddenSetCodes",
+        "before": "includes SET_KEY_LENGTH_BIAS",
+        "after": "removed (unlabelled)",
+        "reason": "Exactly 5/10 at the 0.5 threshold is genuinely ambiguous between 11.1 literal and 19.7 item 6; consistent with cycle-2 handling, do not force."
+      }
+    ],
+    "unchangedDisagreements": [
+      {
+        "caseId": "HO4-037",
+        "note": "Author intent CLEAN; literal 10.3 OPTION_STYLE_OUTLIER fires on the 13-char option (lengths 6/13/4/2, median 5, 8>3; the 2-char option deviates exactly 3, not >3). Label FLAWED, low confidence, human review recommended. Not forced."
+      },
+      {
+        "caseId": "HO4-073",
+        "note": "Author intent CLEAN; literal QUESTION_TYPE_MONO (9 SINGLE_CHOICE, informational) makes the label FLAWED. Low confidence, human review. No corpus change (adding an MC item would reshuffle position statistics)."
+      },
+      {
+        "caseId": "HO4-075",
+        "note": "SET_KEY_LENGTH_BIAS: key strictly longest in exactly 5/10 at the 50% threshold; 11.1 literal says fire, 19.7 item 6 says not enough. Left neither expected nor forbidden."
+      },
+      {
+        "caseId": "HO4-074",
+        "note": "Item-level OPTION_STYLE_OUTLIER on items 1, 6, 7 are literal length-only firings beyond author intent; item 8 Aluminum deviates exactly 0.6 x median (not >) so no expectation."
+      },
+      {
+        "caseId": "HO4-071",
+        "note": "Semantic-only FLAWED (locale-dependent weekend); no deterministic code; human review recommended."
+      }
+    ]
+  },
+  "replacementCycle4": {
+    "labelsReplacedFor": [
+      "HO4-018"
+    ],
+    "changes": [
+      {
+        "caseId": "HO4-018",
+        "file": "labels.json",
+        "field": "entry",
+        "before": "pre-replacement label (37/34 chars, expected OPTION_ABSOLUTE_TERM only)",
+        "after": "new independent label: FLAWED, expected KEY_LONGEST_OPTION + OPTION_ABSOLUTE_TERM (lengths 68/45/47/42, 68/47=1.45, diff 21; strong tamid in distractor b)",
+        "reason": "Verified against doc 10.3 thresholds: imbalance 1.62<3, style deviation 0.48<=0.6, stem 5 words with interrogative; weak-tier terms (kol, lachalutin, yechida/bil adit) not emitted. No corpus edit."
+      }
+    ],
+    "unchangedDisagreements": [
+      {
+        "caseId": "HO4-018",
+        "note": "Author intent mentions only absolutes and calls the key plain, but the key is literally the longest by margin so KEY_LONGEST_OPTION also applies; label is FLAWED either way. Whether lachalutin counts as strong tier is subjective but does not change the outcome."
+      }
+    ]
+  }
+}

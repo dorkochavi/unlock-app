@@ -1,0 +1,2931 @@
+{
+ "cases": [
+  {
+   "caseId": "HO4-001",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזה איבר בגוף האדם מייצר את ההורמון אינסולין?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "הלבלב"
+     },
+     {
+      "id": "b",
+      "content": "הכבד"
+     },
+     {
+      "id": "c",
+      "content": "הטחול"
+     },
+     {
+      "id": "d",
+      "content": "בלוטת התריס"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "האינסולין מיוצר בתאי בטא באיי לנגרהנס שבלבלב ומוריד את רמת הסוכר בדם."
+   }
+  },
+  {
+   "caseId": "HO4-002",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "In economics, what term describes the value of the next best alternative given up when a choice is made?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Sunk cost"
+     },
+     {
+      "id": "b",
+      "content": "Marginal revenue"
+     },
+     {
+      "id": "c",
+      "content": "Opportunity cost"
+     },
+     {
+      "id": "d",
+      "content": "Fixed cost"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "Opportunity cost is the benefit forgone from the best alternative that was not chosen."
+   }
+  },
+  {
+   "caseId": "HO4-003",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "בירת מונגוליה",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "ארדנט"
+     },
+     {
+      "id": "b",
+      "content": "דארחאן"
+     },
+     {
+      "id": "c",
+      "content": "אולן בטור"
+     },
+     {
+      "id": "d",
+      "content": "צ'ויבלסן"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "אולן בטור היא העיר הגדולה ביותר במונגוליה ומקום מושב הממשלה; השאר ערים אחרות במדינה."
+   }
+  },
+  {
+   "caseId": "HO4-004",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Define allele.",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "A segment of DNA that is copied into messenger RNA before protein synthesis begins"
+     },
+     {
+      "id": "b",
+      "content": "One of the alternative versions of a gene found at the same position on a chromosome"
+     },
+     {
+      "id": "c",
+      "content": "A structure inside the cell where amino acids are joined together to form proteins"
+     },
+     {
+      "id": "d",
+      "content": "A change in chromosome number caused by an error during cell division"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "Alleles are variants of the same gene occupying the same locus, such as different versions of a flower-colour gene."
+   }
+  },
+  {
+   "caseId": "HO4-005",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזו מהמדינות הבאות אינה חברה קבועה במועצת הביטחון של האו\"ם?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "ארצות הברית"
+     },
+     {
+      "id": "b",
+      "content": "צרפת"
+     },
+     {
+      "id": "c",
+      "content": "גרמניה"
+     },
+     {
+      "id": "d",
+      "content": "סין"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "חמש החברות הקבועות הן ארצות הברית, בריטניה, צרפת, סין ורוסיה; גרמניה אינה ביניהן."
+   }
+  },
+  {
+   "caseId": "HO4-006",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which of the following is NOT a multiple of 7?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "35"
+     },
+     {
+      "id": "b",
+      "content": "63"
+     },
+     {
+      "id": "c",
+      "content": "52"
+     },
+     {
+      "id": "d",
+      "content": "84"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "7 x 7 = 49 and 7 x 8 = 56, so 52 lies between two multiples; 35, 63 and 84 are 7 x 5, 7 x 9 and 7 x 12."
+   }
+  },
+  {
+   "caseId": "HO4-007",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "ויטמין C, שאינו מסיס בשומן, נמצא בכמות גבוהה במיוחד באיזה מזון?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "פלפל אדום"
+     },
+     {
+      "id": "b",
+      "content": "חמאה"
+     },
+     {
+      "id": "c",
+      "content": "שמן זית"
+     },
+     {
+      "id": "d",
+      "content": "בשר בקר"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "פלפלים והדרים הם מקורות עשירים בוויטמין C."
+   }
+  },
+  {
+   "caseId": "HO4-008",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "בניסוי מעבדה ארוך שבו מחממים לאט כוס המכילה קרח ומים, תוך ערבוב מתמיד ומדידה של הטמפרטורה כל דקה, טמפרטורת התערובת אינה עולה מעל איזו טמפרטורה כל עוד נשאר קרח בכוס?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "0 מעלות צלזיוס"
+     },
+     {
+      "id": "b",
+      "content": "4 מעלות צלזיוס"
+     },
+     {
+      "id": "c",
+      "content": "25 מעלות צלזיוס"
+     },
+     {
+      "id": "d",
+      "content": "100 מעלות צלזיוס"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "בזמן ההמסה כל החום נקלט בשינוי המצב והטמפרטורה נשארת 0 מעלות."
+   }
+  },
+  {
+   "caseId": "HO4-009",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהמספרים הבאים אינם ראשוניים? בחר/י את כל התשובות הנכונות.",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "9"
+     },
+     {
+      "id": "b",
+      "content": "11"
+     },
+     {
+      "id": "c",
+      "content": "15"
+     },
+     {
+      "id": "d",
+      "content": "21"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "c",
+     "d"
+    ],
+    "explanation": "9, 15 ו-21 מתחלקים גם ב-3; 11 ראשוני."
+   }
+  },
+  {
+   "caseId": "HO4-010",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which of the following are renewable energy sources?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Solar"
+     },
+     {
+      "id": "b",
+      "content": "Wind"
+     },
+     {
+      "id": "c",
+      "content": "Hydroelectric"
+     },
+     {
+      "id": "d",
+      "content": "All of the above"
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "All three are replenished naturally."
+   }
+  },
+  {
+   "caseId": "HO4-011",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזה מהגורמים הבאים עשוי לגרום לעלייה במחיר של מוצר בשוק?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "עלייה בביקוש למוצר"
+     },
+     {
+      "id": "b",
+      "content": "ירידה בהיצע המוצר"
+     },
+     {
+      "id": "c",
+      "content": "התייקרות חומרי הגלם"
+     },
+     {
+      "id": "d",
+      "content": "כל התשובות נכונות"
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "עלייה בביקוש, ירידה בהיצע והתייקרות חומרי הגלם (שמקטינה את ההיצע) כולן עשויות להעלות מחיר."
+   }
+  },
+  {
+   "caseId": "HO4-012",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which of these HTTP status codes means that the requested page was not found?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "200"
+     },
+     {
+      "id": "b",
+      "content": "301"
+     },
+     {
+      "id": "c",
+      "content": "500"
+     },
+     {
+      "id": "d",
+      "content": "None of the above"
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "The code for 'not found' is 404, which is not listed."
+   }
+  },
+  {
+   "caseId": "HO4-013",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזו טענה נכונה לגבי חוק הביקוש?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "העלאת מחיר מקטינה בדרך כלל את הכמות המבוקשת"
+     },
+     {
+      "id": "b",
+      "content": "העלאת מחיר מגדילה את הכמות המבוקשת"
+     },
+     {
+      "id": "c",
+      "content": "כל מוצר בעל כמות מבוקשת קבועה ללא קשר למחיר"
+     },
+     {
+      "id": "d",
+      "content": "אין שום קשר בין מחיר המוצר לכמות המבוקשת"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "לפי חוק הביקוש, כשהמחיר עולה והשאר קבוע, הצרכנים קונים בדרך כלל פחות."
+   }
+  },
+  {
+   "caseId": "HO4-014",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which of the following are version control systems?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Git"
+     },
+     {
+      "id": "b",
+      "content": "Mercurial"
+     },
+     {
+      "id": "c",
+      "content": "Subversion"
+     },
+     {
+      "id": "d",
+      "content": "All of these."
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "Git, Mercurial and Subversion all track changes to source code."
+   }
+  },
+  {
+   "caseId": "HO4-015",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזו מהבאות היא שפת סימון ולא שפת תכנות?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Python"
+     },
+     {
+      "id": "b",
+      "content": "HTML"
+     },
+     {
+      "id": "c",
+      "content": "Java"
+     },
+     {
+      "id": "d",
+      "content": "C++"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "HTML מתארת מבנה של מסמך ואינה מבצעת לוגיקה חישובית."
+   }
+  },
+  {
+   "caseId": "HO4-016",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which layer of Earth's atmosphere absorbs most of the harmful ultraviolet radiation from the Sun?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Troposphere"
+     },
+     {
+      "id": "b",
+      "content": "Ionosphere"
+     },
+     {
+      "id": "c",
+      "content": "The ozone layer, which absorbs ultraviolet radiation"
+     },
+     {
+      "id": "d",
+      "content": "Exosphere"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "Ozone in the stratosphere absorbs most UV-B and UV-C radiation."
+   }
+  },
+  {
+   "caseId": "HO4-017",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהי שרשרת מזון?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "אוסף כל המינים החיים באזור גאוגרפי מסוים יחד עם תנאי האקלים שלו"
+     },
+     {
+      "id": "b",
+      "content": "רצף של יצורים חיים שבו כל חוליה ניזונה מזו שלפניה והאנרגיה עוברת מחוליה לחוליה"
+     },
+     {
+      "id": "c",
+      "content": "קבוצה של יצורים מאותו מין שחיים יחד באותו אזור ומתרבים זה עם זה"
+     },
+     {
+      "id": "d",
+      "content": "תהליך שבו בעלי חיים נודדים בין אזורים בעקבות שינויי עונות"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "שרשרת מזון מתארת מי ניזון ממי והעברת אנרגיה מיצרן דרך צרכנים עוקבים."
+   }
+  },
+  {
+   "caseId": "HO4-018",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהו מהדר (קומפיילר) בתחום התכנות?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "תוכנה שמתרגמת קוד מקור הכתוב בשפת תכנות עילית לקוד שהמחשב יכול להריץ"
+     },
+     {
+      "id": "b",
+      "content": "רכיב חומרה שמבצע תמיד את כל החישובים בכל מחשב"
+     },
+     {
+      "id": "c",
+      "content": "שפת תכנות יחידה ובלעדית שבה אפשר לכתוב כל תוכנה"
+     },
+     {
+      "id": "d",
+      "content": "כלי שמונע לחלוטין כל שגיאה בתוכניות שנכתבו"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "מהדר מתרגם קוד מקור שנכתב בשפה עילית לקוד מכונה או לייצוג ביניים שאפשר להריץ. הוא יכול לדווח על שגיאות תחביר, אך אינו מבטיח שהתוכנית נקייה מכל תקלה."
+   }
+  },
+  {
+   "caseId": "HO4-019",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which statement about objects falling freely in a vacuum near Earth's surface is correct?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "They always fall with the same acceleration, whatever their mass, so a feather and a hammer land together"
+     },
+     {
+      "id": "b",
+      "content": "Heavier objects accelerate faster than lighter ones"
+     },
+     {
+      "id": "c",
+      "content": "Their acceleration grows the longer they fall"
+     },
+     {
+      "id": "d",
+      "content": "Objects with a larger surface area fall faster because of their shape"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "Without air resistance all bodies share the same gravitational acceleration, as demonstrated on the Moon."
+   }
+  },
+  {
+   "caseId": "HO4-020",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "Which of the following statements about the stock market are true?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Prices never change after the opening bell"
+     },
+     {
+      "id": "b",
+      "content": "Share prices can rise or fall as supply and demand shift"
+     },
+     {
+      "id": "c",
+      "content": "Only wealthy people are allowed to buy shares"
+     },
+     {
+      "id": "d",
+      "content": "Prices partly reflect expectations about a company's future earnings"
+     }
+    ],
+    "correctOptionIds": [
+     "b",
+     "d"
+    ],
+    "explanation": "Prices move continuously and incorporate expectations."
+   }
+  },
+  {
+   "caseId": "HO4-021",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מה נכון לגבי מעגל?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "אורך הקוטר שווה תמיד לפעמיים אורך הרדיוס"
+     },
+     {
+      "id": "b",
+      "content": "אורך הקוטר שווה לאורך הרדיוס"
+     },
+     {
+      "id": "c",
+      "content": "הקוטר הוא קטע שאינו עובר דרך מרכז המעגל"
+     },
+     {
+      "id": "d",
+      "content": "בכל מעגל הרדיוס ארוך מהקוטר"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "הקוטר עובר דרך המרכז ומורכב משני רדיוסים."
+   }
+  },
+  {
+   "caseId": "HO4-022",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהו תפקידה של הכנסת?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "לשפוט אזרחים"
+     },
+     {
+      "id": "b",
+      "content": "לחוקק חוקים, לפקח על עבודת הממשלה, לאשר את התקציב ולבחור את נשיא המדינה"
+     },
+     {
+      "id": "c",
+      "content": "לפקד על הצבא"
+     },
+     {
+      "id": "d",
+      "content": "לגבות מסים"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "הכנסת היא הרשות המחוקקת של מדינת ישראל."
+   }
+  },
+  {
+   "caseId": "HO4-023",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "What is the main difference between a virus and a bacterium?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Bacteria are living single-celled organisms that reproduce on their own, while viruses can replicate only inside a host cell"
+     },
+     {
+      "id": "b",
+      "content": "Viruses are larger than bacteria and visible without a microscope"
+     },
+     {
+      "id": "c",
+      "content": "Bacteria cannot cause disease, while viruses can"
+     },
+     {
+      "id": "d",
+      "content": "Viruses carry no genetic material, while bacteria carry DNA"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "Viruses depend on host cells; bacteria are independent cells."
+   }
+  },
+  {
+   "caseId": "HO4-024",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהנהרות הבאים זורמים באפריקה?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "הנילוס"
+     },
+     {
+      "id": "b",
+      "content": "הקונגו"
+     },
+     {
+      "id": "c",
+      "content": "האמזונס"
+     },
+     {
+      "id": "d",
+      "content": "הניז'ר"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b",
+     "d"
+    ],
+    "explanation": "האמזונס נמצא בדרום אמריקה."
+   }
+  },
+  {
+   "caseId": "HO4-025",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "What does CPU stand for?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Computer Personal Unit"
+     },
+     {
+      "id": "b",
+      "content": "Central Program Utility"
+     },
+     {
+      "id": "c",
+      "content": "Central Processing Unit"
+     },
+     {
+      "id": "d",
+      "content": "Core Processing Universal Memory"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "The CPU executes program instructions."
+   }
+  },
+  {
+   "caseId": "HO4-026",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "כמה שעות יש ביממה?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "12"
+     },
+     {
+      "id": "b",
+      "content": "24"
+     },
+     {
+      "id": "c",
+      "content": "24"
+     },
+     {
+      "id": "d",
+      "content": "48"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "יממה היא 24 שעות."
+   }
+  },
+  {
+   "caseId": "HO4-027",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "Which of the following are greenhouse gases?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Carbon dioxide"
+     },
+     {
+      "id": "b",
+      "content": "Methane"
+     },
+     {
+      "id": "c",
+      "content": "Nitrogen"
+     },
+     {
+      "id": "d",
+      "content": "Argon"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "caseId": "HO4-028",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "באיזו שנה נחתם הסכם השלום בין ישראל למצרים?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "1994"
+     },
+     {
+      "id": "b",
+      "content": "1979"
+     },
+     {
+      "id": "c",
+      "content": "1967"
+     },
+     {
+      "id": "d",
+      "content": "1973"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "הסכם השלום בין ישראל למצרים נחתם בשנת 1979."
+   }
+  },
+  {
+   "caseId": "HO4-029",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which city is the capital of Canada?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Ottawa"
+     },
+     {
+      "id": "b",
+      "content": "toronto"
+     },
+     {
+      "id": "c",
+      "content": "Vancouver."
+     },
+     {
+      "id": "d",
+      "content": "montréal"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "Ottawa is the federal capital, on the Ontario-Quebec border."
+   }
+  },
+  {
+   "caseId": "HO4-030",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהבאים הם תכונות של מתכות? (ניתן לבחור יותר מתשובה אחת)",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "מוליכות חשמל טובה"
+     },
+     {
+      "id": "b",
+      "content": "ברק מתכתי"
+     },
+     {
+      "id": "c",
+      "content": "שבירות כמו זכוכית"
+     },
+     {
+      "id": "d",
+      "content": "יכולת להתכופף ולהתמתח"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b",
+     "d"
+    ],
+    "explanation": "מתכות מוליכות, מבריקות וגמישות; שבירות אופיינית לחומרים קרמיים."
+   }
+  },
+  {
+   "caseId": "HO4-031",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "Select all that are HTTP request methods.",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "GET"
+     },
+     {
+      "id": "b",
+      "content": "POST"
+     },
+     {
+      "id": "c",
+      "content": "PUSH"
+     },
+     {
+      "id": "d",
+      "content": "DELETE"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b",
+     "d"
+    ],
+    "explanation": "There is no standard PUSH method in HTTP."
+   }
+  },
+  {
+   "caseId": "HO4-032",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהכלים הבאים שייכים למשפחת כלי הקשת?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "כינור"
+     },
+     {
+      "id": "b",
+      "content": "ויולה"
+     },
+     {
+      "id": "c",
+      "content": "צ'לו"
+     },
+     {
+      "id": "d",
+      "content": "חליל"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b",
+     "c"
+    ],
+    "explanation": "כינור, ויולה וצ'לו מופקים בהעברת קשת על מיתרים; חליל הוא כלי נשיפה."
+   }
+  },
+  {
+   "caseId": "HO4-033",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "באיזו שנה נפלה חומת ברלין?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "1985"
+     },
+     {
+      "id": "b",
+      "content": "1987"
+     },
+     {
+      "id": "c",
+      "content": "1989"
+     },
+     {
+      "id": "d",
+      "content": "1991"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "חומת ברלין נפתחה בנובמבר 1989, ואיחוד גרמניה הושלם שנה לאחר מכן."
+   }
+  },
+  {
+   "caseId": "HO4-034",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהי אנרגיה קינטית?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "אנרגיה השמורה בקשרים כימיים"
+     },
+     {
+      "id": "b",
+      "content": "אנרגיה שיש לגוף בשל תנועתו"
+     },
+     {
+      "id": "c",
+      "content": "אנרגיה שיש לגוף בשל גובהו"
+     },
+     {
+      "id": "d",
+      "content": "אנרגיה הנישאת בקרינת אור"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "אנרגיה קינטית שווה לחצי מסה כפול מהירות בריבוע."
+   }
+  },
+  {
+   "caseId": "HO4-035",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Bank",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "A financial institution that holds deposits"
+     },
+     {
+      "id": "b",
+      "content": "The sloping land beside a river"
+     },
+     {
+      "id": "c",
+      "content": "To tilt an aircraft to one side while turning"
+     },
+     {
+      "id": "d",
+      "content": "A row of similar devices arranged together"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "A bank is an institution for deposits and loans."
+   }
+  },
+  {
+   "caseId": "HO4-036",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which of these words can be used as both a noun and a verb?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Run"
+     },
+     {
+      "id": "b",
+      "content": "Quickly"
+     },
+     {
+      "id": "c",
+      "content": "Beautiful"
+     },
+     {
+      "id": "d",
+      "content": "Under"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "'Run' is a noun (a morning run) and a verb (to run)."
+   }
+  },
+  {
+   "caseId": "HO4-037",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהבאים הם שפות תכנות?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "פייתון"
+     },
+     {
+      "id": "b",
+      "content": "ג'אווה סקריפט"
+     },
+     {
+      "id": "c",
+      "content": "HTML"
+     },
+     {
+      "id": "d",
+      "content": "C#"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b",
+     "d"
+    ],
+    "explanation": "HTML היא שפת סימון שמתארת מבנה של דף אינטרנט ואינה שפת תכנות."
+   }
+  },
+  {
+   "caseId": "HO4-038",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מי הייתה ראש הממשלה הראשונה בישראל?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "גולדה מאיר"
+     },
+     {
+      "id": "b",
+      "content": "שולמית אלוני"
+     },
+     {
+      "id": "c",
+      "content": "תמר אשכנזי"
+     },
+     {
+      "id": "d",
+      "content": "ציפי לבני"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "גולדה מאיר כיהנה כראש ממשלה בשנים 1969 עד 1974."
+   }
+  },
+  {
+   "caseId": "HO4-039",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "הרפובליקה הרומית",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "הוקמה לאחר הדחת המלך האחרון"
+     },
+     {
+      "id": "b",
+      "content": "הוקמה על ידי אוגוסטוס"
+     },
+     {
+      "id": "c",
+      "content": "התקיימה עוד לפני ייסוד העיר רומא"
+     },
+     {
+      "id": "d",
+      "content": "נמשכה כחמישים שנה"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "הרפובליקה קמה בסביבות 509 לפנה״ס ונמשכה כ-480 שנה."
+   }
+  },
+  {
+   "caseId": "HO4-040",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Name the longest bone in the human body.",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Humerus"
+     },
+     {
+      "id": "b",
+      "content": "Tibia"
+     },
+     {
+      "id": "c",
+      "content": "Fibula"
+     },
+     {
+      "id": "d",
+      "content": "Femur"
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "The femur, or thighbone, is the longest and strongest bone in the body."
+   }
+  },
+  {
+   "caseId": "HO4-041",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "יחידת המידה של מתח חשמלי",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "וולט"
+     },
+     {
+      "id": "b",
+      "content": "אמפר"
+     },
+     {
+      "id": "c",
+      "content": "אוהם"
+     },
+     {
+      "id": "d",
+      "content": "קולון"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "מתח חשמלי נמדד בוולט במערכת SI."
+   }
+  },
+  {
+   "caseId": "HO4-042",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "הגדר/י: דמוקרטיה.",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "שלטון של אדם אחד שבו השליט נקבע בירושה"
+     },
+     {
+      "id": "b",
+      "content": "שלטון שבו העם בוחר נציגים והזכויות שוות לכולם"
+     },
+     {
+      "id": "c",
+      "content": "שלטון שבו הצבא מחזיק בכל הסמכויות"
+     },
+     {
+      "id": "d",
+      "content": "שלטון שבו מנהיגים דתיים קובעים את החוקים"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "דמוקרטיה היא שלטון העם באמצעות בחירות חופשיות ושוויון זכויות."
+   }
+  },
+  {
+   "caseId": "HO4-043",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מחיר חולצה הוא 80 שקלים ויש עליה הנחה של 25%. מה המחיר לאחר ההנחה?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "20 שקלים"
+     },
+     {
+      "id": "b",
+      "content": "55 שקלים"
+     },
+     {
+      "id": "c",
+      "content": "60 שקלים"
+     },
+     {
+      "id": "d",
+      "content": "65 שקלים"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "25% מ-80 הם 20, ולכן המחיר הוא 60."
+   }
+  },
+  {
+   "caseId": "HO4-044",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "רכבת נוסעת 150 ק״מ במשך 2.5 שעות. מהי מהירותה הממוצעת?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "50 קמ״ש"
+     },
+     {
+      "id": "b",
+      "content": "60 קמ״ש"
+     },
+     {
+      "id": "c",
+      "content": "75 קמ״ש"
+     },
+     {
+      "id": "d",
+      "content": "375 קמ״ש"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "150 חלקי 2.5 שווה 60."
+   }
+  },
+  {
+   "caseId": "HO4-045",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהו הממוצע של המספרים 2, 4, 6 ו-8?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "4"
+     },
+     {
+      "id": "b",
+      "content": "5"
+     },
+     {
+      "id": "c",
+      "content": "6"
+     },
+     {
+      "id": "d",
+      "content": "20"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "הסכום הוא 20, מחולק בארבעה מספרים נותן 5."
+   }
+  },
+  {
+   "caseId": "HO4-046",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהו טווח דופק המנוחה התקין אצל מבוגר בריא?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "20 עד 40 פעימות בדקה"
+     },
+     {
+      "id": "b",
+      "content": "40 עד 50 פעימות בדקה"
+     },
+     {
+      "id": "c",
+      "content": "60 עד 100 פעימות בדקה"
+     },
+     {
+      "id": "d",
+      "content": "120 עד 150 פעימות בדקה"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "הטווח המקובל לדופק מנוחה אצל מבוגר הוא 60 עד 100 פעימות בדקה."
+   }
+  },
+  {
+   "caseId": "HO4-047",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "Which of these countries are in South America?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Chile"
+     },
+     {
+      "id": "b",
+      "content": "Peru"
+     },
+     {
+      "id": "c",
+      "content": "Spain"
+     },
+     {
+      "id": "d",
+      "content": "Colombia"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b",
+     "d"
+    ],
+    "explanation": "Spain is in Europe."
+   }
+  },
+  {
+   "caseId": "HO4-048",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהמילים הבאות הן שמות עצם?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "שולחן"
+     },
+     {
+      "id": "b",
+      "content": "רץ"
+     },
+     {
+      "id": "c",
+      "content": "ילד"
+     },
+     {
+      "id": "d",
+      "content": "יפה"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "c"
+    ],
+    "explanation": "שולחן וילד הם שמות עצם; 'רץ' פועל ו'יפה' שם תואר."
+   }
+  },
+  {
+   "caseId": "HO4-049",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "Which of these are operating systems?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Linux"
+     },
+     {
+      "id": "b",
+      "content": "Windows"
+     },
+     {
+      "id": "c",
+      "content": "Google Chrome (the browser)"
+     },
+     {
+      "id": "d",
+      "content": "Android"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b",
+     "d"
+    ],
+    "explanation": "A browser is an application that runs on top of an operating system."
+   }
+  },
+  {
+   "caseId": "HO4-050",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מי היה הנשיא הראשון של ארצות הברית?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "תומאס ג'פרסון"
+     },
+     {
+      "id": "b",
+      "content": "אברהם לינקולן"
+     },
+     {
+      "id": "c",
+      "content": "ג'ון אדמס"
+     },
+     {
+      "id": "d",
+      "content": "ג'ורג' וושינגטון"
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "וושינגטון כיהן בשנים 1789 עד 1797."
+   }
+  },
+  {
+   "caseId": "HO4-051",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which of the following is not a noble gas?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Helium"
+     },
+     {
+      "id": "b",
+      "content": "Neon"
+     },
+     {
+      "id": "c",
+      "content": "Nitrogen"
+     },
+     {
+      "id": "d",
+      "content": "Argon"
+     }
+    ],
+    "correctOptionIds": [
+     "c"
+    ],
+    "explanation": "Nitrogen is a diatomic non-metal, not in group 18."
+   }
+  },
+  {
+   "caseId": "HO4-052",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזו מהטענות הבאות איננה שגויה?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "מים רותחים ב-100 מעלות צלזיוס בלחץ אטמוספרי רגיל"
+     },
+     {
+      "id": "b",
+      "content": "השמש סובבת סביב כדור הארץ"
+     },
+     {
+      "id": "c",
+      "content": "הירח הוא כוכב לכת"
+     },
+     {
+      "id": "d",
+      "content": "צל נוצר רק בלילה"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "רק הטענה הראשונה נכונה."
+   }
+  },
+  {
+   "caseId": "HO4-053",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מה מהבאים מהווה מקור טוב לסידן?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "חלב"
+     },
+     {
+      "id": "b",
+      "content": "גבינה"
+     },
+     {
+      "id": "c",
+      "content": "שקדים"
+     },
+     {
+      "id": "d",
+      "content": "כל הנ״ל"
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "כל המזונות המפורטים עשירים בסידן."
+   }
+  },
+  {
+   "caseId": "HO4-054",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which of these is a prime number between 24 and 28?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "25"
+     },
+     {
+      "id": "b",
+      "content": "26"
+     },
+     {
+      "id": "c",
+      "content": "27"
+     },
+     {
+      "id": "d",
+      "content": "None of these."
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "25, 26 and 27 are all composite."
+   }
+  },
+  {
+   "caseId": "HO4-055",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהמשפטים הבאים נכונים לגבי תזונה בריאה?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "אסור לאכול שומן לעולם"
+     },
+     {
+      "id": "b",
+      "content": "כדאי לשלב מגוון מזונות מכל קבוצות המזון"
+     },
+     {
+      "id": "c",
+      "content": "פחמימות מזיקות תמיד"
+     },
+     {
+      "id": "d",
+      "content": "כדאי לשתות מים לאורך היום"
+     }
+    ],
+    "correctOptionIds": [
+     "b",
+     "d"
+    ],
+    "explanation": "תזונה מאוזנת כוללת מגוון מזונות והידרציה מספקת."
+   }
+  },
+  {
+   "caseId": "HO4-056",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Why do ice cubes float in water?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Because ice is colder than the water"
+     },
+     {
+      "id": "b",
+      "content": "Because water expands as it freezes, so ice is less dense than liquid water and is pushed up by the denser water beneath it (buoyancy)"
+     },
+     {
+      "id": "c",
+      "content": "Because ice is full of air"
+     },
+     {
+      "id": "d",
+      "content": "Because of surface tension"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "Ice has a lower density than liquid water, so buoyancy keeps it afloat."
+   }
+  },
+  {
+   "caseId": "HO4-057",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזה תהליך גורם לקרקע להישחק על ידי מים זורמים לאורך זמן?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "התאדות"
+     },
+     {
+      "id": "b",
+      "content": "סחיפה של קרקע על ידי מים זורמים"
+     },
+     {
+      "id": "c",
+      "content": "התגבשות"
+     },
+     {
+      "id": "d",
+      "content": "עיבוי"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "סחיפה היא סילוק חלקיקי קרקע על ידי זרימת מים."
+   }
+  },
+  {
+   "caseId": "HO4-058",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which unit is used to measure electrical resistance?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Volt"
+     },
+     {
+      "id": "b",
+      "content": "Ohm"
+     },
+     {
+      "id": "c",
+      "content": "Ampere"
+     },
+     {
+      "id": "d",
+      "content": "ohm"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "Resistance is measured in ohms."
+   }
+  },
+  {
+   "caseId": "HO4-059",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהו האיבר הגדול ביותר בגוף האדם?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "העור"
+     },
+     {
+      "id": "b",
+      "content": "הכבד"
+     },
+     {
+      "id": "c",
+      "content": "הריאה"
+     },
+     {
+      "id": "d",
+      "content": "המעי הדק"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ]
+   }
+  },
+  {
+   "caseId": "HO4-060",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "How long does Earth take to orbit the Sun?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "30 days"
+     },
+     {
+      "id": "b",
+      "content": "365 days"
+     },
+     {
+      "id": "c",
+      "content": "Decade"
+     },
+     {
+      "id": "d",
+      "content": "24 hours."
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "A year is about 365.25 days."
+   }
+  },
+  {
+   "caseId": "HO4-061",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "כליות?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "איברי הפרשה המסננים את הדם ומפרישים שתן"
+     },
+     {
+      "id": "b",
+      "content": "איברי עיכול"
+     },
+     {
+      "id": "c",
+      "content": "איברי נשימה"
+     },
+     {
+      "id": "d",
+      "content": "איברי שמיעה"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "הכליות מסננות פסולת מהדם."
+   }
+  },
+  {
+   "caseId": "HO4-062",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזה בעל חיים חי במים ואינו דג?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "סלמון"
+     },
+     {
+      "id": "b",
+      "content": "דולפין"
+     },
+     {
+      "id": "c",
+      "content": "טונה"
+     },
+     {
+      "id": "d",
+      "content": "סרדין"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "דולפין הוא יונק ימי."
+   }
+  },
+  {
+   "caseId": "HO4-063",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזו פעולה היא תפקיד של הלב ולא של הריאות?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "החלפת גזים עם האוויר"
+     },
+     {
+      "id": "b",
+      "content": "שאיבת דם ברחבי הגוף"
+     },
+     {
+      "id": "c",
+      "content": "יצירת קול"
+     },
+     {
+      "id": "d",
+      "content": "סינון אבק מהאוויר הנשאף"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "הלב הוא משאבה; החלפת הגזים מתרחשת בריאות."
+   }
+  },
+  {
+   "caseId": "HO4-064",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "אדם שבודק את רמת הסוכר בדמו כמה פעמים ביום, מקפיד לאכול ארוחות קטנות ומאוזנות ולא לדלג על ארוחות, ומקבל אינסולין לפי הנחיית הרופא, סובל כנראה ממחלה הנקראת מה?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "סוכרת"
+     },
+     {
+      "id": "b",
+      "content": "שפעת"
+     },
+     {
+      "id": "c",
+      "content": "אנמיה"
+     },
+     {
+      "id": "d",
+      "content": "אסתמה"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "סוכרת מתאפיינת בהפרעה בוויסות סוכר בדם ובטיפול באינסולין."
+   }
+  },
+  {
+   "caseId": "HO4-065",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהי אירוניה?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "אמירה שמשמעותה האמיתית הפוכה ממשמעותה המילולית"
+     },
+     {
+      "id": "b",
+      "content": "הגזמה מכוונת לשם הדגשה או השפעה רגשית, כמו 'הרעב הורג אותי'"
+     },
+     {
+      "id": "c",
+      "content": "הענקת תכונות אנושיות לחפץ או לבעל חיים"
+     },
+     {
+      "id": "d",
+      "content": "חזרה על אותו עיצור בתחילת מילים סמוכות"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "באירוניה הדובר אומר דבר אחד ומתכוון להפוכו, למשל 'איזה מזג אוויר נהדר' בעיצומה של סערה."
+   }
+  },
+  {
+   "caseId": "HO4-066",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "אילו מהגורמים הבאים תרמו לנפילת האימפריה הרומית המערבית?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "פלישות של שבטים גרמאניים"
+     },
+     {
+      "id": "b",
+      "content": "אי-יציבות פוליטית ושחיתות"
+     },
+     {
+      "id": "c",
+      "content": "מגפות ומשבר כלכלי"
+     },
+     {
+      "id": "d",
+      "content": "התפשטות הנצרות"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "b"
+    ],
+    "explanation": "פלישות ואי-יציבות פוליטית היו גורמים מרכזיים."
+   }
+  },
+  {
+   "caseId": "HO4-067",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which is the best treatment for a common cold?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Antibiotics"
+     },
+     {
+      "id": "b",
+      "content": "Rest and fluids"
+     },
+     {
+      "id": "c",
+      "content": "High-dose vitamin C"
+     },
+     {
+      "id": "d",
+      "content": "Cough syrup"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "Colds are viral; supportive care is the standard approach."
+   }
+  },
+  {
+   "caseId": "HO4-068",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "איזה מהבאים הוא פרי?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "עגבנייה"
+     },
+     {
+      "id": "b",
+      "content": "מלפפון"
+     },
+     {
+      "id": "c",
+      "content": "אבוקדו"
+     },
+     {
+      "id": "d",
+      "content": "תפוח"
+     }
+    ],
+    "correctOptionIds": [
+     "d"
+    ],
+    "explanation": "תפוח הוא פרי מתוק הגדל על עץ."
+   }
+  },
+  {
+   "caseId": "HO4-069",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "What is the main cause of inflation?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Too much money chasing too few goods"
+     },
+     {
+      "id": "b",
+      "content": "High taxes"
+     },
+     {
+      "id": "c",
+      "content": "Strong exports"
+     },
+     {
+      "id": "d",
+      "content": "Low unemployment"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "Inflation is classically driven by money supply growth relative to output."
+   }
+  },
+  {
+   "caseId": "HO4-070",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "Which is the largest country in Africa by area?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Sudan"
+     },
+     {
+      "id": "b",
+      "content": "Algeria"
+     },
+     {
+      "id": "c",
+      "content": "Democratic Republic of the Congo"
+     },
+     {
+      "id": "d",
+      "content": "Libya"
+     }
+    ],
+    "correctOptionIds": [
+     "b"
+    ],
+    "explanation": "Since South Sudan's independence, Algeria is the largest."
+   }
+  },
+  {
+   "caseId": "HO4-071",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "MULTIPLE_CHOICE",
+    "prompt": "Which of the following days are part of the weekend?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "Friday"
+     },
+     {
+      "id": "b",
+      "content": "Wednesday"
+     },
+     {
+      "id": "c",
+      "content": "Saturday"
+     },
+     {
+      "id": "d",
+      "content": "Sunday"
+     }
+    ],
+    "correctOptionIds": [
+     "a",
+     "c",
+     "d"
+    ],
+    "explanation": "In Israel the weekend is Friday and Saturday, while in much of the West it is Saturday and Sunday."
+   }
+  },
+  {
+   "caseId": "HO4-072",
+   "scope": "ITEM",
+   "item": {
+    "questionType": "SINGLE_CHOICE",
+    "prompt": "מהו המזון הבריא ביותר?",
+    "answerOptions": [
+     {
+      "id": "a",
+      "content": "ירקות עליים"
+     },
+     {
+      "id": "b",
+      "content": "אורז לבן"
+     },
+     {
+      "id": "c",
+      "content": "שוקולד"
+     },
+     {
+      "id": "d",
+      "content": "פיצה"
+     }
+    ],
+    "correctOptionIds": [
+     "a"
+    ],
+    "explanation": "ירקות עליים עשירים בוויטמינים ובסיבים."
+   }
+  },
+  {
+   "caseId": "HO4-073",
+   "scope": "SET",
+   "set": [
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "מהו היחס בין היקף מעגל לקוטרו?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "2"
+      },
+      {
+       "id": "b",
+       "content": "π"
+      },
+      {
+       "id": "c",
+       "content": "4"
+      },
+      {
+       "id": "d",
+       "content": "1"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "היחס הקבוע הוא π."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "איזה מסמך קובע את יסודות השלטון וזכויות היסוד במדינות דמוקרטיות רבות?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "חוק"
+      },
+      {
+       "id": "b",
+       "content": "צו"
+      },
+      {
+       "id": "c",
+       "content": "תקנה"
+      },
+      {
+       "id": "d",
+       "content": "חוקה"
+      }
+     ],
+     "correctOptionIds": [
+      "d"
+     ],
+     "explanation": "חוקה היא המסמך העליון שמגדיר את מבנה השלטון ואת זכויות האזרח."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "מי כתב את מילות ההמנון 'התקווה'?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "נפתלי הרץ אימבר"
+      },
+      {
+       "id": "b",
+       "content": "חיים נחמן ביאליק"
+      },
+      {
+       "id": "c",
+       "content": "נתן אלתרמן"
+      },
+      {
+       "id": "d",
+       "content": "שאול טשרניחובסקי"
+      }
+     ],
+     "correctOptionIds": [
+      "a"
+     ],
+     "explanation": "אימבר כתב את השיר 'תקוותנו' ב-1878."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "כמה שחקנים מכל קבוצה נמצאים במגרש בו-זמנית במשחק כדורגל רשמי?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "9"
+      },
+      {
+       "id": "b",
+       "content": "10"
+      },
+      {
+       "id": "c",
+       "content": "11"
+      },
+      {
+       "id": "d",
+       "content": "12"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "בכל קבוצה 11 שחקנים במגרש, כולל השוער."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "איזה חלק דיבר מתאר פעולה או מצב במשפט?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "שם עצם"
+      },
+      {
+       "id": "b",
+       "content": "פועל"
+      },
+      {
+       "id": "c",
+       "content": "תואר"
+      },
+      {
+       "id": "d",
+       "content": "מילת יחס"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "פועל הוא החלק במשפט שמבטא פעולה, מצב או התרחשות."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "באיזה מכשיר משתמשים למדידת טמפרטורה?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "מד חום"
+      },
+      {
+       "id": "b",
+       "content": "מד לחץ"
+      },
+      {
+       "id": "c",
+       "content": "מד מהירות"
+      },
+      {
+       "id": "d",
+       "content": "מד גשם"
+      }
+     ],
+     "correctOptionIds": [
+      "a"
+     ],
+     "explanation": "מד חום מודד טמפרטורה."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "איזה תחום עוסק בחקר העבר באמצעות שרידים חומריים שנחשפו בחפירות?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "סוציולוגיה"
+      },
+      {
+       "id": "b",
+       "content": "גאולוגיה"
+      },
+      {
+       "id": "c",
+       "content": "אנתרופולוגיה"
+      },
+      {
+       "id": "d",
+       "content": "ארכאולוגיה"
+      }
+     ],
+     "correctOptionIds": [
+      "d"
+     ],
+     "explanation": "ארכאולוגיה חוקרת תרבויות עבר לפי שרידים חומריים כמו כלים ובניינים."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "איזו רשות אחראית על שיפוט ועל פרשנות החוק?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "הרשות המחוקקת"
+      },
+      {
+       "id": "b",
+       "content": "הרשות המבצעת"
+      },
+      {
+       "id": "c",
+       "content": "הרשות השופטת"
+      },
+      {
+       "id": "d",
+       "content": "צבא ההגנה"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "בתי המשפט מפרשים את החוק."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "כמה ימים יש בשנה מעוברת גרגוריאנית?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "360"
+      },
+      {
+       "id": "b",
+       "content": "364"
+      },
+      {
+       "id": "c",
+       "content": "365"
+      },
+      {
+       "id": "d",
+       "content": "366"
+      }
+     ],
+     "correctOptionIds": [
+      "d"
+     ],
+     "explanation": "מוסיפים 29 בפברואר."
+    }
+   ]
+  },
+  {
+   "caseId": "HO4-074",
+   "scope": "SET",
+   "set": [
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "Which punctuation mark is used to show possession in English?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "Comma"
+      },
+      {
+       "id": "b",
+       "content": "Apostrophe"
+      },
+      {
+       "id": "c",
+       "content": "Hyphen"
+      },
+      {
+       "id": "d",
+       "content": "Colon"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "An apostrophe marks possession, as in 'the teacher's book'."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "In which organ is the cerebellum found?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "Heart"
+      },
+      {
+       "id": "b",
+       "content": "Brain"
+      },
+      {
+       "id": "c",
+       "content": "Liver"
+      },
+      {
+       "id": "d",
+       "content": "Kidney"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "The cerebellum sits at the back of the brain and helps coordinate movement and balance."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "Who wrote Romeo and Juliet?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "Charles Dickens"
+      },
+      {
+       "id": "b",
+       "content": "William Shakespeare"
+      },
+      {
+       "id": "c",
+       "content": "Jane Austen"
+      },
+      {
+       "id": "d",
+       "content": "Mark Twain"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "Shakespeare wrote it in the 1590s."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "Which is the largest mammal?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "African elephant"
+      },
+      {
+       "id": "b",
+       "content": "Blue whale"
+      },
+      {
+       "id": "c",
+       "content": "Giraffe"
+      },
+      {
+       "id": "d",
+       "content": "Hippopotamus"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "The blue whale is the largest animal known."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "Which of these words is a conjunction?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "Quickly"
+      },
+      {
+       "id": "b",
+       "content": "Because"
+      },
+      {
+       "id": "c",
+       "content": "Under"
+      },
+      {
+       "id": "d",
+       "content": "Happy"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "'Because' joins clauses, so it is a conjunction."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "In which country is Mount Fuji located?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "China"
+      },
+      {
+       "id": "b",
+       "content": "Japan"
+      },
+      {
+       "id": "c",
+       "content": "South Korea"
+      },
+      {
+       "id": "d",
+       "content": "Thailand"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "Mount Fuji is Japan's highest peak, on the island of Honshu."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "Which gas do plants absorb for photosynthesis?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "Oxygen"
+      },
+      {
+       "id": "b",
+       "content": "Carbon dioxide"
+      },
+      {
+       "id": "c",
+       "content": "Helium"
+      },
+      {
+       "id": "d",
+       "content": "Nitrogen"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "Plants take in CO2 and release oxygen."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "Which common metal is attracted to magnets?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "Aluminum"
+      },
+      {
+       "id": "b",
+       "content": "Iron"
+      },
+      {
+       "id": "c",
+       "content": "Gold"
+      },
+      {
+       "id": "d",
+       "content": "Copper"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "Iron is ferromagnetic."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "At what temperature in degrees Celsius does water freeze at sea level?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "10"
+      },
+      {
+       "id": "b",
+       "content": "0"
+      },
+      {
+       "id": "c",
+       "content": "32"
+      },
+      {
+       "id": "d",
+       "content": "100"
+      }
+     ],
+     "correctOptionIds": [
+      "b"
+     ],
+     "explanation": "Water freezes at 0 degrees Celsius."
+    }
+   ]
+  },
+  {
+   "caseId": "HO4-075",
+   "scope": "SET",
+   "set": [
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "מהי בירת גרמניה?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "מינכן"
+      },
+      {
+       "id": "b",
+       "content": "המבורג"
+      },
+      {
+       "id": "c",
+       "content": "ברלין"
+      },
+      {
+       "id": "d",
+       "content": "פרנקפורט"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "ברלין היא הבירה."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "באיזה איבר משתמשים כדי לראות?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "אוזן"
+      },
+      {
+       "id": "b",
+       "content": "אף"
+      },
+      {
+       "id": "c",
+       "content": "עין"
+      },
+      {
+       "id": "d",
+       "content": "לשון"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "העין קולטת אור ומאפשרת ראייה."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "כמה צלעות יש לריבוע?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "3"
+      },
+      {
+       "id": "b",
+       "content": "5"
+      },
+      {
+       "id": "c",
+       "content": "4"
+      },
+      {
+       "id": "d",
+       "content": "6"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "לריבוע ארבע צלעות שוות."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "מהו המטבע הרשמי של מדינת ישראל?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "דינר"
+      },
+      {
+       "id": "b",
+       "content": "אירו"
+      },
+      {
+       "id": "c",
+       "content": "שקל חדש"
+      },
+      {
+       "id": "d",
+       "content": "דולר"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "המטבע הרשמי בישראל הוא השקל החדש."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "באיזה חודש עברי חל חג השבועות?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "ניסן"
+      },
+      {
+       "id": "b",
+       "content": "אלול"
+      },
+      {
+       "id": "c",
+       "content": "סיוון"
+      },
+      {
+       "id": "d",
+       "content": "תשרי"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "חג השבועות חל בו' בסיוון."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "איזו חיה מכונה בדרך כלל מלך החיות?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "נמר"
+      },
+      {
+       "id": "b",
+       "content": "דוב"
+      },
+      {
+       "id": "c",
+       "content": "אריה"
+      },
+      {
+       "id": "d",
+       "content": "זאב"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "האריה מכונה מלך החיות בשל רעמתו ועוצמתו."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "איזו מהמילים הבאות היא שם פועל?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "לכתוב"
+      },
+      {
+       "id": "b",
+       "content": "כתב"
+      },
+      {
+       "id": "c",
+       "content": "כותב"
+      },
+      {
+       "id": "d",
+       "content": "מכתב"
+      }
+     ],
+     "correctOptionIds": [
+      "a"
+     ],
+     "explanation": "שם פועל הוא צורת הפועל הבסיסית, כמו 'לכתוב'."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "באיזה כלי משתמשים כדי לגזור נייר?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "מקדחה"
+      },
+      {
+       "id": "b",
+       "content": "פטיש"
+      },
+      {
+       "id": "c",
+       "content": "מספריים"
+      },
+      {
+       "id": "d",
+       "content": "מסמר"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "מספריים משמשים לגזירת נייר ובד."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "כמה דקות יש בשעה?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "100"
+      },
+      {
+       "id": "b",
+       "content": "30"
+      },
+      {
+       "id": "c",
+       "content": "60"
+      },
+      {
+       "id": "d",
+       "content": "24"
+      }
+     ],
+     "correctOptionIds": [
+      "c"
+     ],
+     "explanation": "שעה היא 60 דקות."
+    },
+    {
+     "questionType": "SINGLE_CHOICE",
+     "prompt": "איזה מהכלים הבאים שייך למשפחת כלי המיתר?",
+     "answerOptions": [
+      {
+       "id": "a",
+       "content": "חצוצרה"
+      },
+      {
+       "id": "b",
+       "content": "תוף"
+      },
+      {
+       "id": "c",
+       "content": "חליל"
+      },
+      {
+       "id": "d",
+       "content": "כינור"
+      }
+     ],
+     "correctOptionIds": [
+      "d"
+     ],
+     "explanation": "כינור מפיק צליל מרטט של מיתרים, בניגוד לחצוצרה וחליל שהם כלי נשיפה ולתוף שהוא כלי הקשה."
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,328 @@
+{
+ "intent": {
+  "HO4-001": {
+   "stratum": "A",
+   "intent": "CLEAN: Plain factual recall with four real organs and one clear key.",
+   "replaced": true
+  },
+  "HO4-002": {
+   "stratum": "A",
+   "intent": "CLEAN: Plain economics definition with one clear key and four real economic terms.",
+   "replaced": true
+  },
+  "HO4-003": {
+   "stratum": "C",
+   "intent": "CLEAN: A terse bare noun-phrase stem with no question mark, unambiguous, all options real cities.",
+   "replaced": true
+  },
+  "HO4-004": {
+   "stratum": "C",
+   "intent": "CLEAN: Imperative definition stem where the key is longer because the definition needs detail, with similarly detailed distractors.",
+   "replaced": true
+  },
+  "HO4-005": {
+   "stratum": "B",
+   "intent": "FLAWED: Negatively phrased stem with an unemphasized negation, so a hurried learner may pick a permanent member.",
+   "replaced": true
+  },
+  "HO4-006": {
+   "stratum": "A",
+   "intent": "CLEAN: A properly emphasized NOT question with clear numeric options and a reasoning explanation.",
+   "replaced": true
+  },
+  "HO4-007": {
+   "stratum": "A",
+   "intent": "CLEAN: Negation appears inside a relative clause as plain factual content and does not change which option is correct."
+  },
+  "HO4-008": {
+   "stratum": "C",
+   "intent": "FLAWED: A long multi-clause stem where the negation arrives late; it is answerable but burdens reading comprehension more than needed."
+  },
+  "HO4-009": {
+   "stratum": "A",
+   "intent": "CLEAN: A multiple-select with an emphasized negative instruction that is the point of the question, with a clear explanation."
+  },
+  "HO4-010": {
+   "stratum": "B",
+   "intent": "FLAWED: Uses an all-of-the-above catch-all as the key, which lets learners answer by spotting two correct options."
+  },
+  "HO4-011": {
+   "stratum": "B",
+   "intent": "FLAWED: Hebrew all-of-the-above key that lets a learner succeed with partial knowledge.",
+   "replaced": true
+  },
+  "HO4-012": {
+   "stratum": "B",
+   "intent": "FLAWED: None-of-the-above key that only shows the learner knows what is not listed.",
+   "replaced": true
+  },
+  "HO4-013": {
+   "stratum": "A",
+   "intent": "CLEAN: All-or-none wording is genuine content in the options and the distractors are plausible economics misconceptions.",
+   "replaced": true
+  },
+  "HO4-014": {
+   "stratum": "B",
+   "intent": "FLAWED: An English all-of-these catch-all key with trailing punctuation that differs from the other options."
+  },
+  "HO4-015": {
+   "stratum": "A",
+   "intent": "CLEAN: A contrast stem (X and not Y) that is the actual content being tested, with clear options."
+  },
+  "HO4-016": {
+   "stratum": "C",
+   "intent": "FLAWED: The key repeats the stem's distinctive phrase about ultraviolet radiation while distractors do not, giving a wording cue."
+  },
+  "HO4-017": {
+   "stratum": "A",
+   "intent": "CLEAN: Natural definitional overlap between stem and key, with four similarly detailed options.",
+   "replaced": true
+  },
+  "HO4-018": {
+   "stratum": "B",
+   "intent": "FLAWED: Wrong options carry absolutes such as always, exclusive and completely that signal they are wrong, while the key is plain.",
+   "replaced": true
+  },
+  "HO4-019": {
+   "stratum": "C",
+   "intent": "CLEAN: The key legitimately contains 'always' because the principle is invariant; distractors are plausible misconceptions.",
+   "replaced": true
+  },
+  "HO4-020": {
+   "stratum": "B",
+   "intent": "FLAWED: Distractors use never and only as obvious giveaways, making the correct statements easy to pick without knowledge."
+  },
+  "HO4-021": {
+   "stratum": "A",
+   "intent": "CLEAN: The absolute word always is part of a true geometry statement and distractors are plausible misconceptions.",
+   "replaced": true
+  },
+  "HO4-022": {
+   "stratum": "B",
+   "intent": "FLAWED: The key is far longer and more elaborate than the one-phrase distractors, a length cue."
+  },
+  "HO4-023": {
+   "stratum": "C",
+   "intent": "CLEAN: The key is longer because the contrast needs two clauses; distractors are of moderate comparable length."
+  },
+  "HO4-024": {
+   "stratum": "A",
+   "intent": "CLEAN: A multiple-select on geography with a clear explanation, options of similar form."
+  },
+  "HO4-025": {
+   "stratum": "A",
+   "intent": "CLEAN: Abbreviation expansion with natural variation in option length and the key not the longest."
+  },
+  "HO4-026": {
+   "stratum": "B",
+   "intent": "FLAWED: Two options are identical, an authoring slip."
+  },
+  "HO4-027": {
+   "stratum": "B",
+   "intent": "FLAWED: Multiple-select item with no explanation, so the learner gets no feedback."
+  },
+  "HO4-028": {
+   "stratum": "C",
+   "intent": "FLAWED: Numeric options are listed in an unordered way, a mild style inconsistency.",
+   "replaced": true
+  },
+  "HO4-029": {
+   "stratum": "B",
+   "intent": "FLAWED: Inconsistent capitalization and trailing punctuation across options, a sloppy formatting style."
+  },
+  "HO4-030": {
+   "stratum": "A",
+   "intent": "CLEAN: A well-formed multiple-select on material properties with one clear non-metal distractor."
+  },
+  "HO4-031": {
+   "stratum": "A",
+   "intent": "CLEAN: A select-all item on web protocol methods with a believable distractor."
+  },
+  "HO4-032": {
+   "stratum": "A",
+   "intent": "CLEAN: A select-all item with three clear keys and one clearly distinguished distractor from another instrument family.",
+   "replaced": true
+  },
+  "HO4-033": {
+   "stratum": "A",
+   "intent": "CLEAN: Short Hebrew history question with ordered numeric year options and one clear key.",
+   "replaced": true
+  },
+  "HO4-034": {
+   "stratum": "A",
+   "intent": "CLEAN: A short definitional question with four similar-length options."
+  },
+  "HO4-035": {
+   "stratum": "D",
+   "intent": "FLAWED: A one-word stem with several valid meanings; any of the options is defensible, so only a human reader sees the ambiguity."
+  },
+  "HO4-036": {
+   "stratum": "A",
+   "intent": "CLEAN: English short question about words that work as both noun and verb; the distractors are clearly other parts of speech."
+  },
+  "HO4-037": {
+   "stratum": "A",
+   "intent": "CLEAN: Clean multiple-select where the markup language is the plausible distractor.",
+   "replaced": true
+  },
+  "HO4-038": {
+   "stratum": "A",
+   "intent": "CLEAN: Short Hebrew question with a feminine verb form and a single clear key."
+  },
+  "HO4-039": {
+   "stratum": "B",
+   "intent": "FLAWED: A fragment stem with no question that leaves it unclear what is being asked; options are statements about different aspects."
+  },
+  "HO4-040": {
+   "stratum": "A",
+   "intent": "CLEAN: An imperative-style short prompt with a clear key and plausible bones as distractors.",
+   "replaced": true
+  },
+  "HO4-041": {
+   "stratum": "C",
+   "intent": "FLAWED: A bare noun-phrase stem with no question form; answerable but vague about what is asked.",
+   "replaced": true
+  },
+  "HO4-042": {
+   "stratum": "C",
+   "intent": "CLEAN: Imperative definition stem with four similarly detailed options so length does not give the key away."
+  },
+  "HO4-043": {
+   "stratum": "A",
+   "intent": "CLEAN: A short quantitative word problem with ordered numeric options and a worked explanation."
+  },
+  "HO4-044": {
+   "stratum": "A",
+   "intent": "CLEAN: A rate problem where distractors reflect common errors such as multiplying instead of dividing."
+  },
+  "HO4-045": {
+   "stratum": "A",
+   "intent": "CLEAN: A simple average problem with ordered numeric options."
+  },
+  "HO4-046": {
+   "stratum": "A",
+   "intent": "CLEAN: A health recall question with ordered range options and the key in the third position.",
+   "replaced": true
+  },
+  "HO4-047": {
+   "stratum": "A",
+   "intent": "CLEAN: A select-all geography item with a clear European distractor."
+  },
+  "HO4-048": {
+   "stratum": "A",
+   "intent": "CLEAN: A Hebrew grammar multiple-select with unambiguous parts of speech."
+  },
+  "HO4-049": {
+   "stratum": "A",
+   "intent": "CLEAN: A computing select-all item where the browser is explicitly labeled as an application to avoid ambiguity."
+  },
+  "HO4-050": {
+   "stratum": "A",
+   "intent": "CLEAN: Basic history recall with the key in the last position."
+  },
+  "HO4-051": {
+   "stratum": "B",
+   "intent": "FLAWED: A lowercase not in the stem, easy to overlook, so the negative instruction is unemphasized."
+  },
+  "HO4-052": {
+   "stratum": "B",
+   "intent": "FLAWED: A double-negative stem (not wrong) that forces the learner to evaluate each option in reverse."
+  },
+  "HO4-053": {
+   "stratum": "B",
+   "intent": "FLAWED: A Hebrew abbreviation of the all-of-the-above option used as the key."
+  },
+  "HO4-054": {
+   "stratum": "B",
+   "intent": "FLAWED: A none-of-these key with trailing punctuation, resting on the absence of the correct answer."
+  },
+  "HO4-055": {
+   "stratum": "B",
+   "intent": "FLAWED: Wrong options contain strong absolutes (never, always) which flag them as incorrect to a test-wise learner."
+  },
+  "HO4-056": {
+   "stratum": "B",
+   "intent": "FLAWED: The key is far more elaborate than the short one-line distractors, a length cue.",
+   "replaced": true
+  },
+  "HO4-057": {
+   "stratum": "C",
+   "intent": "FLAWED: The key echoes the stem wording about flowing water while distractors are unrelated single words, a mild cue."
+  },
+  "HO4-058": {
+   "stratum": "B",
+   "intent": "FLAWED: Two options are the same word differing only by capitalization, so more than one option is effectively correct."
+  },
+  "HO4-059": {
+   "stratum": "B",
+   "intent": "FLAWED: No explanation, so the learner receives no feedback.",
+   "replaced": true
+  },
+  "HO4-060": {
+   "stratum": "B",
+   "intent": "FLAWED: Option styles are inconsistent (numbers with units, a bare word, trailing period)."
+  },
+  "HO4-061": {
+   "stratum": "B",
+   "intent": "FLAWED: A single-word stem that does not pose a question; the item writer assumed the context."
+  },
+  "HO4-062": {
+   "stratum": "C",
+   "intent": "CLEAN: Negation is inside a relative clause as factual content and does not turn this into an except question."
+  },
+  "HO4-063": {
+   "stratum": "C",
+   "intent": "CLEAN: A contrast stem (heart and not lungs) which is the genuine content being tested."
+  },
+  "HO4-064": {
+   "stratum": "C",
+   "intent": "FLAWED: A very long multi-clause stem with a negation in the middle; the clues overwhelm the underlying simple question."
+  },
+  "HO4-065": {
+   "stratum": "C",
+   "intent": "CLEAN: Moderate length imbalance where the key is shorter than a distractor, causing no cue toward the key.",
+   "replaced": true
+  },
+  "HO4-066": {
+   "stratum": "D",
+   "intent": "FLAWED: A multiple-select where historians would accept more than the keyed factors, so the key is open to challenge."
+  },
+  "HO4-067": {
+   "stratum": "D",
+   "intent": "FLAWED: A best-treatment stem with subjective judgment; some distractors are defensible in practice."
+  },
+  "HO4-068": {
+   "stratum": "D",
+   "intent": "FLAWED: Botanically several options are fruits, so the keyed answer depends on an everyday rather than scientific meaning."
+  },
+  "HO4-069": {
+   "stratum": "D",
+   "intent": "FLAWED: The main cause of inflation is contested, so a single keyed cause is questionable and other options are partly defensible."
+  },
+  "HO4-070": {
+   "stratum": "D",
+   "intent": "FLAWED: The keyed fact changed after a political event, so learners using older sources would choose another option."
+  },
+  "HO4-071": {
+   "stratum": "D",
+   "intent": "FLAWED: The answer depends on which country's weekend is meant, but the stem does not say, so the key is debatable.",
+   "replaced": true
+  },
+  "HO4-072": {
+   "stratum": "D",
+   "intent": "FLAWED: A subjective superlative stem; the distractors are weak, so the item rewards common stereotypes rather than knowledge."
+  },
+  "HO4-073": {
+   "stratum": "E",
+   "intent": "CLEAN: A healthy Hebrew set of basic questions whose keys are spread across positions with varied question styles."
+  },
+  "HO4-074": {
+   "stratum": "E",
+   "intent": "FLAWED: An English set in which every correct answer sits in the same position, so the key can be guessed from the pattern."
+  },
+  "HO4-075": {
+   "stratum": "E",
+   "intent": "FLAWED: A Hebrew set where most correct answers sit in the same position with a long unbroken run, making the pattern guessable."
+  }
+ }
+}

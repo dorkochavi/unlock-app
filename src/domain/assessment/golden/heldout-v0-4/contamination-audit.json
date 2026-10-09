@@ -1,0 +1,147 @@
+{
+ "method": "mechanical similarity (token Jaccard / char n-gram / exact stem+option matches / fixture string matches) plus manual same-concept inspection by fresh read-only workers; compared with v0.1, v0.2, v0.3 corpora, human-adjudication overlays and inline fixtures in assessment tests (including Run 008 contract tests). Performed before freeze; the linter was never run.",
+ "rounds": [
+  {
+   "round": 1,
+   "corpus": "corpus.pre-replacement (75 cases)",
+   "summary": {
+    "exact": 5,
+    "near": 12,
+    "sameConcept": 9,
+    "generic": 21
+   },
+   "materialRefs": [
+    "HO4-074/item1 EXACT_DUPLICATE",
+    "HO4-006 EXACT_DUPLICATE",
+    "HO4-004 EXACT_DUPLICATE",
+    "HO4-017 EXACT_DUPLICATE",
+    "HO4-065 EXACT_DUPLICATE",
+    "HO4-003 NEAR_DUPLICATE",
+    "HO4-074/item6 NEAR_DUPLICATE",
+    "HO4-041 NEAR_DUPLICATE",
+    "HO4-073/item5 NEAR_DUPLICATE",
+    "HO4-001 NEAR_DUPLICATE",
+    "HO4-046 NEAR_DUPLICATE",
+    "HO4-075/item6 NEAR_DUPLICATE",
+    "HO4-075/item4 NEAR_DUPLICATE",
+    "HO4-075/item10 NEAR_DUPLICATE",
+    "HO4-074/item5 NEAR_DUPLICATE",
+    "HO4-073/item2 NEAR_DUPLICATE",
+    "HO4-075/item8 NEAR_DUPLICATE",
+    "HO4-059 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-033 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-032 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-040 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-019 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-056 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-074/item2 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-075/item2 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-073/item7 SAME_CONCEPT_HIGH_SIMILARITY"
+   ]
+  },
+  {
+   "round": 2,
+   "summary": {
+    "exact": 1,
+    "near": 4,
+    "sameConcept": 7,
+    "generic": 4
+   },
+   "remainingMaterial": [
+    "HO4-073/item5 EXACT_DUPLICATE",
+    "HO4-074/item5 NEAR_DUPLICATE",
+    "HO4-075/item4 NEAR_DUPLICATE",
+    "HO4-073/item7 NEAR_DUPLICATE",
+    "HO4-028 NEAR_DUPLICATE",
+    "HO4-005 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-011 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-012 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-013 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-018 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-021 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-075/item7 SAME_CONCEPT_HIGH_SIMILARITY"
+   ]
+  },
+  {
+   "round": 3,
+   "summary": {
+    "exact": 0,
+    "near": 2,
+    "sameConcept": 12,
+    "generic": 21
+   },
+   "remainingMaterial": [
+    "HO4-002 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-010 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-012 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-018 NEAR_DUPLICATE",
+    "HO4-037 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-043 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-061 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-062 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-063 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-071 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-073#1 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-073#3 SAME_CONCEPT_HIGH_SIMILARITY",
+    "HO4-074#0 NEAR_DUPLICATE",
+    "HO4-075#9 SAME_CONCEPT_HIGH_SIMILARITY"
+   ]
+  }
+ ],
+ "replacements": {
+  "round1": "26 items replaced by fresh author not shown prior material; independently relabelled and label-reviewed",
+  "round2": "12 items replaced (+ HO4-013 minimal corpus edit by label review)",
+  "round3": "9 items replaced (round-3 targets: 2 NEAR + golden/fixture-adjacent same-concept + internal duplicate HO4-028/033)",
+  "round4": "HO4-018 replaced again after a parent mechanical check found a near-duplicate of v0.3 HO3-011 (inflation definition)"
+ },
+ "acceptedResidual": {
+  "note": "Round-3 audit flagged these as SAME_CONCEPT_HIGH_SIMILARITY with generic educational overlap; per Run 009 policy generic educational overlap is not replaced. No EXACT_DUPLICATE remained after round 3; the two NEAR_DUPLICATEs (HO4-018, HO4-074 item1) and the fixture/golden-adjacent same-concept refs were replaced afterwards.",
+  "refs": [
+   "HO4-010",
+   "HO4-012",
+   "HO4-043",
+   "HO4-061",
+   "HO4-062",
+   "HO4-063"
+  ],
+  "detail": [
+   {
+    "v04Ref": "HO4-010",
+    "priorRef": "heldout-v0-2:HO-004",
+    "class": "SAME_CONCEPT_HIGH_SIMILARITY",
+    "evidence": "Which are renewable energy sources, Wind in both, both explanations \"replenished naturally\"; only option set/format differs."
+   },
+   {
+    "v04Ref": "HO4-012",
+    "priorRef": "heldout-v0-2:HO-008",
+    "class": "SAME_CONCEPT_HIGH_SIMILARITY",
+    "evidence": "HTTP status code for \"requested page/resource not found\" = 404 in both; v04 only recasts as none-of-the-above."
+   },
+   {
+    "v04Ref": "HO4-043",
+    "priorRef": "heldout-v0-2:HO-072#2",
+    "class": "SAME_CONCEPT_HIGH_SIMILARITY",
+    "evidence": "25% of 80 = 20 (same numbers); v04 explanation literally \"25% מ-80 הם 20\", prior is that bare computation, 20 appears as v04 distractor."
+   },
+   {
+    "v04Ref": "HO4-061",
+    "priorRef": "heldout-v0-3:HO3-065",
+    "class": "SAME_CONCEPT_HIGH_SIMILARITY",
+    "evidence": "Kidneys filter blood/excrete waste in both (identical fact, definition vs function framing)."
+   },
+   {
+    "v04Ref": "HO4-062",
+    "priorRef": "heldout-v0-2:HO-037 (and HO-006, golden WEAK-NONEABOVE-EN-01)",
+    "class": "SAME_CONCEPT_HIGH_SIMILARITY",
+    "evidence": "Marine mammal vs fish: dolphin/whale mammals, tuna fish distractor; HO-006 keys dolphin as mammal."
+   },
+   {
+    "v04Ref": "HO4-063",
+    "priorRef": "heldout-v0-2:HO-073#0",
+    "class": "SAME_CONCEPT_HIGH_SIMILARITY",
+    "evidence": "Heart pumps blood in both; v04 key \"שאיבת דם\" = prior stem \"שאיבת הדם\", key הלב."
+   }
+  ]
+ },
+ "limitation": "Round-3 and round-4 replacements were checked only by a parent-run token-Jaccard sanity pass against v0.2/v0.3 (max 0.67, structural words), not by a further full worker re-audit."
+}

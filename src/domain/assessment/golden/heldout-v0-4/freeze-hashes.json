@@ -1,0 +1,34 @@
+{
+  "version": "v0.4-heldout",
+  "evidenceIdentity": "FRESH_HELD_OUT_V0_4",
+  "provenance": {
+    "corpus": "MODEL_AUTHORED_HELD_OUT",
+    "labels": "MODEL_LABELED_NOT_HUMAN_APPROVED"
+  },
+  "cases": 75,
+  "items": 72,
+  "sets": 3,
+  "counts": {
+    "hebrew": 44,
+    "english": 28,
+    "singleChoiceItems": 58,
+    "multipleChoiceItems": 14,
+    "clean": 25,
+    "flawed": 50,
+    "deterministicLabelled": 45,
+    "semanticOnly": 5
+  },
+  "methodology": {
+    "author": "fresh worker; brief restricted by instruction (no linter/src/docs/fixtures); not tool-enforced",
+    "label": "fresh worker; saw corpus + catalog doc sections only; not author-intent; not linter; not tool-enforced",
+    "labelReview": "fresh worker; saw corpus, labels, author-intent; edited pre-freeze with change log (label-review.json)",
+    "freshnessRemediation": "see contamination-audit.json: 3 audit rounds, 48 item replacements by fresh authors (relabelled independently + reviewed), 1 re-replacement; accepted generic residual listed there",
+    "linterRunOnCorpus": "NO (before this freeze commit)"
+  },
+  "sha256": {
+    "corpus.json": "e1b3bd251e875bea09033f2fe6ba904de3f976fd5f3469be66111e315936f32d",
+    "labels.json": "79102e69cc5b18167c0003aba6f7fee233881a22fb180ffd0756852deee82be3",
+    "author-intent.json": "f9eedf359eb38f6b58d0206d0f273b93444db6c79d29c848e067441816f70409",
+    "label-review.json": "c4ae88454e904e64e836480b1854e212981afb524857edf23eb375157b27aa69"
+  }
+}

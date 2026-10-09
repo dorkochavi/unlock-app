@@ -1,0 +1,1245 @@
+{
+  "labels": [
+    {
+      "caseId": "HO4-001",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_LENGTH_IMBALANCE",
+        "KEY_LONGEST_OPTION",
+        "STEM_TOO_SHORT",
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Option lengths 5,4,5,11; median 5; the 11-char distractor deviates 120% (>60%) and is the only deviating option, so style outlier fires under 10.3 although the item reads naturally. Ratio 2.75 <3 and key is shortest, so no imbalance or longest-key.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-002",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Clear stem with question mark; key (16 chars) ties Marginal revenue (16) so not strictly longest; ratio 1.78; lengths 9/10/16/16 no outlier; single defensible key; explanation present.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-003",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT",
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem is a 2-word bare noun phrase: <4 words, first word not interrogative/imperative, no '?' and no completion marker. Key 9 vs next 8 chars (1.125x) so no longest-key.",
+      "confidence": "high",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-004",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'Define allele.' has no '?' and no completion marker so question-form fires strictly; 19.7 only exempts ':' cloze stems. STEM_TOO_SHORT: 2 words but first word is an imperative so exempt (assuming 'Define' is in the lead-word list). Key 84 vs 82, no length bias.",
+      "confidence": "low",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-005",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_LENGTH_IMBALANCE",
+        "KEY_LONGEST_OPTION",
+        "STEM_DOUBLE_NEGATIVE",
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem has listed negation אינה. Option lengths 11,4,6,3 (median 5): only 'ארצות הברית' deviates >0.6x median, so style outlier per literal rule. Length ratio 3.67 but diff 8 <20, so no imbalance; key (6) not longest.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-006",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING",
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "forbiddenCodes": [
+        "STEM_DOUBLE_NEGATIVE",
+        "STEM_NO_QUESTION_FORM",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem contains capitalized NOT (single negation word). Options 35,63,52,84 are all plain numbers and unsorted. One negation only so no double negative.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-007",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Relative clause negation is descriptive, not controlling answer selection.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-008",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Negation is natural content phrasing of a maximum, not a negative-selection stem.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-009",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Negative selection stem (אינם ראשוניים); options 9,11,15,21 all numeric and sorted after reorder. \"all\" in stem is an instruction. Plural אינם is not in the 10.3 example list, so the negation expectation rests on the seed list being extensible.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-010",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ALL_OF_ABOVE"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Option \"All of the above\".",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-011",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ALL_OF_ABOVE"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Option d 'כל התשובות נכונות' is an all-of-the-above phrase. Lengths 18,17,19,17 balanced; 'כל' is weak-tier and not emitted; no overlap among options.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-012",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING",
+        "OPTION_NONE_OF_ABOVE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_NUMERIC_UNORDERED",
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem contains 'not'; option d is 'None of the above' (17 chars). Lengths 3,3,3,17 (median 3): d deviates >0.6x median so style outlier; key diff 14 <15 so no KEY_LONGEST; ratio 5.67 but diff 14 <20 so no imbalance. Options are not all numeric (no NUMERIC_UNORDERED); 'none' is weak-tier, not emitted. STEM_DOUBLE_NEGATIVE ('not' in stem plus a possibly negated option 'None') is undefined by the doc, so neither expected nor forbidden.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-013",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_OVERLAP_HIGH",
+        "STEM_NEGATIVE_WORDING",
+        "STEM_DOUBLE_NEGATIVE"
+      ],
+      "semanticExpectation": null,
+      "rationale": "After the corpus edit: lengths 43,34,43,40 (median 41.5): key ties c, no 1.2x margin; max deviation 0.18; ratio 1.26. No strong absolute in a distractor (c 'כל' and d 'שום' are weak tier, not emitted; 'בדרך כלל' token כלל is not כל). Max Jaccard a-b 5/9=0.56 <0.85. Stem has '?' and no negation (אין only in option d, stem has none so no double negative).",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-014",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ALL_OF_ABOVE",
+        "OPTION_PUNCTUATION_INCONSISTENT",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "\"All of these.\" all-of-above; only option ending with a period (punctuation inconsistent and sole terminal-punctuation outlier).",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-015",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Contrast clause is redundant; selection criterion is \"markup language\". Arguable.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-016",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": "STEM_ANSWER_LEXICAL_LEAKAGE (key restates stem phrase ultraviolet radiation)",
+      "rationale": "Key is 52 chars vs 9-11 for others. Key echoes stem wording asymmetrically (semantic leakage, not deterministic).",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-017",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT",
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_STEM_LEXICAL_OVERLAP",
+        "OPTION_STYLE_OUTLIER",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key 78 chars vs next 63: ratio 1.238 >=1.2 and difference 15 >=15, so KEY_LONGEST_OPTION fires (at the boundary). Stem has 3 words but ends '?' and starts with interrogative (exempt). 'כל' in options is weak tier, not emitted. Max deviation 0.24 so no outlier.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-018",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER",
+        "KEY_STEM_LEXICAL_OVERLAP",
+        "STEM_TOO_SHORT",
+        "STEM_NEGATIVE_WORDING",
+        "STEM_DOUBLE_NEGATIVE",
+        "STEM_NO_QUESTION_FORM",
+        "OPTION_OVERLAP_HIGH"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Code-point lengths a=68 (key), b=45, c=47, d=42. Key/next longest = 68/47 = 1.45 >= 1.2 and diff 21 >= 15, so KEY_LONGEST_OPTION applies. Distractor b contains strong-tier absolute 'תמיד' (distractor-only), so OPTION_ABSOLUTE_TERM applies; weak-tier 'כל' in b/c/d and 'לחלוטין' in d are not emitted/uncertain. Imbalance ratio 68/42 = 1.62 < 3.0 and style outlier deviation (68-46)/46 = 0.48 <= 0.6, so neither applies. Stem is 5 words with interrogative lead and '?', no negation.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-019",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "OPTION_LENGTH_IMBALANCE",
+        "STEM_NEGATIVE_WORDING",
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key 105 chars vs next 69 (1.52x, diff 36). Median 60, key deviates 75% and is the only option >60%, so style outlier. 'always' is in the key not a distractor, so no absolute-term. Max/min 2.33 <3.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-020",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractor a has \"never\" (strong absolute); \"Only\" in c is weak tier.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-021",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION",
+        "OPTION_OVERLAP_HIGH",
+        "STEM_TOO_SHORT",
+        "STEM_DOUBLE_NEGATIVE",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER",
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem 4 words with ?, so not <4. תמיד appears only in the key (rule is distractor-only); distractor בכל is weak tier. Key 40 vs 39: no margin. Max Jaccard 0.57 <0.85; ratio 1.48; negation שאינו only in option.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-022",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key is 71 chars vs 10-12 for others.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-023",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_STEM_LEXICAL_OVERLAP",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key 124 chars vs next 65; sole outlier. Ratio vs shortest 2.6 < 3. \"only\" is weak/legit.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-024",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-025",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-026",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_DUPLICATE_EXACT"
+      ],
+      "forbiddenCodes": [
+        "OPTION_DUPLICATE_NORMALIZED"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Options b and c both \"24\".",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-027",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "EXPLANATION_MISSING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "No explanation field.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-028",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "forbiddenCodes": [
+        "OPTION_STYLE_OUTLIER",
+        "OPTION_LENGTH_IMBALANCE",
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "All options plain numbers (1994,1979,1967,1973) not sorted. Doc 19.7 speaks of numeric-range options, years as unordered facts are arguably borderline, hence low-medium confidence.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-029",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_PUNCTUATION_INCONSISTENT",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Only \"Vancouver.\" ends with a period; also inconsistent lowercase.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-030",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean multiple-choice.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-031",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Imperative stem without ?; per literal rule fires. \"all\" is in the stem instruction.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-032",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "CORRECT_COUNT_INVALID",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER",
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "semanticExpectation": null,
+      "rationale": "MULTIPLE_CHOICE with 3 of 4 correct (valid: >=1 and fewer than all). Well-formed '?' stem, option lengths 4-5, explanation present. KEY_LONGEST_OPTION is SINGLE_CHOICE only.",
+      "confidence": "high",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-033",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED",
+        "KEY_LONGEST_OPTION",
+        "OPTION_OVERLAP_HIGH"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Year options 1985,1987,1989,1991 are sorted ascending; equal lengths; 5-word question stem; single correct year; explanation present.",
+      "confidence": "high",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-034",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_OVERLAP_HIGH",
+        "OPTION_PREFIX_STEM_REPEAT",
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Definitional; options b/c share tokens (Jaccard ~0.67) below 0.85.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-035",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT",
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "One-word stem with no question form.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-036",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-037",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_COUNT_UNUSUAL"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Option lengths 6/13/4/2, median 5, threshold 0.6x5=3; exactly one option (ג'אווה סקריפט, 13) deviates by 8 > 3, so literal rule fires (2 deviates by exactly 3, not >3). Ratio 6.5 but diff 11 < 20 so no imbalance; KEY_LONGEST is SINGLE_CHOICE only. Counts valid (3 of 4 correct).",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-038",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-039",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT",
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Two-word fragment stem, not interrogative, no completion marker.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-040",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER",
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Imperative stem of 8 words without '?' or completion marker: strict question-form fires (doc does not exempt imperatives). 8 words so not too short. Key 5 chars is not longest; Humerus deviation 0.27.",
+      "confidence": "low",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-041",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT",
+        "OPTION_STYLE_OUTLIER",
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Noun-phrase stem has 5 words (not too short) but no '?' and no completion marker. Option lengths 4,4,4,5 deviate at most 25%.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-042",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "OPTION_PREFIX_STEM_REPEAT",
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Imperative define-stem is exempt from too-short; no ? so literal NO_QUESTION_FORM.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-043",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Clean; options ascending.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-044",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-045",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-046",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED",
+        "OPTION_OVERLAP_HIGH",
+        "OPTION_PREFIX_STEM_REPEAT",
+        "KEY_LONGEST_OPTION",
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Full '?' stem, option lengths 20-22, max pairwise Jaccard about 0.67 (<0.85), options are ranges with units (not plain numbers), no shared 3-token prefix, explanation present.",
+      "confidence": "high",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-047",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-048",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-049",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Option c is 27 chars vs 5-7 for others.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-050",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-051",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Lowercase \"not\" in stem.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-052",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING",
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "STEM_DOUBLE_NEGATIVE",
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": "DOUBLE_NEGATIVE_STEM (negation word plus lexical negative wrong)",
+      "rationale": "Negation word plus lexical negative is a semantic double negative; only one listed negation word. Key 48 chars vs next 25 (1.92x, diff 23); longest/shortest 48/16 = 3.0.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-053",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ALL_OF_ABOVE"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Hebrew all-of-the-above abbreviation option.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-054",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_NONE_OF_ABOVE",
+        "OPTION_PUNCTUATION_INCONSISTENT",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED",
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "\"None of these.\" plus sole terminal period. Options not all numeric.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-055",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractors with strong absolutes; key b is 39 chars vs median 23 (sole outlier).",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-056",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key 134 chars vs next 36 (3.7x); max/min 134/26=5.15, diff 108; median 31 and key deviates 332%, the only deviating option. No absolute terms in distractors.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-057",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": "STEM_ANSWER_LEXICAL_LEAKAGE (key repeats stem phrasing)",
+      "rationale": "Key 31 chars vs 5-7; key restates the stem.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-058",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_DUPLICATE_NORMALIZED",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Ohm and ohm equal after lowercase; lowercase also sole capitalisation outlier.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-059",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "EXPLANATION_MISSING",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "STEM_TOO_SHORT",
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Explanation absent. Option lengths 4,4,5,8; median 4.5; the 8-char option deviates 78% (>60%) and is the only one, so style outlier fires by the rule. Ratio 2.0 <3. Superlative in the stem is not a negation or option absolute.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-060",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_PUNCTUATION_INCONSISTENT",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Only \"24 hours.\" ends with a period.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-061",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT",
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [
+        "OPTION_PREFIX_STEM_REPEAT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "One-word stem is a bare noun; key 39 chars vs 11.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-062",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "\"and is not a fish\" is exclusion content in a relative predicate; STEM_NEGATIVE_WORDING may fire literally (ואינו) but is not expected or forbidden. Arguable.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-063",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "\"and not of the lungs\" is the contrast being tested, same structure as HO4-015; STEM_NEGATIVE_WORDING may fire literally (ולא) but is not expected or forbidden. Arguable.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-064",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_STEM_LEXICAL_OVERLAP"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Vignette; negation is not about selection; key/stem overlap is natural.",
+      "confidence": "low",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-065",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT",
+        "KEY_LONGEST_OPTION",
+        "OPTION_STYLE_OUTLIER",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Stem has 2 words but ends with '?' and starts with interrogative, exempt from STEM_TOO_SHORT. Lengths 46,59,38,38: key not longest, max deviation 0.40, ratio 1.55. Explanation present.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-066",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "MULTIPLE_DEFENSIBLE_ANSWERS (c, d are also commonly cited causes)",
+      "rationale": "Keys a,b only; plague/economic crisis and spread of Christianity are commonly cited.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-067",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "SUBJECTIVE_BEST / MULTIPLE_DEFENSIBLE_ANSWERS",
+      "rationale": "Best treatment is arguable; cough syrup/vitamin C debatable.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-068",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "MULTIPLE_DEFENSIBLE_ANSWERS (tomato, cucumber, avocado are botanical fruits)",
+      "rationale": "Several options are fruits.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-069",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "CONTESTED_KEY (main cause is theory dependent)",
+      "rationale": "Key 36 chars vs 10-16.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-070",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractor c is 32 chars vs 5-7 (natural proper name but thresholds fire).",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-071",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_STYLE_OUTLIER",
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "STEM_NO_QUESTION_FORM"
+      ],
+      "semanticExpectation": "multiple defensible answers / culturally context-dependent key (weekend days differ by country)",
+      "rationale": "No deterministic code applies (lengths 6/9/8/6, median 7, no outlier; stem has ?). Semantically the key depends on locale: the explanation itself says Israel Fri+Sat vs West Sat+Sun, so Friday (and Sunday) are each defensible or not depending on context.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-072",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "SUBJECTIVE_SUPERLATIVE / MULTIPLE_DEFENSIBLE_ANSWERS",
+      "rationale": "Healthiest food is not determinate.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO4-073",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "QUESTION_TYPE_MONO"
+      ],
+      "forbiddenSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN",
+        "SET_KEY_LENGTH_BIAS",
+        "STEM_TEMPLATE_REPEATED",
+        "SET_TOO_SMALL",
+        "DUPLICATE_STEM_EXACT",
+        "NEAR_DUPLICATE_STEM"
+      ],
+      "itemCodes": {},
+      "semanticExpectation": null,
+      "rationale": "9 items, all SINGLE_CHOICE (n>=8) so QUESTION_TYPE_MONO fires literally. Key positions b,d,a,c,b,a,d,c,d: max share 3/9=0.33 < 0.375, no run. Key strictly longest in 0 items. Distinct 3-token stem prefixes. Numeric option sets (items 4, 9) are ordered; no item-level warnings. Author intent is CLEAN (healthy set); QUESTION_TYPE_MONO is informational and fires literally for any 9-item single-type set, so the FLAWED label is a documented literal-rule disagreement with intent.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-074",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN",
+        "QUESTION_TYPE_MONO"
+      ],
+      "forbiddenSetCodes": [
+        "SET_KEY_LENGTH_BIAS",
+        "STEM_TEMPLATE_REPEATED",
+        "SET_TOO_SMALL"
+      ],
+      "itemCodes": {
+        "1": [
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "6": [
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "7": [
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "9": [
+          "OPTION_NUMERIC_UNORDERED"
+        ]
+      },
+      "semanticExpectation": null,
+      "rationale": "9 SINGLE_CHOICE items, key always at position 2 (b): share 1.0 > 0.375, run of 9 >= 4, single type. Key strictly longest in 3/9 (33%) so no length bias. Item 9 options 10,0,32,100 unordered. Style outlier fires literally on items 1 (Apostrophe 10 vs median 5.5), 6 (South Korea 11 vs median 6.5), 7 (Carbon dioxide 14 vs median 7); length-only, low confidence on these item codes.",
+      "confidence": "low",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO4-075",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN",
+        "QUESTION_TYPE_MONO"
+      ],
+      "forbiddenSetCodes": [
+        "STEM_TEMPLATE_REPEATED",
+        "SET_TOO_SMALL"
+      ],
+      "itemCodes": {
+        "3": [
+          "OPTION_NUMERIC_UNORDERED"
+        ],
+        "4": [
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "9": [
+          "OPTION_NUMERIC_UNORDERED"
+        ]
+      },
+      "semanticExpectation": null,
+      "rationale": "10 SINGLE_CHOICE items; keys c,c,c,c,c,c,a,c,c,d: position 3 share 0.8 > 0.375; run of 6 (items 1-6); single type. Key strictly longest in exactly 5/10 (items 4-8) = exactly the 0.5 threshold: table text says >=50% would fire but 19.7 point 6 (human-approved) says 5 of 10 is not enough, so SET_KEY_LENGTH_BIAS is left unlabelled (neither expected nor forbidden); doc ambiguous. Items 3 (3,5,4,6) and 9 (100,30,60,24) have unordered numeric options. Item 4 style outlier literal (שקל חדש 8 vs median 4). Item 1 stem 3 words but exempt (מהי).",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    }
+  ]
+}
