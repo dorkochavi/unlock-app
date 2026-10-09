@@ -1,39 +1,35 @@
-# UNLOCK — ASSESSMENT-ENGINE-007 — Fresh Held-Out v0.3 Validation
+# UNLOCK — ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 — Human Adjudication of Queued v0.3 Cases
 
-PLAN_VERSION: 039
-RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-007
-START_HEAD: `928f314`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `9ba123c`
-STATUS: **COMPLETE - STOP.** Run report: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`; evidence `docs/ASSESSMENT_HELDOUT_V0_3.md`. Evaluation Run. Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
+PLAN_VERSION: 040
+RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001
+START_HEAD: `32ca933`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `32ca933`
+STATUS: **IN PROGRESS.** Evidence/adjudication Run, NOT implementation. Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
 ## 1. Goal
-DESIGN FRESH CORPUS → INDEPENDENT LABEL → LABEL REVIEW → FREEZE (V03_FREEZE_HEAD) → EVALUATE FROZEN CURRENT LINTER → FAILURE CLASSIFICATION → HUMAN REVIEW QUEUE → VALIDATION VERDICT → CLOSE. Core question: do the Run 006 decisions (OPTION_ABSOLUTE_TERM split, KEY_STEM_LEXICAL_OVERLAP no-emit, STEM_TOO_SHORT narrowing) generalize to fresh unseen cases? Evidence identity: FRESH_HELD_OUT_V0_3 (model-authored, model-labeled; not human ground truth; never pooled with v0.1/v0.2/FIRST_BLIND).
+VERIFY FROZEN V0.3 → RECORD DOR'S 13 DECISIONS (POST-EVALUATION, NOT BLIND) → SEPARATE HUMAN OVERLAY → RECOMPUTE HUMAN_ADJUDICATED_V0_3 → REASSESS RULE VERDICTS → ROUTE FUBs → CLOSE. Evidence identities stay separate: FRESH_HELD_OUT_V0_3 (frozen model-labeled, unchanged) vs HUMAN_ADJUDICATED_V0_3 (current linter through Dor's decisions; not a fresh blind evaluation). Never pooled.
 
 ## 2. Hard invariants
-- Linter FROZEN: `question-lint.ts`, `text-normalize.ts`, thresholds, term lists, severity, rule ownership, implemented rule list unchanged for the whole Run. No tuning from v0.3; defects are classified and routed to a future Run.
-- Labels written before the linter sees v0.3; corpus + labels + manifest/hashes committed (V03_FREEZE_HEAD) before evaluation; immutable afterwards; no retroactive relabeling (disagreement is classified, LABEL_QUESTION).
-- Fresh means fresh: no v0.1/v0.2 items copied or cosmetically reworded.
-- v0.2 corpus, human overlay, Run 004 FIRST_BLIND record untouched. Integration stays NOT_READY unless canonical criteria are met.
+- Immutable: heldout-v0-3 corpus/labels/author-intent/label-review/freeze-hashes, heldout-v0-2, existing human overlays, FIRST_BLIND record, `question-lint.ts`, `text-normalize.ts`, thresholds, rule lists, lint behavior. Dor's decisions live in a SEPARATE overlay only.
+- Freeze hashes recomputed and matched before the overlay is written; drift = STOP.
+- Packet factual mismatch = HUMAN_DECISION_PACKET_CONFLICT (STOP); Dor's decisions are never reinterpreted.
+- Only the 13 queued cases are HUMAN_APPROVED. Semantic cases are not converted to deterministic expectations without Dor's approval.
+- Detailed decisions live in the machine-readable overlay (one fact, one home); docs summarize and point.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Corpus design + AUTHOR worker (blind to linter and v0.1/v0.2 text) | AUTO | DONE |
-| B | LABEL worker (blind to linter/outputs/results tables) | AUTO | DONE |
-| C | Independent LABEL REVIEW worker; resolve before freeze | AUTO | DONE |
-| C2 | Freshness remediation (mechanical overlap check; pre-freeze replacement) | AUTO | DONE |
-| D | Freeze: heldout-v0-3 files + manifest/hashes, commit (V03_FREEZE_HEAD) | AUTO | DONE |
-| E (E1 harness+run, E2 classification/report) | Evaluate frozen linter via existing harness (generic extension only if needed); failure classification; human review queue; verdicts | AUTO | DONE |
-| Z / Z2 | Independent general review (KEEP), verification, docs, Run close | FINAL_GATE | DONE |
-
-## 4. Docs targets
-`docs/ASSESSMENT_HELDOUT_V0_3.md` (new), `docs/ASSESSMENT_ENGINE.md`, `docs/FOLLOW_UP_BACKLOG.md`, `docs/DEV_STATUS.md`, this Plan, `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`.
+| H1 | Verify freeze + packet consistency; overlay file; generic POST_HUMAN v0.3 evaluation + tests; commit | AUTO | PENDING |
+| H2 | Report section, rule reassessment, FUB routing, docs content | AUTO | PENDING |
+| Z | Independent general review | REVIEW_GATE | PENDING |
+| Z2 | Reconcile docs, verification, Run close | FINAL_GATE | PENDING |
 
 ## History
 
+- ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md` (in progress)
 - ASSESSMENT-ENGINE-007: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`
 - ASSESSMENT-ENGINE-006: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-006.md`
 - ASSESSMENT-ENGINE-005: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-005.md`
