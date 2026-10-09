@@ -47,7 +47,11 @@ const postLabel = (id: string): HeldOutLabel => {
 };
 const frozenLabel = (id: string): HeldOutLabel => labels.labels.find((x) => x.caseId === id) as HeldOutLabel;
 const decision = (id: string) => overlay.decisions.find((d) => d.caseId === id)!;
-const semanticOf = (id: string): string => String((decision(id) as unknown as { semanticDecision: { decision: string } }).semanticDecision.decision);
+const semanticOf = (id: string): string => {
+  const sd = decision(id).semanticDecision;
+  if (sd === null || sd === undefined) throw new Error(`no semanticDecision for ${id}`);
+  return typeof sd === "string" ? sd : sd.decision;
+};
 const sub = (l: HeldOutLabels) =>
   runHeldOutEvaluation(
     { cases: corpus.cases.filter((c) => QUEUED.includes(c.caseId)) },

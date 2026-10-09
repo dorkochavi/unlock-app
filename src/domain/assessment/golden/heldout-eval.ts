@@ -494,8 +494,8 @@ export interface HumanDecision {
   humanReasoning: string;
   humanRule: string;
   humanNotes?: string;
-  /** Free-text record of the human's semantic (non-deterministic) decision. Documentation only; never read by the harness. */
-  semanticDecision?: string;
+  /** Record of the human's semantic (non-deterministic) decision: free text (v0.2) or `{decision, concern}` (v0.3), or null. Documentation only; never read by the harness. */
+  semanticDecision?: string | { decision: string; concern?: string } | null;
   /** Free-text design note (future consideration, NOT implemented). Documentation only; never read by the harness. */
   designNote?: string;
   /**
