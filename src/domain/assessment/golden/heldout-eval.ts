@@ -483,8 +483,13 @@ export interface HumanDecision {
     label?: "CLEAN" | "FLAWED";
     removeExpectedCodes?: string[];
     addExpectedCodes?: string[];
+    /** SET-scope equivalent of remove/add expected codes. */
+    removeExpectedSetCodes?: string[];
+    addExpectedSetCodes?: string[];
     /** Final precision decision: the human ruled the emission a real false positive (not a flaw). ITEM labels only. */
     addForbiddenCodes?: string[];
+    /** SET-scope equivalent of addForbiddenCodes. */
+    addForbiddenSetCodes?: string[];
     /** Same, for items inside a SET case (key = 1-based item number). SET labels only. */
     addForbiddenItemCodes?: Record<string, string[]>;
     /** Replaces the semantic expectation (e.g. `null` when the human rejects a semantic-only concern). Absent = unchanged. */
@@ -523,6 +528,8 @@ function withoutForbidAdditions(next: HeldOutLabel, frozen: HeldOutLabel): HeldO
   const out: HeldOutLabel = JSON.parse(JSON.stringify(next)) as HeldOutLabel;
   if (frozen.forbiddenCodes === undefined) delete out.forbiddenCodes;
   else out.forbiddenCodes = frozen.forbiddenCodes;
+  if (frozen.forbiddenSetCodes === undefined) delete out.forbiddenSetCodes;
+  else out.forbiddenSetCodes = frozen.forbiddenSetCodes;
   if (frozen.forbiddenItemCodes === undefined) delete out.forbiddenItemCodes;
   else out.forbiddenItemCodes = frozen.forbiddenItemCodes;
   return out;
@@ -563,6 +570,26 @@ export function applyHumanAdjudication(
       if (next.scope !== "ITEM") throw new Error(`${where}: code patches apply to ITEM labels only`);
       next.expectedCodes = after;
     }
+    const expectedSet = next.expectedSetCodes ?? [];
+    const removeSet = d.patch.removeExpectedSetCodes ?? [];
+    const addSet = d.patch.addExpectedSetCodes ?? [];
+
+    if (removeSet.length + addSet.length > 0) {
+      if (next.scope !== "SET") throw new Error(`${where}: set-code patches apply to SET labels only`);
+
+      for (const code of removeSet) {
+        if (!expectedSet.includes(code)) {
+          throw new Error(`${where}: removed set code ${code} was not expected`);
+        }
+      }
+
+      let afterSet = expectedSet.filter((c) => !removeSet.includes(c));
+      for (const code of addSet) {
+        if (!afterSet.includes(code)) afterSet = [...afterSet, code];
+      }
+      next.expectedSetCodes = afterSet;
+    }
+
     const addForbidden = d.patch.addForbiddenCodes ?? [];
     if (addForbidden.length > 0) {
       if (next.scope !== "ITEM") throw new Error(`${where}: addForbiddenCodes applies to ITEM labels only`);
@@ -571,12 +598,30 @@ export function applyHumanAdjudication(
       }
       next.forbiddenCodes = Array.from(new Set([...(next.forbiddenCodes ?? []), ...addForbidden]));
     }
+
+    const addForbiddenSet = d.patch.addForbiddenSetCodes ?? [];
+    if (addForbiddenSet.length > 0) {
+      if (next.scope !== "SET") throw new Error(`${where}: addForbiddenSetCodes applies to SET labels only`);
+
+      for (const code of addForbiddenSet) {
+        if ((next.expectedSetCodes ?? []).includes(code)) {
+          throw new Error(`${where}: cannot forbid expected set code ${code}`);
+        }
+      }
+
+      next.forbiddenSetCodes = Array.from(
+        new Set([...(next.forbiddenSetCodes ?? []), ...addForbiddenSet]),
+      );
+    }
+
     const addForbiddenItems = d.patch.addForbiddenItemCodes ?? {};
     if (Object.keys(addForbiddenItems).length > 0) {
       if (next.scope !== "SET") throw new Error(`${where}: addForbiddenItemCodes applies to SET labels only`);
       const merged: Record<string, string[]> = { ...(next.forbiddenItemCodes ?? {}) };
       for (const [idx, codes] of Object.entries(addForbiddenItems)) {
-        if (!Object.prototype.hasOwnProperty.call(next.itemCodes ?? {}, idx)) throw new Error(`${where}: forbidden item index ${idx} is not a labeled item`);
+        if (!/^[1-9]\d*$/.test(idx)) {
+          throw new Error(`${where}: forbidden item index ${idx} is not a positive 1-based integer`);
+        }
         for (const code of codes) {
           if ((next.itemCodes?.[idx] ?? []).includes(code)) throw new Error(`${where}: cannot forbid expected code ${code} at item ${idx}`);
         }
@@ -687,7 +732,7 @@ export function compareFrozenAndPostHuman(
   const postHuman = runHeldOutEvaluation(corpus, post);
   const withoutFinalForbidden: HumanAdjudicationOverlay = {
     ...overlay,
-    decisions: overlay.decisions.map((d) => ({ ...d, patch: { ...d.patch, addForbiddenCodes: undefined, addForbiddenItemCodes: undefined } })),
+    decisions: overlay.decisions.map((d) => ({ ...d, patch: { ...d.patch, addForbiddenCodes: undefined, addForbiddenSetCodes: undefined, addForbiddenItemCodes: undefined } })),
   };
   const postHumanBeforeFinalForbidden = runHeldOutEvaluation(corpus, applyHumanAdjudication(labels, withoutFinalForbidden, allowedCaseIds));
   const counts = (r: HeldOutReport): CaseCounts => ({

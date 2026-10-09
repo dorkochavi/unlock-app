@@ -1,0 +1,529 @@
+{
+  "version": "v0.4-human-adjudication-1",
+  "reviewer": "Dor",
+  "reviewDate": "2026-10-09",
+  "provenance": "HUMAN_APPROVED_POST_EVALUATION",
+  "evaluationStatus": "POST_EVALUATION, NOT BLIND: decisions were made after seeing question, options, key, frozen model label, frozen linter emissions and why the case mattered. These reviewed cases are not fresh held-out evidence after adjudication.",
+  "coverage": "14/14 review-queue rows; 18 case/subcase packets adjudicated; encoded as 17 top-level case decisions because HO4-075/item7 is nested inside HO4-075.",
+  "decisions": [
+    {
+      "caseId": "HO4-062",
+      "decision": "APPROVED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "addForbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ]
+      },
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "FORBIDDEN"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "ואינו דג is factual exclusion/content inside the proposition. The learner is not being asked to select what is NOT true.",
+      "humanRule": "Negation token != negative-stem flaw. Content or exclusion wording is not sufficient.",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-015",
+      "decision": "APPROVED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "addForbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ]
+      },
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "FORBIDDEN"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "ולא שפת תכנות is natural contrast that defines the content being tested, not negative-selection reasoning.",
+      "humanRule": "Natural contrast wording is not a negative-stem flaw.",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-063",
+      "decision": "APPROVED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "addForbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ]
+      },
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "FORBIDDEN"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "ולא של הריאות is natural contrast content and does not require negative-selection reasoning.",
+      "humanRule": "Natural contrast wording is not a negative-stem flaw.",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-007",
+      "decision": "APPROVED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "addForbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ]
+      },
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "FORBIDDEN"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "שאינו מסיס בשומן is a descriptive relative clause about vitamin C, not a negative-selection instruction.",
+      "humanRule": "Relative/content negation is not sufficient for a negative-stem warning.",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-008",
+      "decision": "APPROVED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "addForbiddenCodes": [
+          "STEM_NEGATIVE_WORDING"
+        ]
+      },
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "FORBIDDEN"
+      },
+      "semanticDecision": {
+        "decision": "READING_BURDEN_ONLY_IF_ANY",
+        "concern": "Long stem may be verbose, but the negation itself is factual content."
+      },
+      "humanReasoning": "אינה עולה מעל is part of the physical phenomenon being described. Any quality concern is reading burden, not negative-selection wording.",
+      "humanRule": "Late factual negation inside explanatory content is not a negative-stem flaw.",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [
+          "KEY_STEM_LEXICAL_OVERLAP"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-052",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "patch": {},
+      "deterministicDecision": {
+        "STEM_NEGATIVE_WORDING": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT",
+        "concern": "double-negative phrasing איננה שגויה"
+      },
+      "humanReasoning": "איזו מהטענות איננה שגויה directly reverses the selection logic and is a genuine negative-selection/double-negative stem.",
+      "humanRule": "Negative wording is a real flaw when the negation controls which answer the learner must select.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_NEGATIVE_WORDING",
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "forbiddenCodes": [
+          "STEM_DOUBLE_NEGATIVE",
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "semanticExpectation": "DOUBLE_NEGATIVE_STEM (negation word plus lexical negative wrong)",
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-042",
+      "decision": "CHANGED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "label": "CLEAN",
+        "removeExpectedCodes": [
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "semanticExpectation": null
+      },
+      "deterministicDecision": {
+        "STEM_TOO_SHORT": "FORBIDDEN",
+        "STEM_NO_QUESTION_FORM": "NOT_A_FLAW"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "הגדר/י: דמוקרטיה. is a complete and understandable imperative instruction. A question mark is not required.",
+      "humanRule": "A clear imperative instruction is a valid stem even without a question mark.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "forbiddenCodes": [
+          "OPTION_ABSOLUTE_TERM",
+          "OPTION_PREFIX_STEM_REPEAT",
+          "STEM_TOO_SHORT"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-003",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "patch": {},
+      "deterministicDecision": {
+        "STEM_TOO_SHORT": "EXPECTED / APPROVED",
+        "STEM_NO_QUESTION_FORM": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT",
+        "concern": "bare noun-phrase fragment"
+      },
+      "humanReasoning": "בירת מונגוליה is only a noun phrase. The intended task can be guessed, but the stem itself is not a complete question or instruction.",
+      "humanRule": "Guessable intent does not make a noun-phrase fragment a well-formed stem.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_TOO_SHORT",
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "forbiddenCodes": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-041",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "patch": {},
+      "deterministicDecision": {
+        "STEM_NO_QUESTION_FORM": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT",
+        "concern": "bare noun-phrase fragment"
+      },
+      "humanReasoning": "יחידת המידה של מתח חשמלי is a bare noun phrase rather than a complete question or instruction.",
+      "humanRule": "A longer noun phrase can still be an incomplete stem.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "forbiddenCodes": [
+          "STEM_TOO_SHORT",
+          "OPTION_STYLE_OUTLIER",
+          "KEY_LONGEST_OPTION"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-004",
+      "decision": "CHANGED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "label": "CLEAN",
+        "removeExpectedCodes": [
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "semanticExpectation": null
+      },
+      "deterministicDecision": {
+        "STEM_NO_QUESTION_FORM": "NOT_A_FLAW",
+        "STEM_TOO_SHORT": "FORBIDDEN"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "Define allele. is a complete imperative instruction and is valid without a question mark.",
+      "humanRule": "Imperative instructions do not require interrogative punctuation.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "forbiddenCodes": [
+          "STEM_TOO_SHORT",
+          "KEY_LONGEST_OPTION",
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      }
+    },
+    {
+      "caseId": "HO4-040",
+      "decision": "CHANGED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "label": "CLEAN",
+        "removeExpectedCodes": [
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "semanticExpectation": null
+      },
+      "deterministicDecision": {
+        "STEM_NO_QUESTION_FORM": "NOT_A_FLAW"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "Name the longest bone in the human body. is a complete imperative instruction.",
+      "humanRule": "Imperative instructions do not require a question mark.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "STEM_NO_QUESTION_FORM"
+        ],
+        "forbiddenCodes": [
+          "STEM_TOO_SHORT",
+          "KEY_LONGEST_OPTION",
+          "OPTION_STYLE_OUTLIER",
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      }
+    },
+    {
+      "caseId": "HO4-013",
+      "decision": "APPROVED",
+      "finalJudgement": "CLEAN",
+      "patch": {},
+      "deterministicDecision": {
+        "OPTION_ABSOLUTE_TERM": "NONE / WEAK-TIER CONTENT"
+      },
+      "semanticDecision": {
+        "decision": "REJECTED / NOT_A_FLAW",
+        "concern": "weak-tier כל/שום as ordinary economics content"
+      },
+      "humanReasoning": "כל and שום appear naturally inside economics misconceptions. They do not create a test-wiseness cue by themselves.",
+      "humanRule": "Weak absolute terms remain contextual semantic/human concerns, not deterministic defects.",
+      "before": {
+        "label": "CLEAN",
+        "expectedCodes": [],
+        "forbiddenCodes": [
+          "OPTION_ABSOLUTE_TERM",
+          "KEY_LONGEST_OPTION",
+          "OPTION_STYLE_OUTLIER",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_OVERLAP_HIGH",
+          "STEM_NEGATIVE_WORDING",
+          "STEM_DOUBLE_NEGATIVE"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-018",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "patch": {},
+      "deterministicDecision": {
+        "OPTION_ABSOLUTE_TERM": "EXPECTED / APPROVED",
+        "KEY_LONGEST_OPTION": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT",
+        "concern": "לחלוטין functions as strong completely/entirely wording in this distractor"
+      },
+      "humanReasoning": "לחלוטין strengthens an already absolute distractor claim and acts like completely/entirely in this context.",
+      "humanRule": "Strong absolute adverbs can be valid warnings when they materially strengthen an implausibly absolute distractor.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_ABSOLUTE_TERM"
+        ],
+        "forbiddenCodes": [
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_STYLE_OUTLIER",
+          "KEY_STEM_LEXICAL_OVERLAP",
+          "STEM_TOO_SHORT",
+          "STEM_NEGATIVE_WORDING",
+          "STEM_DOUBLE_NEGATIVE",
+          "STEM_NO_QUESTION_FORM",
+          "OPTION_OVERLAP_HIGH"
+        ],
+        "semanticExpectation": null,
+        "languageReviewRequired": false
+      }
+    },
+    {
+      "caseId": "HO4-016",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "patch": {},
+      "deterministicDecision": {
+        "KEY_LONGEST_OPTION": "EXPECTED / APPROVED",
+        "OPTION_LENGTH_IMBALANCE": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT",
+        "concern": "semantic stem-key leakage via distinctive ultraviolet-radiation restatement"
+      },
+      "humanReasoning": "The key uniquely repeats the stem's distinctive ultraviolet-radiation wording. That is a real cue independent of length.",
+      "humanRule": "Distinctive asymmetric stem-key echo can be a real defect, but this does not authorize broad deterministic lexical-overlap detection.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "forbiddenCodes": [
+          "KEY_STEM_LEXICAL_OVERLAP"
+        ],
+        "semanticExpectation": "STEM_ANSWER_LEXICAL_LEAKAGE (key restates stem phrase ultraviolet radiation)",
+        "languageReviewRequired": false
+      }
+    },
+    {
+      "caseId": "HO4-057",
+      "decision": "APPROVED",
+      "finalJudgement": "FLAWED",
+      "patch": {},
+      "deterministicDecision": {
+        "KEY_LONGEST_OPTION": "EXPECTED / APPROVED",
+        "OPTION_LENGTH_IMBALANCE": "EXPECTED / APPROVED"
+      },
+      "semanticDecision": {
+        "decision": "APPROVED / REAL_DEFECT",
+        "concern": "semantic stem-key leakage via flowing-water phrasing"
+      },
+      "humanReasoning": "The key restates the stem's flowing-water description while the distractors are unrelated short terms.",
+      "humanRule": "Distinctive semantic echo can be a real defect while remaining semantic rather than deterministic ownership.",
+      "before": {
+        "label": "FLAWED",
+        "expectedCodes": [
+          "KEY_LONGEST_OPTION",
+          "OPTION_LENGTH_IMBALANCE",
+          "OPTION_STYLE_OUTLIER"
+        ],
+        "forbiddenCodes": [
+          "KEY_STEM_LEXICAL_OVERLAP"
+        ],
+        "semanticExpectation": "STEM_ANSWER_LEXICAL_LEAKAGE (key repeats stem phrasing)",
+        "languageReviewRequired": false
+      }
+    },
+    {
+      "caseId": "HO4-075",
+      "decision": "CHANGED",
+      "finalJudgement": "FLAWED",
+      "patch": {
+        "removeExpectedSetCodes": [
+          "QUESTION_TYPE_MONO"
+        ],
+        "addForbiddenSetCodes": [
+          "SET_KEY_LENGTH_BIAS",
+          "QUESTION_TYPE_MONO"
+        ],
+        "addForbiddenItemCodes": {
+          "7": [
+            "OPTION_OVERLAP_HIGH"
+          ]
+        }
+      },
+      "deterministicDecision": {
+        "KEY_POSITION_IMBALANCE": "EXPECTED / APPROVED",
+        "KEY_POSITION_RUN": "EXPECTED / APPROVED",
+        "SET_KEY_LENGTH_BIAS": "FORBIDDEN AT 5/10",
+        "QUESTION_TYPE_MONO": "INFORMATIONAL ONLY / NOT_SCORED_FLAW",
+        "item7/OPTION_OVERLAP_HIGH": "FORBIDDEN / FALSE_ALARM"
+      },
+      "semanticDecision": {
+        "decision": "REJECTED / NOT_A_FLAW for item7 overlap",
+        "concern": "כתב and מכתב are distinct legitimate Hebrew options"
+      },
+      "humanReasoning": "Exactly 5 of 10 longest keys is insufficient for SET_KEY_LENGTH_BIAS. A single-type set is not itself a scored flaw. On item 7, כתב and מכתב are distinct words and prefix stripping creates an artificial overlap.",
+      "humanRule": "50% longest-key share alone is insufficient; QUESTION_TYPE_MONO is informational; Hebrew normalization must not collapse distinct lexical items.",
+      "before": {
+        "label": "FLAWED",
+        "expectedSetCodes": [
+          "KEY_POSITION_IMBALANCE",
+          "KEY_POSITION_RUN",
+          "QUESTION_TYPE_MONO"
+        ],
+        "forbiddenSetCodes": [
+          "STEM_TEMPLATE_REPEATED",
+          "SET_TOO_SMALL"
+        ],
+        "itemCodes": {
+          "3": [
+            "OPTION_NUMERIC_UNORDERED"
+          ],
+          "4": [
+            "OPTION_STYLE_OUTLIER"
+          ],
+          "9": [
+            "OPTION_NUMERIC_UNORDERED"
+          ]
+        },
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    },
+    {
+      "caseId": "HO4-073",
+      "decision": "CHANGED",
+      "finalJudgement": "CLEAN",
+      "patch": {
+        "label": "CLEAN",
+        "removeExpectedSetCodes": [
+          "QUESTION_TYPE_MONO"
+        ],
+        "semanticExpectation": null
+      },
+      "deterministicDecision": {
+        "QUESTION_TYPE_MONO": "INFORMATIONAL ONLY / NOT_SCORED_FLAW"
+      },
+      "semanticDecision": null,
+      "humanReasoning": "A healthy 9-item set being entirely SINGLE_CHOICE is not itself a quality defect.",
+      "humanRule": "Question-type uniformity may be informational metadata but should not be scored as a flaw by itself.",
+      "before": {
+        "label": "FLAWED",
+        "expectedSetCodes": [
+          "QUESTION_TYPE_MONO"
+        ],
+        "forbiddenSetCodes": [
+          "KEY_POSITION_IMBALANCE",
+          "KEY_POSITION_RUN",
+          "SET_KEY_LENGTH_BIAS",
+          "STEM_TEMPLATE_REPEATED",
+          "SET_TOO_SMALL",
+          "DUPLICATE_STEM_EXACT",
+          "NEAR_DUPLICATE_STEM"
+        ],
+        "itemCodes": {},
+        "semanticExpectation": null,
+        "languageReviewRequired": true
+      }
+    }
+  ]
+}
