@@ -1714,6 +1714,8 @@ A decision to wire lint (FUB-055), or the next Run that touches linter heuristic
 
 **Human evidence (Dor, 2026-10-09; evidence only, no threshold or rule change proposed; candidates remain candidates):** (1) an absolute term is not a flaw merely because it exists, and symmetric use across all options is not an answer cue (HO-017 relabeled CLEAN; the OPTION_ABSOLUTE_TERM detection is now a CLEAN-case FP); (2) Hebrew 'כל' integral to the proposition under assessment is not an absolute-term flaw (HO-063, expectation removed; the emission is now UNLABELED by harness convention only, not human ambiguity); (3) Hebrew 'שום' needs syntactic/semantic context (HO-015, natural phrasing, not added); (4) a completion/cloze stem ending in ':' is an acceptable question form (HO-032, so STEM_NO_QUESTION_FORM must not require '?'); lexical overlap with the stem is not leakage by itself (HO-076, KEY_STEM_LEXICAL_OVERLAP item-1 emission is a context-blind heuristic limit, left UNLABELED by harness convention only; Dor's decision is definitive). The STEM_TOO_SHORT cluster received no direct human decision beyond the question-form note. Single reviewer, 9 rows. See `docs/ASSESSMENT_HELDOUT_V0_2.md` section 16.
 
+
+**Fresh held-out v0.4 (Run 2026-10-09-ASSESSMENT-ENGINE-009; FRESH_HELD_OUT_V0_4, model-authored and model-labeled, not human ground truth, never pooled; report `docs/ASSESSMENT_HELDOUT_V0_4.md`; no code change)):** OPTION_ABSOLUTE_TERM 3/3 TP, 0 FN, 0 FP = `VALIDATED_PROVISIONALLY` (strong tier only, very thin; weak-tier recall unmeasured); STEM_TOO_SHORT 4 TP / 0 FN / 1 FP (HO4-042 `הגדר/י`) = `KEEP_WITH_WATCH`, lookalike lost-TP stress absent. Status unchanged.
 ---
 
 # FUB-074 — Semantic/Human Judgement for Weak-Tier Absolute Terms and Key-Stem Leakage
@@ -1725,6 +1727,8 @@ A decision to wire lint (FUB-055), or the next Run that touches linter heuristic
 Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066) removed two judgements from deterministic ownership because they are context-dependent: (1) weak-tier absolute terms (כל/שום/רק/בלבד/all/only/every/none/אף אחד), routed to HUMAN_REVIEW / AI_OPTIONAL; (2) key-stem lexical leakage (KEY_STEM_LEXICAL_OVERLAP, no longer emitted), routed to AI_REQUIRED / HUMAN_REVIEW. No semantic reviewer exists, so these signals currently produce no output at all (a deliberate recall loss of 4 v0.1 and 4 v0.2 labelled detections). The work is to give them a home when the semantic critic (AE-021, group C) or an instructor review step exists.
 Run 2026-10-09-ASSESSMENT-ENGINE-007 (FRESH_HELD_OUT_V0_3) adds semantic-review fixtures for when a semantic reviewer exists: HO3-025, HO3-028, HO3-033, HO3-058 (`docs/ASSESSMENT_HELDOUT_V0_3.md`; model-labeled, not human-approved). Scope unchanged.
 Human adjudication (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001, HUMAN_ADJUDICATED_V0_3, Dor, post-evaluation, not blind; `docs/ASSESSMENT_HELDOUT_V0_3.md` section 11): POSITIVE semantic fixtures HO3-033 (weak-tier `בלבד` contextual, plus weak/implausible distractor) and HO3-021 (real stem-key echo of `תופעת הגאות והשפל`; also caught by KEY_LONGEST_OPTION). NEGATIVE fixtures (human-rejected as non-flaws): HO3-025, HO3-028 (leakage concern rejected), HO3-058 (contrast wording, cue concern rejected). Dor's rules: restating a defined concept or a standard term sharing vocabulary with its behavior is not leakage; leakage needs an asymmetric cue; unique stem-key echo is a real defect but does NOT authorize restoring broad KEY_STEM_LEXICAL_OVERLAP. Status and scope unchanged (stays open).
+
+Fresh held-out v0.4 (Run 2026-10-09-ASSESSMENT-ENGINE-009; FRESH_HELD_OUT_V0_4, model-authored and model-labeled, not human ground truth, never pooled; report `docs/ASSESSMENT_HELDOUT_V0_4.md`; no code change): no counter-evidence for semantic ownership; recall unmeasured (rule silent by design). Candidate semantic-review fixtures for AE-021: HO4-016, 057 (leakage, caught only via length rules), 013, 018 (weak-tier); answer-defensibility fixtures HO4-066/067/068/071/072. Scope and status unchanged (`DEFERRED`).
 
 ## Promotion Trigger
 
@@ -1745,6 +1749,8 @@ Source: Run 2026-10-09-ASSESSMENT-ENGINE-007 (`docs/ASSESSMENT_HELDOUT_V0_3.md`)
 
 Run 2026-10-09-ASSESSMENT-ENGINE-008 (LAST_VERIFIED_HEAD `ab784dc`): part (2) implemented: מהם, מהן added to the lead words (HO3-071 FP gone). Side effect: the single-prefix rule also exempts non-words like במהם/למהם (unpinned). Part (1) NOT fixed and not marked resolved: HO3-038/040/042/044 lost TPs remain. Deferred because 38 distinct stems under 4 words (v0.1 1, v0.2 10, v0.3 27) show terminal punctuation separates v0.3 only by authoring convention and would regress valid unpunctuated stems ('מי כתב המלט', 'Name three planets'); telling 'List of birds'/'Name tags' from 'List two primes' needs semantics or a word list. Only micro-rule considered: a lone lead word is never exempt (fixes only 'במה', n=1); not selected, needs Dor's decision. Evidence is contract and frozen-set regression only; validation needs a fresh batch (v0.4).
 
+Fresh held-out v0.4 (Run 2026-10-09-ASSESSMENT-ENGINE-009; FRESH_HELD_OUT_V0_4, model-authored and model-labeled, not human ground truth, never pooled; report `docs/ASSESSMENT_HELDOUT_V0_4.md`; no code change): part A (מהם/מהן) UNMEASURED (no such stem authored; no regression); part B still open, lookalike lost-TP stress absent; STEM_TOO_SHORT 4/0/1, the FP being HO4-042 `הגדר/י: דמוקרטיה.` (closed lead list misses the slash spelling; label uncertain). Status stays `PARTIALLY_RESOLVED_IMPLEMENTATION`.
+
 ## Promotion Trigger
 
 Whole-utterance part: a human design decision plus a fresh held-out batch. Related WATCH: FUB-066.
@@ -1762,6 +1768,8 @@ Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, human-adjudicated in Run 2026-10-0
 ## Run 008 Partial Closure
 
 Run 2026-10-09-ASSESSMENT-ENGINE-008 (LAST_VERIFIED_HEAD `ab784dc`): narrow subtraction, Hebrew `לא` only: relative שלא/ושלא counts only after an earlier selection cue (closed list: איזה איזו אילו איזהו בחר בחרו סמן סמנו זהה ציין); ו+לא is silent when the next token matches `/^ל[א-ת]{3,}$/` (contrast); everything else unchanged. HO3-005 and HO3-058 FPs fixed; HO-073/item8 (`ולא לתרכובת`, unlabeled) newly silent; no lost labeled TP. The general 'negation must be in an interrogative frame' rule was rejected (would break about 18 existing contract/TP prompts). Not closed: the condition 'no lexical-token-only negation logic remains' is NOT met. Residual WATCH: bare `לא`/`אין` in non-selecting clauses still fire; the cue list is closed (e.g. 'מי מהבאים שלא', 'מצאו/קבעו ... שלא', 'מהם ... שלא' are now silent where they fired before); the cue check has no sentence boundary; CONTRAST_NEXT treats any ל-initial 4+ letter word incl. verbs as contrast ('ולא לומדים'); `שאינו`, English `not` as relative/contrast and 'אבל לא' untouched. Backlog note: add a negative test row for 'מי מהבאים שלא' only with the next fresh batch (not now, to avoid post-hoc tuning). Evidence is contract and frozen-set regression; validation needs a fresh batch.
+
+Fresh held-out v0.4 (Run 2026-10-09-ASSESSMENT-ENGINE-009; FRESH_HELD_OUT_V0_4, model-authored and model-labeled, not human ground truth, never pooled; report `docs/ASSESSMENT_HELDOUT_V0_4.md`; no code change): 5 Hebrew CLEAN stems warned (HO4-007 `שאינו`, 008 bare `אינה`, 015 and 063 `ולא` + non-`ל` word, 062 `ואינו`), STEM_NEGATIVE_WORDING 5 TP / 1 FN (HO4-052 `איננה`) / 5 FP; the Run 008 narrowing silenced only HO4-064. These are FPs only under the CLEAN-warn convention plus Dor's v0.3 principle (label review had neutralized the forbiddenCodes; 062/063 flipped to CLEAN pre-freeze). REOPEN as active design item, conditional on human ruling (v0.4 queue rows 1-5); status text stays `PARTIALLY_RESOLVED_IMPLEMENTATION`.
 
 ## Promotion Trigger
 
@@ -1781,6 +1789,8 @@ Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, human-confirmed in Run 2026-10-09-
 
 Run 2026-10-09-ASSESSMENT-ENGINE-008 (LAST_VERIFIED_HEAD `ab784dc`): `כל האפשרויות הנ"ל` and `כל האפשרויות הנל` added to `ALL_OF_ABOVE_PHRASES` (whole token sequence; apostrophe `הנ'ל` not matched). HO3-071 all-of-above miss is now a TP; no FP, no lost TP. n=1: other Hebrew variants unmeasured; contract and frozen-set regression evidence only, fresh validation pending.
 
+
+Fresh held-out v0.4 (Run 2026-10-09-ASSESSMENT-ENGINE-009; FRESH_HELD_OUT_V0_4, model-authored and model-labeled, not human ground truth, never pooled; report `docs/ASSESSMENT_HELDOUT_V0_4.md`; no code change): OPTION_ALL_OF_ABOVE 4/4 TP, 0 FP; keep `RESOLVED_IMPLEMENTED`, `VALIDATED_PROVISIONALLY` covers pre-Run-008 phrases/tiers only; Run 008 additions (`כל האפשרויות הנ"ל`/`הנל`) not exercised, other Hebrew variants unmeasured.
 ---
 
 # FUB-067 — KEY_LONGEST_OPTION 15-Character Gate and Set Eligibility Near-Misses

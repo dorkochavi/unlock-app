@@ -3,9 +3,9 @@
 PLAN_VERSION: 043
 RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-009
 START_HEAD: `73d8767`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `73d8767`
-STATUS: **IN PROGRESS.** VALIDATION Run (not implementation). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `28bd30a`
+STATUS: **COMPLETE — STOP.** VALIDATION Run (not implementation). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -21,18 +21,18 @@ AUTHOR → LABEL (independent) → LABEL REVIEW → CONTAMINATION AUDIT → FREE
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Author corpus + author-intent | AUTO | TODO |
-| B | Independent labels | AUTO | TODO |
-| C | Label review + change log | AUTO | TODO |
-| D | Contamination audit + replacements | AUTO | TODO |
-| E | Freeze (V04_FREEZE_HEAD), manifest, v0.4 tests | AUTO | TODO |
-| F | Evaluate, classify, v0.4 report | AUTO | TODO |
-| Z | Independent review (review-commit) + fixes | REVIEW_GATE | TODO |
-| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | TODO |
+| A | Author corpus + author-intent | AUTO | DONE |
+| B | Independent labels | AUTO | DONE |
+| C | Label review + change log | AUTO | DONE |
+| D | Contamination audit + replacements | AUTO | DONE |
+| E | Freeze (V04_FREEZE_HEAD), manifest, v0.4 tests | AUTO | DONE |
+| F | Evaluate, classify, v0.4 report | AUTO | DONE |
+| Z | Independent review (review-commit) + fixes | REVIEW_GATE | DONE |
+| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | DONE |
 
 ## History
 
-- ASSESSMENT-ENGINE-009 (this Run; Run report written at close)
+- ASSESSMENT-ENGINE-009: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-009.md` (Run report; COMPLETE)
 - ASSESSMENT-ENGINE-008: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-008.md` (Run report; COMPLETE)
 - ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`
 - ASSESSMENT-ENGINE-007: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`

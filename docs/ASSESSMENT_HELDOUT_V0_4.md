@@ -37,7 +37,7 @@ Three mechanical-plus-manual audit rounds against v0.1/v0.2/v0.3 corpora, human 
 | 3 | 0 | 2 | 12 | 9 items |
 | 4 (parent check) | - | 1 near (HO4-018 vs HO3-011) | - | HO4-018 re-replaced |
 
-Total 48 item replacements (26 + 12 + 9 + 1 re-replacement), each by a fresh author not shown the prior material, independently relabelled and label-reviewed. Accepted generic residual (policy: generic educational overlap is not replaced): HO4-010, 012, 043, 061, 062, 063 (same concept as v0.2 HO-004, HO-008, HO-072#2, v0.3 HO3-065, v0.2 HO-037/HO-006, v0.2 HO-073#0). Three of these (061, 062, 063) are cases analysed below, so their freshness is topic-level only. Limitation recorded in the audit: round-3 and round-4 replacements were checked only by a parent-run token-Jaccard pass (max 0.67), not by a further worker re-audit. Freshness is lexical and topic-level, not proof of independence from earlier corpora or from the linter author's habits.
+Total 48 item replacements (26 + 12 + 9 + 1 re-replacement), each by a fresh author not shown the prior material, independently relabelled and label-reviewed. Accepted generic residual (policy: generic educational overlap is not replaced): HO4-010, 012, 043, 061, 062, 063 (same concept as v0.2 HO-004, HO-008, HO-072#2, v0.3 HO3-065, v0.2 HO-037/HO-006, v0.2 HO-073#0). Three of these (061, 062, 063) are cases analysed below, so their freshness is topic-level only. Limitation recorded in the audit: round-3 and round-4 replacements were checked only by a parent-run token-Jaccard pass (max 0.67), not by a further worker re-audit. Freshness is lexical and topic-level, not proof of independence from earlier corpora or from the linter author's habits. `contamination-audit.json` is outside the freeze hash set and the freeze test. HO4-045, HO4-075 item2 and HO4-074 item8 are generic template/topic echoes of v0.2 items (token Jaccard 0.4-0.6) and are not listed in the accepted residual; round-3/4 replacements had only a parent-run Jaccard check.
 
 ### 1.3 Composition versus targets (deviations stated plainly)
 
@@ -146,12 +146,12 @@ Allowed verdict vocabulary: `VALIDATED_PROVISIONALLY`, `KEEP_WITH_WATCH`, `WEAKE
 - Hebrew stems containing a negation token: 9 (005, 007, 008, 009, 015, 052, 062, 063, 064). Of the 6 labelled CLEAN, 5 fired and only 064 stayed silent. The FPs are the shapes the Run 008 backlog entry itself listed as untouched: `שאינו` (007), bare `אינה` in a non-selecting clause (008), `ו`+`ולא` followed by a non-`ל`-initial word (015 `ולא שפת`, 063 `ולא של`), `ו`+`אינו` (062 `ואינו דג`). Run 008 subtracted only `שלא` after no cue and `ולא` + `ל`-word.
 - Details in section 4 (FUB-076).
 
-### 3.3 OPTION_ALL_OF_ABOVE and OPTION_NONE_OF_ABOVE: 4/4 and 2/2 TP, 0 FN, 0 FP. Verdict `VALIDATED_PROVISIONALLY` (narrow).
+### 3.3 OPTION_ALL_OF_ABOVE and OPTION_NONE_OF_ABOVE: 4/4 and 2/2 TP, 0 FN, 0 FP. Verdict `VALIDATED_PROVISIONALLY` (narrow; covers pre-Run-008 phrases/tiers only; Run 008 additions `כל האפשרויות הנ"ל`/`הנל` not exercised).
 
 - ALL: HO4-010 `All of the above`, 011 `כל התשובות נכונות`, 014 `All of these.`, 053 `כל הנ״ל` (gershayim spelling). NONE: 012 `None of the above`, 054 `None of these.` (trailing period). No Hebrew none-of-above case exists.
 - Caveat: every phrase was already in the phrase list before Run 008. The Run 008 additions (`כל האפשרויות הנ"ל`, `הנל`) are not exercised. See FUB-077.
 
-### 3.4 OPTION_ABSOLUTE_TERM: 3 expected, 3 TP, 0 FN, 0 FP. Verdict `VALIDATED_PROVISIONALLY` (very thin; strong tier only).
+### 3.4 OPTION_ABSOLUTE_TERM: 3 expected, 3 TP, 0 FN, 0 FP. Verdict `VALIDATED_PROVISIONALLY` (very thin; strong tier only; covers pre-Run-008 phrases/tiers only; Run 008 additions not exercised).
 
 - TPs: HO4-018 `תמיד` in distractor b, 020 `never` in distractor a, 055 `לעולם`/`תמיד` in distractors a/c. 3 strong-tier positives only, 2 Hebrew and 1 English.
 - Silent controls that were correct: 019 (`always` in the key only), 021 (`תמיד` in the key only), 013 (weak-tier `כל`, `שום` in distractors c and d, labelled CLEAN, silent by design), 023 (`only` in the key). Symmetric-use control: none in this corpus.
@@ -165,7 +165,7 @@ TPs: HO4-016, 017, 018, 019, 022, 023, 052, 056, 057, 061, 069 (Hebrew 6, Englis
 
 TPs: HO4-016, 022, 049, 052, 056, 057, 061, 069, 070 (070 is a distractor-long case, key shortest). No CLEAN case crossed the 3.0 / 20 gate (closest: HO4-001 2.75 / 7, HO4-005 3.67 / 8 is under the 20-character floor). Same label-literalism caveat (HO4-049 intent CLEAN).
 
-### 3.7 KEY_STEM_LEXICAL_OVERLAP (semantic-only; not emitted by design). Verdict `SEMANTIC_OWNERSHIP_CONFIRMED` (weakly).
+### 3.7 KEY_STEM_LEXICAL_OVERLAP (semantic-only; not emitted by design). Verdict `SEMANTIC_OWNERSHIP_CONFIRMED` (weakly: no counter-evidence; recall unmeasured, rule silent by design).
 
 - Zero emissions, as designed; silence on natural-overlap controls is therefore not evidence of precision.
 - Fresh semantic leakage cases: HO4-016 (key restates "ultraviolet radiation", labelled `STEM_ANSWER_LEXICAL_LEAKAGE`), HO4-057 (key repeats "על ידי מים זורמים"). Both are also the longest key and a length-imbalance case, so both are caught today by KEY_LONGEST_OPTION and OPTION_LENGTH_IMBALANCE, not as leakage.
@@ -208,15 +208,16 @@ B. Whole-utterance classification (does the short stem work as a clear question 
   - 063 `... של הלב ולא של הריאות` contrast, next word `של` is not `ל`-initial.
 - Relative / content / contrast behaviour: the Run 008 narrowing silenced only HO4-064 (`ולא לדלג` is matched by the `ל`-initial CONTRAST_NEXT pattern). By source reading, before Run 008 this stem would have fired, so this is a small positive datapoint for the narrowing, but it is correct for a questionable reason: `לדלג` is a verb, the known "ל-initial 4+ letters is contrast" residual. Not re-run on the pre-Run-008 commit.
 - Sentence-boundary / cue-list failures: not triggered. Newly silent cases that look wrong: none observed (no `שלא` stem exists).
+- Label-review neutralization: the label review had neutralized the `forbiddenCodes` for STEM_NEGATIVE_WORDING on HO4-007/008/015/062/063/064 (the labeler's literal reading licensed the firing; 062 and 063 were flipped FLAWED to CLEAN by label review pre-freeze). These 5 are therefore FPs only under the harness CLEAN-warn convention plus Dor's v0.3 principle, not under a frozen forbidden-code list.
 - Labels caveat: the labeler itself marked 015, 062, 063 "Arguable"; 008 has author-intent FLAWED versus label CLEAN; 062 sits closest to a selection frame ("which animal ... and is not a fish"). Dor's v0.3 principles (a negation token is not itself a flaw; relative/content and contrast wording are not negative-stem flaws) support 007, 008 and 015/063 as false alarms but were adjudicated on different shapes. These are MODEL_LABELED and are in the human queue.
-- Verdict: Run 008's narrow subtraction did not generalize; on fresh data the rule's Hebrew precision is 2 TP of 7 Hebrew emissions on negation-bearing stems (2 TP, 5 FP). The condition "no lexical-token-only negation logic remains" is still not met and is now evidenced by 5 fresh cases.
+- Verdict: `REOPEN` as active design item, conditional on human ruling (queue rows on those cases). Run 008's narrow subtraction did not generalize; on fresh data the rule's Hebrew precision is 2 TP of 7 Hebrew emissions on negation-bearing stems (2 TP, 5 FP). The condition "no lexical-token-only negation logic remains" is still not met and is now evidenced by 5 fresh cases.
 
-### 4.4 FUB-074 (semantic ownership): confirmed, scope unchanged
+### 4.4 FUB-074 (semantic ownership): no counter-evidence, scope unchanged
 
 - Weak-tier absolute terms: HO4-013 (`כל`, `שום` in distractors, label CLEAN), 018 (`כל`, `לחלוטין`), 020 (`only`) show weak-tier words are common in natural distractors and were never labelled as the sole flaw; routing them to semantic/human review remains consistent (no precision cost observed, recall unmeasured).
 - Leakage: HO4-016 and 057 are caught only via length rules (section 3.7); no case argues for deterministic overlap.
 - Semantic-only cases: HO4-066, 067, 068, 071, 072 have no deterministic expectation and no emission (clean lint says nothing about them). They concern answer defensibility (multiple defensible keys, subjective superlatives), which sits with the semantic critic (AE-021), not strictly with FUB-074's weak-tier and leakage scope. HO4-069 (contested key) is also detected only through length rules.
-- Verdict: `SEMANTIC_OWNERSHIP_CONFIRMED`; FUB-074 stays deferred until a semantic critic or instructor review step exists.
+- Verdict: `SEMANTIC_OWNERSHIP_CONFIRMED` in the weak sense: no counter-evidence; recall unmeasured (rule silent by design). FUB-074 stays deferred until a semantic critic or instructor review step exists.
 
 ## 5. Failure classification
 
@@ -327,10 +328,10 @@ Readiness is not raised by decent synthetic recall: NOT_READY (recommendation on
 
 | FUB | Recommendation | Basis |
 |---|---|---|
-| FUB-074 | KEEP (`DEFERRED`, scope unchanged) | Semantic ownership confirmed; add HO4-016, 057, 013, 018 as semantic-review fixtures and note HO4-066, 067, 068, 071, 072 as answer-defensibility fixtures for the semantic critic (AE-021). No new FUB: that is existing critic scope |
+| FUB-074 | KEEP (`DEFERRED`, scope unchanged) | No counter-evidence for semantic ownership; recall unmeasured (rule silent by design); add HO4-016, 057, 013, 018 as semantic-review fixtures and note HO4-066, 067, 068, 071, 072 as answer-defensibility fixtures for the semantic critic (AE-021). No new FUB: that is existing critic scope |
 | FUB-075 | KEEP as `PARTIALLY_RESOLVED_IMPLEMENTATION` | Part A (`מהם`, `מהן`) unmeasured, no regression; part B open; HO4-042 adds a reverse-direction datapoint (closed list misses `הגדר/י`); lost-TP lookalikes untested. Both parts still need a human design decision and a batch containing lookalike stems |
-| FUB-076 | REOPEN as the active implementation-design item (status text stays partial; the "not closed" condition is now confirmed) | 5 fresh Hebrew FPs on shapes Run 008 explicitly left untouched (`שאינו`, `ואינו`, `ולא` + non-`ל` word, bare `אינה`); the narrow phrase-shaped subtraction did not generalize; needs a human principle on question-frame negation before any list tweak |
-| FUB-077 | KEEP `RESOLVED_IMPLEMENTED`, annotate `VALIDATED_PROVISIONALLY` (narrow) | 4/4 TP, 0 FP, but the Run 008 phrases were not exercised and Hebrew variants beyond the list are unmeasured |
+| FUB-076 | REOPEN as active design item, conditional on human ruling (queue rows on those cases); status text stays partial; the "not closed" condition is now confirmed | 5 fresh Hebrew FPs (CLEAN-warn convention plus Dor's v0.3 principle; label review had neutralized the forbiddenCodes on these cases) on shapes Run 008 explicitly left untouched (`שאינו`, `ואינו`, `ולא` + non-`ל` word, bare `אינה`); the narrow phrase-shaped subtraction did not generalize; needs a human principle on question-frame negation before any list tweak |
+| FUB-077 | KEEP `RESOLVED_IMPLEMENTED`, annotate `VALIDATED_PROVISIONALLY` (narrow; covers pre-Run-008 phrases/tiers only; Run 008 additions `כל האפשרויות הנ"ל`/`הנל` not exercised) | 4/4 TP, 0 FP, but the Run 008 phrases were not exercised and Hebrew variants beyond the list are unmeasured |
 
 Not proposing a new FUB: the `איננה` gap, the slash spelling `הגדר/י`, `לחלוטין` and the `כתב`/`מכתב` prefix collision are instances of existing token/list-completeness themes (FUB-075, FUB-076, FUB-066 strong tier) and the unimplemented-codes backlog (AE-029 / FUB-064) covers the 46 NOT_IMPLEMENTED detections.
 
