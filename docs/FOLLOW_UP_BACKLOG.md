@@ -1706,6 +1706,8 @@ Held-out v0.2 shows two recurring over-flag clusters (`docs/ASSESSMENT_HELDOUT_V
 
 **Fresh held-out v0.3 (Run 2026-10-09-ASSESSMENT-ENGINE-007; FRESH_HELD_OUT_V0_3, model-authored and model-labeled, not human ground truth, never pooled; report `docs/ASSESSMENT_HELDOUT_V0_3.md`; no code change):** OPTION_ABSOLUTE_TERM TP/expected/FN/FP/UNLABELED 10/10/0/0/0 = `VALIDATED_PROVISIONALLY` (labels are contract-shaped; weak-tier recall unmeasured). KEY_STEM_LEXICAL_OVERLAP 0 emissions = `SEMANTIC_OWNERSHIP_CONFIRMED` (the corpus holds no blatant-but-not-longest case). STEM_TOO_SHORT 9/5/4/0/1 = `KEEP_WITH_WATCH`: the WATCH trigger above ('lost STEM_TOO_SHORT true positives') is now MET (lookalike prefix/lead-word exemptions let list/name/שמי/במה through; HO3-042 label contested; HO3-071 'מהם גזי חממה?' falsely fires because מהם is not a lead word); the 4-word floor itself is defensible. Status stays `RESOLVED_IMPLEMENTATION`; follow-up work is owned by FUB-075/076/077 and the semantic residual by FUB-074. The 4 NOT_IMPLEMENTED false negatives (HO3-032 x2, 065, 070/item3) belong to the existing unimplemented-codes backlog (reference only). Next recommended Run: human adjudication of the 13-row v0.3 queue before any linter change.
 
+**Human adjudication of the v0.3 queue (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001; HUMAN_ADJUDICATED_V0_3, Dor, 13/13 rows, POST-EVALUATION and NOT blind; overlay `src/domain/assessment/golden/heldout-v0-3/human-adjudication.json`; report `docs/ASSESSMENT_HELDOUT_V0_3.md` section 11; no code change):** status stays `RESOLVED_IMPLEMENTATION`. Effect on Run 006 decisions: OPTION_ABSOLUTE_TERM strong/weak split supported weakly (HO3-004 borderline accepted TP; HO3-033 weak-tier is a contextual semantic concern); KEY_STEM_LEXICAL_OVERLAP semantic ownership stronger (HO3-025/028 human-rejected, HO3-021 real defect also caught by KEY_LONGEST_OPTION); STEM_TOO_SHORT WATCH now human-confirmed in both directions (4 lost TPs 038/040/042/044, 1 FP 071), so the narrowing as implemented is weakened; the 4-word threshold itself is not implicated and not concluded wrong. Follow-up is owned by FUB-075/076/077 (promotion triggers met) and FUB-074.
+
 ## Promotion Trigger
 
 A decision to wire lint (FUB-055), or the next Run that touches linter heuristics, after FUB-065 answers exist (now recorded, 9 rows).
@@ -1722,6 +1724,7 @@ A decision to wire lint (FUB-055), or the next Run that touches linter heuristic
 
 Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066) removed two judgements from deterministic ownership because they are context-dependent: (1) weak-tier absolute terms (כל/שום/רק/בלבד/all/only/every/none/אף אחד), routed to HUMAN_REVIEW / AI_OPTIONAL; (2) key-stem lexical leakage (KEY_STEM_LEXICAL_OVERLAP, no longer emitted), routed to AI_REQUIRED / HUMAN_REVIEW. No semantic reviewer exists, so these signals currently produce no output at all (a deliberate recall loss of 4 v0.1 and 4 v0.2 labelled detections). The work is to give them a home when the semantic critic (AE-021, group C) or an instructor review step exists.
 Run 2026-10-09-ASSESSMENT-ENGINE-007 (FRESH_HELD_OUT_V0_3) adds semantic-review fixtures for when a semantic reviewer exists: HO3-025, HO3-028, HO3-033, HO3-058 (`docs/ASSESSMENT_HELDOUT_V0_3.md`; model-labeled, not human-approved). Scope unchanged.
+Human adjudication (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001, HUMAN_ADJUDICATED_V0_3, Dor, post-evaluation, not blind; `docs/ASSESSMENT_HELDOUT_V0_3.md` section 11): POSITIVE semantic fixtures HO3-033 (weak-tier `בלבד` contextual, plus weak/implausible distractor) and HO3-021 (real stem-key echo of `תופעת הגאות והשפל`; also caught by KEY_LONGEST_OPTION). NEGATIVE fixtures (human-rejected as non-flaws): HO3-025, HO3-028 (leakage concern rejected), HO3-058 (contrast wording, cue concern rejected). Dor's rules: restating a defined concept or a standard term sharing vocabulary with its behavior is not leakage; leakage needs an asymmetric cue; unique stem-key echo is a real defect but does NOT authorize restoring broad KEY_STEM_LEXICAL_OVERLAP. Status and scope unchanged (stays open).
 
 ## Promotion Trigger
 
@@ -1729,45 +1732,46 @@ Group C (AI provider/semantic critic) decision, or a decision to surface lint ou
 
 ---
 
-# FUB-075 — STEM_TOO_SHORT Exemption Lookalikes and Lead-Word Completeness
+# FUB-075 — STEM_TOO_SHORT Exemption Classification and Interrogative-Family Completeness
 
-**Status:** `DEFERRED`
-**Priority:** `LOW`
+**Status:** `DEFERRED` (promotion trigger MET 2026-10-09; recommended for the next deterministic hardening Run)
+**Priority:** `MEDIUM`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
-Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, `docs/ASSESSMENT_HELDOUT_V0_3.md` (FRESH_HELD_OUT_V0_3, model-labeled; HO3-038/040/042/044 false negatives, HO3-071 false positive). The Run 006 interrogative/imperative exemption lets lookalikes through (list/name lead words, single-prefix path such as שמי/במה; HO3-042 label contested) and omits lead words such as מהם/מהן (HO3-071 'מהם גזי חממה?' falsely fires). Needs a human decision on which short stems are valid before any change; the 4-word floor is not implicated. Evidence is a handful of model-labeled cases; no linter change in Run 007.
+Source: Run 2026-10-09-ASSESSMENT-ENGINE-007 (`docs/ASSESSMENT_HELDOUT_V0_3.md`), human-adjudicated in Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 (HUMAN_ADJUDICATED_V0_3, Dor, post-evaluation, not blind; section 11). Reframed from "lookalike and lead-word completeness": the evidence is two separable parts of one mechanism (first-word whitelist plus single-prefix exemption) that errs in both directions.
+(1) Exemption too permissive (human-approved lost TPs): HO3-038 `List of birds`, 040 `שמי הלילה`, 042 `במה`, 044 `Name tags`. (2) Lead list incomplete (human-forbidden emission): HO3-071 `מהם גזי חממה?` is valid; מה / מהו / מהי / מהם / מהן are one interrogative family (design note, not implemented). The 4-word threshold is not implicated and not concluded wrong. Dor's principle: the complete short utterance must function as a clear question or instruction; morphological or lexical resemblance and growing the whitelist are not the criterion. Part (2) is mechanical; part (1) needs its own design decision (a descriptive, post-hoc, unvalidated scratch pass over the v0.3 short stems is in section 11.5b of the report: terminal punctuation separates this corpus but is confounded by authoring convention). These 5 cases are now observed, so any fix is CONTRACT_TEST / regression evidence and validation needs a fresh batch.
 
 ## Promotion Trigger
 
-A human-adjudicated pass over the v0.3 queue rows (HO3-038, 040, 042, 044, 071) or the next Run that touches STEM_TOO_SHORT. Related WATCH: FUB-066.
+MET (human adjudication done). Next Run that touches STEM_TOO_SHORT, with pre-registered contract tests and a fresh held-out batch for validation. Related WATCH: FUB-066.
 
 ---
 
-# FUB-076 — STEM_NEGATIVE_WORDING on Relative-Clause and Contrast Negation
+# FUB-076 — STEM_NEGATIVE_WORDING Defines "Negative Stem" as Any Negation Token
 
-**Status:** `DEFERRED`
-**Priority:** `LOW`
+**Status:** `DEFERRED` (promotion trigger MET 2026-10-09; recommended for the next deterministic hardening Run, needs a design decision)
+**Priority:** `MEDIUM`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
-Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, `docs/ASSESSMENT_HELDOUT_V0_3.md` (HO3-005 false positive, HO3-058). Negation inside a relative clause or contrast (שלא, ולא) is not necessarily a negatively worded stem, yet the rule fires. Model-labeled evidence, two cases; human review of the rows first. No linter change in Run 007.
+Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, human-adjudicated in Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 (HUMAN_ADJUDICATED_V0_3, Dor, post-evaluation, not blind; `docs/ASSESSMENT_HELDOUT_V0_3.md` section 11): HO3-005 (`שלא`, relative/content negation) and HO3-058 (`ולא`, contrast) are human-confirmed false positives. Reframed from "relative-clause/contrast edge": the rule matches any Hebrew negation token with an optional ו/ש/וש prefix anywhere in the stem, so `שלא`/`ולא` fire by design; Dor's principle is that a negation token is not a negative-stem flaw and contrast wording is not one either. The work is to define a narrow negative-stem condition (for example negation in the question-asking frame, "which is NOT / except"), which is a design decision, not a phrase-list tweak. One unreviewed TP exists, so recall impact is unmeasured. The 13 cases are observed: fixes are CONTRACT_TEST / regression, validation needs a fresh batch.
 
 ## Promotion Trigger
 
-Human adjudication of HO3-005 and HO3-058, or the next Run that touches STEM_NEGATIVE_WORDING.
+MET (human adjudication done). Next Run that touches STEM_NEGATIVE_WORDING, after the narrow-definition design decision.
 
 ---
 
 # FUB-077 — OPTION_ALL_OF_ABOVE Phrase Coverage
 
-**Status:** `DEFERRED`
+**Status:** `DEFERRED` (promotion trigger MET 2026-10-09; low-risk ride-along for the next deterministic hardening Run)
 **Priority:** `LOW`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
-Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, `docs/ASSESSMENT_HELDOUT_V0_3.md` (HO3-071 false negative). Hebrew phrase variants such as 'כל האפשרויות הנ"ל' are not matched. One model-labeled case; confirm against human judgement before extending the phrase list. No linter change in Run 007.
+Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, human-confirmed in Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001 (HO3-071: `כל האפשרויות הנ"ל` is the expected all-of-above; HUMAN_ADJUDICATED_V0_3, post-evaluation, not blind). The closed whole-token phrase list in `ALL_OF_ABOVE_PHRASES` has `כל התשובות` and `כל הנ"ל` but not this variant. Highly tractable and deterministic; n=1, so coverage of other Hebrew variants is unmeasured. Fix would be CONTRACT_TEST / regression; validation needs a fresh batch.
 
 ## Promotion Trigger
 
-Human adjudication of HO3-071, or the next Run that touches OPTION_ALL_OF_ABOVE.
+MET (human adjudication done). Next Run that touches OPTION_ALL_OF_ABOVE.
 
 ---
 
