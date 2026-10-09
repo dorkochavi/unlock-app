@@ -1,0 +1,892 @@
+{
+  "changes": [
+    {
+      "caseId": "HO3-009",
+      "file": "corpus.json",
+      "field": "item.answerOptions.3.content",
+      "before": "בשום פנים לא ניתן להגדיר את התוצאה כמספר ממשי",
+      "after": "בשום פנים היא אינה מוגדרת",
+      "reason": "Intent is a clean control (strong-free key with בשום פנים); original key was 45 chars vs 14 shortest, making it a length-cue outlier. Shortened key to restore the intended clean control."
+    },
+    {
+      "caseId": "HO3-009",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Intent is a clean control (strong-free key with בשום פנים); original key was 45 chars vs 14 shortest, making it a length-cue outlier. Shortened key to restore the intended clean control."
+    },
+    {
+      "caseId": "HO3-009",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "after": [],
+      "reason": "Intent is a clean control (strong-free key with בשום פנים); original key was 45 chars vs 14 shortest, making it a length-cue outlier. Shortened key to restore the intended clean control."
+    },
+    {
+      "caseId": "HO3-009",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [],
+      "after": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "reason": "Intent is a clean control (strong-free key with בשום פנים); original key was 45 chars vs 14 shortest, making it a length-cue outlier. Shortened key to restore the intended clean control."
+    },
+    {
+      "caseId": "HO3-009",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key d is 45 chars vs next 23 and shortest 14: longest-key cue (1.96x, diff 22) and length imbalance (3.2x, diff 31). Key itself is correct. 'בשום פנים' is weak tier, not deterministic.",
+      "after": "Key d is correct (division by zero is undefined). 'בשום פנים' is weak-tier and sits in the key. Lengths 14/14/23/25: key 25 vs next 23 (no longest-key margin), longest/shortest 1.8x (no imbalance). Clean control.",
+      "reason": "Intent is a clean control (strong-free key with בשום פנים); original key was 45 chars vs 14 shortest, making it a length-cue outlier. Shortened key to restore the intended clean control."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "corpus.json",
+      "field": "item.answerOptions.0.content",
+      "before": "It is always odd.",
+      "after": "Always odd",
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "corpus.json",
+      "field": "item.answerOptions.1.content",
+      "before": "It is always prime.",
+      "after": "Always prime",
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "corpus.json",
+      "field": "item.answerOptions.2.content",
+      "before": "It is always negative.",
+      "after": "Always negative",
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "corpus.json",
+      "field": "item.answerOptions.3.content",
+      "before": "It is always even.",
+      "after": "Always even",
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "OPTION_PREFIX_STEM_REPEAT"
+      ],
+      "after": [],
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "after": [
+        "OPTION_ABSOLUTE_TERM",
+        "OPTION_PREFIX_STEM_REPEAT"
+      ],
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-012",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "All four options start with the same 3 tokens 'It is always', so the wording should move into the stem. 'always' is symmetric across all options (including the key) so OPTION_ABSOLUTE_TERM must not fire. Key d correct. Prefix-repeat is a mild mechanical flaw.",
+      "after": "'Always' appears in every option including the key (symmetric), so the absolute-term rule must stay silent. Options share only one leading token. Key d (always even) is correct; lengths 10-15.",
+      "reason": "Intent is a clean symmetric-absolute control; the repeated 3-token prefix \"It is always\" made all four options share a prefix. Rewrote options as \"Always X\" so the strong adverb is symmetric across all options without a repeated multi-token prefix."
+    },
+    {
+      "caseId": "HO3-014",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "מעגל הוא אוסף כל הנקודות במרחק קבוע (רדיוס) ממרכז. האפשרות השנייה מתארת אליפסה.",
+      "after": "מעגל הוא אוסף כל הנקודות במרחק קבוע (רדיוס) ממרכז. האפשרות עם שני המוקדים מתארת אליפסה.",
+      "reason": "Explanation referred to an option by position (\"the second option\"), which breaks if options are shuffled; replaced with content reference."
+    },
+    {
+      "caseId": "HO3-024",
+      "file": "corpus.json",
+      "field": "item.prompt",
+      "before": "כשנאמר שטוקיו היא בירת יפן, באיזה אי של יפן היא שוכנת?",
+      "after": "באיזה אי של יפן שוכנת בירתה, טוקיו?",
+      "reason": "Awkward conditional preamble in Hebrew stem; replaced with natural wording while keeping the Tokyo/Japan repetition."
+    },
+    {
+      "caseId": "HO3-024",
+      "file": "labels.json",
+      "field": "languageReviewRequired",
+      "before": true,
+      "after": false,
+      "reason": "Awkward conditional preamble in Hebrew stem; replaced with natural wording while keeping the Tokyo/Japan repetition."
+    },
+    {
+      "caseId": "HO3-024",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": true,
+      "after": false,
+      "reason": "Awkward conditional preamble in Hebrew stem; replaced with natural wording while keeping the Tokyo/Japan repetition."
+    },
+    {
+      "caseId": "HO3-024",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "high",
+      "reason": "Awkward conditional preamble in Hebrew stem; replaced with natural wording while keeping the Tokyo/Japan repetition."
+    },
+    {
+      "caseId": "HO3-024",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key d (Honshu) correct. Stem has an unnatural conditional preamble ('כשנאמר ש...') that adds nothing; harmless but awkward Hebrew.",
+      "after": "Key d (Honshu) correct. Natural Hebrew interrogative stem (6 words); Japan/Tokyo repetition is necessary context.",
+      "reason": "Awkward conditional preamble in Hebrew stem; replaced with natural wording while keeping the Tokyo/Japan repetition."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "corpus.json",
+      "field": "item.answerOptions.0.content",
+      "before": "A community of organisms interacting with their physical environment",
+      "after": "Organisms interacting with their physical environment",
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "corpus.json",
+      "field": "item.answerOptions.1.content",
+      "before": "A single species living in one habitat",
+      "after": "A single species living within one habitat",
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "corpus.json",
+      "field": "item.answerOptions.3.content",
+      "before": "A chain of predators and prey only",
+      "after": "A food chain of predators and prey only",
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "after": [],
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [],
+      "after": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "high",
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-027",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key a is 68 chars vs next 40 (1.70x, diff 28): longest-key cue. Key correct; 'only' in distractor d is weak tier. Definitions naturally run long, but the rule clearly applies.",
+      "after": "Key a (ecosystem definition) correct. Key 53 chars vs next 40: diff 13 (<15), so no longest-key flag. 'only' in distractor d is weak tier (not deterministic). Clean.",
+      "reason": "Intent is clean (legit definition overlap); original key 68 chars vs 40 triggered the longest-key cue. Shortened key and lengthened distractors so margin is <15 chars."
+    },
+    {
+      "caseId": "HO3-028",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "Merge sort uses divide-and-conquer: split, recursively sort, merge. Borderline: the name is the standard term.",
+      "after": "Merge sort uses divide-and-conquer: split the list, recursively sort each half, then merge the sorted halves.",
+      "reason": "Leaked authoring note (\"Borderline: ...\") removed from the explanation."
+    },
+    {
+      "caseId": "HO3-028",
+      "file": "labels.json",
+      "field": "semanticExpectation",
+      "before": "Key 'Merge sort' echoes the stem verb 'merges' (name leak), and the explanation contains an authoring note ('Borderline: the name is the standard term.') that must not ship.",
+      "after": "Key 'Merge sort' echoes the stem verb 'merges' (name leak); borderline since the name is the standard term.",
+      "reason": "Leaked authoring note (\"Borderline: ...\") removed from the explanation."
+    },
+    {
+      "caseId": "HO3-028",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key c is correct. Stem describes the algorithm and the key name repeats its verb: mild lexical leakage. The explanation includes a leaked meta-comment. No deterministic code applies.",
+      "after": "Key c is correct. Stem describes the algorithm and the key name repeats its verb: mild lexical leakage, judgement-dependent. No deterministic code applies.",
+      "reason": "Leaked authoring note (\"Borderline: ...\") removed from the explanation."
+    },
+    {
+      "caseId": "HO3-033",
+      "file": "corpus.json",
+      "field": "item.answerOptions.2.content",
+      "before": "כריתת יערות",
+      "after": "כריתת יערות נרחבת",
+      "reason": "Distractor b (34 chars) vs option c (11 chars) gave ratio 3.09 and diff 23, an unlabelled deterministic length imbalance in a semantic-only case. Lengthened option c."
+    },
+    {
+      "caseId": "HO3-038",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "Not a question; the stem asks nothing.",
+      "after": "Eagles, sparrows and owls are birds.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-040",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "הצבעה על נושא בלבד; אין שאלה בגזע.",
+      "after": "כוכבים נראים בשמי הלילה.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-042",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "Ambiguous, not a question.",
+      "after": "במה היא משטח מוגבה שעליו מופיעים, למשל בתיאטרון.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-044",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "Noun phrase not a clear prompt.",
+      "after": "Name tags are labels worn to show a person's name.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-046",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "Not a question.",
+      "after": "Whale watching is observing whales in the wild.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-048",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "אין שאלה בגזע.",
+      "after": "ימי הביניים הם תקופה בהיסטוריה של אירופה.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-050",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "Phrase, not a question.",
+      "after": "'Who's who' is a directory of notable people.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-052",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "Bare noun with no question.",
+      "after": "כמהין היא סוג של פטרייה.",
+      "reason": "Explanation leaked authoring meta-commentary about the stem flaw (reveals the label); replaced with a neutral in-universe explanation."
+    },
+    {
+      "caseId": "HO3-038",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "3-word non-question; the first word resembles an imperative but the phrase asks nothing, so STEM_TOO_SHORT should fire (catalog notes this exemption false negative). Explanation itself says 'Not a question'.",
+      "after": "3-word non-question noun phrase; the first word resembles an imperative but the phrase asks nothing, so STEM_TOO_SHORT should fire (catalog notes this exemption false negative).",
+      "reason": "Rationale quoted the removed meta explanation."
+    },
+    {
+      "caseId": "HO3-040",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "2-word fragment, no question. Explanation states it is only a topic pointer.",
+      "after": "2-word noun-phrase fragment, no question. 'שמי' only resembles a prefixed interrogative (catalog known false exemption).",
+      "reason": "Rationale quoted the removed meta explanation."
+    },
+    {
+      "caseId": "HO3-042",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "1-word stem that merely looks like prefix+interrogative; should fire STEM_TOO_SHORT. Item is ambiguous and the key is arbitrary.",
+      "after": "1-word stem; 'במה' is also a legitimate prefixed interrogative ('in what'), so the exemption may apply: judgement-dependent. Intended as the noun 'stage'; item is ambiguous and the key arbitrary.",
+      "reason": "Rationale quoted the removed meta explanation. Also clarified that the deterministic expectation is debatable."
+    },
+    {
+      "caseId": "HO3-042",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "low",
+      "reason": "במה is a legitimate attached-prefix interrogative; reasonable reviewers could differ whether STEM_TOO_SHORT should fire."
+    },
+    {
+      "caseId": "HO3-044",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "2-word non-question fragment. Explanation itself says not a clear prompt.",
+      "after": "2-word non-question fragment; 'Name' looks imperative but nothing is asked.",
+      "reason": "Rationale quoted the removed meta explanation."
+    },
+    {
+      "caseId": "HO3-048",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "2-word fragment (known limit: 'מימי' prefix may look interrogative). Key length gap (25 vs 10, diff exactly 15) is borderline, not labelled.",
+      "after": "2-word fragment (known limit: 'מימי' prefix may look interrogative). Key 25 chars vs next 10 (diff 15, ratio 2.5) sits exactly on the longest-key threshold (>=1.2x and >=15 diff); borderline, so KEY_LONGEST_OPTION is not labelled expected and not forbidden.",
+      "reason": "Rationale quoted the removed meta explanation. Threshold note: key vs next-longest is 25 vs 10."
+    },
+    {
+      "caseId": "HO3-043",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "פיזור ריילי פיזר אור כחול יותר מאור אדום.",
+      "after": "פיזור ריילי מפזר אור כחול יותר מאור אדום.",
+      "reason": "Tense/wording typo: \"פיזר\" -> \"מפזר\"."
+    },
+    {
+      "caseId": "HO3-051",
+      "file": "corpus.json",
+      "field": "item.answerOptions.0.content",
+      "before": "תהליך שבו צמחים הופכים אור לאנרגיה כימית",
+      "after": "תהליך שבו צמחים הופכים אור לסוכר",
+      "reason": "Intent is clean; original key 40 vs 21 (diff 19) triggered longest-key. Shortened key so diff is <15."
+    },
+    {
+      "caseId": "HO3-051",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Intent is clean; original key 40 vs 21 (diff 19) triggered longest-key. Shortened key so diff is <15."
+    },
+    {
+      "caseId": "HO3-051",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "after": [],
+      "reason": "Intent is clean; original key 40 vs 21 (diff 19) triggered longest-key. Shortened key so diff is <15."
+    },
+    {
+      "caseId": "HO3-051",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [],
+      "after": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "reason": "Intent is clean; original key 40 vs 21 (diff 19) triggered longest-key. Shortened key so diff is <15."
+    },
+    {
+      "caseId": "HO3-051",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "high",
+      "reason": "Intent is clean; original key 40 vs 21 (diff 19) triggered longest-key. Shortened key so diff is <15."
+    },
+    {
+      "caseId": "HO3-051",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key a (40 chars) vs next 21 (1.90x): longest-key cue. Stem is a clean 'מהי X?' and the key is correct; definitions run long naturally, but the threshold clearly applies.",
+      "after": "Key a correct. Key 32 vs next 21: diff 11 (<15), no longest-key flag; 2.3x vs shortest 14 but diff 18 <20 so no imbalance. Clean 'מהי X?' item.",
+      "reason": "Intent is clean; original key 40 vs 21 (diff 19) triggered longest-key. Shortened key so diff is <15."
+    },
+    {
+      "caseId": "HO3-055",
+      "file": "corpus.json",
+      "field": "item.answerOptions.3.content",
+      "before": "סוללה",
+      "after": "נגד שמגביל זרם",
+      "reason": "Intent is clean; one-word distractor (5 chars) vs key 29 caused imbalance. Replaced with a comparable-length plausible distractor."
+    },
+    {
+      "caseId": "HO3-055",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Intent is clean; one-word distractor (5 chars) vs key 29 caused imbalance. Replaced with a comparable-length plausible distractor."
+    },
+    {
+      "caseId": "HO3-055",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "after": [],
+      "reason": "Intent is clean; one-word distractor (5 chars) vs key 29 caused imbalance. Replaced with a comparable-length plausible distractor."
+    },
+    {
+      "caseId": "HO3-055",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [],
+      "after": [
+        "OPTION_LENGTH_IMBALANCE",
+        "KEY_LONGEST_OPTION"
+      ],
+      "reason": "Intent is clean; one-word distractor (5 chars) vs key 29 caused imbalance. Replaced with a comparable-length plausible distractor."
+    },
+    {
+      "caseId": "HO3-055",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "high",
+      "reason": "Intent is clean; one-word distractor (5 chars) vs key 29 caused imbalance. Replaced with a comparable-length plausible distractor."
+    },
+    {
+      "caseId": "HO3-055",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Distractor d is a single word (5 chars) versus key 29: 5.8x imbalance with diff 24. Key a correct; 'battery' is a component of a circuit, weakly defensible as a partial answer. Overlap with stem ('חשמלי') is natural.",
+      "after": "Key a correct. Lengths 29/15/16/14: key vs next 29/16 diff 13 (<15), ratio 2.1x. Natural overlap with stem. Clean.",
+      "reason": "Intent is clean; one-word distractor (5 chars) vs key 29 caused imbalance. Replaced with a comparable-length plausible distractor."
+    },
+    {
+      "caseId": "HO3-058",
+      "file": "labels.json",
+      "field": "confidence",
+      "before": "medium",
+      "after": "low",
+      "reason": "Intent was a clean MC; the cue claim (stem contrast phrase) is a weak judgement call."
+    },
+    {
+      "caseId": "HO3-058",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": false,
+      "after": true,
+      "reason": "Judgement disagreement with author intent (clean); reviewers could differ."
+    },
+    {
+      "caseId": "HO3-060",
+      "file": "corpus.json",
+      "field": "item.answerOptions.1.content",
+      "before": "מיקומו ביחס לשמש ולארץ משנה את החלק המואר שנראה",
+      "after": "מיקומו ביחס לשמש משנה את החלק המואר שנראה",
+      "reason": "Intent is clean; key 47 vs 30 (diff 17) triggered longest-key. Shortened key."
+    },
+    {
+      "caseId": "HO3-060",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Intent is clean; key 47 vs 30 (diff 17) triggered longest-key. Shortened key."
+    },
+    {
+      "caseId": "HO3-060",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "after": [],
+      "reason": "Intent is clean; key 47 vs 30 (diff 17) triggered longest-key. Shortened key."
+    },
+    {
+      "caseId": "HO3-060",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [],
+      "after": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "reason": "Intent is clean; key 47 vs 30 (diff 17) triggered longest-key. Shortened key."
+    },
+    {
+      "caseId": "HO3-060",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key b 47 chars vs next 30 (1.57x, diff 17): longest-key cue. Key correct; distractor a is a good misconception (eclipse confusion).",
+      "after": "Key b correct (phases from Sun-Earth-Moon geometry); a is a good eclipse-confusion distractor. Key 41 vs next 30: diff 11 (<15), no longest-key flag. Clean.",
+      "reason": "Intent is clean; key 47 vs 30 (diff 17) triggered longest-key. Shortened key."
+    },
+    {
+      "caseId": "HO3-061",
+      "file": "corpus.json",
+      "field": "item.answerOptions.0.content",
+      "before": "Yes, because a square has four right angles and opposite sides parallel",
+      "after": "Yes, because a square has four right angles",
+      "reason": "Intent is clean (\"every\" substantive); original distractor b had strong \"never\" and key was 71 chars. Removed the strong adverb and shortened the key."
+    },
+    {
+      "caseId": "HO3-061",
+      "file": "corpus.json",
+      "field": "item.answerOptions.1.content",
+      "before": "No, because squares never have right angles",
+      "after": "No, because squares have no right angles",
+      "reason": "Intent is clean (\"every\" substantive); original distractor b had strong \"never\" and key was 71 chars. Removed the strong adverb and shortened the key."
+    },
+    {
+      "caseId": "HO3-061",
+      "file": "labels.json",
+      "field": "label",
+      "before": "FLAWED",
+      "after": "CLEAN",
+      "reason": "Intent is clean (\"every\" substantive); original distractor b had strong \"never\" and key was 71 chars. Removed the strong adverb and shortened the key."
+    },
+    {
+      "caseId": "HO3-061",
+      "file": "labels.json",
+      "field": "expectedCodes",
+      "before": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION"
+      ],
+      "after": [],
+      "reason": "Intent is clean (\"every\" substantive); original distractor b had strong \"never\" and key was 71 chars. Removed the strong adverb and shortened the key."
+    },
+    {
+      "caseId": "HO3-061",
+      "file": "labels.json",
+      "field": "forbiddenCodes",
+      "before": [],
+      "after": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION"
+      ],
+      "reason": "Intent is clean (\"every\" substantive); original distractor b had strong \"never\" and key was 71 chars. Removed the strong adverb and shortened the key."
+    },
+    {
+      "caseId": "HO3-061",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Distractor b has strong 'never'; key a (71 chars vs 43, 1.65x) is also the longest. Key a correct (square is a rectangle). Option d weak 'every' is content.",
+      "after": "Key a correct (a square is a rectangle). 'every' in stem and option d is weak tier and content-essential; no strong adverb in any option. Key 43 ties c, so not strictly longest. Clean.",
+      "reason": "Intent is clean (\"every\" substantive); original distractor b had strong \"never\" and key was 71 chars. Removed the strong adverb and shortened the key."
+    },
+    {
+      "caseId": "HO3-064",
+      "file": "corpus.json",
+      "field": "item.prompt",
+      "before": "בחרו את היונקים:",
+      "after": "בחרו את כוכבי הלכת:",
+      "reason": "Near-duplicate of HO3-045 (identical mammals task with dolphin/bat/shark). Replaced content with a different topic, same structure (short imperative with colon, MC)."
+    },
+    {
+      "caseId": "HO3-064",
+      "file": "corpus.json",
+      "field": "item.answerOptions.0.content",
+      "before": "עטלף",
+      "after": "מאדים",
+      "reason": "Near-duplicate of HO3-045 (identical mammals task with dolphin/bat/shark). Replaced content with a different topic, same structure (short imperative with colon, MC)."
+    },
+    {
+      "caseId": "HO3-064",
+      "file": "corpus.json",
+      "field": "item.answerOptions.1.content",
+      "before": "כריש",
+      "after": "ירח",
+      "reason": "Near-duplicate of HO3-045 (identical mammals task with dolphin/bat/shark). Replaced content with a different topic, same structure (short imperative with colon, MC)."
+    },
+    {
+      "caseId": "HO3-064",
+      "file": "corpus.json",
+      "field": "item.answerOptions.2.content",
+      "before": "דולפין",
+      "after": "נפטון",
+      "reason": "Near-duplicate of HO3-045 (identical mammals task with dolphin/bat/shark). Replaced content with a different topic, same structure (short imperative with colon, MC)."
+    },
+    {
+      "caseId": "HO3-064",
+      "file": "corpus.json",
+      "field": "item.answerOptions.3.content",
+      "before": "פינגווין",
+      "after": "שמש",
+      "reason": "Near-duplicate of HO3-045 (identical mammals task with dolphin/bat/shark). Replaced content with a different topic, same structure (short imperative with colon, MC)."
+    },
+    {
+      "caseId": "HO3-064",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "עטלף ודולפין הם יונקים.",
+      "after": "מאדים ונפטון הם כוכבי לכת. הירח הוא לוויין והשמש היא כוכב.",
+      "reason": "Near-duplicate of HO3-045 (identical mammals task with dolphin/bat/shark). Replaced content with a different topic, same structure (short imperative with colon, MC)."
+    },
+    {
+      "caseId": "HO3-064",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "'בחרו את היונקים:' valid imperative/colon stem. Keys a (bat), c (dolphin) correct; penguin is a bird.",
+      "after": "'בחרו את כוכבי הלכת:' is an imperative with colon; valid short selection stem. Keys a (Mars), c (Neptune) correct; Moon is a satellite and Sun a star.",
+      "reason": "Near-duplicate of HO3-045 (identical mammals task with dolphin/bat/shark). Replaced content with a different topic, same structure (short imperative with colon, MC)."
+    },
+    {
+      "caseId": "HO3-067",
+      "file": "corpus.json",
+      "field": "set.5.prompt",
+      "before": "איזו שפת תכנות נקראת על שם נחש?",
+      "after": "איזו שפת תכנות נקראת על שם חבורת קומדיה בריטית?",
+      "reason": "False-premise stem (Python is not named after a snake; own explanation says so). Reworded stem to a true premise."
+    },
+    {
+      "caseId": "HO3-067",
+      "file": "corpus.json",
+      "field": "set.5.explanation",
+      "before": "Python נקראה על שם חבורת הקומדיה Monty Python, אך סמלה נחש.",
+      "after": "Python נקראה על שם חבורת הקומדיה Monty Python.",
+      "reason": "False-premise stem (Python is not named after a snake; own explanation says so). Reworded stem to a true premise."
+    },
+    {
+      "caseId": "HO3-067",
+      "file": "labels.json",
+      "field": "semanticExpectation",
+      "before": "Item 6 has a false premise: Python is not named after a snake (explanation says it is named after Monty Python), so the keyed answer rests on a misleading stem.",
+      "after": null,
+      "reason": "False-premise stem (Python is not named after a snake; own explanation says so). Reworded stem to a true premise."
+    },
+    {
+      "caseId": "HO3-067",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": true,
+      "after": false,
+      "reason": "False-premise stem (Python is not named after a snake; own explanation says so). Reworded stem to a true premise."
+    },
+    {
+      "caseId": "HO3-067",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "All 8 items key position b: share 100% (> 1.5/4) and run length 8. QUESTION_TYPE_MONO (all SINGLE_CHOICE, n=8) also technically applies but is informational and not labelled. Key is longest in only 3/8 (no length bias). Items individually mechanically fine; item 6 is factually problematic.",
+      "after": "All 8 items key position b: share 100% (> 1.5/4) and run length 8. QUESTION_TYPE_MONO (all SINGLE_CHOICE, n=8) also technically applies but is informational and not labelled. Key is longest in only 3/8 (no length bias). Items individually mechanically fine.",
+      "reason": "False-premise stem (Python is not named after a snake; own explanation says so). Reworded stem to a true premise."
+    },
+    {
+      "caseId": "HO3-069",
+      "file": "corpus.json",
+      "field": "item.answerOptions.0.content",
+      "before": "ברזל",
+      "after": "גופרית",
+      "reason": "Key not unique: iron (duplicated option) and copper are both metals. Changed the duplicated distractor to a non-metal (sulfur) and d to oxygen; duplicate-option design preserved."
+    },
+    {
+      "caseId": "HO3-069",
+      "file": "corpus.json",
+      "field": "item.answerOptions.2.content",
+      "before": "ברזל",
+      "after": "גופרית",
+      "reason": "Key not unique: iron (duplicated option) and copper are both metals. Changed the duplicated distractor to a non-metal (sulfur) and d to oxygen; duplicate-option design preserved."
+    },
+    {
+      "caseId": "HO3-069",
+      "file": "corpus.json",
+      "field": "item.answerOptions.3.content",
+      "before": "גופרית",
+      "after": "חמצן",
+      "reason": "Key not unique: iron (duplicated option) and copper are both metals. Changed the duplicated distractor to a non-metal (sulfur) and d to oxygen; duplicate-option design preserved."
+    },
+    {
+      "caseId": "HO3-069",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "נחושת היא מתכת. שתי אפשרויות זהות.",
+      "after": "נחושת היא מתכת. גופרית וחמצן אינם מתכות.",
+      "reason": "Explanation leaked meta-commentary ('two identical options'); replaced."
+    },
+    {
+      "caseId": "HO3-069",
+      "file": "labels.json",
+      "field": "semanticExpectation",
+      "before": "Stem 'איזה חומר הוא מתכת?' has two defensible answers: ברזל (iron, duplicated as a and c) and נחושת are both metals, so key b is wrong/ambiguous.",
+      "after": null,
+      "reason": "Key not unique: iron (duplicated option) and copper are both metals. Changed the duplicated distractor to a non-metal (sulfur) and d to oxygen; duplicate-option design preserved."
+    },
+    {
+      "caseId": "HO3-069",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Options a and c are identical ('ברזל'), and iron is also a metal, so the keyed answer (copper) is not unique; item is broken.",
+      "after": "Options a and c are identical: OPTION_DUPLICATE_EXACT (ERROR). Key b (copper) is the only metal. Single mechanical flaw.",
+      "reason": "Key not unique: iron (duplicated option) and copper are both metals. Changed the duplicated distractor to a non-metal (sulfur) and d to oxygen; duplicate-option design preserved."
+    },
+    {
+      "caseId": "HO3-071",
+      "file": "corpus.json",
+      "field": "item.answerOptions.2.content",
+      "before": "חנקן",
+      "after": "אדי מים",
+      "reason": "Key incoherent: nitrogen is not a greenhouse gas so \"all of the above\" was false and no single key existed. Replaced option c with water vapor so \"all of the above\" is correct and the flaw is the all-of-the-above option itself."
+    },
+    {
+      "caseId": "HO3-071",
+      "file": "corpus.json",
+      "field": "item.explanation",
+      "before": "חנקן אינו גז חממה, ולכן \"כל האפשרויות\" אינה נכונה.",
+      "after": "פחמן דו-חמצני, מתאן ואדי מים הם כולם גזי חממה, ולכן כל האפשרויות נכונות.",
+      "reason": "Key incoherent: nitrogen is not a greenhouse gas so \"all of the above\" was false and no single key existed. Replaced option c with water vapor so \"all of the above\" is correct and the flaw is the all-of-the-above option itself."
+    },
+    {
+      "caseId": "HO3-071",
+      "file": "labels.json",
+      "field": "semanticExpectation",
+      "before": "Keyed answer d ('all of the above') contradicts the explanation: nitrogen is not a greenhouse gas, so 'all' is false, while a and b are both correct; no valid single key exists.",
+      "after": null,
+      "reason": "Key incoherent: nitrogen is not a greenhouse gas so \"all of the above\" was false and no single key existed. Replaced option c with water vapor so \"all of the above\" is correct and the flaw is the all-of-the-above option itself."
+    },
+    {
+      "caseId": "HO3-071",
+      "file": "labels.json",
+      "field": "humanReviewRecommended",
+      "before": true,
+      "after": false,
+      "reason": "Key incoherent: nitrogen is not a greenhouse gas so \"all of the above\" was false and no single key existed. Replaced option c with water vapor so \"all of the above\" is correct and the flaw is the all-of-the-above option itself."
+    },
+    {
+      "caseId": "HO3-071",
+      "file": "labels.json",
+      "field": "rationale",
+      "before": "Key is wrong or the item is broken: explanation itself says 'all' is not correct. The all-of-the-above option is catalog-flagged.",
+      "after": "Option d is an 'all of the above' phrase: OPTION_ALL_OF_ABOVE. Key d is coherent after fix (CO2, methane, water vapor are all greenhouse gases).",
+      "reason": "Key incoherent: nitrogen is not a greenhouse gas so \"all of the above\" was false and no single key existed. Replaced option c with water vapor so \"all of the above\" is correct and the flaw is the all-of-the-above option itself."
+    }
+  ],
+  "unresolved": [
+    {
+      "caseId": "HO3-058",
+      "issue": "Author intent was CLEAN; label says FLAWED (semantic: stem names the excluded category). Weak cue claim; reasonable reviewers could call it clean. Set to low confidence + humanReviewRecommended."
+    },
+    {
+      "caseId": "HO3-042",
+      "issue": "\"במה\" is a genuine attached-prefix interrogative, so whether STEM_TOO_SHORT should fire is debatable; confidence lowered to low."
+    },
+    {
+      "caseId": "HO3-016",
+      "issue": "Author intent says clean/borderline, label FLAWED (ABSOLUTE_TERM). Kept FLAWED because strong adverbs (entirely, always) are in distractors with none in the keys; intent/label mismatch retained deliberately."
+    },
+    {
+      "caseId": "HO3-004",
+      "issue": "\"בהכרח\" is arguably part of the misconception claim itself; left FLAWED at medium confidence (author already noted)."
+    },
+    {
+      "caseId": "HO3-028",
+      "issue": "Name-leak (Merge sort / merges) is borderline; left FLAWED low confidence, humanReviewRecommended."
+    },
+    {
+      "caseId": "HO3-032/HO3-065/HO3-070",
+      "issue": "expectedCodes/itemCodes include OPTION_STYLE_OUTLIER, OPTION_PUNCTUATION_INCONSISTENT, OPTION_NUMERIC_UNORDERED; docs (Run 001 inventory) list them as not implemented. Implementation status not verifiable without src; orchestrator should confirm, else treat as out-of-scope-for-scoring."
+    },
+    {
+      "caseId": "HO3-048",
+      "issue": "Key 25 vs next 10 (diff 15) sits exactly on the KEY_LONGEST_OPTION threshold; deliberately neither expected nor forbidden."
+    }
+  ],
+  "notes": [
+    "Verified lengths with node for all KEY_LONGEST/IMBALANCE-cited cases (021,023,027,030,032,051,055,060,061,065,009) and for the edited cases after fixes.",
+    "Systematic: STEM_NO_QUESTION_FORM and OPTION_STYLE_OUTLIER would technically apply to many clean stems/options (e.g. imperative stems without \"?\", HO3-005 option c, HO3-019 option c); not added to expectedCodes as catalog implementation status is uncertain and the labelling convention in this corpus does not enumerate them.",
+    "Several flaw-stratum explanations contained meta-commentary describing the flaw (038,040,042,044,046,048,050,052,069,028); replaced with neutral explanations.",
+    "Intent/label reconciliation: cases 009,012,027,051,055,060,061 were intended clean but mechanically flawed; corpus text adjusted to restore clean controls (label flipped to CLEAN).",
+    "HO3-002 option c is also a length outlier (30 vs 12-17), not labelled expected (style-outlier note above).",
+    "Accepted freshness near-flags: HO3-006 (generic stem template only, different topic/options), HO3-068 (different question; median appears in a v0.2 item as a different question)."
+  ],
+  "freshnessRemediation": [
+    {
+      "caseId": "HO3-022",
+      "what changed": "primes -> Gregorian leap years",
+      "design preserved": "Clean MC, 4 numeric options sorted ascending, 2 keys"
+    },
+    {
+      "caseId": "HO3-029",
+      "what changed": "electric current unit -> unit of amount of substance (mole)",
+      "design preserved": "Clean SC Hebrew unit question, no stem-key echo, key d"
+    },
+    {
+      "caseId": "HO3-035",
+      "what changed": "capital of France -> Mohs scale (geology)",
+      "design preserved": "3-word valid interrogative, SC, key c, exempt from STEM_TOO_SHORT"
+    },
+    {
+      "caseId": "HO3-036",
+      "what changed": "'מהירות האור' -> 'מהפכה תעשייתית' (history); options now period/place",
+      "design preserved": "2-word bare noun lookalike beginning with 'מה'; STEM_TOO_SHORT expected; key a"
+    },
+    {
+      "caseId": "HO3-045",
+      "what changed": "mammals -> halogens",
+      "design preserved": "2-word imperative with colon, MC, keys a,c"
+    },
+    {
+      "caseId": "HO3-047",
+      "what changed": "hexagon sides -> lines on a musical staff",
+      "design preserved": "3-word 'כמה' question, numeric options sorted, key third"
+    },
+    {
+      "caseId": "HO3-051",
+      "what changed": "photosynthesis -> inflation (economics); recomputed lengths 32/24/25/31",
+      "design preserved": "2-word 'מהי X?' definition, key a is longest by diff 1 (<15), no length flags"
+    },
+    {
+      "caseId": "HO3-059",
+      "what changed": "renewable energy -> Romance languages",
+      "design preserved": "English MC select-all, keys a,c"
+    },
+    {
+      "caseId": "HO3-068",
+      "what changed": "closest planet -> median (statistics)",
+      "design preserved": "English SC, no explanation (EXPLANATION_MISSING), key b"
+    },
+    {
+      "caseId": "HO3-072",
+      "what changed": "non-metal -> non-igneous (sedimentary) rock",
+      "design preserved": "Hebrew SC with unemphasized 'אינו' negative stem, key c"
+    },
+    {
+      "caseId": "HO3-070",
+      "what changed": "replaced items 1,2,4,5,6,7,8 (ocean, question mark, even numbers, CPU, red blood cells, photosynthesis gas, judicial branch) with tempo, Boolean, sedimentary rocks, GDP, thesis statement, hygrometer, semantics; item 3 unchanged",
+      "design preserved": "Key positions c,a,d,(b,d),c,a,d,b; question types; opening words What/Which per slot; key longest in items 2,5,7 only; item 3 numeric-unordered flaw kept; label/itemCodes unchanged"
+    },
+    {
+      "caseId": "HO3-051",
+      "change": "Parent follow-up: HO3-051 prompt duplicated HO3-011 ('מהי אינפלציה?'); replaced with 'מהי מטאפורה?' (clean short definition, same shape). Option lengths checked: key not a length outlier."
+    }
+  ]
+}

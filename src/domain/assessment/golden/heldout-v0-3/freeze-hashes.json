@@ -1,0 +1,34 @@
+{
+  "version": "v0.3-heldout",
+  "evidenceIdentity": "FRESH_HELD_OUT_V0_3",
+  "provenance": {
+    "corpus": "MODEL_AUTHORED_HELD_OUT",
+    "labels": "MODEL_LABELED_NOT_HUMAN_APPROVED"
+  },
+  "cases": 72,
+  "items": 70,
+  "sets": 2,
+  "counts": {
+    "hebrew": 45,
+    "english": 27,
+    "singleChoiceItems": 58,
+    "multipleChoiceItems": 12,
+    "clean": 38,
+    "flawed": 34,
+    "deterministicLabelled": 30,
+    "semanticOnly": 4
+  },
+  "methodology": {
+    "author": "fresh worker; brief restricted by instruction (no linter/fixtures/src); not tool-enforced",
+    "label": "fresh worker; saw corpus + catalog doc sections 4,9,10.1,10.3,11.1; not author-intent; not linter; not tool-enforced",
+    "labelReview": "fresh worker; saw corpus, labels, author-intent; edited corpus/labels pre-freeze with change log (label-review.json)",
+    "freshnessRemediation": "mechanical text-similarity check vs v0.1/v0.2 found same-concept overlaps; 11 cases replaced pre-freeze by a fresh worker not shown old text; HO3-051 duplicate fixed by parent",
+    "linterRunOnCorpus": "NO (before this freeze commit)"
+  },
+  "sha256": {
+    "corpus.json": "277887131f78bb3c15223f2bef2a1296fb916e56cff674b782d67afb8ae1fe25",
+    "labels.json": "2d197cb62ae946fae7d726b4ac70b8d36fefda182d74f51c18780bb27fb98c10",
+    "author-intent.json": "61d61547a08e870cced3da6b58a7d1a37845ab494d93dace2044ea6e6e3fadd3",
+    "label-review.json": "a6849663a6c17cfe131b3186ca280fdaf14977bb52ed772ddd7e176e0c17c88b"
+  }
+}

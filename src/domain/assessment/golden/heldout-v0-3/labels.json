@@ -1,0 +1,1012 @@
+{
+  "labels": [
+    {
+      "caseId": "HO3-001",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key c (odd) is correct. 'כולם' is weak tier and content-essential; no strong adverb; options symmetric.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-002",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractor c carries strong adverb 'תמיד' while key has none and not every option has one: test-wiseness cue (also a stylistic outlier). Key b is correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-003",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'never' sits in the KEY (legitimate physics content); no distractor has a strong adverb, so the deterministic rule must stay silent. Key a correct; not longest by margin.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-004",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractor a has strong 'בהכרח' as a plausible-answer cue; key b has none. Subtlety: 'בהכרח' is arguably part of the misconception claim, but it reads as a cue. Key b correct.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-005",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Clean Newton-1 item, key d correct. Stem contains 'שלא' (relative-clause negation a token negation list might match); not a negative-stem question, so not a flaw, but a STEM_NEGATIVE_WORDING emission would be borderline.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-006",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractors a ('always') and c ('never') carry strong adverbs; key b has none. Key b correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-007",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key c correct and longest but only 1.17x the next longest (below the 1.2 margin, diff 11), so no length flag. 'only' in the key is content-essential (weak tier). Distractors b and d are mildly implausible but acceptable.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-008",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractors b ('תמיד', 'לגמרי') and d ('אף פעם') carry strong absolutes; correct options a,c have none. Keys a,c correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-009",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key d is correct (division by zero is undefined). 'בשום פנים' is weak-tier and sits in the key. Lengths 14/14/23/25: key 25 vs next 23 (no longest-key margin), longest/shortest 1.8x (no imbalance). Clean control.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-010",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Weak-tier quantifier 'כל' is content-essential (universal claims about mammals); no strong adverb. Keys a,c correct (platypus/echidna lay eggs, marine mammals exist). Explanation consistent.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-011",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractor a has strong 'תמיד' while key b has none. Word order 'ירידה תמיד ברמת המחירים' is slightly unnatural. Key b correct.",
+      "confidence": "high",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-012",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "OPTION_PREFIX_STEM_REPEAT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'Always' appears in every option including the key (symmetric), so the absolute-term rule must stay silent. Options share only one leading token. Key d (always even) is correct; lengths 10-15.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-013",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractors b ('absolutely no') and d ('always ... every') include strong absolutes; keys a,c have none. Keys a,c correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-014",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Correct circle definition (a). Natural overlap with stem ('במישור'); key not longest by margin. Distractors are real conic/locus definitions (good). Explanation refers to 'the second option' by position, which is shuffle-fragile but not a catalog flaw.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-015",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractor c has strong 'completely'; distractor a has weak 'every'; key b has none. Key b correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-016",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractors b ('entirely') and d ('always') carry strong absolutes; keys a,c do not. Keys a,c correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-017",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'בהכרח' appears in the STEM only (logical-necessity question), not in a distractor; key b correct (divisible by 6 implies by 3). Distractors test non-implications. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-018",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key d correct. 'every' (stem) and 'All' (option b and key) are weak-tier, content-essential. Key not longest. Distractors b,c are weak but acceptable.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-019",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key b correct. Short options, 6-word stem. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-020",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key a correct, no stem echo, lengths balanced. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-021",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key c restates the stem phrase 'תופעת הגאות והשפל' and is the longest option: self-referential key echoing the stem (lexical leakage).",
+      "rationale": "Key is 43 chars vs next 24 (1.79x, diff 19): longest-key cue; also echoes stem phrasing (semantic leakage). Key c (moon gravity) is correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-022",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_NUMERIC_UNORDERED"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Numeric options 1900,1996,2000,2023 are sorted ascending; keys 1996 and 2000 are the leap years. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-023",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key restates the stem phrase 'network security' and is far longer than distractors (lexical echo plus length cue).",
+      "rationale": "Key b is 65 chars vs 36 (1.81x): longest-key cue; also echoes the stem's 'network security'. Key correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-024",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key d (Honshu) correct. Natural Hebrew interrogative stem (6 words); Japan/Tokyo repetition is necessary context.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-025",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem already defines proportional representation ('מנדטים מחולקים לפי חלקן ... בקולות') and key c merely restates it (circular; stem leaks the key).",
+      "rationale": "Key c is correct but echoes the stem definition: lexical/semantic leakage and circular definition. Length ratio 1.23x but only 10 chars difference, so no length code. Semantic judgement only.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-026",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key d correct (Gay-Lussac). Options share only one leading token ('הלחץ'), below the prefix-repeat threshold. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-027",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key a (ecosystem definition) correct. Key 53 chars vs next 40: diff 13 (<15), so no longest-key flag. 'only' in distractor d is weak tier (not deterministic). Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-028",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key 'Merge sort' echoes the stem verb 'merges' (name leak); borderline since the name is the standard term.",
+      "rationale": "Key c is correct. Stem describes the algorithm and the key name repeats its verb: mild lexical leakage, judgement-dependent. No deterministic code applies.",
+      "confidence": "low",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO3-029",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key d (mole) correct; all options are units of different quantities; clean recall item with no stem-key echo.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-030",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key c restates the stem phrase ('עלייה בתוחלת החיים') and distractors (calendar change, borders) are implausible.",
+      "rationale": "Key c is 50 chars vs next 24 (2.08x) and 3.3x the shortest (diff 35): longest-key and imbalance. Key correct but repeats the stem and distractors are weak.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-031",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Keys a,b,d are the side-based classes; c (right-angled) is angle-based, a clean conceptual distractor. 3 of 4 correct is valid. Slight possible overlap (equilateral is also isosceles) but the question asks classification types so all three count.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-032",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_PUNCTUATION_INCONSISTENT",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key is a full sentence repeating the stem ('most of the ... atmosphere'); others are bare names.",
+      "rationale": "Key c is a full sentence of 39 chars vs one-word distractors (max 14): longest-key cue, 7.8x imbalance, only option with terminal period, single style outlier. Key (nitrogen) correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-033",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Distractor b is implausible and recycles the stem's own term ('התחממות גלובלית ... קרינת הירח'), and d uses the exclusive 'בלבד'; weak distractors with a circular option.",
+      "rationale": "Keys a,c (greenhouse gases, deforestation) correct. Distractor b is circular and implausible; d 'בלבד' is a weak-tier exclusive cue (human judgement). No deterministic code.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-034",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Keys a (vinegar) and c (baking soda) correct. Options embed their own classification, fine for a classification stem; b (neutral) and d (not an acid) are clearly excluded. Minor oddness: b is a true statement but not an acid/base.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-035",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "3-word stem but a well-formed interrogative ('מהי ...'), exempt. Key c (mineral hardness) correct, plausible measurement-scale distractors of comparable length. Clean mechanically.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-036",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem is a bare noun phrase ('מהפכה תעשייתית') with no question.",
+      "rationale": "2-word noun fragment ('מהפכה תעשייתית', begins with 'מה' like an interrogative): should fire STEM_TOO_SHORT. Key a correct. STEM_NO_QUESTION_FORM would also apply but is not labelled expected here.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-037",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "3-word stem begins with the attached-vav interrogative 'ומהו' and genuinely asks something, so STEM_TOO_SHORT should not fire. Quality note: the leading 'and' presupposes a prior question (context-dependent stem), a human-review concern. Key c correct (9).",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO3-038",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'List of birds' is a noun phrase, not a question, despite the imperative-looking first word.",
+      "rationale": "3-word non-question noun phrase; the first word resembles an imperative but the phrase asks nothing, so STEM_TOO_SHORT should fire (catalog notes this exemption false negative).",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-039",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'Define osmosis.' is an imperative that genuinely asks for a definition; short stems of this kind are valid. Key a correct, balanced options.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-040",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'שמי הלילה' is a bare noun phrase; 'שמי' only resembles a prefixed interrogative.",
+      "rationale": "2-word noun-phrase fragment, no question. 'שמי' only resembles a prefixed interrogative (catalog known false exemption).",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-041",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'H2O הוא:' is a completion stem ending with ':' so brevity is fine. Key b (water) correct; 'מימן חמצני' is Hebrew for H2O2 (peroxide), an intentional distractor. Slight chemical-name ambiguity noted.",
+      "confidence": "medium",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-042",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'במה' is a single ambiguous word (in what / stage) and not a well-formed question; options mix homographs.",
+      "rationale": "1-word stem; 'במה' is also a legitimate prefixed interrogative ('in what'), so the exemption may apply: judgement-dependent. Intended as the noun 'stage'; item is ambiguous and the key arbitrary.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO3-043",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "3-word 'למה' question, valid. Key a correct; 'כחולה' appears in distractor d too, so overlap is not unique. Weak-tier 'בלבד' in d is content-specific.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-044",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'Name tags' is a noun phrase; 'Name' looks imperative but nothing is asked.",
+      "rationale": "2-word non-question fragment; 'Name' looks imperative but nothing is asked.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-045",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'בחרו הלוגנים:' is an imperative with colon; valid short selection stem. Keys a (chlorine), c (iodine) correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-046",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'Whale watching' is a noun phrase with no question.",
+      "rationale": "2-word fragment; should fire STEM_TOO_SHORT.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-047",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'כמה קווים בחמשה?' is a 3-word 'כמה' question; valid. Numeric options sorted 3-6, key 5 correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-048",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'מימי הביניים' is a bare noun phrase.",
+      "rationale": "2-word fragment (known limit: 'מימי' prefix may look interrogative). Key 25 chars vs next 10 (diff 15, ratio 2.5) sits exactly on the longest-key threshold (>=1.2x and >=15 diff); borderline, so KEY_LONGEST_OPTION is not labelled expected and not forbidden.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-049",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'Who painted Guernica?' is a valid 3-word question; key c (Picasso) correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-050",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'Who's who' is an idiom noun phrase, not a question.",
+      "rationale": "2-word phrase beginning with an interrogative-looking token but not asking anything; should fire STEM_TOO_SHORT.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-051",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key a correct. Key 43 chars vs next 37 (ratio 1.16, diff 6), max/min 1.8: no length flag. Clean short 'מהי X?' definition item.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-052",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem 'כמהין' is a single bare noun.",
+      "rationale": "1-word fragment; explanation says 'Bare noun with no question'.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-053",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key c is a correct (if tautological) definition of absolute zero; length ratio 1.6x but diff 14 (<15) so no length flag. Weak-tier 'שום' is content-essential. Circular definition is a mild human-review concern.",
+      "confidence": "low",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO3-054",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Distractor b has strong 'always' while key has none. 'Define a vacuum.' is a valid imperative (3 words) so STEM_TOO_SHORT must not fire. Key a correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-055",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_LENGTH_IMBALANCE",
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key a correct. Lengths 29/15/16/14: key vs next 29/16 diff 13 (<15), ratio 2.1x. Natural overlap with stem. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-056",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key b correct; a is the meiosis contrast (good misconception distractor). Option overlap below threshold. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-057",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'כל' appears in the stem and several options including distractors (weak tier, content-essential). No strong adverb. Key d correct.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-058",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Stem names the distractor category ('ולא לכלי כתיבה'), giving away that עט/עיפרון are the excluded options; the contrast phrasing is a cue.",
+      "rationale": "Keys a,c correct. The stem hands the learner the discriminating category, making the item trivial. Also contains 'ולא' negation in the stem (borderline STEM_NEGATIVE_WORDING). Semantic.",
+      "confidence": "low",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": true
+    },
+    {
+      "caseId": "HO3-059",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Spanish and Italian correct; German and Dutch Germanic. Valid selection stem. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-060",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key b correct (phases from Sun-Earth-Moon geometry); a is a good eclipse-confusion distractor. Key 41 vs next 30: diff 11 (<15), no longest-key flag. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-061",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "OPTION_ABSOLUTE_TERM",
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key a correct (a square is a rectangle). 'every' in stem and option d is weak tier and content-essential; no strong adverb in any option. Key 43 ties c, so not strictly longest. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-062",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "KEY_LONGEST_OPTION"
+      ],
+      "semanticExpectation": null,
+      "rationale": "Key b correct (prokaryote); length ratio 1.14x, no flag. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-063",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ABSOLUTE_TERM"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Distractor b has strong 'תמיד' (and 'כליל'); key a has none. Key a correct. Weak 'כל' and 'רק' in c,d are not deterministic territory.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-064",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [
+        "STEM_TOO_SHORT"
+      ],
+      "semanticExpectation": null,
+      "rationale": "'בחרו את כוכבי הלכת:' is an imperative with colon; valid short selection stem. Keys a (Mars), c (Neptune) correct; Moon is a satellite and Sun a star.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-065",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "KEY_LONGEST_OPTION",
+        "OPTION_LENGTH_IMBALANCE",
+        "OPTION_STYLE_OUTLIER"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": "Key is a long noun phrase with commas while distractors are short 'ל'+verb infinitives, so form and length reveal the key; distractors are implausible.",
+      "rationale": "Key c is 56 chars vs max distractor 11 (5.1x): longest-key, 6.2x imbalance, single stylistic outlier; grammatical-form mismatch ('סינון' vs infinitives) is a semantic cue. Key correct.",
+      "confidence": "high",
+      "languageReviewRequired": true,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-066",
+      "scope": "ITEM",
+      "label": "CLEAN",
+      "expectedCodes": [],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Key d (Queue) correct. Stem describes the property; single-word options. Clean.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-067",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN"
+      ],
+      "forbiddenSetCodes": [
+        "SET_KEY_LENGTH_BIAS",
+        "STEM_TEMPLATE_REPEATED",
+        "SET_TOO_SMALL"
+      ],
+      "itemCodes": {},
+      "semanticExpectation": null,
+      "rationale": "All 8 items key position b: share 100% (> 1.5/4) and run length 8. QUESTION_TYPE_MONO (all SINGLE_CHOICE, n=8) also technically applies but is informational and not labelled. Key is longest in only 3/8 (no length bias). Items individually mechanically fine.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-068",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "EXPLANATION_MISSING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "No explanation field at all; otherwise a clean item (Median correct).",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-069",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_DUPLICATE_EXACT"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Options a and c are identical: OPTION_DUPLICATE_EXACT (ERROR). Key b (copper) is the only metal. Single mechanical flaw.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-070",
+      "scope": "SET",
+      "label": "FLAWED",
+      "expectedSetCodes": [],
+      "forbiddenSetCodes": [
+        "KEY_POSITION_IMBALANCE",
+        "KEY_POSITION_RUN",
+        "SET_KEY_LENGTH_BIAS",
+        "STEM_TEMPLATE_REPEATED",
+        "QUESTION_TYPE_MONO",
+        "SET_OPTION_COUNT_MIXED"
+      ],
+      "itemCodes": {
+        "3": [
+          "OPTION_NUMERIC_UNORDERED"
+        ]
+      },
+      "semanticExpectation": null,
+      "rationale": "Set of 8 with varied key positions (c,a,d,b+d,c,a,d,b), mixed types, 4 options each, same prompt-opening pattern as before, key longest in only 3/7 single items (items 2,5,7). Only mechanical flaw: item 3 numeric options '2,4,6,3' are not in sorted order. Items otherwise correct.",
+      "confidence": "medium",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-071",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "OPTION_ALL_OF_ABOVE"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Option d is an 'all of the above' phrase: OPTION_ALL_OF_ABOVE. Key d is coherent after fix (CO2, methane, water vapor are all greenhouse gases).",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    },
+    {
+      "caseId": "HO3-072",
+      "scope": "ITEM",
+      "label": "FLAWED",
+      "expectedCodes": [
+        "STEM_NEGATIVE_WORDING"
+      ],
+      "forbiddenCodes": [],
+      "semanticExpectation": null,
+      "rationale": "Stem uses 'אינו' (negative 'which is NOT') without emphasis. Key c (limestone, sedimentary) correct. Options balanced.",
+      "confidence": "high",
+      "languageReviewRequired": false,
+      "humanReviewRecommended": false
+    }
+  ]
+}

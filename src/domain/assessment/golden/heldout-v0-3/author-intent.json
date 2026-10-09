@@ -1,0 +1,292 @@
+{
+ "intent": {
+  "HO3-001": {
+   "stratum": "A",
+   "intent": "Clean: universal substantive claim about all primes >2; no cue"
+  },
+  "HO3-002": {
+   "stratum": "A",
+   "intent": "Flawed: absolute \"תמיד\" only in a wrong option (answer cue)"
+  },
+  "HO3-003": {
+   "stratum": "A",
+   "intent": "Clean: true knowledge with \"never\" in the correct option"
+  },
+  "HO3-004": {
+   "stratum": "A",
+   "intent": "Flawed: \"בהכרח\" only in wrong option"
+  },
+  "HO3-005": {
+   "stratum": "A",
+   "intent": "Clean: natural Hebrew \"שום כוח\" in stem, no absolutes in options"
+  },
+  "HO3-006": {
+   "stratum": "A",
+   "intent": "Flawed: \"always\" and \"never\" only in wrong options, SC English"
+  },
+  "HO3-007": {
+   "stratum": "A",
+   "intent": "Clean: \"only\" inside a legitimate definition of prime"
+  },
+  "HO3-008": {
+   "stratum": "A",
+   "intent": "Flawed: MC with absolute terms (\"לעולם\",\"תמיד\"/\"אף פעם\") in wrong options"
+  },
+  "HO3-009": {
+   "stratum": "A",
+   "intent": "Clean: \"בשום פנים\" in the correct option, true knowledge"
+  },
+  "HO3-010": {
+   "stratum": "A",
+   "intent": "Clean MC: \"כל\" as substantive content in several options, wrong ones false on facts"
+  },
+  "HO3-011": {
+   "stratum": "A",
+   "intent": "Flawed: \"תמיד\" only in a wrong option, SC Hebrew economics"
+  },
+  "HO3-012": {
+   "stratum": "A",
+   "intent": "Clean: \"always\" in EVERY option (symmetric), one true"
+  },
+  "HO3-013": {
+   "stratum": "A",
+   "intent": "Flawed: \"absolutely no influence\"/\"always\" only in wrong options, MC English"
+  },
+  "HO3-014": {
+   "stratum": "A",
+   "intent": "Clean: \"כל\" substantive in definition of circle"
+  },
+  "HO3-015": {
+   "stratum": "A",
+   "intent": "Flawed: \"completely depends\"/\"never\"-style absolute only in wrong options, English CS"
+  },
+  "HO3-016": {
+   "stratum": "A",
+   "intent": "Clean MC: correct option has \"cannot ... destroyed\"; wrong ones have strong terms (every/always) - borderline, intended content-driven"
+  },
+  "HO3-017": {
+   "stratum": "A",
+   "intent": "Clean: \"בהכרח\" in stem, plain options"
+  },
+  "HO3-018": {
+   "stratum": "A",
+   "intent": "Clean: \"every\"/\"All\" substantive about squares"
+  },
+  "HO3-019": {
+   "stratum": "B",
+   "intent": "Clean: legit overlap (שלילי/שליליים) in stem and key"
+  },
+  "HO3-020": {
+   "stratum": "B",
+   "intent": "Clean: all options share domain term \"rock\""
+  },
+  "HO3-021": {
+   "stratum": "B",
+   "intent": "Flawed blatant: key uniquely echoes the stem phrase \"הגאות והשפל\""
+  },
+  "HO3-022": {
+   "stratum": "B",
+   "intent": "Clean MC: no overlap issues, leap years (calendar)"
+  },
+  "HO3-023": {
+   "stratum": "B",
+   "intent": "Flawed blatant: key uniquely echoes \"network security\" from stem"
+  },
+  "HO3-024": {
+   "stratum": "B",
+   "intent": "Clean: necessary repeated named entity (Tokyo/Japan)"
+  },
+  "HO3-025": {
+   "stratum": "B",
+   "intent": "Flawed subtle: key restates the stem definition (מנדטים/חלקה בקולות), distractors differently worded"
+  },
+  "HO3-026": {
+   "stratum": "B",
+   "intent": "Clean: Hebrew morphology variants (הלחץ/ללחץ), symmetric"
+  },
+  "HO3-027": {
+   "stratum": "B",
+   "intent": "Clean: English scientific/definition overlap, balanced lengths"
+  },
+  "HO3-028": {
+   "stratum": "B",
+   "intent": "Flawed subtle (borderline): key name echoes the stem description \"merges\""
+  },
+  "HO3-029": {
+   "stratum": "B",
+   "intent": "Clean: Hebrew unit of measurement (amount of substance), no stem-key echo"
+  },
+  "HO3-030": {
+   "stratum": "B",
+   "intent": "Flawed: key copies stem phrase \"עלייה בתוחלת החיים\" while distractors are paraphrased"
+  },
+  "HO3-031": {
+   "stratum": "B",
+   "intent": "Clean MC: legit shared term \"צלעות\" in stem and keys"
+  },
+  "HO3-032": {
+   "stratum": "B",
+   "intent": "Flawed stylistic asymmetry: only one option is a full sentence"
+  },
+  "HO3-033": {
+   "stratum": "B",
+   "intent": "Flawed (reverse): distractor echoes stem phrase \"התחממות גלובלית\""
+  },
+  "HO3-034": {
+   "stratum": "B",
+   "intent": "Clean MC: repeated domain term \"acid\"/\"base\" across stem and keys"
+  },
+  "HO3-035": {
+   "stratum": "C",
+   "intent": "Clean: short direct question, geology scale"
+  },
+  "HO3-036": {
+   "stratum": "C",
+   "intent": "Flawed: lookalike noun phrase \"מהפכה תעשייתית\" (not a question)"
+  },
+  "HO3-037": {
+   "stratum": "C",
+   "intent": "Clean: prefixed interrogative \"ומהו\", short math"
+  },
+  "HO3-038": {
+   "stratum": "C",
+   "intent": "Flawed: English bare noun phrase \"List of birds\""
+  },
+  "HO3-039": {
+   "stratum": "C",
+   "intent": "Clean: imperative short stem, English"
+  },
+  "HO3-040": {
+   "stratum": "C",
+   "intent": "Flawed: Hebrew lookalike \"שמי הלילה\" (noun phrase, not \"ש+מי\")"
+  },
+  "HO3-041": {
+   "stratum": "C",
+   "intent": "Clean: completion stem ending with colon"
+  },
+  "HO3-042": {
+   "stratum": "C",
+   "intent": "Flawed: ambiguous bare label \"במה\" (stage/platform noun)"
+  },
+  "HO3-043": {
+   "stratum": "C",
+   "intent": "Clean: \"למה\" true interrogative with prefix"
+  },
+  "HO3-044": {
+   "stratum": "C",
+   "intent": "Flawed: English \"Name tags\" lookalike imperative"
+  },
+  "HO3-045": {
+   "stratum": "C",
+   "intent": "Clean MC: short imperative with colon"
+  },
+  "HO3-046": {
+   "stratum": "C",
+   "intent": "Flawed: English \"Whale watching\" noun phrase"
+  },
+  "HO3-047": {
+   "stratum": "C",
+   "intent": "Clean: \"כמה\" short music-theory question"
+  },
+  "HO3-048": {
+   "stratum": "C",
+   "intent": "Flawed: lookalike \"מימי הביניים\" (noun phrase beginning with מי)"
+  },
+  "HO3-049": {
+   "stratum": "C",
+   "intent": "Clean: English short direct question \"Who painted Guernica?\""
+  },
+  "HO3-050": {
+   "stratum": "C",
+   "intent": "Flawed: English \"Who's who\" lookalike"
+  },
+  "HO3-051": {
+   "stratum": "C",
+   "intent": "Clean: 2-word definition question"
+  },
+  "HO3-052": {
+   "stratum": "C",
+   "intent": "Flawed: bare noun \"כמהין\" (truffles; looks like כמה)"
+  },
+  "HO3-053": {
+   "stratum": "D",
+   "intent": "Clean: strong \"שום\" in correct option + short stem"
+  },
+  "HO3-054": {
+   "stratum": "D",
+   "intent": "Flawed (weak): \"always\" only in a wrong option + short stem"
+  },
+  "HO3-055": {
+   "stratum": "D",
+   "intent": "Clean: overlap + short stem (מעגל חשמלי)"
+  },
+  "HO3-056": {
+   "stratum": "D",
+   "intent": "Clean: short English definition with legit overlap"
+  },
+  "HO3-057": {
+   "stratum": "D",
+   "intent": "Clean: \"כל\" substantive + overlap with stem (משולש שווה צלעות)"
+  },
+  "HO3-058": {
+   "stratum": "D",
+   "intent": "Clean MC: Hebrew punctuation, valid multi-answer"
+  },
+  "HO3-059": {
+   "stratum": "D",
+   "intent": "Clean MC: valid multi-answer English"
+  },
+  "HO3-060": {
+   "stratum": "D",
+   "intent": "Clean: symmetric option structure, Hebrew"
+  },
+  "HO3-061": {
+   "stratum": "D",
+   "intent": "Clean: \"every\" substantive + overlap (square/rectangle)"
+  },
+  "HO3-062": {
+   "stratum": "D",
+   "intent": "Clean: short Hebrew definition"
+  },
+  "HO3-063": {
+   "stratum": "D",
+   "intent": "Flawed (weak): \"תמיד\" only in wrong option + short stem"
+  },
+  "HO3-064": {
+   "stratum": "D",
+   "intent": "Clean MC: short imperative with multi-answer"
+  },
+  "HO3-065": {
+   "stratum": "E",
+   "intent": "Flawed: key clearly longest/most detailed"
+  },
+  "HO3-066": {
+   "stratum": "E",
+   "intent": "Clean: FIFO data structure"
+  },
+  "HO3-067": {
+   "stratum": "E",
+   "intent": "SET: every key in position b (position-bias sentinel), otherwise clean Hebrew"
+  },
+  "HO3-068": {
+   "stratum": "E",
+   "intent": "Flawed: missing explanation"
+  },
+  "HO3-069": {
+   "stratum": "E",
+   "intent": "Flawed: two identical options (duplicate)"
+  },
+  "HO3-070": {
+   "stratum": "E",
+   "intent": "SET: clean, well-balanced positions, English (topics: music tempo, data types, rocks, GDP, thesis, hygrometer, semantics)"
+  },
+  "HO3-071": {
+   "stratum": "E",
+   "intent": "Flawed: \"all of the above\"-type option misused (nitrogen not a greenhouse gas)"
+  },
+  "HO3-072": {
+   "stratum": "E",
+   "intent": "Flawed: negatively-worded stem without emphasis"
+  }
+ }
+}

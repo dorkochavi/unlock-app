@@ -1,0 +1,2545 @@
+{
+  "cases": [
+    {
+      "caseId": "HO3-001",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזו קביעה נכונה לגבי כל המספרים הראשוניים הגדולים מ-2?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כולם מתחלקים ב-3"
+          },
+          {
+            "id": "b",
+            "content": "כולם זוגיים"
+          },
+          {
+            "id": "c",
+            "content": "כולם אי-זוגיים"
+          },
+          {
+            "id": "d",
+            "content": "כולם קטנים מ-100"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "כל מספר ראשוני גדול מ-2 אינו מתחלק ב-2, ולכן הוא אי-זוגי."
+      }
+    },
+    {
+      "caseId": "HO3-002",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו תפקידו העיקרי של הריבוזום בתא?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "אחסון חומר גנטי"
+          },
+          {
+            "id": "b",
+            "content": "סינתזה של חלבונים"
+          },
+          {
+            "id": "c",
+            "content": "הוא תמיד מייצר אנרגיה עבור התא"
+          },
+          {
+            "id": "d",
+            "content": "פירוק שומנים"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "הריבוזום מתרגם RNA שליח לשרשרת חלבון. ייצור אנרגיה מתבצע בעיקר במיטוכונדריה."
+      }
+    },
+    {
+      "caseId": "HO3-003",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "According to special relativity, which statement about light in a vacuum is correct?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "It never travels faster than the constant c"
+          },
+          {
+            "id": "b",
+            "content": "Its speed depends on the speed of the source"
+          },
+          {
+            "id": "c",
+            "content": "Its speed is higher for faster observers"
+          },
+          {
+            "id": "d",
+            "content": "Its speed varies with its color"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "In a vacuum light always has the invariant speed c for all inertial observers, independent of the source."
+      }
+    },
+    {
+      "caseId": "HO3-004",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי הסיבה העיקרית לעונות השנה בכדור הארץ?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "המרחק מהשמש משתנה בהכרח בין חורף לקיץ"
+          },
+          {
+            "id": "b",
+            "content": "הטיית ציר הסיבוב של כדור הארץ"
+          },
+          {
+            "id": "c",
+            "content": "הירח מסתיר את השמש לסירוגין"
+          },
+          {
+            "id": "d",
+            "content": "שינויים בעוצמת הכבידה"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "העונות נגרמות מהטיית הציר, שגורמת לשינוי בזווית הקרינה ובאורך היום."
+      }
+    },
+    {
+      "caseId": "HO3-005",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה יקרה לגוף במנוחה שלא פועל עליו שום כוח?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "ימשיך להאיץ"
+          },
+          {
+            "id": "b",
+            "content": "יאבד מסה"
+          },
+          {
+            "id": "c",
+            "content": "יתחיל לנוע במהירות קבועה"
+          },
+          {
+            "id": "d",
+            "content": "יישאר במנוחה"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "לפי החוק הראשון של ניוטון, גוף במנוחה שאין פועל עליו כוח שקול נשאר במנוחה."
+      }
+    },
+    {
+      "caseId": "HO3-006",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which statement about photosynthesis is correct?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Plants always perform it in complete darkness."
+          },
+          {
+            "id": "b",
+            "content": "It converts light energy into chemical energy."
+          },
+          {
+            "id": "c",
+            "content": "It never produces oxygen."
+          },
+          {
+            "id": "d",
+            "content": "It releases energy by breaking down glucose."
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "Photosynthesis stores light energy in glucose and releases oxygen; breaking down glucose is respiration."
+      }
+    },
+    {
+      "caseId": "HO3-007",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What is a prime number?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "A natural number that has exactly three positive divisors"
+          },
+          {
+            "id": "b",
+            "content": "An even natural number that leaves no remainder when divided by 1"
+          },
+          {
+            "id": "c",
+            "content": "A natural number greater than 1 whose only positive divisors are 1 and itself"
+          },
+          {
+            "id": "d",
+            "content": "A natural number greater than 1 that is the product of two squares"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "A prime has exactly two positive divisors, 1 and itself."
+      }
+    },
+    {
+      "caseId": "HO3-008",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהקביעות הבאות נכונות לגבי מחזור המים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "אידוי מים מהים הוא חלק מהמחזור"
+          },
+          {
+            "id": "b",
+            "content": "הגשם הוא תמיד מים נקיים לגמרי"
+          },
+          {
+            "id": "c",
+            "content": "עיבוי של אדי מים יוצר עננים"
+          },
+          {
+            "id": "d",
+            "content": "אף פעם לא מתרחש חלחול למי תהום"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "אידוי ועיבוי הם שלבים במחזור. מי גשם מכילים חומרים מומסים, וחלחול למי תהום מתרחש כל הזמן."
+      }
+    },
+    {
+      "caseId": "HO3-009",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה נכון לגבי חלוקה באפס במתמטיקה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "התוצאה היא אפס"
+          },
+          {
+            "id": "b",
+            "content": "התוצאה היא אחד"
+          },
+          {
+            "id": "c",
+            "content": "התוצאה היא אינסוף מדויק"
+          },
+          {
+            "id": "d",
+            "content": "בשום פנים היא אינה מוגדרת"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "חלוקה באפס אינה מוגדרת בשדה המספרים הממשיים."
+      }
+    },
+    {
+      "caseId": "HO3-010",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהמשפטים הבאים נכונים לגבי יונקים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כל היונקים מניקים את צאצאיהם"
+          },
+          {
+            "id": "b",
+            "content": "כל היונקים מטילים ביצים"
+          },
+          {
+            "id": "c",
+            "content": "לכל היונקים יש שערות בשלב כלשהו בחייהם"
+          },
+          {
+            "id": "d",
+            "content": "כל היונקים חיים ביבשה בלבד"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "הנקה ושיער מאפיינים את כל היונקים. יש יונקים ימיים, ורק מעטים מטילים ביצים."
+      }
+    },
+    {
+      "caseId": "HO3-011",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי אינפלציה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "ירידה תמיד ברמת המחירים"
+          },
+          {
+            "id": "b",
+            "content": "עלייה כללית ומתמשכת ברמת המחירים"
+          },
+          {
+            "id": "c",
+            "content": "עלייה בשער החליפין בלבד"
+          },
+          {
+            "id": "d",
+            "content": "הגדלת כמות הסחורות בשוק"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "אינפלציה היא עלייה כללית ומתמשכת ברמת המחירים במשק."
+      }
+    },
+    {
+      "caseId": "HO3-012",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which claim about the sum of two even integers is correct?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Always odd"
+          },
+          {
+            "id": "b",
+            "content": "Always prime"
+          },
+          {
+            "id": "c",
+            "content": "Always negative"
+          },
+          {
+            "id": "d",
+            "content": "Always even"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "Two even integers 2m and 2n sum to 2(m+n), which is even."
+      }
+    },
+    {
+      "caseId": "HO3-013",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Select the true statements about the Roman Republic.",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "It was governed by elected magistrates."
+          },
+          {
+            "id": "b",
+            "content": "The Senate had absolutely no influence on policy."
+          },
+          {
+            "id": "c",
+            "content": "Consuls served fixed terms of one year."
+          },
+          {
+            "id": "d",
+            "content": "Citizens always voted directly on every law."
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "Magistrates were elected and consuls held one-year terms. The Senate was highly influential and laws were not always decided by direct vote."
+      }
+    },
+    {
+      "caseId": "HO3-014",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי הגדרת מעגל במישור?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "קבוצת כל הנקודות במישור הנמצאות במרחק קבוע ממרכז"
+          },
+          {
+            "id": "b",
+            "content": "קבוצת כל הנקודות שסכום מרחקיהן משני מוקדים קבוע"
+          },
+          {
+            "id": "c",
+            "content": "קבוצת כל הנקודות הנמצאות במרחק שווה משני ישרים"
+          },
+          {
+            "id": "d",
+            "content": "קבוצת נקודות שמרחקן מישר נתון קבוע"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "מעגל הוא אוסף כל הנקודות במרחק קבוע (רדיוס) ממרכז. האפשרות עם שני המוקדים מתארת אליפסה."
+      }
+    },
+    {
+      "caseId": "HO3-015",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which of the following best describes a hash table lookup?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "It must scan every element every time"
+          },
+          {
+            "id": "b",
+            "content": "Average constant time using a hash function"
+          },
+          {
+            "id": "c",
+            "content": "It completely depends on sorting the data first"
+          },
+          {
+            "id": "d",
+            "content": "It stores items in strict alphabetical order"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "A hash function maps a key to a bucket, giving average O(1) lookups."
+      }
+    },
+    {
+      "caseId": "HO3-016",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Which statements about conservation of energy are correct?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Energy cannot be created or destroyed in an isolated system"
+          },
+          {
+            "id": "b",
+            "content": "Energy is entirely lost as heat in every machine"
+          },
+          {
+            "id": "c",
+            "content": "Energy can be converted from one form to another"
+          },
+          {
+            "id": "d",
+            "content": "Kinetic energy is always greater than potential energy"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "Energy is conserved in an isolated system and changes form; the other claims are false."
+      }
+    },
+    {
+      "caseId": "HO3-017",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "אם מספר שלם מתחלק ב-6, מה נכון בהכרח לגביו?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "הוא מתחלק ב-4"
+          },
+          {
+            "id": "b",
+            "content": "הוא מתחלק גם ב-3"
+          },
+          {
+            "id": "c",
+            "content": "הוא מתחלק ב-12"
+          },
+          {
+            "id": "d",
+            "content": "הוא מתחלק ב-5"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "6 = 2·3, ולכן כל כפולה של 6 מתחלקת גם ב-3."
+      }
+    },
+    {
+      "caseId": "HO3-018",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which statement is true of every square?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Its diagonals are of different lengths"
+          },
+          {
+            "id": "b",
+            "content": "All its angles are 60 degrees"
+          },
+          {
+            "id": "c",
+            "content": "It has exactly three sides"
+          },
+          {
+            "id": "d",
+            "content": "All four sides have equal length"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "A square is a quadrilateral with four equal sides and four right angles."
+      }
+    },
+    {
+      "caseId": "HO3-019",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי התוצאה של חיבור שני מספרים שליליים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "מספר חיובי"
+          },
+          {
+            "id": "b",
+            "content": "מספר שלילי"
+          },
+          {
+            "id": "c",
+            "content": "אפס"
+          },
+          {
+            "id": "d",
+            "content": "לא מוגדר"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "סכום של שני מספרים שליליים הוא שלילי, למשל -2 + -3 = -5."
+      }
+    },
+    {
+      "caseId": "HO3-020",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which type of rock forms when existing rock is changed by heat and pressure?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Metamorphic rock"
+          },
+          {
+            "id": "b",
+            "content": "Igneous rock"
+          },
+          {
+            "id": "c",
+            "content": "Sedimentary rock"
+          },
+          {
+            "id": "d",
+            "content": "Volcanic glass"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Metamorphic rock forms from existing rock transformed by heat and pressure without melting fully."
+      }
+    },
+    {
+      "caseId": "HO3-021",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי הסיבה לתופעת הגאות והשפל בים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "רוחות חזקות באוקיינוס"
+          },
+          {
+            "id": "b",
+            "content": "זרמי אוויר חמים מעל המים"
+          },
+          {
+            "id": "c",
+            "content": "תופעת הגאות והשפל נגרמת מכוח המשיכה של הירח"
+          },
+          {
+            "id": "d",
+            "content": "הטיית הציר של כדור הארץ"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "הכבידה של הירח (ושל השמש) יוצרת בליטות מים ולכן יש גאות ושפל."
+      }
+    },
+    {
+      "caseId": "HO3-022",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהשנים הבאות הן שנים מעוברות בלוח הגרגוריאני?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "1900"
+          },
+          {
+            "id": "b",
+            "content": "1996"
+          },
+          {
+            "id": "c",
+            "content": "2000"
+          },
+          {
+            "id": "d",
+            "content": "2023"
+          }
+        ],
+        "correctOptionIds": [
+          "b",
+          "c"
+        ],
+        "explanation": "1996 מתחלקת ב-4 ואינה מתחלקת ב-100, ו-2000 מתחלקת ב-400. 1900 מתחלקת ב-100 אך לא ב-400, ו-2023 אינה מתחלקת ב-4."
+      }
+    },
+    {
+      "caseId": "HO3-023",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What is the main purpose of a firewall in network security?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "To speed up the downloading of files"
+          },
+          {
+            "id": "b",
+            "content": "To monitor and filter network traffic to improve network security"
+          },
+          {
+            "id": "c",
+            "content": "To store backups of user data"
+          },
+          {
+            "id": "d",
+            "content": "To increase screen resolution"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "A firewall filters incoming and outgoing traffic according to security rules."
+      }
+    },
+    {
+      "caseId": "HO3-024",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "באיזה אי של יפן שוכנת בירתה, טוקיו?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "הוקאידו"
+          },
+          {
+            "id": "b",
+            "content": "קיושו"
+          },
+          {
+            "id": "c",
+            "content": "שיקוקו"
+          },
+          {
+            "id": "d",
+            "content": "הונשו"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "טוקיו שוכנת באי הונשו, האי הגדול ביותר ביפן."
+      }
+    },
+    {
+      "caseId": "HO3-025",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי שיטת בחירות יחסית, שבה מנדטים מחולקים לפי חלקן של המפלגות בקולות?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "שיטה שבה המועמד עם מרב הקולות בכל אזור זוכה"
+          },
+          {
+            "id": "b",
+            "content": "שיטה שבה הנשיא נבחר ישירות"
+          },
+          {
+            "id": "c",
+            "content": "שיטה שבה מספר המנדטים של כל מפלגה משקף את חלקה בקולות"
+          },
+          {
+            "id": "d",
+            "content": "שיטה שבה הפרלמנט ממנה את ראש הממשלה"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "בשיטה יחסית, ייצוג המפלגות בפרלמנט משקף את תמיכת הבוחרים."
+      }
+    },
+    {
+      "caseId": "HO3-026",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה קורה ללחץ של גז כשמחממים אותו בנפח קבוע?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "הלחץ יורד"
+          },
+          {
+            "id": "b",
+            "content": "הלחץ אינו משתנה"
+          },
+          {
+            "id": "c",
+            "content": "הלחץ מתאפס"
+          },
+          {
+            "id": "d",
+            "content": "הלחץ עולה"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "לפי חוק גיי-לוסאק, בנפח קבוע הלחץ עולה עם הטמפרטורה."
+      }
+    },
+    {
+      "caseId": "HO3-027",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "In biology, what is an ecosystem?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Organisms interacting with their physical environment"
+          },
+          {
+            "id": "b",
+            "content": "A single species living within one habitat"
+          },
+          {
+            "id": "c",
+            "content": "A group of cells performing one function"
+          },
+          {
+            "id": "d",
+            "content": "A food chain of predators and prey only"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "An ecosystem includes living organisms and the non-living environment they interact with."
+      }
+    },
+    {
+      "caseId": "HO3-028",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which sorting algorithm repeatedly splits the list into halves, sorts each half, and merges the results?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Bubble sort"
+          },
+          {
+            "id": "b",
+            "content": "Selection sort"
+          },
+          {
+            "id": "c",
+            "content": "Merge sort"
+          },
+          {
+            "id": "d",
+            "content": "Insertion sort"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "Merge sort uses divide-and-conquer: split the list, recursively sort each half, then merge the sorted halves."
+      }
+    },
+    {
+      "caseId": "HO3-029",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "באיזו יחידה נמדדת כמות חומר?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "ליטר"
+          },
+          {
+            "id": "b",
+            "content": "גרם"
+          },
+          {
+            "id": "c",
+            "content": "ג'אול"
+          },
+          {
+            "id": "d",
+            "content": "מול"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "כמות חומר נמדדת במול; מול אחד מכיל כ-6.02×10^23 חלקיקים."
+      }
+    },
+    {
+      "caseId": "HO3-030",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מה גרם לעלייה בתוחלת החיים במאה ה-20?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "ירידה במספר הלידות"
+          },
+          {
+            "id": "b",
+            "content": "התרחבות הגבולות המדיניים"
+          },
+          {
+            "id": "c",
+            "content": "שיפורים ברפואה ובתברואה שהביאו לעלייה בתוחלת החיים"
+          },
+          {
+            "id": "d",
+            "content": "שינוי בלוח השנה"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "חיסונים, אנטיביוטיקה ותברואה הפחיתו תמותה ושיפרו תוחלת חיים."
+      }
+    },
+    {
+      "caseId": "HO3-031",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהבאים הם סוגי משולשים לפי אורכי צלעותיהם?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "משולש שווה צלעות"
+          },
+          {
+            "id": "b",
+            "content": "משולש שווה שוקיים"
+          },
+          {
+            "id": "c",
+            "content": "משולש ישר זווית"
+          },
+          {
+            "id": "d",
+            "content": "משולש שונה צלעות"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "b",
+          "d"
+        ],
+        "explanation": "סיווג לפי צלעות: שווה צלעות, שווה שוקיים, שונה צלעות. ישר זווית מסווג לפי זוויות."
+      }
+    },
+    {
+      "caseId": "HO3-032",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which gas makes up most of Earth's atmosphere?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Oxygen"
+          },
+          {
+            "id": "b",
+            "content": "Carbon dioxide"
+          },
+          {
+            "id": "c",
+            "content": "Most of the atmosphere is nitrogen gas."
+          },
+          {
+            "id": "d",
+            "content": "Argon"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "Nitrogen makes up about 78 percent of the atmosphere."
+      }
+    },
+    {
+      "caseId": "HO3-033",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהגורמים הבאים תורמים להתחממות גלובלית?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "פליטת גזי חממה לאטמוספרה"
+          },
+          {
+            "id": "b",
+            "content": "התחממות גלובלית שנגרמת מקרינת הירח"
+          },
+          {
+            "id": "c",
+            "content": "כריתת יערות נרחבת"
+          },
+          {
+            "id": "d",
+            "content": "עלייה בפעילות הגעשית בלבד"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "גזי חממה וכריתת יערות תורמים להתחממות. הירח אינו גורם רלוונטי."
+      }
+    },
+    {
+      "caseId": "HO3-034",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Which of the following are acids or bases commonly found in the home?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Vinegar, an acid"
+          },
+          {
+            "id": "b",
+            "content": "Table salt, a neutral compound"
+          },
+          {
+            "id": "c",
+            "content": "Baking soda, a base"
+          },
+          {
+            "id": "d",
+            "content": "Sugar, a strong acid"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "Vinegar is acidic and baking soda is basic; salt is neutral and sugar is not an acid."
+      }
+    },
+    {
+      "caseId": "HO3-035",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי סקאלת מוס?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "עוצמת רעידות אדמה"
+          },
+          {
+            "id": "b",
+            "content": "מליחות מים"
+          },
+          {
+            "id": "c",
+            "content": "קשיות מינרלים"
+          },
+          {
+            "id": "d",
+            "content": "חומציות קרקע"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "סקאלת מוס מדרגת מינרלים לפי קשיותם, מטלק (1) ועד יהלום (10)."
+      }
+    },
+    {
+      "caseId": "HO3-036",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהפכה תעשייתית",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "החל מאמצע המאה ה-18 בבריטניה"
+          },
+          {
+            "id": "b",
+            "content": "החל מאמצע המאה ה-15 באיטליה"
+          },
+          {
+            "id": "c",
+            "content": "החל מראשית המאה ה-20 בארה\"ב"
+          },
+          {
+            "id": "d",
+            "content": "החל מסוף המאה ה-12 בצרפת"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "המהפכה התעשייתית החלה בבריטניה באמצע המאה ה-18."
+      }
+    },
+    {
+      "caseId": "HO3-037",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "ומהו שורש 81?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "7"
+          },
+          {
+            "id": "b",
+            "content": "8"
+          },
+          {
+            "id": "c",
+            "content": "9"
+          },
+          {
+            "id": "d",
+            "content": "10"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "9 כפול 9 שווה 81."
+      }
+    },
+    {
+      "caseId": "HO3-038",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "List of birds",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Eagle, sparrow, owl"
+          },
+          {
+            "id": "b",
+            "content": "Oak, pine, maple"
+          },
+          {
+            "id": "c",
+            "content": "Lion, tiger, bear"
+          },
+          {
+            "id": "d",
+            "content": "Iron, copper, zinc"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Eagles, sparrows and owls are birds."
+      }
+    },
+    {
+      "caseId": "HO3-039",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Define osmosis.",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Movement of water across a semipermeable membrane"
+          },
+          {
+            "id": "b",
+            "content": "Movement of ions against a gradient using energy"
+          },
+          {
+            "id": "c",
+            "content": "Splitting of a cell into two"
+          },
+          {
+            "id": "d",
+            "content": "Conversion of light into sugar"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Osmosis is the net diffusion of water through a semipermeable membrane."
+      }
+    },
+    {
+      "caseId": "HO3-040",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "שמי הלילה",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כוכבים"
+          },
+          {
+            "id": "b",
+            "content": "שלג"
+          },
+          {
+            "id": "c",
+            "content": "גלים"
+          },
+          {
+            "id": "d",
+            "content": "שמש"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "כוכבים נראים בשמי הלילה."
+      }
+    },
+    {
+      "caseId": "HO3-041",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "H2O הוא:",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "מימן חמצני"
+          },
+          {
+            "id": "b",
+            "content": "מים"
+          },
+          {
+            "id": "c",
+            "content": "חמצן"
+          },
+          {
+            "id": "d",
+            "content": "מלח"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "H2O הוא הנוסחה הכימית של מים. מימן חמצני הוא H2O2."
+      }
+    },
+    {
+      "caseId": "HO3-042",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "במה",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "במה בתיאטרון"
+          },
+          {
+            "id": "b",
+            "content": "במה היא"
+          },
+          {
+            "id": "c",
+            "content": "ברמה"
+          },
+          {
+            "id": "d",
+            "content": "מה"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "במה היא משטח מוגבה שעליו מופיעים, למשל בתיאטרון."
+      }
+    },
+    {
+      "caseId": "HO3-043",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "למה השמיים כחולים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "פיזור של אור כחול באטמוספרה"
+          },
+          {
+            "id": "b",
+            "content": "השתקפות של האוקיינוס"
+          },
+          {
+            "id": "c",
+            "content": "ענני אבק בחלל"
+          },
+          {
+            "id": "d",
+            "content": "קרינה כחולה מהשמש בלבד"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "פיזור ריילי מפזר אור כחול יותר מאור אדום."
+      }
+    },
+    {
+      "caseId": "HO3-044",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Name tags",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Labels worn to show a name"
+          },
+          {
+            "id": "b",
+            "content": "A list of names"
+          },
+          {
+            "id": "c",
+            "content": "A tag for names only"
+          },
+          {
+            "id": "d",
+            "content": "A type of file"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Name tags are labels worn to show a person's name."
+      }
+    },
+    {
+      "caseId": "HO3-045",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "בחרו הלוגנים:",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כלור"
+          },
+          {
+            "id": "b",
+            "content": "נתרן"
+          },
+          {
+            "id": "c",
+            "content": "יוד"
+          },
+          {
+            "id": "d",
+            "content": "ארגון"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "כלור ויוד שייכים להלוגנים (קבוצה 17). נתרן הוא מתכת אלקלית וארגון הוא גז אציל."
+      }
+    },
+    {
+      "caseId": "HO3-046",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Whale watching",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Observing whales in the wild"
+          },
+          {
+            "id": "b",
+            "content": "A type of fishing"
+          },
+          {
+            "id": "c",
+            "content": "A science of tides"
+          },
+          {
+            "id": "d",
+            "content": "An ocean current"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "Whale watching is observing whales in the wild."
+      }
+    },
+    {
+      "caseId": "HO3-047",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "כמה קווים בחמשה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "3"
+          },
+          {
+            "id": "b",
+            "content": "4"
+          },
+          {
+            "id": "c",
+            "content": "5"
+          },
+          {
+            "id": "d",
+            "content": "6"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "החמשה בתווים מורכבת מחמישה קווים וארבעה רווחים ביניהם."
+      }
+    },
+    {
+      "caseId": "HO3-048",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מימי הביניים",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "תקופה בהיסטוריה של אירופה"
+          },
+          {
+            "id": "b",
+            "content": "סוג של נהר"
+          },
+          {
+            "id": "c",
+            "content": "מדד כלכלי"
+          },
+          {
+            "id": "d",
+            "content": "כוכב לכת"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "ימי הביניים הם תקופה בהיסטוריה של אירופה."
+      }
+    },
+    {
+      "caseId": "HO3-049",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Who painted Guernica?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Salvador Dali"
+          },
+          {
+            "id": "b",
+            "content": "Claude Monet"
+          },
+          {
+            "id": "c",
+            "content": "Pablo Picasso"
+          },
+          {
+            "id": "d",
+            "content": "Vincent van Gogh"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "Guernica (1937) was painted by Picasso."
+      }
+    },
+    {
+      "caseId": "HO3-050",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Who's who",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "A directory of notable people"
+          },
+          {
+            "id": "b",
+            "content": "A question game"
+          },
+          {
+            "id": "c",
+            "content": "A type of film"
+          },
+          {
+            "id": "d",
+            "content": "A rule of grammar"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "'Who's who' is a directory of notable people."
+      }
+    },
+    {
+      "caseId": "HO3-051",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי מטאפורה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "השוואה סמויה בין שני דברים, ללא מילת השוואה"
+          },
+          {
+            "id": "b",
+            "content": "חזרה על אותו צליל בתחילת מילים סמוכות"
+          },
+          {
+            "id": "c",
+            "content": "הגזמה מכוונת לצורך הדגשה"
+          },
+          {
+            "id": "d",
+            "content": "תיאור דבר באמצעות ניגודו"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "מטאפורה משווה באופן סמוי בין שני דברים, למשל \"הזמן הוא כסף\". חזרה על צלילים היא אליטרציה, והגזמה מכוונת היא היפרבולה."
+      }
+    },
+    {
+      "caseId": "HO3-052",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "כמהין",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "סוג של פטרייה"
+          },
+          {
+            "id": "b",
+            "content": "סוג של דג"
+          },
+          {
+            "id": "c",
+            "content": "כלי נגינה"
+          },
+          {
+            "id": "d",
+            "content": "יחידת מידה"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "כמהין היא סוג של פטרייה."
+      }
+    },
+    {
+      "caseId": "HO3-053",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו אפס מוחלט?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "טמפרטורת הרתיחה של חנקן"
+          },
+          {
+            "id": "b",
+            "content": "טמפרטורת הקיפאון של מים"
+          },
+          {
+            "id": "c",
+            "content": "טמפרטורה שאין שום טמפרטורה נמוכה ממנה"
+          },
+          {
+            "id": "d",
+            "content": "טמפרטורת פני השמש"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "אפס מוחלט, 0 קלווין, הוא הגבול התחתון של הטמפרטורה."
+      }
+    },
+    {
+      "caseId": "HO3-054",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Define a vacuum.",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "A space containing no matter"
+          },
+          {
+            "id": "b",
+            "content": "A region where sound always travels fastest"
+          },
+          {
+            "id": "c",
+            "content": "A container full of gas under pressure"
+          },
+          {
+            "id": "d",
+            "content": "A very hot region of space"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "A vacuum is a space with essentially no matter."
+      }
+    },
+    {
+      "caseId": "HO3-055",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו מעגל חשמלי?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "מסלול סגור שבו זורם זרם חשמלי"
+          },
+          {
+            "id": "b",
+            "content": "חומר שמוליך חום"
+          },
+          {
+            "id": "c",
+            "content": "מכשיר שמגביר מתח"
+          },
+          {
+            "id": "d",
+            "content": "נגד שמגביל זרם"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "מעגל חשמלי הוא מסלול סגור שבו זורם זרם בהשפעת מקור מתח."
+      }
+    },
+    {
+      "caseId": "HO3-056",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "What is mitosis?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Cell division producing four genetically different cells"
+          },
+          {
+            "id": "b",
+            "content": "Cell division producing two genetically identical cells"
+          },
+          {
+            "id": "c",
+            "content": "Fusion of two gametes"
+          },
+          {
+            "id": "d",
+            "content": "Copying of DNA into RNA"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "Mitosis yields two identical daughter cells."
+      }
+    },
+    {
+      "caseId": "HO3-057",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזו קביעה נכונה לגבי כל משולש שווה צלעות?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "כל צלעותיו שונות באורכן"
+          },
+          {
+            "id": "b",
+            "content": "כל זוויותיו ישרות"
+          },
+          {
+            "id": "c",
+            "content": "אחת מזוויותיו קהה"
+          },
+          {
+            "id": "d",
+            "content": "כל זוויותיו שוות ל-60 מעלות"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "במשולש שווה צלעות כל הזוויות שוות, וסכומן 180 מעלות."
+      }
+    },
+    {
+      "caseId": "HO3-058",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "אילו מהבאים נחשבים לכלי נגינה, ולא לכלי כתיבה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "חליל"
+          },
+          {
+            "id": "b",
+            "content": "עט"
+          },
+          {
+            "id": "c",
+            "content": "כינור"
+          },
+          {
+            "id": "d",
+            "content": "עיפרון"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "חליל וכינור הם כלי נגינה."
+      }
+    },
+    {
+      "caseId": "HO3-059",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "Select all that are Romance languages.",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Spanish"
+          },
+          {
+            "id": "b",
+            "content": "German"
+          },
+          {
+            "id": "c",
+            "content": "Italian"
+          },
+          {
+            "id": "d",
+            "content": "Dutch"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "Spanish and Italian descend from Latin; German and Dutch are Germanic languages."
+      }
+    },
+    {
+      "caseId": "HO3-060",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהי הסיבה העיקרית לכך שהירח נראה בשלבים שונים?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "צל כדור הארץ מכסה אותו חלקית"
+          },
+          {
+            "id": "b",
+            "content": "מיקומו ביחס לשמש משנה את החלק המואר שנראה"
+          },
+          {
+            "id": "c",
+            "content": "ענני אבק מסתירים חלקים ממנו"
+          },
+          {
+            "id": "d",
+            "content": "סיבובו סביב עצמו משנה את צורתו"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "שלבי הירח תלויים בזווית שבין השמש, כדור הארץ והירח."
+      }
+    },
+    {
+      "caseId": "HO3-061",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Is every square a rectangle?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Yes, because a square has four right angles"
+          },
+          {
+            "id": "b",
+            "content": "No, because squares have no right angles"
+          },
+          {
+            "id": "c",
+            "content": "No, because a rectangle needs unequal sides"
+          },
+          {
+            "id": "d",
+            "content": "Yes, because every rectangle is a square"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "A square satisfies the definition of a rectangle."
+      }
+    },
+    {
+      "caseId": "HO3-062",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו חיידק?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "נגיף שאין לו חומר גנטי"
+          },
+          {
+            "id": "b",
+            "content": "אורגניזם חד-תאי חסר גרעין"
+          },
+          {
+            "id": "c",
+            "content": "תא של צמח"
+          },
+          {
+            "id": "d",
+            "content": "חלבון בדם"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "חיידקים הם פרוקריוטים חד-תאיים."
+      }
+    },
+    {
+      "caseId": "HO3-063",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו קטליזטור?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "חומר שמאיץ תגובה כימית ואינו נצרך בה"
+          },
+          {
+            "id": "b",
+            "content": "חומר שתמיד נצרך כליל בתגובה"
+          },
+          {
+            "id": "c",
+            "content": "חומר שמאט כל תגובה"
+          },
+          {
+            "id": "d",
+            "content": "חומר שנוצר רק בקור"
+          }
+        ],
+        "correctOptionIds": [
+          "a"
+        ],
+        "explanation": "קטליזטור מוריד אנרגיית הפעלה ואינו נצרך."
+      }
+    },
+    {
+      "caseId": "HO3-064",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "MULTIPLE_CHOICE",
+        "prompt": "בחרו את כוכבי הלכת:",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "מאדים"
+          },
+          {
+            "id": "b",
+            "content": "ירח"
+          },
+          {
+            "id": "c",
+            "content": "נפטון"
+          },
+          {
+            "id": "d",
+            "content": "שמש"
+          }
+        ],
+        "correctOptionIds": [
+          "a",
+          "c"
+        ],
+        "explanation": "מאדים ונפטון הם כוכבי לכת. הירח הוא לוויין והשמש היא כוכב."
+      }
+    },
+    {
+      "caseId": "HO3-065",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהו תפקידה של הכליה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "לשאוב אוויר"
+          },
+          {
+            "id": "b",
+            "content": "לייצר עצמות"
+          },
+          {
+            "id": "c",
+            "content": "סינון הדם, הוצאת פסולת ושמירה על איזון המים והמלחים בגוף"
+          },
+          {
+            "id": "d",
+            "content": "לעכל מזון"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "הכליה מסננת דם ומווסתת נוזלים ומלחים."
+      }
+    },
+    {
+      "caseId": "HO3-066",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which data structure uses first-in, first-out order?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Stack"
+          },
+          {
+            "id": "b",
+            "content": "Tree"
+          },
+          {
+            "id": "c",
+            "content": "Graph"
+          },
+          {
+            "id": "d",
+            "content": "Queue"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "A queue removes the oldest element first."
+      }
+    },
+    {
+      "caseId": "HO3-067",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי בירת איטליה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "מילאנו"
+            },
+            {
+              "id": "b",
+              "content": "רומא"
+            },
+            {
+              "id": "c",
+              "content": "נאפולי"
+            },
+            {
+              "id": "d",
+              "content": "טורינו"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "רומא היא בירת איטליה."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "כמה שניות יש בדקה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "30"
+            },
+            {
+              "id": "b",
+              "content": "60"
+            },
+            {
+              "id": "c",
+              "content": "100"
+            },
+            {
+              "id": "d",
+              "content": "120"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "דקה מורכבת מ-60 שניות."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה גז נשאף על ידי בני אדם לצורך נשימה?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "חנקן"
+            },
+            {
+              "id": "b",
+              "content": "חמצן"
+            },
+            {
+              "id": "c",
+              "content": "מימן"
+            },
+            {
+              "id": "d",
+              "content": "הליום"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "החמצן נחוץ לנשימה תאית."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה משולש הוא בעל שלוש צלעות שוות?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "שווה שוקיים"
+            },
+            {
+              "id": "b",
+              "content": "שווה צלעות"
+            },
+            {
+              "id": "c",
+              "content": "ישר זווית"
+            },
+            {
+              "id": "d",
+              "content": "קהה זווית"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "משולש שווה צלעות."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהי יחידת המדידה של מסה במערכת SI?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "ליטר"
+            },
+            {
+              "id": "b",
+              "content": "קילוגרם"
+            },
+            {
+              "id": "c",
+              "content": "מטר"
+            },
+            {
+              "id": "d",
+              "content": "שנייה"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "קילוגרם הוא יחידת המסה ב-SI."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזו שפת תכנות נקראת על שם חבורת קומדיה בריטית?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Java"
+            },
+            {
+              "id": "b",
+              "content": "Python"
+            },
+            {
+              "id": "c",
+              "content": "Ruby"
+            },
+            {
+              "id": "d",
+              "content": "Swift"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "Python נקראה על שם חבורת הקומדיה Monty Python."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "מהו המרכיב העיקרי של מלח שולחן?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "סוכר"
+            },
+            {
+              "id": "b",
+              "content": "נתרן כלורי"
+            },
+            {
+              "id": "c",
+              "content": "גבס"
+            },
+            {
+              "id": "d",
+              "content": "סידן"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "מלח שולחן הוא NaCl."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "איזה כוח מושך חפצים כלפי מרכז כדור הארץ?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "חיכוך"
+            },
+            {
+              "id": "b",
+              "content": "כבידה"
+            },
+            {
+              "id": "c",
+              "content": "מגנטיות"
+            },
+            {
+              "id": "d",
+              "content": "מתח"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "כוח הכבידה מושך מסות זו לזו."
+        }
+      ]
+    },
+    {
+      "caseId": "HO3-068",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "Which statistical measure is the middle value of an ordered data set?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "Mean"
+          },
+          {
+            "id": "b",
+            "content": "Median"
+          },
+          {
+            "id": "c",
+            "content": "Mode"
+          },
+          {
+            "id": "d",
+            "content": "Range"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ]
+      }
+    },
+    {
+      "caseId": "HO3-069",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזה חומר הוא מתכת?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "גופרית"
+          },
+          {
+            "id": "b",
+            "content": "נחושת"
+          },
+          {
+            "id": "c",
+            "content": "גופרית"
+          },
+          {
+            "id": "d",
+            "content": "חמצן"
+          }
+        ],
+        "correctOptionIds": [
+          "b"
+        ],
+        "explanation": "נחושת היא מתכת. גופרית וחמצן אינם מתכות."
+      }
+    },
+    {
+      "caseId": "HO3-070",
+      "scope": "SET",
+      "set": [
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What is the term for the speed of a piece of music?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Pitch"
+            },
+            {
+              "id": "b",
+              "content": "Timbre"
+            },
+            {
+              "id": "c",
+              "content": "Tempo"
+            },
+            {
+              "id": "d",
+              "content": "Rhythm"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "Tempo is the speed at which music is played."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which data type stores only true or false values?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Boolean"
+            },
+            {
+              "id": "b",
+              "content": "String"
+            },
+            {
+              "id": "c",
+              "content": "Float"
+            },
+            {
+              "id": "d",
+              "content": "Char"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "A Boolean holds one of two values: true or false."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What is 12 divided by 4?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "2"
+            },
+            {
+              "id": "b",
+              "content": "4"
+            },
+            {
+              "id": "c",
+              "content": "6"
+            },
+            {
+              "id": "d",
+              "content": "3"
+            }
+          ],
+          "correctOptionIds": [
+            "d"
+          ],
+          "explanation": "12 / 4 = 3."
+        },
+        {
+          "questionType": "MULTIPLE_CHOICE",
+          "prompt": "Which of these are sedimentary rocks?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Granite"
+            },
+            {
+              "id": "b",
+              "content": "Limestone"
+            },
+            {
+              "id": "c",
+              "content": "Marble"
+            },
+            {
+              "id": "d",
+              "content": "Sandstone"
+            }
+          ],
+          "correctOptionIds": [
+            "b",
+            "d"
+          ],
+          "explanation": "Limestone and sandstone form from compacted sediments; granite is igneous and marble is metamorphic."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What does GDP stand for?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "General Debt Rate"
+            },
+            {
+              "id": "b",
+              "content": "Global Demand Price"
+            },
+            {
+              "id": "c",
+              "content": "Gross Domestic Product"
+            },
+            {
+              "id": "d",
+              "content": "Gross Dollar Payment"
+            }
+          ],
+          "correctOptionIds": [
+            "c"
+          ],
+          "explanation": "GDP is Gross Domestic Product, the value of goods and services produced in an economy."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "What is the main purpose of a thesis statement?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "State the claim"
+            },
+            {
+              "id": "b",
+              "content": "List every source used"
+            },
+            {
+              "id": "c",
+              "content": "Summarize each chapter"
+            },
+            {
+              "id": "d",
+              "content": "Thank the reader"
+            }
+          ],
+          "correctOptionIds": [
+            "a"
+          ],
+          "explanation": "A thesis statement states the central claim the essay argues."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which instrument measures air humidity?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Barometer"
+            },
+            {
+              "id": "b",
+              "content": "Odometer"
+            },
+            {
+              "id": "c",
+              "content": "Compass"
+            },
+            {
+              "id": "d",
+              "content": "Hygrometer"
+            }
+          ],
+          "correctOptionIds": [
+            "d"
+          ],
+          "explanation": "A hygrometer measures the moisture content of air."
+        },
+        {
+          "questionType": "SINGLE_CHOICE",
+          "prompt": "Which branch of linguistics studies word meaning?",
+          "answerOptions": [
+            {
+              "id": "a",
+              "content": "Phonology"
+            },
+            {
+              "id": "b",
+              "content": "Semantics"
+            },
+            {
+              "id": "c",
+              "content": "Morphology"
+            },
+            {
+              "id": "d",
+              "content": "Syntax"
+            }
+          ],
+          "correctOptionIds": [
+            "b"
+          ],
+          "explanation": "Semantics is the study of meaning."
+        }
+      ]
+    },
+    {
+      "caseId": "HO3-071",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "מהם גזי חממה?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "פחמן דו-חמצני"
+          },
+          {
+            "id": "b",
+            "content": "מתאן"
+          },
+          {
+            "id": "c",
+            "content": "אדי מים"
+          },
+          {
+            "id": "d",
+            "content": "כל האפשרויות הנ\"ל"
+          }
+        ],
+        "correctOptionIds": [
+          "d"
+        ],
+        "explanation": "פחמן דו-חמצני, מתאן ואדי מים הם כולם גזי חממה, ולכן כל האפשרויות נכונות."
+      }
+    },
+    {
+      "caseId": "HO3-072",
+      "scope": "ITEM",
+      "item": {
+        "questionType": "SINGLE_CHOICE",
+        "prompt": "איזה מהסלעים הבאים אינו סלע מגמטי?",
+        "answerOptions": [
+          {
+            "id": "a",
+            "content": "גרניט"
+          },
+          {
+            "id": "b",
+            "content": "בזלת"
+          },
+          {
+            "id": "c",
+            "content": "אבן גיר"
+          },
+          {
+            "id": "d",
+            "content": "אובסידיאן"
+          }
+        ],
+        "correctOptionIds": [
+          "c"
+        ],
+        "explanation": "אבן גיר היא סלע משקע; גרניט, בזלת ואובסידיאן נוצרו מהתקררות והתגבשות של מגמה או לבה."
+      }
+    }
+  ]
+}
