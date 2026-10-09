@@ -1670,6 +1670,8 @@ Calibration FN disposition (Section 9) names `OPTION_COMBINATION_REFERENCE` (WEA
 
 **Evidence note (Run 2026-10-09-ASSESSMENT-ENGINE-004, A5; recommendation only, `docs/ASSESSMENT_HELDOUT_V0_2.md` section 9):** verdict `IMPLEMENT_NEXT`, low-to-medium confidence. Held-out cases HO-026 (Hebrew), HO-027 and HO-064 (English) were all deliberately authored flaws, so natural frequency is unproven (insufficient evidence). A narrow rule (cue word plus a reference token resolving to an option id of the same item, Latin or Hebrew letters) has clear semantics; reading all 78 held-out and 89 v0.1 cases found no would-be false trigger, but this is a reading check on synthetic data, not a measured FP rate. Not implemented; this item stays open.
 
+**Post-human reassessment (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001, `docs/ASSESSMENT_HELDOUT_V0_2.md` section 18):** verdict `IMPLEMENT_NEXT` REAFFIRMED (low-to-medium confidence). HO-026/027/064 were not among the 9 human-reviewed rows (labels still model-only; 3 deliberately authored cases); Dor's context principles favor the narrow cue-word plus option-reference rule over a bare 'and' pattern; detection is deterministic and needs no semantics. No code change.
+
 ## Promotion Trigger
 
 AE-029 is scheduled (held-out evidence from FUB-063 now exists, see the note above).
@@ -1678,15 +1680,13 @@ AE-029 is scheduled (held-out evidence from FUB-063 now exists, see the note abo
 
 # FUB-065 — Human Review of the v0.2 Held-Out Label Questions
 
-**Status:** `DEFERRED` — human action
+**Status:** `RESOLVED` (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001; `HUMAN_APPROVED: Dor, 2026-10-09`; scope: the 9 queued rows only)
 **Priority:** `LOW`
-**Area:** `src/domain/assessment/golden/heldout-v0-2/`, `docs/ASSESSMENT_HELDOUT_V0_2.md` section 12
+**Area:** `src/domain/assessment/golden/heldout-v0-2/`, `docs/ASSESSMENT_HELDOUT_V0_2.md` sections 12, 14-18
 
-Nine rows (HO-049, HO-070, HO-076, HO-017, HO-015, HO-063, HO-032, HO-069, HO-073) are genuinely ambiguous Hebrew linguistic/pedagogical label questions that would change a held-out finding (2 NEEDS_HUMAN_HEBREW_REVIEW, 1 languageReviewRequired, 6 label questions). Dor's answers are NOT recorded and no label was changed. Answers that change labels require a deliberate new freeze (hash record update) and a regenerated report; v0.2 may then be called partially human-reviewed, never fully HUMAN_APPROVED on the strength of nine rows.
+**Closure:** All 9 queued rows (HO-049, HO-070, HO-076, HO-017, HO-015, HO-063, HO-032, HO-069, HO-073) received a human decision (Dor, 2026-10-09): 5 approved unchanged, 1 approved partially with no label change (HO-076), 3 changed a label (HO-017 to CLEAN; HO-063 absolute-term expectation removed; HO-069 to FLAWED with OPTION_NUMERIC_UNORDERED). Applied as a POST-EVALUATION overlay (`human-adjudication.json`) on the unchanged frozen labels; first-blind evidence is preserved and POST_HUMAN metrics are reported separately (122 expected, TP 78, FN 44, FP 5, CLEAN-with-warning 4/20, UNLABELED_EMISSION 23). The corpus was NOT edited; the HO-076 Hebrew issues ('מהי תפקיד' to 'מהו תפקיד', 'הקלטת חום' to 'לכידת חום') are recorded for a separate human-approved corpus-correction step (FUB-073).
 
-## Promotion Trigger
-
-Before any threshold discussion based on FUB-066/FUB-067, or before the v0.2 numbers are quoted outside this repository.
+**Not claimed:** this is NOT full-corpus validation. The other 69 rows remain `MODEL_LABELED_NOT_HUMAN_APPROVED`; the mechanical label questions deliberately left out of the queue (HO-023, 027, 077/4, 051, 076/1, 076/9, 031, 039, 057) are still open as model-only labels. Single reviewer, no inter-annotator agreement, held-out blindness no longer fully holds for the 9 rows, and integration readiness stays NOT_READY.
 
 ---
 
@@ -1700,7 +1700,9 @@ Held-out v0.2 shows two recurring over-flag clusters (`docs/ASSESSMENT_HELDOUT_V
 
 ## Promotion Trigger
 
-A decision to wire lint (FUB-055), or the next Run that touches linter heuristics, after FUB-065 answers exist.
+A decision to wire lint (FUB-055), or the next Run that touches linter heuristics, after FUB-065 answers exist (now recorded, 9 rows).
+
+**Human evidence (Dor, 2026-10-09; evidence only, no threshold or rule change proposed; candidates remain candidates):** (1) an absolute term is not a flaw merely because it exists, and symmetric use across all options is not an answer cue (HO-017 relabeled CLEAN; the OPTION_ABSOLUTE_TERM detection is now a CLEAN-case FP); (2) Hebrew 'כל' integral to the proposition under assessment is not an absolute-term flaw (HO-063, expectation removed, emission now UNLABELED); (3) Hebrew 'שום' needs syntactic/semantic context (HO-015, natural phrasing, not added); (4) a completion/cloze stem ending in ':' is an acceptable question form (HO-032, so STEM_NO_QUESTION_FORM must not require '?'); lexical overlap with the stem is not leakage by itself (HO-076, KEY_STEM_LEXICAL_OVERLAP item-1 emission unresolved). The STEM_TOO_SHORT cluster received no direct human decision beyond the question-form note. Single reviewer, 9 rows. See `docs/ASSESSMENT_HELDOUT_V0_2.md` section 16.
 
 ---
 
@@ -1715,6 +1717,22 @@ Four held-out FN sit just under `KEY_LONGEST_MIN_CHAR_DIFF` (key +11, +11, +12, 
 ## Promotion Trigger
 
 A threshold-discussion Run with a fresh held-out split and near-threshold negatives; or residual FUB-059 position-rule work.
+
+**Human evidence (Dor, 2026-10-09):** set-level statistical warnings must consider sample size and strength of evidence: 5 of 10 keys strictly longest, exactly at the 0.5 SET_KEY_LENGTH_BIAS threshold, is not enough (HO-073, forbidden-code label approved, so the emission remains a human-approved FP). This supports a significance-aware set rule (exit 3) as a candidate; no threshold or rule change is proposed, and the KEY_LONGEST_OPTION 15-character near-misses received no human decision. See `docs/ASSESSMENT_HELDOUT_V0_2.md` section 16.
+
+---
+
+# FUB-073 — v0.2 Corpus Hebrew Corrections (HO-076) and OPTION_NUMERIC_UNORDERED as a Documented Concept
+
+**Status:** `DEFERRED` — human decision required
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/golden/heldout-v0-2/`, `docs/ASSESSMENT_HELDOUT_V0_2.md`
+
+(1) Human review (Dor, 2026-10-09) recorded two HO-076 corpus text defects that were NOT corrected: 'מהי תפקיד הנשיא' should be 'מהו תפקיד…' and 'הקלטת חום' should be 'לכידת חום'. Correcting them changes the frozen corpus and needs a separate human-approved corpus-correction step with a new freeze record and regenerated report. (2) The human-approved concept "comparable numeric-range options should be consistently ordered" (HO-069) makes OPTION_NUMERIC_UNORDERED a documented NOT_IMPLEMENTED human-approved concept; the other existing OPTION_NUMERIC_UNORDERED FN labels (9 FN, 8 in HO-072) are not individually human-reviewed.
+
+## Promotion Trigger
+
+A deliberate v0.2 corpus-correction or re-freeze step, or the AE-029 Slice that considers implementing OPTION_NUMERIC_UNORDERED.
 
 ---
 
