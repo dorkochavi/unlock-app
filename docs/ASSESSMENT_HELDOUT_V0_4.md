@@ -2,7 +2,7 @@
 
 Status: DRAFT evidence artifact. Created in Run `2026-10-09-ASSESSMENT-ENGINE-009`, Slice F2 (classification and report; fresh held-out validation of the Run 008 hardening).
 Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`), unchanged since Run 008 implementation commit `ab784dc` and unchanged throughout Run 009. This is a VALIDATION report: no linter, normalizer, corpus, label, test or threshold was modified.
-Evidence identity: `FRESH_HELD_OUT_V0_4`. Corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_APPROVED`. It is NOT `FIRST_BLIND`. No human adjudication of v0.4 exists at this point.
+Evidence identity: `FRESH_HELD_OUT_V0_4`. Corpus `MODEL_AUTHORED_HELD_OUT`; frozen labels `MODEL_LABELED_NOT_HUMAN_APPROVED`. It is NOT `FIRST_BLIND`. A later post-evaluation human overlay now exists as `HUMAN_ADJUDICATED_V0_4`; it does NOT alter, replace or pool the frozen FRESH evidence.
 
 Evidence classes are never pooled: `FRESH_HELD_OUT_V0_4` (this report), `FRESH_HELD_OUT_V0_3`, `HUMAN_ADJUDICATED_V0_3` (post-evaluation, not blind), `CURRENT_LINTER_ON_FROZEN_V0_2` (regression), `FIRST_BLIND` (v0.2, Run 004, historical), v0.1 fixture. Every comparison in section 6 is side by side, with its own denominator.
 
@@ -340,3 +340,42 @@ Not proposing a new FUB: the `איננה` gap, the slash spelling `הגדר/י`,
 ## 10. Safety and verification
 
 Verification and safety table is recorded in the Run report.
+
+
+## 8. HUMAN_ADJUDICATED_V0_4 — post-evaluation human overlay
+
+Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001`. Reviewer: Dor, 2026-10-09. Provenance: `HUMAN_APPROVED_POST_EVALUATION`. POST-EVALUATION, NOT BLIND. The frozen v0.4 corpus, labels, author-intent, label-review and freeze hashes remain untouched. This section is a separate evidence class and is never pooled with `FRESH_HELD_OUT_V0_4`.
+
+Overlay: `src/domain/assessment/golden/heldout-v0-4/human-adjudication.json`. Coverage: all 14 human-review queue rows / 18 case-or-subcase packets, encoded as 17 top-level case decisions because HO4-075/item7 is represented inside the HO4-075 SET decision.
+
+### 8.1 Post-human metrics
+
+| Measure | FRESH frozen-label evaluation | HUMAN_ADJUDICATED_V0_4 | Delta |
+|---|---:|---:|---:|
+| CLEAN cases | 25 | 29 | +4 |
+| FLAWED cases | 50 | 46 | -4 |
+| Expected deterministic detections | 93 | 88 | -5 |
+| TP | 46 | 46 | 0 |
+| FN total | 47 | 42 | -5 |
+| FN HEURISTIC_GAP | 1 | 1 | 0 |
+| FN NOT_IMPLEMENTED | 46 | 41 | -5 |
+| FP | 6 | 8 | +2 |
+| CLEAN cases warned | 5/25 | 6/29 | +1 case |
+| UNLABELED_EMISSION | 2 | 0 | -2 |
+
+The FP increase does NOT reflect new linter behavior. Human adjudication converted the two previously unlabeled emissions into explicit false positives: HO4-075 `SET_KEY_LENGTH_BIAS` and HO4-075/item7 `OPTION_OVERLAP_HIGH`. The extra CLEAN-warning case is HO4-042, whose model label changed from FLAWED to human-approved CLEAN while the unchanged linter still emits `STEM_TOO_SHORT`.
+
+### 8.2 Human-confirmed rule findings
+
+- `STEM_NEGATIVE_WORDING`: 6 expected / 5 TP / 1 FN / 5 FP / 0 unlabeled. Human-confirmed FPs: HO4-007, 008, 015, 062, 063. Human-confirmed FN: HO4-052 (`איננה שגויה`). Negation tokens in relative, factual or contrast content are not negative-stem flaws; the defect exists when negation controls answer selection. FUB-076 is therefore REOPENED as a design problem, not a token-list patch.
+- `STEM_TOO_SHORT`: 4 expected / 4 TP / 0 FN / 1 FP. HO4-042 `הגדר/י: דמוקרטיה.` is a valid imperative instruction and the warning is human-confirmed false positive. Complete imperatives do not require a question mark. Bare noun phrases HO4-003 and HO4-041 remain human-approved flaws.
+- Imperative stems HO4-004 `Define allele.` and HO4-040 `Name the longest bone...` are CLEAN; `STEM_NO_QUESTION_FORM` must not treat a clear imperative as a flaw merely because it lacks `?`.
+- Weak-tier absolutes: HO4-013 is CLEAN; `כל`/`שום` are ordinary content there. HO4-018 remains FLAWED; `לחלוטין` can contribute as strong/contextual absolute wording. The strong-vs-weak ownership split remains.
+- Stem-key leakage: HO4-016 and HO4-057 are human-approved semantic defects due to asymmetric distinctive echo. This does NOT authorize restoring broad deterministic `KEY_STEM_LEXICAL_OVERLAP`.
+- HO4-075: exactly 5/10 longest keys is insufficient for `SET_KEY_LENGTH_BIAS`; the emission is FORBIDDEN / human-confirmed FP. `KEY_POSITION_IMBALANCE` and `KEY_POSITION_RUN` remain valid TPs.
+- HO4-073: a healthy nine-item all-SINGLE_CHOICE set is CLEAN. `QUESTION_TYPE_MONO` is informational only, not a scored quality flaw.
+- HO4-075/item7: `כתב` and `מכתב` are legitimate distinct Hebrew options; normalization collapsing them creates a human-confirmed `OPTION_OVERLAP_HIGH` false positive.
+
+### 8.3 Readiness
+
+Integration remains `NOT_READY`. The post-human overlay strengthens the evidence that FUB-076 needs redesign and confirms additional heuristic precision issues. It does not add real instructor data, semantic-critic capability, psychometric evidence or wiring evidence. No linter or normalizer change was made in this human-review Run.

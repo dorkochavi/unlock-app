@@ -1,36 +1,40 @@
-# UNLOCK — ASSESSMENT-ENGINE-009 — Fresh Held-Out v0.4 Validation
+# UNLOCK — HUMAN_ADJUDICATED_V0_4
 
-PLAN_VERSION: 043
-RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-009
-START_HEAD: `73d8767`
+PLAN_VERSION: 044
+RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001
+START_HEAD: `a8e9877`
 RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `28bd30a`
-STATUS: **COMPLETE — STOP.** VALIDATION Run (not implementation). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change.
+LAST_VERIFIED_HEAD: `fcc0ec3`
+STATUS: **COMPLETE — STOP.** Human adjudication of all v0.4 review-queue decisions. Post-evaluation overlay only; frozen FRESH_HELD_OUT_V0_4 unchanged. No linter, normalizer, threshold, schema, dependency, API, UI, hosted or deploy change.
 
-This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
+This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**`.
 
 ## 1. Goal
-AUTHOR → LABEL (independent) → LABEL REVIEW → CONTAMINATION AUDIT → FREEZE (V04_FREEZE_HEAD) → EVALUATE CURRENT LINTER UNCHANGED → CLASSIFY → REPORT → INDEPENDENT REVIEW → CLOSE. Evidence class: FRESH_HELD_OUT_V0_4 (never FIRST_BLIND; never pooled with v0.1/v0.2/v0.3/HUMAN_ADJUDICATED_V0_3).
+
+Record Dor's decisions for all 14 v0.4 human-review queue rows / 18 case-or-subcase packets as `HUMAN_ADJUDICATED_V0_4`, using a separate post-evaluation overlay. Extend the generic held-out adjudication harness only as needed for SET-level expected/forbidden decisions. Recompute post-human metrics, route evidence to existing FUB owners, close, then STOP.
 
 ## 2. Hard invariants
-- NO change to question-lint.ts, text-normalize.ts, thresholds, phrase lists, rule ownership, normalization. No post-hoc tuning. After V04_FREEZE_HEAD no corpus/label/author-intent/label-review edits.
-- Immutable: heldout-v0-3 (corpus/labels/human overlay/hashes), heldout-v0-2, v0.1 labels, FIRST_BLIND records. No schema/dependency/API/UI change.
-- Role separation: distinct fresh workers for author, label, label review, evaluation/classification, independent review. Author never sees linter output, old FP/FN case IDs, or question-lint.ts. Labels frozen before any linter run.
-- Integration readiness is not set READY merely on synthetic validation.
+
+- Frozen v0.4 corpus, labels, author-intent, label-review and freeze hashes unchanged.
+- `FRESH_HELD_OUT_V0_4` metrics remain historical and immutable.
+- Human evidence is `HUMAN_APPROVED_POST_EVALUATION`, NOT BLIND.
+- No change to `question-lint.ts`, `text-normalize.ts`, thresholds or phrase lists.
+- No schema/dependency/API/UI/hosted/deploy change.
+- Integration remains NOT_READY.
 
 ## 3. Slices
-| Slice | Scope | Gate | Status |
-|---|---|---|---|
-| A | Author corpus + author-intent | AUTO | DONE |
-| B | Independent labels | AUTO | DONE |
-| C | Label review + change log | AUTO | DONE |
-| D | Contamination audit + replacements | AUTO | DONE |
-| E | Freeze (V04_FREEZE_HEAD), manifest, v0.4 tests | AUTO | DONE |
-| F | Evaluate, classify, v0.4 report | AUTO | DONE |
-| Z | Independent review (review-commit) + fixes | REVIEW_GATE | DONE |
-| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | DONE |
+
+| Slice | Scope | Status |
+|---|---|---|
+| H1 | Encode 17 top-level decisions covering all 18 packets | DONE |
+| H2 | Extend generic overlay harness for SET-level human decisions | DONE |
+| H3 | HUMAN_ADJUDICATED_V0_4 tests + metrics | DONE |
+| H4 | Canonical docs/FUB reconciliation | DONE |
+| Z | Verification + Run close | DONE |
 
 ## History
+
+- ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001.md` (Run report; COMPLETE)
 
 - ASSESSMENT-ENGINE-009: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-009.md` (Run report; COMPLETE)
 - ASSESSMENT-ENGINE-008: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-008.md` (Run report; COMPLETE)
@@ -49,3 +53,4 @@ AUTHOR → LABEL (independent) → LABEL REVIEW → CONTAMINATION AUDIT → FREE
 - ASSESSMENT-ENGINE-002: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-002.md`
 - ASSESSMENT-ENGINE-NIGHT-001: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-NIGHT-001.md`
 - Q3-A11Y-NIGHT-001: `docs/RUNS/2026-10-08-Q3-A11Y-NIGHT-001.md`
+
