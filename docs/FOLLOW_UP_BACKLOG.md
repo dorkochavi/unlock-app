@@ -1694,17 +1694,33 @@ AE-029 is scheduled (held-out evidence from FUB-063 now exists, see the note abo
 
 # FUB-066 — Context-Blind Heuristic Clusters: STEM_TOO_SHORT and OPTION_ABSOLUTE_TERM
 
-**Status:** `DEFERRED`
+**Status:** `RESOLVED` for the deterministic hardening (Run 2026-10-09-ASSESSMENT-ENGINE-006); the semantic/human residual is carried by FUB-074
 **Priority:** `LOW`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
 Held-out v0.2 shows two recurring over-flag clusters (`docs/ASSESSMENT_HELDOUT_V0_2.md` section 11): STEM_TOO_SHORT on complete 2-3 word Hebrew questions (8 findings, one FP on a CLEAN case) and context-blind absolute-term matching on `כל`/`only`/`בלבד`/`all` inside correct descriptive keys (6 findings, one FP). Evidence is moderate and single-author. Any change trades precision against recall (see the Run 003 recall losses) and needs a human decision on the acceptable false-positive rate (group E) and on what "too short" means in Hebrew. Do NOT tune on v0.2; a fix needs a fresh split plus purpose-built negatives.
+
+**Closure (Run 2026-10-09-ASSESSMENT-ENGINE-006; CONTRACT_TEST + CALIBRATION/REGRESSION + HISTORICAL_HELD_OUT_REGRESSION + HUMAN_ADJUDICATED evidence, no fresh validation):** contract tests pre-registered at `fac7dae`; linter hardened afterwards. OPTION_ABSOLUTE_TERM = SPLIT (strong adverbs in a distractor only stay deterministic; the weak tier כל/שום/רק/בלבד/all/only/every/none/אף אחד is routed to HUMAN_REVIEW / AI_OPTIONAL). KEY_STEM_LEXICAL_OVERLAP = SEMANTIC_ONLY (emission stopped). STEM_TOO_SHORT = NARROWED (interrogative/imperative first word with a single prefix, or trailing ':', is exempt; the 4-word constant is unchanged). CURRENT_LINTER_ON_FROZEN_V0_2 TP/FN/FP/UNLABELED per rule: OPTION_ABSOLUTE_TERM 9/0/1/6 to 5/4/0/0, KEY_STEM_LEXICAL_OVERLAP 0/1/0/3 to 0/1/0/0, STEM_TOO_SHORT 2/0/1/7 to 2/0/0/0. Recall cost: the 4 v0.1 KEY_STEM cases (now knownMiss) and v0.2 HO-048, HO-073/item8 (real) plus HO-017, HO-063 (frozen-label only). Not resolved here: semantic/human judgement of the routed items, see FUB-074.
 
 ## Promotion Trigger
 
 A decision to wire lint (FUB-055), or the next Run that touches linter heuristics, after FUB-065 answers exist (now recorded, 9 rows).
 
 **Human evidence (Dor, 2026-10-09; evidence only, no threshold or rule change proposed; candidates remain candidates):** (1) an absolute term is not a flaw merely because it exists, and symmetric use across all options is not an answer cue (HO-017 relabeled CLEAN; the OPTION_ABSOLUTE_TERM detection is now a CLEAN-case FP); (2) Hebrew 'כל' integral to the proposition under assessment is not an absolute-term flaw (HO-063, expectation removed; the emission is now UNLABELED by harness convention only, not human ambiguity); (3) Hebrew 'שום' needs syntactic/semantic context (HO-015, natural phrasing, not added); (4) a completion/cloze stem ending in ':' is an acceptable question form (HO-032, so STEM_NO_QUESTION_FORM must not require '?'); lexical overlap with the stem is not leakage by itself (HO-076, KEY_STEM_LEXICAL_OVERLAP item-1 emission is a context-blind heuristic limit, left UNLABELED by harness convention only; Dor's decision is definitive). The STEM_TOO_SHORT cluster received no direct human decision beyond the question-form note. Single reviewer, 9 rows. See `docs/ASSESSMENT_HELDOUT_V0_2.md` section 16.
+
+---
+
+# FUB-074 — Semantic/Human Judgement for Weak-Tier Absolute Terms and Key-Stem Leakage
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`, `docs/ASSESSMENT_ENGINE.md` (Section 4 AI Necessity Matrix; AE-005, AE-021)
+
+Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066) removed two judgements from deterministic ownership because they are context-dependent: (1) weak-tier absolute terms (כל/שום/רק/בלבד/all/only/every/none/אף אחד), routed to HUMAN_REVIEW / AI_OPTIONAL; (2) key-stem lexical leakage (KEY_STEM_LEXICAL_OVERLAP, no longer emitted), routed to AI_REQUIRED / HUMAN_REVIEW. No semantic reviewer exists, so these signals currently produce no output at all (a deliberate recall loss of 4 v0.1 and 4 v0.2 labelled detections). The work is to give them a home when the semantic critic (AE-021, group C) or an instructor review step exists. Known uncovered limits of the Run 006 deterministic hardening, tracked here rather than separately: the STEM_TOO_SHORT interrogative-prefix exemption can falsely exempt a prefixed non-question word (for example שמי, במה), and the first-word exemption admits a non-question such as 'List of birds'; neither is covered by a test.
+
+## Promotion Trigger
+
+Group C (AI provider/semantic critic) decision, or a decision to surface lint output to instructors (FUB-055) where missing weak-tier/leakage signals would matter. Needs real or instructor-cleared items, not the tuned synthetic fixtures.
 
 ---
 

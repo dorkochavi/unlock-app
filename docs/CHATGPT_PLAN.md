@@ -1,11 +1,11 @@
 # UNLOCK — ASSESSMENT-ENGINE-006 — FUB-066 Context-Sensitive Warning Hardening
 
-PLAN_VERSION: 036
+PLAN_VERSION: 037
 RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-006
 START_HEAD: `477df82`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `477df82`
-STATUS: **IN PROGRESS** — Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `92c51cb`
+STATUS: **COMPLETE — STOP.** Run report: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-006.md`. Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI API call/UI or import wiring.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
 
@@ -17,9 +17,9 @@ Resolve FUB-066: EVIDENCE AUDIT → FAILURE TAXONOMY → PER-RULE CONTRACT → P
 |---|---|---|---|
 | A | Read-only evidence audit + failure taxonomy + Decision Gate A | AUTO | DONE |
 | B | Per-rule contract (section 5) + pre-registered tests (separate commit, PRE_REGISTERED_TEST_HEAD = the commit that adds section 5) for rules kept deterministic | AUTO | DONE |
-| C | Minimal implementation per Gate A (only if justified) | REVIEW_GATE | PENDING |
-| D | Evaluation (contract, v0.1, CURRENT_LINTER_ON_FROZEN_V0_2, POST_HUMAN), human-consistency check, Decision Gate B | AUTO | PENDING |
-| Z | Review, verification, docs, Run close | FINAL_GATE | PENDING |
+| C | Minimal implementation per Gate A (only if justified) | REVIEW_GATE | DONE |
+| D | Evaluation (contract, v0.1, CURRENT_LINTER_ON_FROZEN_V0_2, POST_HUMAN), human-consistency check, Decision Gate B | AUTO | DONE |
+| Z | Review, verification, docs, Run close | FINAL_GATE | DONE |
 
 ## 3. Accepted human principles (hard constraints)
 Token != flaw; symmetry across options is not a cue (HO-017); content-essential quantifiers are not cues (HO-063); natural Hebrew "שום" is not an absolute cue (HO-015); lexical overlap != leakage (HO-076 item 1); short completion stems ending ":" are valid (HO-032).
@@ -64,6 +64,7 @@ Pre-registered tests: `src/domain/assessment/__tests__/context-sensitive-warning
 
 ## History
 
+- ASSESSMENT-ENGINE-006: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-006.md`
 - ASSESSMENT-ENGINE-005: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-005.md`
 - ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003.md`
 - ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002.md`
