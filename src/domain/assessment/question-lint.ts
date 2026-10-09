@@ -42,10 +42,11 @@
  *   CORRECT_ID_UNKNOWN.
  * Implemented ITEM WARNINGS: TEXT_TRUNCATED, STEM_TOO_SHORT, STEM_NEGATIVE_WORDING, OPTION_ALL_OF_ABOVE,
  *   OPTION_NONE_OF_ABOVE, OPTION_COMBINATION_REFERENCE, OPTION_ABSOLUTE_TERM, KEY_LONGEST_OPTION, OPTION_LENGTH_IMBALANCE,
- *   KEY_STEM_LEXICAL_OVERLAP, OPTION_OVERLAP_HIGH, OPTION_WHITESPACE_ANOMALY, EXPLANATION_MISSING.
+ *   OPTION_OVERLAP_HIGH, OPTION_WHITESPACE_ANOMALY, EXPLANATION_MISSING.
  * Implemented SET WARNINGS: SET_TOO_SMALL, SET_ITEMS_TRUNCATED, DUPLICATE_STEM_EXACT,
  *   DUPLICATE_STEM_NORMALIZED, NEAR_DUPLICATE_STEM, SET_ANALYSIS_TRUNCATED, KEY_POSITION_IMBALANCE,
  *   KEY_POSITION_RUN, SET_KEY_LENGTH_BIAS, STEM_TEMPLATE_REPEATED.
+ * No longer emitted (FUB-066): KEY_STEM_LEXICAL_OVERLAP (code retained for history/consumers).
  * NOT implemented (documented in section 10.3/11.1): STEM_NO_QUESTION_FORM, STEM_DOUBLE_NEGATIVE,
  *   OPTION_STYLE_OUTLIER, OPTION_PREFIX_STEM_REPEAT, ARTICLE_MISMATCH,
  *   OPTION_NUMERIC_UNORDERED, OPTION_COUNT_UNUSUAL, OPTION_PUNCTUATION_INCONSISTENT,
@@ -64,7 +65,6 @@ import {
   jaccard,
   measureLength,
   similarityTokenSet,
-  stripHebrewPrefixes,
   tokenize,
 } from "./text-normalize";
 
@@ -106,8 +106,6 @@ export const KEY_LONGEST_RATIO = 1.2;
 export const KEY_LONGEST_MIN_CHAR_DIFF = 15;
 export const LENGTH_IMBALANCE_RATIO = 3.0;
 export const LENGTH_IMBALANCE_MIN_CHAR_DIFF = 20;
-export const KEY_STEM_OVERLAP_MIN_TOKENS = 2;
-export const KEY_STEM_OVERLAP_MIN_TOKEN_LENGTH = 3;
 export const OPTION_OVERLAP_JACCARD = 0.85;
 export const MIN_SET_SIZE = 8;
 export const NEAR_DUPLICATE_STEM_JACCARD = 0.8;
@@ -172,10 +170,44 @@ function hasHutzException(tokens: readonly string[]): boolean {
 const NEGATION_TERMS_HE = norm(["לא", "אין", "אינו", "אינה", "אינם", "אינן", "בלתי", "בלא", "ללא", "מלבד"]);
 const NEGATION_HE_PREFIX_LETTERS = "וש";
 const NEGATION_HE_PREFIX_MAX = 2;
+/**
+ * OPTION_ABSOLUTE_TERM (FUB-066): STRONG frequency/totality adverbs only. The weak quantifier/exclusive tier
+ * (כל, שום, רק, בלבד, all, only, every, none, אף אחד) is deliberately NOT here: it is content-essential or natural
+ * far too often and is left to HUMAN_REVIEW / AI_OPTIONAL.
+ */
 const ABSOLUTE_TERMS = norm([
-  "always", "never", "only", "all", "none", "completely", "entirely", "every",
-  "תמיד", "אף פעם", "רק", "לעולם", "כל", "בלבד", "בהכרח", "אף אחד", "שום",
+  "always", "never", "completely", "entirely",
+  "תמיד", "אף פעם", "לעולם", "בהכרח",
 ]);
+/**
+ * STEM_TOO_SHORT exemption (FUB-066): a short stem whose FIRST word is a closed-class interrogative/imperative
+ * (optionally with exactly one Hebrew prefix letter) or that ends with ":" (completion form) is not a bare fragment.
+ */
+const STEM_LEAD_WORDS = new Set(
+  norm([
+    "מה", "מהי", "מהו", "מי", "איזה", "איזו", "כמה", "מדוע", "למה", "היכן", "הגדר", "ציין",
+    "what", "which", "who", "how", "where", "why", "when", "define", "name", "list",
+  ]),
+);
+const HE_LEAD_WORDS = new Set(
+  norm(["מה", "מהי", "מהו", "מי", "איזה", "איזו", "כמה", "מדוע", "למה", "היכן", "הגדר", "ציין"]),
+);
+const STEM_LEAD_PREFIXES = new Set(norm(["ו", "ש", "ה", "ב", "ל"]));
+function isExemptShortStem(prompt: string): boolean {
+  if (prompt.trimEnd().endsWith(":")) return true;
+  const first = collapseWhitespace(prompt).split(" ").find((w) => w.length > 0) ?? "";
+  const chars = Array.from(first);
+  const isWordChar = (c: string): boolean => /[\p{L}\p{N}]/u.test(c);
+  let start = 0;
+  let end = chars.length;
+  while (start < end && !isWordChar(chars[start])) start += 1;
+  while (end > start && !isWordChar(chars[end - 1])) end -= 1;
+  const word = comparisonKey(chars.slice(start, end).join(""));
+  if (word.length === 0) return false;
+  if (STEM_LEAD_WORDS.has(word)) return true;
+  const rest = Array.from(word).slice(1).join("");
+  return STEM_LEAD_PREFIXES.has(Array.from(word)[0] ?? "") && HE_LEAD_WORDS.has(rest);
+}
 const ALL_OF_ABOVE_PHRASES = normPhrases([
   "all of the above", "all of these", "all the above", "all of the answers",
   "כל התשובות", "כל התשובות נכונות", "כולן נכונות", "כולם נכונים", "כל האמור לעיל", 'כל הנ"ל',
@@ -251,13 +283,6 @@ function isCombinationReference(tokens: readonly string[], self: number, idIndex
   }
   return cueBeforeRef && refs.size >= 2;
 }
-
-const STOP_WORDS = new Set(
-  norm([
-    "the", "and", "for", "with", "that", "this", "from", "are", "was", "what", "which", "who", "how",
-    "את", "של", "על", "עם", "הוא", "היא", "אלה", "הבא", "מהי", "מהו", "איזה", "איזו",
-  ]).map(stripHebrewPrefixes),
-);
 
 // ---- Safe view of arbitrary input ----
 interface SafeOption {
@@ -387,15 +412,6 @@ function singleKeyIndex(item: SafeItem): number {
   return matches.length === 1 ? matches[0] : -1;
 }
 
-function contentTokenKeys(text: string): Set<string> {
-  const out = new Set<string>();
-  for (const t of tokenize(text)) {
-    const k = stripHebrewPrefixes(t);
-    if (Array.from(k).length >= KEY_STEM_OVERLAP_MIN_TOKEN_LENGTH && !STOP_WORDS.has(k)) out.add(k);
-  }
-  return out;
-}
-
 /** A duplicate key that collapsed to nothing (punctuation-only text) must not group: null. */
 function nonEmptyKey(k: string): string | null {
   return k.length > 0 ? k : null;
@@ -502,7 +518,7 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
   }
   const promptTokens = tokenize(item.prompt);
   const wordCount = collapseWhitespace(item.prompt).split(" ").filter((w) => w.length > 0).length;
-  if (wordCount > 0 && wordCount < STEM_MIN_WORDS) {
+  if (wordCount > 0 && wordCount < STEM_MIN_WORDS && !isExemptShortStem(item.prompt)) {
     out.push(issue("STEM_TOO_SHORT", "WARNING", "ITEM", { metrics: { wordCount, minimum: STEM_MIN_WORDS } }));
   }
 
@@ -515,7 +531,7 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
 
   const allIdx: number[] = [];
   const noneIdx: number[] = [];
-  const absIdx: number[] = [];
+  const strongIdx: number[] = [];
   item.options.forEach((opt, i) => {
     if (!nonEmpty(i)) return;
     const toks = tokenize(opt.content);
@@ -524,11 +540,27 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
     const isNone = NONE_OF_ABOVE_PHRASES.some((p) => containsTerm(toks, p));
     if (isAll) allIdx.push(i);
     if (isNone) noneIdx.push(i);
-    if (!isAll && !isNone && ABSOLUTE_TERMS.some((t) => containsTerm(toks, t))) absIdx.push(i);
+    if (!isAll && !isNone && ABSOLUTE_TERMS.some((t) => containsTerm(toks, t))) strongIdx.push(i);
   });
   if (allIdx.length > 0) out.push(issue("OPTION_ALL_OF_ABOVE", "WARNING", "ITEM", optRefs(allIdx, ids)));
   if (noneIdx.length > 0) out.push(issue("OPTION_NONE_OF_ABOVE", "WARNING", "ITEM", optRefs(noneIdx, ids)));
-  if (absIdx.length > 0) out.push(issue("OPTION_ABSOLUTE_TERM", "WARNING", "ITEM", optRefs(absIdx, ids)));
+  // OPTION_ABSOLUTE_TERM: strong term in a NON-correct option, only if no correct option has one and not every
+  // non-blank option has one (symmetry). No resolvable correct option, or unsupported type: fail closed.
+  if (typeSupported && item.correctCount <= MAX_LINT_CORRECT_IDS && strongIdx.length > 0) {
+    const correctSet = new Set(item.correct);
+    const correctIdx = ids.map((_, i) => i).filter((i) => correctSet.has(ids[i]));
+    const strongSet = new Set(strongIdx);
+    const nonBlankCount = ids.filter((_, i) => nonEmpty(i)).length;
+    const flagged = strongIdx.filter((i) => !correctSet.has(ids[i]));
+    if (
+      correctIdx.length > 0 &&
+      !correctIdx.some((i) => strongSet.has(i)) &&
+      strongIdx.length < nonBlankCount &&
+      flagged.length > 0
+    ) {
+      out.push(issue("OPTION_ABSOLUTE_TERM", "WARNING", "ITEM", optRefs(flagged, ids)));
+    }
+  }
 
   const idIndex = new Map<string, number>();
   ids.forEach((id, i) => {
@@ -565,19 +597,7 @@ export function lintQuestionItem(input: unknown): QuestionLintIssue[] {
     }
   }
 
-  if (keyIdx >= 0 && item.options.length >= 2) {
-    const stemKeys = contentTokenKeys(item.prompt);
-    const overlaps = item.options.map((o) => {
-      let n = 0;
-      for (const k of contentTokenKeys(o.content)) if (stemKeys.has(k)) n += 1;
-      return n;
-    });
-    let maxOther = 0;
-    for (let i = 0; i < overlaps.length; i += 1) if (i !== keyIdx && overlaps[i] > maxOther) maxOther = overlaps[i];
-    if (overlaps[keyIdx] >= KEY_STEM_OVERLAP_MIN_TOKENS && overlaps[keyIdx] > maxOther) {
-      out.push(issue("KEY_STEM_LEXICAL_OVERLAP", "WARNING", "ITEM", { ...optRefs([keyIdx], ids), metrics: { keyOverlap: overlaps[keyIdx], maxDistractorOverlap: maxOther } }));
-    }
-  }
+  // KEY_STEM_LEXICAL_OVERLAP is no longer emitted (FUB-066): lexical overlap != leakage; routed to AI_REQUIRED / HUMAN_REVIEW.
 
   // Smallest reading: report each similar (not equal-key) pair; one issue listing all involved ids.
   const optSets = item.options.map((o) => similarityTokenSet(o.content));

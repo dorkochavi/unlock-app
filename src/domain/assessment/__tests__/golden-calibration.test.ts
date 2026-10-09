@@ -29,7 +29,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["KEY_LONGEST_OPTION", 3, 3, 0, 0, 19],
   ["KEY_POSITION_IMBALANCE", 1, 1, 0, 0, 4],
   ["KEY_POSITION_RUN", 1, 1, 0, 0, 4],
-  ["KEY_STEM_LEXICAL_OVERLAP", 5, 4, 1, 0, 16],
+  ["KEY_STEM_LEXICAL_OVERLAP", 5, 0, 5, 0, 16],
   ["NEAR_DUPLICATE_STEM", 3, 2, 1, 0, 5],
   ["OPTIONS_TOO_FEW", 2, 2, 0, 0, 16],
   ["OPTIONS_TOO_MANY", 1, 1, 0, 0, 16],
@@ -69,8 +69,8 @@ const EXPECTED_COUNTS = {
 
 const EXPECTED_TOTALS = {
   expectedDetections: 73,
-  truePositive: 68,
-  falseNegative: 5,
+  truePositive: 64,
+  falseNegative: 9,
   falseNegativeHeuristicGap: 3,
   falseNegativeNotImplemented: 2,
   falsePositive: 0,
@@ -79,10 +79,10 @@ const EXPECTED_TOTALS = {
 };
 
 const EXPECTED_SUMMARY = [
-  "RECALL-LIKE (all labelled detections): 68/73 caught.",
-  "FN count: 5 (3 HEURISTIC_GAP on implemented checks, 2 NOT_IMPLEMENTED checks).",
-  "PRECISION-LIKE (labelled detections vs false alarms): 68/68.",
-  "FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: yes).",
+  "RECALL-LIKE (all labelled detections): 64/73 caught.",
+  "FN count: 9 (3 HEURISTIC_GAP on implemented checks, 2 NOT_IMPLEMENTED checks).",
+  "PRECISION-LIKE (labelled detections vs false alarms): 64/64.",
+  "FP count: 0 (all documented as KNOWN_FALSE_POSITIVE: NO, see undocumented findings).",
   "CLEAN cases with a WARNING/ERROR: 0 of 18.",
   "UNSUPPORTED SEMANTIC CASES: 6 (intentionally not asserted against the linter).",
   "Tiny synthetic fixture: all ratios are INDICATIVE ONLY, not statistics. Thresholds remain product-design defaults.",
@@ -144,8 +144,19 @@ describe("Golden Dataset v0.1 hygiene", () => {
 describe("calibration report (regression guard)", () => {
   const report = runCalibration(GOLDEN_DATASET_V0_1);
 
-  it("has no undocumented disagreement: every miss is KNOWN_MISS and every false alarm is KNOWN_FALSE_POSITIVE", () => {
-    expect(report.undocumentedFindings).toEqual([]);
+  it("has no undocumented disagreement except the FUB-066 contract-driven KEY_STEM_LEXICAL_OVERLAP misses", () => {
+    // FUB-066 (Run 2026-10-09-ASSESSMENT-ENGINE-006): KEY_STEM_LEXICAL_OVERLAP no longer emits, so the 4 v0.1 cases that
+    // label it as expected now miss. The v0.1 dataset labels are frozen (not edited), hence these are the ONLY accepted
+    // undocumented findings: 4 misses plus one harness side effect (WEAK-STYLE-CUE-HE-01 carries a NOT_IMPLEMENTED
+    // knownMiss for another code, so its newly missed implemented KEY_STEM_LEXICAL_OVERLAP also triggers the cross-check).
+    // Any other disagreement (miss, false alarm, stale documentation) must still fail here.
+    expect(report.undocumentedFindings).toEqual([
+      "WEAK-LEAKAGE-HE-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
+      "WEAK-LEAKAGE-HE-PREFIX-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
+      "WEAK-LEAKAGE-EN-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
+      "WEAK-STYLE-CUE-HE-01: UNDOCUMENTED miss KEY_STEM_LEXICAL_OVERLAP",
+      "WEAK-STYLE-CUE-HE-01: KEY_STEM_LEXICAL_OVERLAP marked NOT_IMPLEMENTED but is implemented",
+    ]);
   });
 
   it("matches the exact case counts and totals", () => {

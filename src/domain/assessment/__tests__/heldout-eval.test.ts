@@ -46,10 +46,10 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["KEY_LONGEST_OPTION", 22, 18, 4, 0, 0],
   ["KEY_POSITION_IMBALANCE", 6, 5, 1, 0, 0],
   ["KEY_POSITION_RUN", 5, 5, 0, 0, 0],
-  ["KEY_STEM_LEXICAL_OVERLAP", 1, 0, 1, 0, 3],
+  ["KEY_STEM_LEXICAL_OVERLAP", 1, 0, 1, 0, 0],
   ["NEAR_DUPLICATE_STEM", 1, 1, 0, 0, 1],
   ["OPTIONS_TOO_FEW", 1, 1, 0, 0, 0],
-  ["OPTION_ABSOLUTE_TERM", 9, 9, 0, 1, 6],
+  ["OPTION_ABSOLUTE_TERM", 9, 5, 4, 0, 0],
   ["OPTION_ALL_OF_ABOVE", 1, 1, 0, 0, 0],
   ["OPTION_COMBINATION_REFERENCE", 3, 3, 0, 0, 0],
   ["OPTION_COUNT_UNUSUAL", 1, 0, 1, 0, 0],
@@ -67,7 +67,7 @@ const EXPECTED_CHECKS: ReadonlyArray<readonly [string, number, number, number, n
   ["STEM_NEGATIVE_WORDING", 7, 6, 1, 0, 1],
   ["STEM_NO_QUESTION_FORM", 3, 0, 3, 0, 0],
   ["STEM_TEMPLATE_REPEATED", 1, 1, 0, 0, 0],
-  ["STEM_TOO_SHORT", 2, 2, 0, 1, 7],
+  ["STEM_TOO_SHORT", 2, 2, 0, 0, 0],
 ];
 
 const EXPECTED_COUNTS = {
@@ -83,14 +83,14 @@ const EXPECTED_COUNTS = {
 
 const EXPECTED_TOTALS = {
   expectedDetections: 124,
-  truePositive: 83,
-  falseNegative: 41,
-  falseNegativeHeuristicGap: 8,
+  truePositive: 79,
+  falseNegative: 45,
+  falseNegativeHeuristicGap: 12,
   falseNegativeNotImplemented: 33,
-  falsePositive: 4,
+  falsePositive: 2,
   cleanCases: 20,
-  cleanCasesWithWarningOrError: 3,
-  unlabeledEmissions: 22
+  cleanCasesWithWarningOrError: 1,
+  unlabeledEmissions: 6
 };
 
 const EXPECTED_SET_LEVEL = {
@@ -102,25 +102,26 @@ const EXPECTED_SET_LEVEL = {
   },
   itemInSet: {
     expected: 46,
-    tp: 27,
-    fn: 19,
+    tp: 26,
+    fn: 20,
     fp: 0
   }
 };
 
 const EXPECTED_SUMMARY = [
-  "RECALL-LIKE (all labelled detections): 83/124 caught.",
-  "FN count: 41 (8 HEURISTIC_GAP on implemented checks, 33 NOT_IMPLEMENTED checks).",
-  "PRECISION-LIKE (labelled detections vs false alarms): 83/87.",
-  "FP count: 4 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).",
-  "CLEAN cases with a WARNING/ERROR: 3 of 20.",
-  "UNLABELED_EMISSIONS: 22 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).",
+  "RECALL-LIKE (all labelled detections): 79/124 caught.",
+  "FN count: 45 (12 HEURISTIC_GAP on implemented checks, 33 NOT_IMPLEMENTED checks).",
+  "PRECISION-LIKE (labelled detections vs false alarms): 79/81.",
+  "FP count: 2 (forbidden code emitted, or any WARNING/ERROR on a CLEAN case).",
+  "CLEAN cases with a WARNING/ERROR: 1 of 20.",
+  "UNLABELED_EMISSIONS: 6 (emitted on a FLAWED case, neither expected nor forbidden; not counted as FP).",
   "SEMANTIC-ONLY cases: 12 (FLAWED with no deterministic expectation; not assertable against the linter).",
   "Model-authored, model-labeled held-out corpus (NOT human ground truth): all ratios are INDICATIVE ONLY and are never pooled with v0.1."
 ];
 
 /** "ref|code" */
 const EXPECTED_FN = [
+  "HO-017|OPTION_ABSOLUTE_TERM",
   "HO-017|OPTION_PREFIX_STEM_REPEAT",
   "HO-022|STEM_DOUBLE_NEGATIVE",
   "HO-022|EXPLANATION_NAMES_ONLY_KEY",
@@ -132,12 +133,14 @@ const EXPECTED_FN = [
   "HO-034|OPTION_NUMERIC_UNORDERED",
   "HO-035|OPTION_PUNCTUATION_INCONSISTENT",
   "HO-039|OPTION_COUNT_UNUSUAL",
+  "HO-048|OPTION_ABSOLUTE_TERM",
   "HO-049|OPTION_STYLE_OUTLIER",
   "HO-049|KEY_LONGEST_OPTION",
   "HO-055|KEY_STEM_LEXICAL_OVERLAP",
   "HO-057|STEM_NO_QUESTION_FORM",
   "HO-057|EXPLANATION_NAMES_ONLY_KEY",
   "HO-063|STEM_NEGATIVE_WORDING",
+  "HO-063|OPTION_ABSOLUTE_TERM",
   "HO-067|OPTION_PUNCTUATION_INCONSISTENT",
   "HO-068|OPTION_STYLE_OUTLIER",
   "HO-070|OPTION_STYLE_OUTLIER",
@@ -150,6 +153,7 @@ const EXPECTED_FN = [
   "HO-072/item7|OPTION_NUMERIC_UNORDERED",
   "HO-072/item8|OPTION_NUMERIC_UNORDERED",
   "HO-072/item9|OPTION_NUMERIC_UNORDERED",
+  "HO-073/item8|OPTION_ABSOLUTE_TERM",
   "HO-073/item8|KEY_LONGEST_OPTION",
   "HO-074/item3|EXPLANATION_NAMES_ONLY_KEY",
   "HO-074/item4|EXPLANATION_NAMES_ONLY_KEY",
@@ -164,34 +168,16 @@ const EXPECTED_FN = [
   "HO-078/item5|STEM_NO_QUESTION_FORM",
 ];
 const EXPECTED_FP = [
-  "HO-001|STEM_TOO_SHORT",
-  "HO-011|OPTION_ABSOLUTE_TERM",
   "HO-012|OPTION_OVERLAP_HIGH",
   "HO-073|SET_KEY_LENGTH_BIAS",
 ];
 const EXPECTED_UNLABELED = [
-  "HO-015|OPTION_ABSOLUTE_TERM",
-  "HO-020|STEM_TOO_SHORT",
   "HO-023|OPTION_LENGTH_IMBALANCE",
-  "HO-027|OPTION_ABSOLUTE_TERM",
   "HO-027|OPTION_LENGTH_IMBALANCE",
   "HO-031|OPTION_OVERLAP_HIGH",
-  "HO-041|STEM_TOO_SHORT",
-  "HO-042|STEM_TOO_SHORT",
-  "HO-051|KEY_STEM_LEXICAL_OVERLAP",
-  "HO-051|OPTION_ABSOLUTE_TERM",
-  "HO-052|OPTION_ABSOLUTE_TERM",
-  "HO-055|OPTION_ABSOLUTE_TERM",
-  "HO-072/item3|STEM_TOO_SHORT",
   "HO-073/item8|STEM_NEGATIVE_WORDING",
   "HO-075|NEAR_DUPLICATE_STEM",
-  "HO-076/item1|KEY_STEM_LEXICAL_OVERLAP",
-  "HO-076/item4|STEM_TOO_SHORT",
-  "HO-076/item6|STEM_TOO_SHORT",
-  "HO-076/item9|KEY_STEM_LEXICAL_OVERLAP",
-  "HO-077/item1|OPTION_ABSOLUTE_TERM",
   "HO-077/item4|OPTION_LENGTH_IMBALANCE",
-  "HO-078/item8|STEM_TOO_SHORT",
 ];
 const EXPECTED_SEMANTIC_ONLY = ["HO-028","HO-033","HO-042","HO-044","HO-045","HO-046","HO-047","HO-056","HO-058","HO-061","HO-062","HO-065"];
 
@@ -412,40 +398,40 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
     expect(p.integrityFindings).toEqual([]);
     expect(p.caseCounts).toEqual(EXPECTED_COUNTS);
     expect(p.totals).toEqual({
-      expectedDetections: 122, truePositive: 81, falseNegative: 41, falseNegativeHeuristicGap: 8, falseNegativeNotImplemented: 33,
-      falsePositive: 8, cleanCases: 20, cleanCasesWithWarningOrError: 4, unlabeledEmissions: 20,
+      expectedDetections: 122, truePositive: 79, falseNegative: 43, falseNegativeHeuristicGap: 10, falseNegativeNotImplemented: 33,
+      falsePositive: 2, cleanCases: 20, cleanCasesWithWarningOrError: 1, unlabeledEmissions: 6,
     });
-    // The only set-level movement is the HO-076 item-1 final-forbidden emission (ITEM-in-SET FP 0 -> 1).
-    expect(p.setLevel).toEqual({ setScope: EXPECTED_SET_LEVEL.setScope, itemInSet: { ...EXPECTED_SET_LEVEL.itemInSet, fp: 1 } });
+    // FUB-066: the HO-076 item-1 final-forbidden emission (KEY_STEM_LEXICAL_OVERLAP) no longer exists; no set-level movement.
+    expect(p.setLevel).toEqual(EXPECTED_SET_LEVEL);
     expect(cmp.delta.totals).toEqual({
-      expectedDetections: -2, truePositive: -2, falseNegative: 0, falseNegativeHeuristicGap: 0, falseNegativeNotImplemented: 0,
-      falsePositive: 4, cleanCases: 0, cleanCasesWithWarningOrError: 1, unlabeledEmissions: -2,
+      expectedDetections: -2, truePositive: 0, falseNegative: -2, falseNegativeHeuristicGap: -2, falseNegativeNotImplemented: 0,
+      falsePositive: 0, cleanCases: 0, cleanCasesWithWarningOrError: 0, unlabeledEmissions: 0,
     });
-    // POST_HUMAN_BEFORE_FINAL_FORBIDDEN is exactly the Run 002 state; only FP/UNLABELED move to POST_HUMAN_FINAL.
+    // POST_HUMAN_BEFORE_FINAL_FORBIDDEN: after FUB-066 none of the three final-forbidden codes is emitted any more,
+    // so it coincides with POST_HUMAN_FINAL (historically it differed by FP 5 -> 8, UNLABELED 23 -> 20).
     const m = cmp.postHumanBeforeFinalForbidden;
-    expect(m.totals).toEqual({ ...p.totals, falsePositive: 5, unlabeledEmissions: 23 });
+    expect(m.totals).toEqual(p.totals);
     expect(m.caseCounts).toEqual(p.caseCounts);
     expect(m.setLevel).toEqual(EXPECTED_SET_LEVEL);
-    expect(cmp.delta.setLevel).toEqual({ setScope: { expected: 0, tp: 0, fn: 0, fp: 0 }, itemInSet: { expected: 0, tp: 0, fn: 0, fp: 1 } });
+    expect(cmp.delta.setLevel).toEqual({ setScope: { expected: 0, tp: 0, fn: 0, fp: 0 }, itemInSet: { expected: 0, tp: 0, fn: 0, fp: 0 } });
   });
 
   it("differs from the current-linter frozen-label evaluation only in the findings caused by the three label changes", () => {
     const expectedFn = EXPECTED_FN
-      .filter((k) => k !== "HO-017|OPTION_PREFIX_STEM_REPEAT")
+      .filter((k) => !["HO-017|OPTION_PREFIX_STEM_REPEAT", "HO-017|OPTION_ABSOLUTE_TERM", "HO-063|OPTION_ABSOLUTE_TERM"].includes(k))
       .flatMap((k) => (k === "HO-070|OPTION_STYLE_OUTLIER" ? ["HO-069|OPTION_NUMERIC_UNORDERED", k] : [k]));
     expect(keys(p.falseNegatives)).toEqual(expectedFn);
-    expect(keys(p.falsePositives)).toEqual([
-      "HO-001|STEM_TOO_SHORT", "HO-011|OPTION_ABSOLUTE_TERM", "HO-012|OPTION_OVERLAP_HIGH", "HO-015|OPTION_ABSOLUTE_TERM", "HO-017|OPTION_ABSOLUTE_TERM", "HO-063|OPTION_ABSOLUTE_TERM", "HO-073|SET_KEY_LENGTH_BIAS", "HO-076/item1|KEY_STEM_LEXICAL_OVERLAP",
-    ]);
-    expect(keys(p.unlabeledEmissions)).toEqual(EXPECTED_UNLABELED.filter((k) => !["HO-015|OPTION_ABSOLUTE_TERM", "HO-076/item1|KEY_STEM_LEXICAL_OVERLAP"].includes(k)));
-    // Exactly the three final-forbidden emissions are FORBIDDEN-basis false positives.
-    for (const k of ["HO-015", "HO-063", "HO-076/item1"]) expect(p.falsePositives.find((f) => f.ref === k)?.basis, k).toBe("FORBIDDEN");
+    expect(keys(p.falsePositives)).toEqual(["HO-012|OPTION_OVERLAP_HIGH", "HO-073|SET_KEY_LENGTH_BIAS"]);
+    expect(keys(p.unlabeledEmissions)).toEqual(EXPECTED_UNLABELED);
+    // FUB-066 special checks (accepted human principles): none of the three final-forbidden emissions, nor the HO-017
+    // symmetric-item and HO-032 colon-stem false positives, is emitted any more under the current linter.
+    for (const k of ["HO-015", "HO-063", "HO-017", "HO-032", "HO-076/item1"]) expect(p.falsePositives.find((f) => f.ref === k), k).toBeUndefined();
+    expect(p.unlabeledEmissions.find((f) => f.ref === "HO-015")).toBeUndefined();
     expect(p.semanticOnlyCases.map((s) => s.caseId)).toEqual(EXPECTED_SEMANTIC_ONLY);
     // HO-069's new expectation is a documented NOT_IMPLEMENTED check.
     expect(p.falseNegatives.find((f) => f.ref === "HO-069")?.kind).toBe("NOT_IMPLEMENTED");
-    // HO-073 SET_KEY_LENGTH_BIAS stays a forbidden false positive; HO-017 is a CLEAN-case false positive.
+    // HO-073 SET_KEY_LENGTH_BIAS stays a forbidden false positive.
     expect(p.falsePositives.find((f) => f.ref === "HO-073")?.basis).toBe("FORBIDDEN");
-    expect(p.falsePositives.find((f) => f.ref === "HO-017")?.basis).toBe("CLEAN_CASE");
   });
 
   it("reports the per-case taxonomy for the 9 reviewed cases (all decisions definitive)", () => {
@@ -456,9 +442,9 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
     expect(cmp.reviewedCases.map((r) => [r.caseId, r.labelEffect, r.metricEffect, r.declinedEmissionsLeftUnlabeled])).toEqual([
       ["HO-049", NLC, NME, []],
       ["HO-070", NLC, NME, []],
-      ["HO-076", NLC, ME, []],
+      ["HO-076", NLC, NME, []],
       ["HO-017", LC, ME, []],
-      ["HO-015", NLC, ME, []],
+      ["HO-015", NLC, NME, []],
       ["HO-063", LC, ME, []],
       ["HO-032", NLC, NME, []],
       ["HO-069", LC, ME, []],
@@ -471,9 +457,9 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
     expect(out.toLowerCase()).not.toContain("ambiguity remaining");
     expect(JSON.stringify(cmp.reviewedCases).toLowerCase()).not.toContain("ambiguity remaining");
     const row = (id: string) => cmp.reviewedCases.find((r) => r.caseId === id)!;
-    expect([row("HO-017").first, row("HO-017").post]).toEqual([{ tp: 1, fn: 1, fp: 0, unlabeled: 0 }, { tp: 0, fn: 0, fp: 1, unlabeled: 0 }]);
-    expect([row("HO-063").first, row("HO-063").post]).toEqual([{ tp: 1, fn: 1, fp: 0, unlabeled: 0 }, { tp: 0, fn: 1, fp: 1, unlabeled: 0 }]);
-    expect([row("HO-015").first, row("HO-015").post]).toEqual([{ tp: 1, fn: 0, fp: 0, unlabeled: 1 }, { tp: 1, fn: 0, fp: 1, unlabeled: 0 }]);
+    expect([row("HO-017").first, row("HO-017").post]).toEqual([{ tp: 0, fn: 2, fp: 0, unlabeled: 0 }, { tp: 0, fn: 0, fp: 0, unlabeled: 0 }]);
+    expect([row("HO-063").first, row("HO-063").post]).toEqual([{ tp: 0, fn: 2, fp: 0, unlabeled: 0 }, { tp: 0, fn: 1, fp: 0, unlabeled: 0 }]);
+    expect([row("HO-015").first, row("HO-015").post]).toEqual([{ tp: 1, fn: 0, fp: 0, unlabeled: 0 }, { tp: 1, fn: 0, fp: 0, unlabeled: 0 }]);
     expect([row("HO-069").first, row("HO-069").post]).toEqual([{ tp: 0, fn: 0, fp: 0, unlabeled: 0 }, { tp: 0, fn: 1, fp: 0, unlabeled: 0 }]);
     for (const id of ["HO-049", "HO-070", "HO-032", "HO-073"]) expect(row(id).first, id).toEqual(row(id).post);
   });

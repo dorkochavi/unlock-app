@@ -138,7 +138,8 @@ describe("item ERRORS", () => {
 
 describe("item WARNINGS", () => {
   it("STEM_TOO_SHORT", () => {
-    expect(lint({ prompt: "Define hashing" })).toContain("STEM_TOO_SHORT");
+    expect(lint({ prompt: "Hash tables" })).toContain("STEM_TOO_SHORT");
+    expect(lint({ prompt: "Define hashing" })).not.toContain("STEM_TOO_SHORT"); // interrogative/imperative start exempt (FUB-066)
     expect(lint({ prompt: "" })).not.toContain("STEM_TOO_SHORT"); // empty is STEM_EMPTY instead
     expect(lint({})).not.toContain("STEM_TOO_SHORT");
   });
@@ -162,12 +163,14 @@ describe("item WARNINGS", () => {
     expect(lint({})).not.toContain("OPTION_ALL_OF_ABOVE");
     expect(lint({})).not.toContain("OPTION_NONE_OF_ABOVE");
   });
-  it("OPTION_ABSOLUTE_TERM English, Hebrew, prefixed Hebrew, whole-word only", () => {
-    expect(lint({ answerOptions: opts(["It always works", "Linked list", "Binary heap", "Sorted array"]) })).toContain("OPTION_ABSOLUTE_TERM");
-    expect(lint({ answerOptions: opts(["תמיד נכון", "פוטוסינתזה", "חלוקת תאים", "העברה פעילה"]) }, HE_CLEAN)).toContain("OPTION_ABSOLUTE_TERM");
-    expect(lint({ answerOptions: opts(["ותמיד נכון", "פוטוסינתזה", "חלוקת תאים", "העברה פעילה"]) }, HE_CLEAN)).toContain("OPTION_ABSOLUTE_TERM");
-    expect(lint({ answerOptions: opts(["אף פעם לא", "פוטוסינתזה", "חלוקת תאים", "העברה פעילה"]) }, HE_CLEAN)).toContain("OPTION_ABSOLUTE_TERM");
-    expect(lint({ answerOptions: opts(["Allocation", "Linked list", "Binary heap", "Sorted array"]) })).not.toContain("OPTION_ABSOLUTE_TERM");
+  it("OPTION_ABSOLUTE_TERM: strong term in a distractor; English, Hebrew, prefixed Hebrew, whole-word only", () => {
+    expect(lint({ answerOptions: opts(["Hash table", "It always works", "Binary heap", "Sorted array"]) })).toContain("OPTION_ABSOLUTE_TERM");
+    expect(lint({ answerOptions: opts(["נשימה תאית", "תמיד נכון", "חלוקת תאים", "העברה פעילה"]) }, HE_CLEAN)).toContain("OPTION_ABSOLUTE_TERM");
+    expect(lint({ answerOptions: opts(["נשימה תאית", "ותמיד נכון", "חלוקת תאים", "העברה פעילה"]) }, HE_CLEAN)).toContain("OPTION_ABSOLUTE_TERM");
+    expect(lint({ answerOptions: opts(["נשימה תאית", "אף פעם לא", "חלוקת תאים", "העברה פעילה"]) }, HE_CLEAN)).toContain("OPTION_ABSOLUTE_TERM");
+    // strong term in the key only: not flagged (FUB-066)
+    expect(lint({ answerOptions: opts(["It always works", "Linked list", "Binary heap", "Sorted array"]) })).not.toContain("OPTION_ABSOLUTE_TERM");
+    expect(lint({ answerOptions: opts(["Hash table", "Allocation", "Binary heap", "Sorted array"]) })).not.toContain("OPTION_ABSOLUTE_TERM");
     expect(lint({})).not.toContain("OPTION_ABSOLUTE_TERM");
   });
   it("KEY_LONGEST_OPTION", () => {
@@ -183,13 +186,12 @@ describe("item WARNINGS", () => {
     expect(lint({ answerOptions: opts(["Heap", "Linked list", "Binary heap", "A sorted array kept in memory order"]) })).toContain("OPTION_LENGTH_IMBALANCE");
     expect(lint({})).not.toContain("OPTION_LENGTH_IMBALANCE");
   });
-  it("KEY_STEM_LEXICAL_OVERLAP English and Hebrew prefix heuristic", () => {
+  it("KEY_STEM_LEXICAL_OVERLAP is no longer emitted (FUB-066): former English and Hebrew positive shapes", () => {
     const en = item({
       prompt: "Which structure uses hashing to provide constant lookup time?",
       answerOptions: opts(["Hashing constant lookup", "Stack", "Queue", "Graph"]),
     });
-    expect(codes(lintQuestionItem(en))).toContain("KEY_STEM_LEXICAL_OVERLAP");
-    // Hebrew: stem has attached article, option does not
+    expect(codes(lintQuestionItem(en))).not.toContain("KEY_STEM_LEXICAL_OVERLAP");
     const he = item(
       {
         prompt: "מהי ההגדרה של התהליך הנשימה התאית בגוף?",
@@ -197,7 +199,7 @@ describe("item WARNINGS", () => {
       },
       HE_CLEAN,
     );
-    expect(codes(lintQuestionItem(he))).toContain("KEY_STEM_LEXICAL_OVERLAP");
+    expect(codes(lintQuestionItem(he))).not.toContain("KEY_STEM_LEXICAL_OVERLAP");
     expect(lint({})).not.toContain("KEY_STEM_LEXICAL_OVERLAP");
   });
   it("OPTION_OVERLAP_HIGH", () => {
@@ -790,30 +792,31 @@ describe("B4 hardening: OPTIONS_TOO_MANY remains the explicit marker for skipped
 
 describe("Slice B2: linter false-positive rule fixes (and counter-examples that must still fire)", () => {
   const abs = (first: string, base: Item = HE_CLEAN): boolean =>
-    lint({ answerOptions: opts([first, "פוטוסינתזה", "חלוקת תאים", "העברה פעילה"]) }, base).includes("OPTION_ABSOLUTE_TERM");
+    lint({ answerOptions: opts(["נשימה תאית", first, "חלוקת תאים", "העברה פעילה"]) }, base).includes("OPTION_ABSOLUTE_TERM");
   const neg = (prompt: string, base: Item = HE_CLEAN): boolean => lint({ prompt }, base).includes("STEM_NEGATIVE_WORDING");
 
   it("short Hebrew absolute terms no longer match root-initial prefix letters (מרק, ברק, שכל, משכל, כל-words)", () => {
     for (const w of ["מרק", "ברק", "שכל", "משכל", "הרק", "לרק"]) expect(abs(w)).toBe(false);
   });
-  it("short Hebrew absolute terms still fire bare and with the conjunction vav", () => {
-    for (const w of ["רק", "ורק", "רק זה נכון", "כל", "וכל", "כל התאים", "וכל התאים", "בלבד", "בהכרח", "לעולם", "אף פעם", "ואף פעם"]) {
-      expect(abs(w)).toBe(true);
-    }
+  it("strong Hebrew absolute terms still fire in a distractor; weak-tier terms (רק, כל, בלבד) no longer do (FUB-066)", () => {
+    for (const w of ["בהכרח", "לעולם", "אף פעם", "ואף פעם"]) expect(abs(w)).toBe(true);
+    for (const w of ["רק", "ורק", "רק זה נכון", "כל", "וכל", "כל התאים", "וכל התאים", "בלבד"]) expect(abs(w)).toBe(false);
   });
-  it("PINS accepted recall loss: ב/ל/מ/כ + כל (בכל, לכל, מכל, ככל) no longer fire; ורק/וכל do (documented known limit)", () => {
+  it("PINS: weak-tier terms (ב/ל/מ/כ + כל, ורק, וכל) never fire (FUB-066 weak tier leaves deterministic ownership)", () => {
     // Accepted trade-off of the 2-letter-term restriction: a legitimate absolute like 'לכל התאים' is now missed
     // (no Golden case; see ASSESSMENT_CALIBRATION_V0_1 known limits). If prefix handling is refined, update deliberately.
     for (const w of ["בכל התאים", "לכל התאים", "מכל התאים", "ככל התאים", "בכל", "לכל", "מכל", "ככל"]) expect(abs(w)).toBe(false);
-    for (const w of ["ורק", "וכל", "וכל התאים", "ורק זה נכון"]) expect(abs(w)).toBe(true);
+    for (const w of ["ורק", "וכל", "וכל התאים", "ורק זה נכון"]) expect(abs(w)).toBe(false);
   });
-  it("3+ letter Hebrew absolute terms keep prefix tolerance (תמיד, ותמיד, שתמיד, ובלבד)", () => {
-    for (const w of ["תמיד", "ותמיד", "שתמיד", "ובלבד", "לעולם", "ולעולם", "שבהכרח"]) expect(abs(w)).toBe(true);
+  it("3+ letter strong Hebrew absolute terms keep prefix tolerance (תמיד, ותמיד, שתמיד); ובלבד is weak tier", () => {
+    for (const w of ["תמיד", "ותמיד", "שתמיד", "לעולם", "ולעולם", "שבהכרח"]) expect(abs(w)).toBe(true);
+    expect(abs("ובלבד")).toBe(false);
   });
-  it("English absolute terms still fire", () => {
-    for (const w of ["always", "only", "never"]) {
-      expect(lint({ answerOptions: opts([`It is ${w} true`, "Linked list", "Binary heap", "Sorted array"]) })).toContain("OPTION_ABSOLUTE_TERM");
+  it("English strong absolute terms still fire in a distractor; weak-tier \"only\" does not", () => {
+    for (const w of ["always", "never"]) {
+      expect(lint({ answerOptions: opts(["Hash table", `It is ${w} true`, "Binary heap", "Sorted array"]) })).toContain("OPTION_ABSOLUTE_TERM");
     }
+    expect(lint({ answerOptions: opts(["Hash table", "It is only true", "Binary heap", "Sorted array"]) })).not.toContain("OPTION_ABSOLUTE_TERM");
   });
 
   it("Hebrew 'חוץ' is negative only as the exception 'חוץ מ…'", () => {
