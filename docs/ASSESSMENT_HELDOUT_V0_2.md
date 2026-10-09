@@ -4,7 +4,7 @@ Status: DRAFT evidence artifact. Created in Run `2026-10-09-ASSESSMENT-ENGINE-00
 Subject: the UNWIRED deterministic question linter `src/domain/assessment/question-lint.ts` (plus `text-normalize.ts`), UNCHANGED in Run 004 (question-lint.ts was changed later, in Run 005: OPTION_COMBINATION_REFERENCE).
 Provenance: corpus `MODEL_AUTHORED_HELD_OUT`; labels `MODEL_LABELED_NOT_HUMAN_APPROVED` for 69 of 78 rows. **Post-evaluation update (Run `2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001`):** 9 rows (HO-049, 070, 076, 017, 015, 063, 032, 069, 073) are `HUMAN_APPROVED` (Dor, 2026-10-09) as a POST-EVALUATION adjudication, applied as an overlay on the unchanged frozen labels (section 14). The FIRST_BLIND evidence in sections 3-13 is preserved as originally written; the POST_HUMAN metrics (section 14) are HUMAN-ADJUDICATED / POST-EVALUATION, never first-blind, never pooled with v0.1.
 
-> **Run 005 note (`2026-10-09-ASSESSMENT-ENGINE-005`, FUB-064):** OPTION_COMBINATION_REFERENCE was implemented after this evaluation was observed. The GENERATED blocks and the FN table below are regenerated against the current linter, so they show HO-026, HO-027 and HO-064 as TP (TP 80 to 83, FN 44 to 41, NOT_IMPLEMENTED FN 36 to 33; no new FP or UNLABELED_EMISSION). The ORIGINAL blind result (TP 80 / FN 44 / FP 4 / UNLABELED 22) is the Run 004 state at `b9aaca4` and its Run report; hand-written prose in sections 3-18 predates Run 005 and cites those original numbers. Run 005 results on these cases are HISTORICAL_HELD_OUT regression evidence, not fresh validation.
+> **Evidence naming (corrected after Run 005, `2026-10-09-ASSESSMENT-ENGINE-005`, FUB-064):** HISTORICAL FIRST_BLIND (Run 004, immutable): TP 80 / FN 44 / FP 4 / UNLABELED 22 (124 expected; NOT_IMPLEMENTED FN 36), the frozen corpus evaluated blind with the linter at `b9aaca4`, before OPTION_COMBINATION_REFERENCE existed. That event cannot be recomputed. After Run 005 the linter implements OPTION_COMBINATION_REFERENCE, so every GENERATED block and the FN table below are the frozen v0.2 corpus evaluated with the CURRENT linter (`CURRENT_LINTER_ON_FROZEN_V0_2`, regression evidence): TP 83 / FN 41 / FP 4 / UNLABELED 22 (HO-026, HO-027, HO-064 now TP; NOT_IMPLEMENTED FN 33; no new FP or UNLABELED_EMISSION). Hand-written prose in sections 3-18 predates Run 005 and cites the historical FIRST_BLIND numbers. Run 005 results on these already-observed cases are HISTORICAL_HELD_OUT regression evidence, not fresh validation.
 
 ## 1. Non-claims
 
@@ -41,7 +41,7 @@ Untouched-linter proof (as of Run 004; no longer empty for question-lint.ts afte
 | SET mapping | `lintQuestionSet` returns SET-scope issues only, compared with `expectedSetCodes`/`forbiddenSetCodes`. Each item is also run through `lintQuestionItem` and compared with `itemCodes`, keyed by 1-BASED item number (HO-074 labels item "10" of 10). Items not listed in `itemCodes` may emit codes: those are UNLABELED_EMISSION (FP on a CLEAN set). There is no forbidden-item-code list for sets. |
 | Precision | v0.1 measured FP only over explicit negatives (NEG). v0.2 has no NEG column; PRECISION-LIKE is TP/(TP+FP) with the FP definition above and ignores UNLABELED_EMISSION. |
 
-## 3. Generated results
+## 3. Generated results (frozen labels, CURRENT linter; not FIRST_BLIND after Run 005)
 
 <!-- GENERATED:BEGIN formatHeldOutMarkdown (src/domain/assessment/golden/heldout-eval.ts) -->
 ## Headline (generated)
@@ -483,15 +483,15 @@ The two corpora are never pooled (section 4); this table compares verdict status
 ## 14. Post-evaluation human adjudication (generated)
 
 On 2026-10-09 Dor (human) reviewed 9 of the 78 held-out cases; the decisions are applied in code as an overlay (`heldout-v0-2/human-adjudication.json`) on top of the frozen labels, which stay byte-identical.
-The FIRST_BLIND results above remain the original blind evaluation; the block below is a separate POST_HUMAN set, not pooled with them or with v0.1.
+The historical FIRST_BLIND result (Run 004) remains the original blind evaluation, and the block above is the frozen corpus under the current linter; the block below is a separate POST_HUMAN set (current linter + human overlay), not pooled with them or with v0.1.
 Blindness caveat: these 9 rows were adjudicated after the evaluation, so held-out blindness no longer fully holds for them; the other 69 labels remain MODEL_LABELED_NOT_HUMAN_APPROVED.
 
 <!-- GENERATED:BEGIN formatPostHumanMarkdown (src/domain/assessment/golden/heldout-eval.ts) -->
 ## POST-HUMAN-ADJUDICATION / POST-EVALUATION metrics (generated)
 
-These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The FIRST_BLIND column is the original blind result. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.
+These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The CURRENT_LINTER_ON_FROZEN_V0_2 column is the frozen labels evaluated with the current linter (regression evidence); the historical FIRST_BLIND result (Run 004, before OPTION_COMBINATION_REFERENCE existed) is recorded in the document header and is not recomputed here. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.
 
-| Measure | FIRST_BLIND | POST_HUMAN_BEFORE_FINAL_FORBIDDEN | POST_HUMAN_FINAL | DELTA (FINAL - FIRST_BLIND) |
+| Measure | CURRENT_LINTER_ON_FROZEN_V0_2 | POST_HUMAN_BEFORE_FINAL_FORBIDDEN | POST_HUMAN_FINAL | DELTA (FINAL - CURRENT_LINTER_ON_FROZEN_V0_2) |
 |---|---|---|---|---|
 | CLEAN cases | 20 | 20 | 20 | 0 |
 | FLAWED cases | 58 | 58 | 58 | 0 |
@@ -509,9 +509,9 @@ These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor 
 
 ### The 9 reviewed cases (generated)
 
-Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TRUE_REMAINING_AMBIGUITY = 0. Label effect: HUMAN_DECIDED_LABEL_CHANGE (the applied decision changed the label) or HUMAN_DECIDED_NO_LABEL_CHANGE. Metric effect: METRIC_EFFECT (a finding or a TP/FN/FP/UNL count differs from FIRST_BLIND) or HUMAN_DECIDED_BUT_NO_METRIC_EFFECT. "Declined emissions left UNLABELED by convention" lists a linter emission whose expectation the human declined or removed without ruling it forbidden: the harness counts that as UNLABELED_EMISSION. This is a harness accounting convention (a declined expectation was not a forbid), not human uncertainty.
+Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TRUE_REMAINING_AMBIGUITY = 0. Label effect: HUMAN_DECIDED_LABEL_CHANGE (the applied decision changed the label) or HUMAN_DECIDED_NO_LABEL_CHANGE. Metric effect: METRIC_EFFECT (a finding or a TP/FN/FP/UNL count differs from CURRENT_LINTER_ON_FROZEN_V0_2) or HUMAN_DECIDED_BUT_NO_METRIC_EFFECT. "Declined emissions left UNLABELED by convention" lists a linter emission whose expectation the human declined or removed without ruling it forbidden: the harness counts that as UNLABELED_EMISSION. This is a harness accounting convention (a declined expectation was not a forbid), not human uncertainty.
 
-| Case | Decision | FIRST_BLIND TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Label effect | Metric effect | Declined emissions left UNLABELED by convention |
+| Case | Decision | CURRENT_LINTER_ON_FROZEN_V0_2 TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Label effect | Metric effect | Declined emissions left UNLABELED by convention |
 |---|---|---|---|---|---|---|---|---|
 | HO-049 | APPROVED | 0/2/0/0 | 0/2/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |
 | HO-070 | APPROVED | 0/1/0/0 | 0/1/0/0 | - | - | HUMAN_DECIDED_NO_LABEL_CHANGE | HUMAN_DECIDED_BUT_NO_METRIC_EFFECT | - |

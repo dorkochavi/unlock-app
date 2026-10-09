@@ -33,3 +33,6 @@ Focused + assessment tests pass; `npm run typecheck` clean; eslint clean on chan
 
 ## Routing
 FUB-066 untouched. No new FUB (uncovered forms noted in FUB-064 closure).
+
+## Correction (evidence naming, post-close)
+The close commit left the held-out harness/doc labelling the frozen-corpus evaluation under the Run-005 linter as "FIRST_BLIND". That was wrong: FIRST_BLIND is the historical Run 004 event (TP 80 / FN 44 / FP 4 / UNLABELED 22) and cannot be recomputed after the linter changed. Renamed to `CURRENT_LINTER_ON_FROZEN_V0_2` (harness field `currentLinterOnFrozen`, `compareFrozenAndPostHuman`, generated column headers, doc headings) with the historical record pinned in the held-out doc header and a test. Current numbers (TP 83 / FN 41 / FP 4 / UNLABELED 22) are regression evidence. No linter, threshold, corpus, label, overlay or metric change.

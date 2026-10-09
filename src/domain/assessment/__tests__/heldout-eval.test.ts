@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 import { IMPLEMENTED_ITEM_CODES, IMPLEMENTED_SET_CODES } from "../golden/calibration";
 import {
   applyHumanAdjudication,
-  compareFirstBlindAndPostHuman,
+  compareFrozenAndPostHuman,
   formatHeldOutMarkdown,
   formatPostHumanMarkdown,
   HUMAN_REVIEWED_CASE_IDS,
@@ -296,7 +296,7 @@ describe("docs/ASSESSMENT_HELDOUT_V0_2.md", () => {
 const overlayRaw = readRaw("human-adjudication.json");
 const overlay = JSON.parse(overlayRaw) as HumanAdjudicationOverlay;
 const post = applyHumanAdjudication(labels, overlay);
-const cmp = compareFirstBlindAndPostHuman(corpus, labels, overlay);
+const cmp = compareFrozenAndPostHuman(corpus, labels, overlay);
 const postLabel = (id: string) => post.labels.find((l) => l.caseId === id)!;
 const frozenLabel = (id: string) => labels.labels.find((l) => l.caseId === id)!;
 
@@ -373,12 +373,12 @@ describe("human adjudication overlay (post-evaluation)", () => {
     expect(d("HO-069").decision).toBe("CHANGED");
   });
 
-  it("does not mutate the frozen labels and leaves FIRST_BLIND untouched", () => {
+  it("does not mutate the frozen labels and leaves the frozen-label evaluation untouched", () => {
     expect(runHeldOutEvaluation(corpus, labels)).toEqual(report);
-    expect(cmp.firstBlind).toEqual(report);
-    expect(cmp.firstBlind.totals).toEqual(EXPECTED_TOTALS);
-    expect(cmp.firstBlind.setLevel).toEqual(EXPECTED_SET_LEVEL);
-    expect(cmp.firstBlind.summary).toEqual(EXPECTED_SUMMARY);
+    expect(cmp.currentLinterOnFrozen).toEqual(report);
+    expect(cmp.currentLinterOnFrozen.totals).toEqual(EXPECTED_TOTALS);
+    expect(cmp.currentLinterOnFrozen.setLevel).toEqual(EXPECTED_SET_LEVEL);
+    expect(cmp.currentLinterOnFrozen.summary).toEqual(EXPECTED_SUMMARY);
   });
 
   it("rejects invalid overlays", () => {
@@ -429,7 +429,7 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
     expect(cmp.delta.setLevel).toEqual({ setScope: { expected: 0, tp: 0, fn: 0, fp: 0 }, itemInSet: { expected: 0, tp: 0, fn: 0, fp: 1 } });
   });
 
-  it("differs from FIRST_BLIND only in the findings caused by the three label changes", () => {
+  it("differs from the current-linter frozen-label evaluation only in the findings caused by the three label changes", () => {
     const expectedFn = EXPECTED_FN
       .filter((k) => k !== "HO-017|OPTION_PREFIX_STEM_REPEAT")
       .flatMap((k) => (k === "HO-070|OPTION_STYLE_OUTLIER" ? ["HO-069|OPTION_NUMERIC_UNORDERED", k] : [k]));
@@ -479,18 +479,23 @@ describe("POST_HUMAN evaluation (first observed values, recorded not tuned)", ()
   });
 
   it("is deterministic", () => {
-    expect(compareFirstBlindAndPostHuman(corpus, labels, overlay)).toEqual(cmp);
+    expect(compareFrozenAndPostHuman(corpus, labels, overlay)).toEqual(cmp);
   });
 });
 
 describe("docs/ASSESSMENT_HELDOUT_V0_2.md post-human block", () => {
   const doc = readFileSync(fileURLToPath(new URL("../../../../docs/ASSESSMENT_HELDOUT_V0_2.md", import.meta.url)), "utf8").replace(/\r\n/g, "\n");
 
-  it("embeds the current POST_HUMAN generated block (drift guard) and keeps the FIRST_BLIND block", () => {
+  it("embeds the current POST_HUMAN generated block (drift guard) and keeps the frozen-label block", () => {
     expect(doc).toContain(formatPostHumanMarkdown(cmp));
     expect(doc).toContain(formatHeldOutMarkdown(report));
     expect(formatPostHumanMarkdown(cmp)).toContain("HUMAN-ADJUDICATED / POST-EVALUATION metrics");
     expect(formatPostHumanMarkdown(cmp)).toContain("not FIRST-BLIND metrics");
+    // Evidence naming: generated blocks must never present current-linter numbers as FIRST_BLIND; the historical record stays in the doc header.
+    expect(formatPostHumanMarkdown(cmp)).toContain("| Measure | CURRENT_LINTER_ON_FROZEN_V0_2 |");
+    expect(formatPostHumanMarkdown(cmp)).not.toContain("| FIRST_BLIND |");
+    expect(formatHeldOutMarkdown(report)).not.toContain("FIRST_BLIND");
+    expect(doc).toContain("HISTORICAL FIRST_BLIND (Run 004, immutable): TP 80 / FN 44 / FP 4 / UNLABELED 22");
     expect(doc.split("<!-- GENERATED:BEGIN formatPostHumanMarkdown").length - 1).toBe(1);
   });
 });

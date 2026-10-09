@@ -462,7 +462,8 @@ export function formatHeldOutMarkdown(r: HeldOutReport): string {
 // ---------------------------------------------------------------------------------------------------------------------
 // Post-evaluation human adjudication (Run 2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001, Slice H1).
 // The frozen labels stay untouched. A separate overlay (human-adjudication.json, deliberately NOT in the freeze hashes)
-// patches 9 labels in code. FIRST_BLIND results stay reproducible from the frozen labels; POST_HUMAN is a separate set.
+// patches 9 labels in code. The frozen-label evaluation (CURRENT_LINTER_ON_FROZEN_V0_2) is reproducible from the frozen labels; POST_HUMAN is a separate set.
+// NOTE: "FIRST_BLIND" is a historical Run-004 event (TP 80 / FN 44 / FP 4 / UNLABELED 22), not something this harness can recompute once the linter changes.
 // This is NOT linter tuning: no linter, threshold, cue list or corpus is changed by anything below.
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -607,12 +608,12 @@ export interface PostHumanCaseRow {
   decision: HumanDecision["decision"];
   first: CaseCounts;
   post: CaseCounts;
-  /** Findings (`KIND ref code`) present only in FIRST_BLIND / only in POST_HUMAN. */
+  /** Findings (`KIND ref code`) present only in CURRENT_LINTER_ON_FROZEN_V0_2 / only in POST_HUMAN. */
   removed: string[];
   added: string[];
   /** Did the applied human decision change the label or its expected codes? Forbidden-code (precision) additions are excluded; they show up as METRIC_EFFECT. */
   labelEffect: "HUMAN_DECIDED_LABEL_CHANGE" | "HUMAN_DECIDED_NO_LABEL_CHANGE";
-  /** Does any FN/FP/UNL finding, or any TP/FN/FP/UNL count, differ between FIRST_BLIND and POST_HUMAN for this case? */
+  /** Does any FN/FP/UNL finding, or any TP/FN/FP/UNL count, differ between CURRENT_LINTER_ON_FROZEN_V0_2 and POST_HUMAN for this case? */
   metricEffect: "METRIC_EFFECT" | "HUMAN_DECIDED_BUT_NO_METRIC_EFFECT";
   /**
    * Touched `ref|code` findings that are still UNLABELED_EMISSIONs after adjudication. Accounting note ONLY: a declined or
@@ -622,7 +623,8 @@ export interface PostHumanCaseRow {
   declinedEmissionsLeftUnlabeled: string[];
 }
 export interface PostHumanComparison {
-  firstBlind: HeldOutReport;
+  /** Frozen labels evaluated with the CURRENT linter. Not FIRST_BLIND (a historical Run-004 event). */
+  currentLinterOnFrozen: HeldOutReport;
   postHuman: HeldOutReport;
   /** POST_HUMAN with the final precision (forbidden) additions withheld: the state before Run HELDOUT-HUMAN-REVIEW-003. */
   postHumanBeforeFinalForbidden: HeldOutReport;
@@ -662,14 +664,14 @@ function caseSlice(corpus: HeldOutCorpus, labels: HeldOutLabels, caseId: string)
   );
 }
 
-/** Pure. FIRST_BLIND (frozen labels) vs POST_HUMAN (overlay applied), delta, and the per-case table of the 9 reviewed cases. */
-export function compareFirstBlindAndPostHuman(
+/** Pure. CURRENT_LINTER_ON_FROZEN_V0_2 (frozen labels) vs POST_HUMAN (overlay applied), delta, and the per-case table of the 9 reviewed cases. */
+export function compareFrozenAndPostHuman(
   corpus: HeldOutCorpus,
   labels: HeldOutLabels,
   overlay: HumanAdjudicationOverlay,
 ): PostHumanComparison {
   const post = applyHumanAdjudication(labels, overlay);
-  const firstBlind = runHeldOutEvaluation(corpus, labels);
+  const currentLinterOnFrozen = runHeldOutEvaluation(corpus, labels);
   const postHuman = runHeldOutEvaluation(corpus, post);
   const withoutFinalForbidden: HumanAdjudicationOverlay = {
     ...overlay,
@@ -704,13 +706,13 @@ export function compareFirstBlindAndPostHuman(
     return { caseId: d.caseId, decision: d.decision, first, post: postCounts, removed, added, labelEffect, metricEffect, declinedEmissionsLeftUnlabeled };
   });
   return {
-    firstBlind,
+    currentLinterOnFrozen,
     postHuman,
     postHumanBeforeFinalForbidden,
     delta: {
-      caseCounts: diffNumbers(postHuman.caseCounts, firstBlind.caseCounts),
-      totals: diffNumbers(postHuman.totals, firstBlind.totals),
-      setLevel: diffNumbers(postHuman.setLevel, firstBlind.setLevel),
+      caseCounts: diffNumbers(postHuman.caseCounts, currentLinterOnFrozen.caseCounts),
+      totals: diffNumbers(postHuman.totals, currentLinterOnFrozen.totals),
+      setLevel: diffNumbers(postHuman.setLevel, currentLinterOnFrozen.setLevel),
     },
     reviewedCases,
     trueRemainingAmbiguity: overlay.decisions.filter((d) => d.trueAmbiguity === true).length,
@@ -719,7 +721,7 @@ export function compareFirstBlindAndPostHuman(
 
 /** Deterministic Markdown rendering of the SECOND generated block of docs/ASSESSMENT_HELDOUT_V0_2.md. */
 export function formatPostHumanMarkdown(c: PostHumanComparison): string {
-  const a = c.firstBlind;
+  const a = c.currentLinterOnFrozen;
   const b = c.postHuman;
   const m = c.postHumanBeforeFinalForbidden;
   const d = c.delta;
@@ -729,10 +731,10 @@ export function formatPostHumanMarkdown(c: PostHumanComparison): string {
   lines.push("## POST-HUMAN-ADJUDICATION / POST-EVALUATION metrics (generated)");
   lines.push("");
   lines.push(
-    "These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The FIRST_BLIND column is the original blind result. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.",
+    "These are HUMAN-ADJUDICATED / POST-EVALUATION metrics (9 labels reviewed by Dor on 2026-10-09 and applied as an overlay on the frozen labels), not FIRST-BLIND metrics, and they are not pooled with v0.1. The CURRENT_LINTER_ON_FROZEN_V0_2 column is the frozen labels evaluated with the current linter (regression evidence); the historical FIRST_BLIND result (Run 004, before OPTION_COMBINATION_REFERENCE existed) is recorded in the document header and is not recomputed here. Only the 9 reviewed rows are HUMAN_APPROVED; the other 69 remain MODEL_LABELED_NOT_HUMAN_APPROVED.",
   );
   lines.push("");
-  lines.push("| Measure | FIRST_BLIND | POST_HUMAN_BEFORE_FINAL_FORBIDDEN | POST_HUMAN_FINAL | DELTA (FINAL - FIRST_BLIND) |");
+  lines.push("| Measure | CURRENT_LINTER_ON_FROZEN_V0_2 | POST_HUMAN_BEFORE_FINAL_FORBIDDEN | POST_HUMAN_FINAL | DELTA (FINAL - CURRENT_LINTER_ON_FROZEN_V0_2) |");
   lines.push("|---|---|---|---|---|");
   const row = (name: string, x: number, y: number, dd: number, mid: number): void => {
     lines.push(`| ${name} | ${x} | ${mid} | ${y} | ${sgn(dd)} |`);
@@ -762,10 +764,10 @@ export function formatPostHumanMarkdown(c: PostHumanComparison): string {
   lines.push("### The 9 reviewed cases (generated)");
   lines.push("");
   lines.push(
-    "Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TRUE_REMAINING_AMBIGUITY = " + String(c.trueRemainingAmbiguity) + ". Label effect: HUMAN_DECIDED_LABEL_CHANGE (the applied decision changed the label) or HUMAN_DECIDED_NO_LABEL_CHANGE. Metric effect: METRIC_EFFECT (a finding or a TP/FN/FP/UNL count differs from FIRST_BLIND) or HUMAN_DECIDED_BUT_NO_METRIC_EFFECT. \"Declined emissions left UNLABELED by convention\" lists a linter emission whose expectation the human declined or removed without ruling it forbidden: the harness counts that as UNLABELED_EMISSION. This is a harness accounting convention (a declined expectation was not a forbid), not human uncertainty.",
+    "Counts are TP/FN/FP/UNLABELED per case. All 9 human decisions are definitive: TRUE_REMAINING_AMBIGUITY = " + String(c.trueRemainingAmbiguity) + ". Label effect: HUMAN_DECIDED_LABEL_CHANGE (the applied decision changed the label) or HUMAN_DECIDED_NO_LABEL_CHANGE. Metric effect: METRIC_EFFECT (a finding or a TP/FN/FP/UNL count differs from CURRENT_LINTER_ON_FROZEN_V0_2) or HUMAN_DECIDED_BUT_NO_METRIC_EFFECT. \"Declined emissions left UNLABELED by convention\" lists a linter emission whose expectation the human declined or removed without ruling it forbidden: the harness counts that as UNLABELED_EMISSION. This is a harness accounting convention (a declined expectation was not a forbid), not human uncertainty.",
   );
   lines.push("");
-  lines.push("| Case | Decision | FIRST_BLIND TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Label effect | Metric effect | Declined emissions left UNLABELED by convention |");
+  lines.push("| Case | Decision | CURRENT_LINTER_ON_FROZEN_V0_2 TP/FN/FP/UNL | POST_HUMAN TP/FN/FP/UNL | Findings removed | Findings added | Label effect | Metric effect | Declined emissions left UNLABELED by convention |");
   lines.push("|---|---|---|---|---|---|---|---|---|");
   const cc = (x: CaseCounts): string => `${x.tp}/${x.fn}/${x.fp}/${x.unlabeled}`;
   for (const r of c.reviewedCases) {
