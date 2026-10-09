@@ -1694,7 +1694,7 @@ AE-029 is scheduled (held-out evidence from FUB-063 now exists, see the note abo
 
 # FUB-066 — Context-Blind Heuristic Clusters: STEM_TOO_SHORT and OPTION_ABSOLUTE_TERM
 
-**Status:** `RESOLVED_IMPLEMENTATION` (Run 2026-10-09-ASSESSMENT-ENGINE-006). Deterministic hardening resolved; fresh external/held-out validation remains pending (next step: a fresh v0.3 held-out split with purpose-built negatives). The semantic/human residual is carried by FUB-074.
+**Status:** `RESOLVED_IMPLEMENTATION` (Run 2026-10-09-ASSESSMENT-ENGINE-006). Deterministic hardening resolved; fresh v0.3 held-out validation done in Run 2026-10-09-ASSESSMENT-ENGINE-007 (see the v0.3 annotation below; no code change). The semantic/human residual is carried by FUB-074.
 **Priority:** `LOW`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
@@ -1703,6 +1703,8 @@ Held-out v0.2 shows two recurring over-flag clusters (`docs/ASSESSMENT_HELDOUT_V
 **Closure (Run 2026-10-09-ASSESSMENT-ENGINE-006; CONTRACT_TEST + CALIBRATION/REGRESSION + HISTORICAL_HELD_OUT_REGRESSION + HUMAN_ADJUDICATED evidence, no fresh validation):** contract tests pre-registered at `fac7dae`; linter hardened afterwards. OPTION_ABSOLUTE_TERM = SPLIT (strong adverbs in a distractor only stay deterministic; the weak tier כל/שום/רק/בלבד/all/only/every/none/אף אחד is routed to HUMAN_REVIEW / AI_OPTIONAL). KEY_STEM_LEXICAL_OVERLAP = SEMANTIC_ONLY (emission stopped). STEM_TOO_SHORT = NARROWED (interrogative/imperative first word with a single prefix, or trailing ':', is exempt; the 4-word constant is unchanged). CURRENT_LINTER_ON_FROZEN_V0_2 TP/FN/FP/UNLABELED per rule: OPTION_ABSOLUTE_TERM 9/0/1/6 to 5/4/0/0, KEY_STEM_LEXICAL_OVERLAP 0/1/0/3 to 0/1/0/0, STEM_TOO_SHORT 2/0/1/7 to 2/0/0/0. Recall cost: the 4 v0.1 KEY_STEM cases (now knownMiss) and v0.2 HO-048, HO-073/item8 (real) plus HO-017, HO-063 (frozen-label only). Not resolved here: semantic/human judgement of the routed items, see FUB-074; generalization of the narrowing beyond these synthetic/tuned corpora (fresh v0.3 held-out validation pending).
 
 **WATCH: STEM_TOO_SHORT structural exemption limits (owned here, not by FUB-074; no separate FUB).** The single-prefix interrogative/imperative exemption can falsely exempt a prefixed non-question word (for example שמי, במה), and the first-word exemption admits a non-question such as 'List of birds'. Neither is covered by a test; both are accepted in the Run 006 contract (Plan section 5.3). Revisit only if fresh held-out evidence shows lost STEM_TOO_SHORT true positives.
+
+**Fresh held-out v0.3 (Run 2026-10-09-ASSESSMENT-ENGINE-007; FRESH_HELD_OUT_V0_3, model-authored and model-labeled, not human ground truth, never pooled; report `docs/ASSESSMENT_HELDOUT_V0_3.md`; no code change):** OPTION_ABSOLUTE_TERM TP/expected/FN/FP/UNLABELED 10/10/0/0/0 = `VALIDATED_PROVISIONALLY` (labels are contract-shaped; weak-tier recall unmeasured). KEY_STEM_LEXICAL_OVERLAP 0 emissions = `SEMANTIC_OWNERSHIP_CONFIRMED` (the corpus holds no blatant-but-not-longest case). STEM_TOO_SHORT 9/5/4/0/1 = `KEEP_WITH_WATCH`: the WATCH trigger above ('lost STEM_TOO_SHORT true positives') is now MET (lookalike prefix/lead-word exemptions let list/name/שמי/במה through; HO3-042 label contested; HO3-071 'מהם גזי חממה?' falsely fires because מהם is not a lead word); the 4-word floor itself is defensible. Status stays `RESOLVED_IMPLEMENTATION`; follow-up work is owned by FUB-075/076/077 and the semantic residual by FUB-074. The 4 NOT_IMPLEMENTED false negatives (HO3-032 x2, 065, 070/item3) belong to the existing unimplemented-codes backlog (reference only). Next recommended Run: human adjudication of the 13-row v0.3 queue before any linter change.
 
 ## Promotion Trigger
 
@@ -1719,9 +1721,53 @@ A decision to wire lint (FUB-055), or the next Run that touches linter heuristic
 **Area:** `src/domain/assessment/question-lint.ts`, `docs/ASSESSMENT_ENGINE.md` (Section 4 AI Necessity Matrix; AE-005, AE-021)
 
 Run 2026-10-09-ASSESSMENT-ENGINE-006 (FUB-066) removed two judgements from deterministic ownership because they are context-dependent: (1) weak-tier absolute terms (כל/שום/רק/בלבד/all/only/every/none/אף אחד), routed to HUMAN_REVIEW / AI_OPTIONAL; (2) key-stem lexical leakage (KEY_STEM_LEXICAL_OVERLAP, no longer emitted), routed to AI_REQUIRED / HUMAN_REVIEW. No semantic reviewer exists, so these signals currently produce no output at all (a deliberate recall loss of 4 v0.1 and 4 v0.2 labelled detections). The work is to give them a home when the semantic critic (AE-021, group C) or an instructor review step exists.
+Run 2026-10-09-ASSESSMENT-ENGINE-007 (FRESH_HELD_OUT_V0_3) adds semantic-review fixtures for when a semantic reviewer exists: HO3-025, HO3-028, HO3-033, HO3-058 (`docs/ASSESSMENT_HELDOUT_V0_3.md`; model-labeled, not human-approved). Scope unchanged.
+
 ## Promotion Trigger
 
 Group C (AI provider/semantic critic) decision, or a decision to surface lint output to instructors (FUB-055) where missing weak-tier/leakage signals would matter. Needs real or instructor-cleared items, not the tuned synthetic fixtures.
+
+---
+
+# FUB-075 — STEM_TOO_SHORT Exemption Lookalikes and Lead-Word Completeness
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
+
+Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, `docs/ASSESSMENT_HELDOUT_V0_3.md` (FRESH_HELD_OUT_V0_3, model-labeled; HO3-038/040/042/044 false negatives, HO3-071 false positive). The Run 006 interrogative/imperative exemption lets lookalikes through (list/name lead words, single-prefix path such as שמי/במה; HO3-042 label contested) and omits lead words such as מהם/מהן (HO3-071 'מהם גזי חממה?' falsely fires). Needs a human decision on which short stems are valid before any change; the 4-word floor is not implicated. Evidence is a handful of model-labeled cases; no linter change in Run 007.
+
+## Promotion Trigger
+
+A human-adjudicated pass over the v0.3 queue rows (HO3-038, 040, 042, 044, 071) or the next Run that touches STEM_TOO_SHORT. Related WATCH: FUB-066.
+
+---
+
+# FUB-076 — STEM_NEGATIVE_WORDING on Relative-Clause and Contrast Negation
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
+
+Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, `docs/ASSESSMENT_HELDOUT_V0_3.md` (HO3-005 false positive, HO3-058). Negation inside a relative clause or contrast (שלא, ולא) is not necessarily a negatively worded stem, yet the rule fires. Model-labeled evidence, two cases; human review of the rows first. No linter change in Run 007.
+
+## Promotion Trigger
+
+Human adjudication of HO3-005 and HO3-058, or the next Run that touches STEM_NEGATIVE_WORDING.
+
+---
+
+# FUB-077 — OPTION_ALL_OF_ABOVE Phrase Coverage
+
+**Status:** `DEFERRED`
+**Priority:** `LOW`
+**Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
+
+Source: Run 2026-10-09-ASSESSMENT-ENGINE-007, `docs/ASSESSMENT_HELDOUT_V0_3.md` (HO3-071 false negative). Hebrew phrase variants such as 'כל האפשרויות הנ"ל' are not matched. One model-labeled case; confirm against human judgement before extending the phrase list. No linter change in Run 007.
+
+## Promotion Trigger
+
+Human adjudication of HO3-071, or the next Run that touches OPTION_ALL_OF_ABOVE.
 
 ---
 
