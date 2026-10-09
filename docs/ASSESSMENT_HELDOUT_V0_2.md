@@ -439,7 +439,7 @@ Queue size: 9 rows (2 NEEDS_HUMAN_HEBREW_REVIEW, 1 languageReviewRequired, 6 lab
 
 ### 12.1 Dor decisions (2026-10-09), Status: HUMAN_APPROVED (Dor, 2026-10-09)
 
-Applied as a post-evaluation overlay (`human-adjudication.json`); frozen labels unchanged. "BEFORE to AFTER" is the label effect; the metric effect is in section 15.
+Applied as a post-evaluation overlay (`human-adjudication.json`); frozen labels unchanged. "BEFORE to AFTER" is the label effect; the metric effect is in section 14 (generated) with its prose companion in section 15.
 
 | caseId | Dor decision (2026-10-09) | BEFORE to AFTER label | Status |
 |---|---|---|---|
@@ -537,7 +537,7 @@ The generated POST_HUMAN block above is authoritative for numbers; this section 
 - **No change (4 rows):** HO-049, HO-070, HO-032, HO-073 are approvals of existing labels. HO-073's SET_KEY_LENGTH_BIAS stays a forbidden-code FP, now human-approved.
 - SET-scope counts (17 / 15 / 2 / 1) did not change.
 
-Reading the movement honestly: FP went up (4 to 5) because a human judged a model-flagged item CLEAN. That is a precision signal about the linter against a better label, not noise. Expected detections fell only because expectations were removed. Neither movement is a tuning result and neither is first-blind.
+Reading the movement honestly: FP went up (4 to 5) because a human judged a model-flagged item CLEAN. That is a precision signal about the linter against a better label, not noise. The linter output for that case is byte-identical before and after; only the label changed, so this is not a linter regression. Expected detections fell only because expectations were removed. Neither movement is a tuning result and neither is first-blind.
 
 ## 16. Human-derived principles (Dor, 2026-10-09)
 
