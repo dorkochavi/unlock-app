@@ -1,34 +1,36 @@
-# UNLOCK — ASSESSMENT-ENGINE-008 — Human-Confirmed Deterministic Hardening
+# UNLOCK — ASSESSMENT-ENGINE-009 — Fresh Held-Out v0.4 Validation
 
-PLAN_VERSION: 042
-RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-008
-START_HEAD: `b0bbbc0`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `ab784dc`
-STATUS: **COMPLETE — STOP.** Deterministic hardening of `question-lint.ts` justified by HUMAN_ADJUDICATED_V0_3 (post-evaluation, not blind). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change. No semantic critic. No KEY_STEM_LEXICAL_OVERLAP; weak-tier absolute terms stay semantic.
+PLAN_VERSION: 043
+RUN_ID: 2026-10-09-ASSESSMENT-ENGINE-009
+START_HEAD: RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: STATUS: **IN PROGRESS.** VALIDATION Run (not implementation). Local only. No push/merge/deploy/tag/hosted mutation/migration/dependency change/AI call/UI or API change.
 
-This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**` (see "History").
+This file is CURRENT EXECUTION ONLY. Historical plan bodies live in  (see "History").
 
 ## 1. Goal
-EVIDENCE RECHECK → DESIGN GATES → PRE-REGISTER TESTS (commit) → IMPLEMENT LOWEST-RISK FIXES (one pass) → REGRESSION CHECK → REVIEW → CLOSE. Targets: FUB-077 (OPTION_ALL_OF_ABOVE phrase), FUB-075 safe interrogative family (מהם/מהן), FUB-076 (STEM_NEGATIVE_WORDING narrowing). FUB-075 whole-utterance short-stem classification: Gate A chooses IMPLEMENT_NARROW_STRUCTURAL_RULE or DEFER; defer unless confidence is high.
+AUTHOR → LABEL (independent) → LABEL REVIEW → CONTAMINATION AUDIT → FREEZE (V04_FREEZE_HEAD) → EVALUATE CURRENT LINTER UNCHANGED → CLASSIFY → REPORT → INDEPENDENT REVIEW → CLOSE. Evidence class: FRESH_HELD_OUT_V0_4 (never FIRST_BLIND; never pooled with v0.1/v0.2/v0.3/HUMAN_ADJUDICATED_V0_3).
 
 ## 2. Hard invariants
-- Immutable: heldout-v0-3 corpus/labels/human overlay/freeze hashes, heldout-v0-2, v0.1 labels, FIRST_BLIND records, previous human overlays. No schema/dependency/API/UI change. No metric-chasing; one implementation pass; no corpus or label edits.
-- Reruns on frozen sets are REGRESSION evidence only (never FIRST_BLIND or fresh validation).
-- Integration readiness is not set READY by this Run.
+- NO change to question-lint.ts, text-normalize.ts, thresholds, phrase lists, rule ownership, normalization. No post-hoc tuning. After V04_FREEZE_HEAD no corpus/label/author-intent/label-review edits.
+- Immutable: heldout-v0-3 (corpus/labels/human overlay/hashes), heldout-v0-2, v0.1 labels, FIRST_BLIND records. No schema/dependency/API/UI change.
+- Role separation: distinct fresh workers for author, label, label review, evaluation/classification, independent review. Author never sees linter output, old FP/FN case IDs, or question-lint.ts. Labels frozen before any linter run.
+- Integration readiness is not set READY merely on synthetic validation.
 
 ## 3. Slices
 | Slice | Scope | Gate | Status |
 |---|---|---|---|
-| A | Design gate: exact contracts for FUB-077/075-safe/076; decision on 075 risky part | AUTO | DONE |
-| B | Pre-register contract tests; commit (PRE_REGISTERED_TEST_HEAD) | AUTO | DONE |
-| C | Implement in question-lint.ts (one pass) | AUTO | DONE |
-| D | Regression metrics before→after | AUTO | DONE |
-| Z | Independent review (review-commit) + fixes | REVIEW_GATE | DONE |
-| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | DONE |
+| A | Author corpus + author-intent | AUTO | TODO |
+| B | Independent labels | AUTO | TODO |
+| C | Label review + change log | AUTO | TODO |
+| D | Contamination audit + replacements | AUTO | TODO |
+| E | Freeze (V04_FREEZE_HEAD), manifest, v0.4 tests | AUTO | TODO |
+| F | Evaluate, classify, v0.4 report | AUTO | TODO |
+| Z | Independent review (review-commit) + fixes | REVIEW_GATE | TODO |
+| Z2 | Docs reconcile, verification, Run close | FINAL_GATE | TODO |
 
 ## History
 
+- ASSESSMENT-ENGINE-009 (this Run; Run report written at close)
 - ASSESSMENT-ENGINE-008: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-008.md` (Run report; COMPLETE)
 - ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`
 - ASSESSMENT-ENGINE-007: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`
