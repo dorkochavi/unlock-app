@@ -3,9 +3,9 @@
 PLAN_VERSION: 045
 RUN_ID: 2026-10-10-ASSESSMENT-ENGINE-010
 START_HEAD: `a779ba4`
-RUN_STATUS: IN_PROGRESS
-LAST_VERIFIED_HEAD: `a779ba4`
-STATUS: **IN PROGRESS.** DESIGN + PRE-REGISTRATION ONLY. No linter, normalizer, threshold or phrase-list change. No implementation.
+RUN_STATUS: COMPLETE
+LAST_VERIFIED_HEAD: `e388536`
+STATUS: **COMPLETE — STOP.** DESIGN + PRE-REGISTRATION ONLY. No linter, normalizer, threshold or phrase-list change. No implementation.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**`.
 
@@ -29,14 +29,16 @@ Human scope decisions (Dor, 2026-10-10):
 
 | Slice | Scope | Status |
 |---|---|---|
-| D1 | Evidence reconstruction (evidence table) | PENDING |
-| D2 | Current-mechanism analysis (fact vs inference) | PENDING |
-| D3 | Candidate structural designs (>= 3) | PENDING |
-| D4 | Adversarial contract matrix / pre-registration | PENDING |
-| D5 | Decision record + implementation handoff | PENDING |
-| Z | Independent review, docs reconciliation, verification, Run close | PENDING |
+| D1 | Evidence reconstruction (evidence table) | DONE |
+| D2 | Current-mechanism analysis (fact vs inference) | DONE |
+| D3 | Candidate structural designs (>= 3) | DONE |
+| D4 | Adversarial contract matrix / pre-registration | DONE |
+| D5 | Decision record + implementation handoff | DONE |
+| Z | Independent review, docs reconciliation, verification, Run close | DONE |
 
 ## History
+
+- ASSESSMENT-ENGINE-010: `docs/RUNS/2026-10-10-ASSESSMENT-ENGINE-010.md` (Run report; COMPLETE)
 
 - ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001.md` (Run report; COMPLETE)
 - ASSESSMENT-ENGINE-009: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-009.md` (Run report; COMPLETE)
