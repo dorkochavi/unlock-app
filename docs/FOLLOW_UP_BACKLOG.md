@@ -1765,7 +1765,7 @@ Whole-utterance part: a human design decision plus a fresh held-out batch. Relat
 
 # FUB-076 — STEM_NEGATIVE_WORDING Defines "Negative Stem" as Any Negation Token
 
-**Status:** `REOPENED` (human-confirmed by HUMAN_ADJUDICATED_V0_4 on 2026-10-09; redesign required before further implementation)
+**Status:** `DESIGNED_PRE_REGISTERED` (Run 2026-10-10-ASSESSMENT-ENGINE-010: structural design chosen and contract pre-registered; NOT implemented; the linter still has the Run 008 token-level behavior; human gates H1-H3 pending). Previously `REOPENED` (human-confirmed by HUMAN_ADJUDICATED_V0_4 on 2026-10-09).
 **Priority:** `MEDIUM`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
@@ -1783,9 +1783,19 @@ Dor adjudicated the v0.4 queue post-evaluation in Run `2026-10-09-ASSESSMENT-ENG
 
 Conclusion: the Run 008 token-level subtraction did not generalize. The next work is a narrow DESIGN of negative-selection/question-frame semantics, preserving genuine negative-question recall. Do not solve this by merely growing Hebrew token or exception lists. No linter change was made in this human-review Run.
 
+## Run 2026-10-10-ASSESSMENT-ENGINE-010 — Structural design and pre-registration (DESIGN ONLY)
+
+Full record: `docs/ASSESSMENT_STEM_NEGATION_DESIGN_V0_1.md`. No change to `question-lint.ts`, `text-normalize.ts`, thresholds, phrase lists, corpora, labels or overlays. Human scope decisions: structural/question-frame direction (no growing token/cue/exception lists); FUB-075 out of scope.
+
+Decision: the governing relation ("negation controls which answer is selected") is semantic and CANNOT be implemented fully deterministically. Chosen design = Candidate C, a conservative hybrid: deterministic ownership only for two structural frames (SELECTOR-NEGATED-PREDICATE and EXCEPTION-SLOT, Hebrew and English); the Run 008 `SELECTION_CUES`/`CONTRAST_NEXT` mechanism is replaced, not extended; coordinated (`ו`/`וש`) negation, a positive copula, a clause boundary, an exceeded noun-phrase budget, or a negation before the selector block the frame; the full `אינ-`/`איננ-` paradigm, `לא`, `אין` and English auxiliary+`not`/`n't`/`cannot` are covered by paradigm, not by observed cases. Negative selection outside the frames (imperative, comma-interrupted, wide NP, adnominal `בלתי/ללא/בלא`, scalar `least`, absolute `never`) leaves deterministic ownership: AI OPTIONAL (detection) and HUMAN (severity), no new signal. Not list-free: the design uses closed grammatical inventories and four numeric budgets, stated plainly in the design document (section 3.4), with documented recall and precision costs (4.4).
+
+Pre-registered contract: 65 new CONTRACT_TEST rows (31 EMIT, 26 SILENT, 5 PENDING_HUMAN, 3 LIMIT; `CONTRACT_TABLE_SHA256` in the design document) plus 29 OBSERVED regression rows. Observed cases are regression only; CONTRACT_TEST rows are not validation; the paper agreement with the 9 human-ruled cases is not validation. Any implementation requires a NEW fresh held-out v0.5 evaluated afterwards. Fallback if v0.5 fails the proposed precision criteria: Candidate E (demote to semantic ownership).
+
+Human gates before an implementation Run: H1 (accept recall loss for imperative-selection stems), H2 (rulings Q1-Q6 on unreviewed shapes the design flips, notably HO4-012), H3 (v0.5 acceptance and fallback criteria). FUB-075 and the other assessment FUBs are untouched.
+
 ## Promotion Trigger
 
-Remaining work: a fresh held-out batch (v0.4) with Hebrew negation-frame cases, then a decision on the residuals above.
+Human decisions H1-H3, then an implementation Run that starts with the PRE_REGISTERED_TEST commit (design document section 6), then a fresh held-out v0.5.
 
 ---
 
