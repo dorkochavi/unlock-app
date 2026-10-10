@@ -369,6 +369,8 @@ export const he = {
     createAnotherAction: "יצירת שאלה נוספת",
     creatingAnother: "יוצר שאלה...",
     createAnotherError: "לא ניתן היה ליצור שאלה חדשה. נסו שוב.",
+    publishUnsavedError: "יש שינויים שלא נשמרו. יש לשמור את הטיוטה לפני הפרסום. הפרסום לא בוצע.",
+    leaveUnsavedConfirm: "יש שינויים שלא נשמרו. לעזוב את העמוד ולמחוק אותם?",
   },
   courseView: {
     loading: "טוען את פרטי הקורס...",

@@ -36,8 +36,12 @@ import type { CourseStatus } from "@/domain/course/types";
 
 import { CreateAnotherAction } from "./create-another-action";
 import {
+  confirmLeave,
   createEmptyQuestion,
   isEditorDirty,
+  isGuardDirty,
+  isPlainNavigationClick,
+  syncBeforeUnloadGuard,
   optionControlLabel,
   publishNotReadyMessage,
   shouldShowCreateAnother,
@@ -342,8 +346,32 @@ export default function InstructorQuestionEditorPage() {
     };
   }
 
+  // FUB-068 Option B: unsaved-edit guard. Covers beforeunload (reload/tab close/external nav, where the
+  // browser supports it) and this editor's own exits (back link, create another). Browser back/forward
+  // and links elsewhere on the page are NOT interceptable in the App Router and are not guarded.
+  const guardDirty = isGuardDirty(baseline, currentValues());
+  useEffect(
+    () => syncBeforeUnloadGuard(typeof window === "undefined" ? null : window, guardDirty),
+    [guardDirty],
+  );
+
+  // The "save first" publish notice is stale once the form is clean again (saved, or edits reverted by hand).
+  const shownPublishError =
+    !guardDirty && publishError === messages.questionEditor.publishUnsavedError ? null : publishError;
+
+  function confirmDiscardEdits(): boolean {
+    return confirmLeave(guardDirty, () => window.confirm(messages.questionEditor.leaveUnsavedConfirm));
+  }
+
+  function handleBackClick(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (!isPlainNavigationClick(event)) return;
+    if (!confirmDiscardEdits()) event.preventDefault();
+  }
+
   async function handleCreateAnother() {
     if (creatingAnother) return;
+    // Defensive: the button is hidden while dirty, but never create + navigate away from unsaved edits unconfirmed.
+    if (!confirmDiscardEdits()) return;
     setCreatingAnother(true);
     setCreateAnotherError(null);
     setSessionExpired(false);
@@ -414,6 +442,8 @@ export default function InstructorQuestionEditorPage() {
       const body = (await response.json()) as { question: QuestionAuthoringDto };
       setState((previous) => (previous.kind === "ready" ? { ...previous, question: body.question } : previous));
       setBaseline(submitted);
+      // A "save first" publish notice (or any older publish error) is stale once the draft is saved.
+      setPublishError(null);
       setSavedAt(Date.now());
     } catch {
       setSaveError(messages.questionEditor.saveError);
@@ -424,6 +454,12 @@ export default function InstructorQuestionEditorPage() {
 
   async function handlePublish() {
     if (publishing) return;
+    // Publish sends no body and publishes the SAVED draft: never do that while newer unsaved edits are visible.
+    if (guardDirty) {
+      setPublishedAt(null);
+      setPublishError(messages.questionEditor.publishUnsavedError);
+      return;
+    }
     setPublishing(true);
     setPublishError(null);
     try {
@@ -527,6 +563,7 @@ export default function InstructorQuestionEditorPage() {
           ) : null}
           <Link
             href={`/instructor/courses/${courseId}`}
+            onClick={handleBackClick}
             className="text-sm text-subtle underline-offset-4 hover:text-foreground hover:underline"
           >
             {messages.questionEditor.backToCourse}
@@ -675,8 +712,8 @@ export default function InstructorQuestionEditorPage() {
                   ) : null}
                 </div>
 
-                {publishError ? <Notice tone="error">{publishError}</Notice> : null}
-                {!publishError && publishedAt !== null ? (
+                {shownPublishError ? <Notice tone="error">{shownPublishError}</Notice> : null}
+                {!shownPublishError && publishedAt !== null ? (
                   <Notice tone="success">{messages.questionEditor.publishSuccess}</Notice>
                 ) : null}
 
@@ -686,7 +723,7 @@ export default function InstructorQuestionEditorPage() {
                   savedOk: savedAt !== null,
                   publishedOk: publishedAt !== null,
                   saveError: saveError !== null,
-                  publishError: publishError !== null,
+                  publishError: shownPublishError !== null,
                 }) ? (
                   <CreateAnotherAction
                     creating={creatingAnother}

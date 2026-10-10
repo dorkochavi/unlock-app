@@ -55,6 +55,52 @@ export function shouldShowCreateAnother(input: {
   return input.savedOk || input.publishedOk;
 }
 
+/**
+ * FUB-068 Option B. `baseline === null` (still loading / not ready) is NOT dirty here, so the
+ * guard never fires before the form exists. (Create-another keeps its own stricter null => dirty.)
+ */
+export function isGuardDirty(baseline: EditorFormValues | null, current: EditorFormValues): boolean {
+  return baseline !== null && isEditorDirty(baseline, current);
+}
+
+interface UnloadTarget {
+  addEventListener(type: "beforeunload", listener: (event: BeforeUnloadEvent) => void): void;
+  removeEventListener(type: "beforeunload", listener: (event: BeforeUnloadEvent) => void): void;
+}
+
+/** Browser-native prompt text is controlled by the browser; we only request the prompt. */
+export function beforeUnloadHandler(event: BeforeUnloadEvent): void {
+  event.preventDefault();
+  // Legacy browsers require a truthy returnValue to show the prompt.
+  event.returnValue = "";
+}
+
+/**
+ * Installs the beforeunload listener only while `dirty`; returns the cleanup (a no-op when clean).
+ * Use from an effect keyed on `dirty` so the listener never outlives a dirty state or the component.
+ */
+export function syncBeforeUnloadGuard(target: UnloadTarget | null, dirty: boolean): () => void {
+  if (!dirty || target === null) return () => {};
+  target.addEventListener("beforeunload", beforeUnloadHandler);
+  return () => target.removeEventListener("beforeunload", beforeUnloadHandler);
+}
+
+/** True when leaving may proceed: clean, or the instructor explicitly confirmed discarding edits. */
+export function confirmLeave(dirty: boolean, confirmFn: () => boolean): boolean {
+  return !dirty || confirmFn();
+}
+
+/** Plain primary click only: modified clicks open a new tab/window and do not discard this editor's state. */
+export function isPlainNavigationClick(event: {
+  button: number;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+}): boolean {
+  return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+}
+
 /** The one known server reason that gets a dedicated Hebrew message. */
 export const TOPIC_REQUIRED_REASON = "a Topic must be selected before publishing";
 
