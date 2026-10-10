@@ -801,7 +801,11 @@ building a durable content-ingestion/material-management feature.
 
 ## OQ-024 — Content Entry for the First Real Pilot
 
-Status: OPEN
+Status: RESOLVED for Pilot V1 (human decision, Dor, 2026-10-10, Run 2026-10-10-RUPPIN-PILOT-FOCUS-001). Future Material / file ingestion / AI generation architecture (OQ-023, OQ-038) remains unresolved and post-Pilot.
+
+Resolution: for the first Ruppin Pilot, source material may arrive in any human-readable form (PDF, DOCX, slides, Google Docs, legacy questions) and may be prepared with external/manual/AI-assisted tooling, but the canonical entry into UNLOCK is the EXISTING Instructor Authoring and/or Structured Import pipeline (DRAFT_ONLY); every assessment question and answer key is human/instructor-reviewed before Publish. No in-product PDF ingestion, OCR, Google OAuth, AI provider/generator or Material CMS is required for Pilot GO. Protocol: `docs/RUPPIN_PILOT_CONTENT_INTAKE.md`.
+
+Original question (kept for context):
 
 Already available (`docs/DEV_STATUS.md` Current Product Capabilities; not a candidate any more): instructor-authored
 Questions (draft save, explicit publish) and Structured Import V1 (JSON/CSV preview/confirm into DRAFT_ONLY Questions; no

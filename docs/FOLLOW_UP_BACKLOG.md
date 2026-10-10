@@ -1765,7 +1765,7 @@ Whole-utterance part: a human design decision plus a fresh held-out batch. Relat
 
 # FUB-076 — STEM_NEGATIVE_WORDING Defines "Negative Stem" as Any Negation Token
 
-**Status:** `DESIGNED_PRE_REGISTERED` (Run 2026-10-10-ASSESSMENT-ENGINE-010: structural design chosen and contract pre-registered; NOT implemented; the linter still has the Run 008 token-level behavior; human gates H1-H3 pending). Independent review (general) ACCEPT_WITH_CORRECTIONS, corrections applied. Previously `REOPENED` (human-confirmed by HUMAN_ADJUDICATED_V0_4 on 2026-10-09).
+**Status:** `DESIGNED_PRE_REGISTERED` (Run 2026-10-10-ASSESSMENT-ENGINE-010: structural design chosen and contract pre-registered; NOT implemented; the linter still has the Run 008 token-level behavior; human gates H1-H3 pending). Independent review (general) ACCEPT_WITH_CORRECTIONS, corrections applied. Previously `REOPENED` (human-confirmed by HUMAN_ADJUDICATED_V0_4 on 2026-10-09). **PILOT FREEZE (human, 2026-10-10, Run 2026-10-10-RUPPIN-PILOT-FOCUS-001):** stays DESIGNED_PRE_REGISTERED, NOT implemented; H1-H3 not resolved; no v0.5 now. Promotion only on: a decision to wire user-visible assessment lint, an observed real-content problem, or post-Pilot Assessment Engine work. Human Content QA gate is authoritative for Pilot.
 **Priority:** `MEDIUM`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
@@ -1891,7 +1891,7 @@ Before the real Pilot.
 
 # FUB-068 — Question editor unsaved-edit navigation loss + Publish/dirty relationship (P2-03 + UX-01)
 
-**Status:** `DEFERRED` — human decision required
+**Status:** `DECIDED_PENDING_IMPLEMENTATION` — human chose Option B (Dor, 2026-10-10, Run 2026-10-10-RUPPIN-PILOT-FOCUS-001): `beforeunload` for supported browser exits; guard editor-controlled internal exits (Back, Create Another); when dirty, Publish must NOT silently publish the previously saved draft (require/save-first or make saved-vs-visible state explicit); NO localStorage/server autosave. NOT implemented.
 **Priority:** `MEDIUM` (authoring work can be silently lost, but the surface is instructor-only and the data is re-typeable; no learner or persisted-data corruption)
 **Area:** `src/app/instructor/courses/[courseId]/questions/[questionId]/page.tsx`, `editor-logic.ts`
 

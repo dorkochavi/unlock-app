@@ -1,60 +1,41 @@
-# UNLOCK — FUB-076 STEM_NEGATIVE_WORDING structural design + pre-registration
+# UNLOCK — Ruppin Pilot focus: countdown + content intake protocol
 
-PLAN_VERSION: 045
-RUN_ID: 2026-10-10-ASSESSMENT-ENGINE-010
-START_HEAD: `a779ba4`
+PLAN_VERSION: 046
+RUN_ID: 2026-10-10-RUPPIN-PILOT-FOCUS-001
+START_HEAD: `384b819`
 RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `e388536`
-STATUS: **COMPLETE — STOP.** DESIGN + PRE-REGISTRATION ONLY. No linter, normalizer, threshold or phrase-list change. No implementation.
+LAST_VERIFIED_HEAD: `384b819`
+STATUS: **COMPLETE — STOP.** GOVERNANCE / PILOT-PREPARATION ONLY. No product implementation.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**`.
 
 ## 1. Goal
 
-Design and pre-register a structural / question-frame contract for `STEM_NEGATIVE_WORDING` (FUB-076) using existing human-approved evidence, without implementing the rule. Deliver a decision record (including an honest deterministic-vs-semantic ownership verdict), an adversarial CONTRACT_TEST matrix, and an implementation handoff. Then STOP.
-
-Human scope decisions (Dor, 2026-10-10):
-1. Direction is STRUCTURAL / QUESTION-FRAME. Do NOT solve FUB-076 by growing a closed Hebrew negation-token list, cue whitelist, exception list or phrase patch.
-2. FUB-075 (STEM_TOO_SHORT) is OUT OF SCOPE.
+Create the canonical Pilot execution countdown and intake protocol, lock the first Ruppin content-entry path, freeze Assessment Engine expansion for Pilot, and record the approved FUB-068 direction.
 
 ## 2. Hard invariants
 
-- NO change to `question-lint.ts` or `text-normalize.ts`; no threshold or phrase-list change.
-- NO corpus / label / human-overlay / freeze-hash mutation. `FRESH_HELD_OUT_V0_4` stays immutable; `HUMAN_ADJUDICATED_V0_4` stays post-evaluation evidence.
-- Observed v0.1-v0.4 cases may define regression contracts but are NEVER presented as fresh validation. Any later implementation needs a NEW fresh held-out batch (v0.5) after implementation.
-- No schema / dependency / API / UI change; no hosted mutation; no push / merge / deploy / tag.
-- No new FUB for a FUB-076 matter; no invented human rulings for unreviewed cases.
+- no source-code changes; no schema / dependency / API / UI changes
+- no hosted mutation; no push / merge / deploy / tag
+- no Assessment Engine implementation; no new held-out batch
+- no broad backlog cleanup; no unrelated product work
 
-## 3. Slices
+## 3. Human-approved decisions (Dor, 2026-10-10)
+
+- **A. Ruppin Pilot V1 content entry:** the canonical entry is the EXISTING Instructor Authoring and/or Structured Import pipeline; Structured Import enters DRAFT_ONLY; every assessment question + answer key is human-reviewed before Publish; source prep may use external/manual/AI-assisted tooling; no in-product PDF/OCR/Google OAuth/AI provider/AI generator/Material CMS is required for Pilot GO. (OQ-024)
+- **B. Assessment Engine Pilot freeze:** current research suffices. FUB-076 stays DESIGNED_PRE_REGISTERED, NOT implemented; H1/H2/H3 unresolved; no v0.5. Promotion only on: decision to wire user-visible assessment lint, an observed real-content problem, or post-Pilot Assessment Engine work. Human Content QA gate is authoritative.
+- **C. FUB-068:** Option B (beforeunload + guard editor-controlled internal exits + Publish must not silently publish the saved draft while dirty; save-first or explicit saved-vs-visible state; no localStorage/server autosave). Decision recorded only; NOT implemented.
+
+## 4. Slices
 
 | Slice | Scope | Status |
 |---|---|---|
-| D1 | Evidence reconstruction (evidence table) | DONE |
-| D2 | Current-mechanism analysis (fact vs inference) | DONE |
-| D3 | Candidate structural designs (>= 3) | DONE |
-| D4 | Adversarial contract matrix / pre-registration | DONE |
-| D5 | Decision record + implementation handoff | DONE |
-| Z | Independent review, docs reconciliation, verification, Run close | DONE |
+| 1 | `docs/MASTER_PILOT_COUNTDOWN.md` + `docs/RUPPIN_PILOT_CONTENT_INTAKE.md` | DONE |
+| 2 | Reconcile OQ-024, FUB-068, FUB-076, PILOT_READINESS, DEV_STATUS, Run report | DONE |
+| Z | Verify, commit, close | DONE |
 
 ## History
 
 - ASSESSMENT-ENGINE-010: `docs/RUNS/2026-10-10-ASSESSMENT-ENGINE-010.md` (Run report; COMPLETE)
-
-- ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-4-HUMAN-REVIEW-001.md` (Run report; COMPLETE)
-- ASSESSMENT-ENGINE-009: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-009.md` (Run report; COMPLETE)
-- ASSESSMENT-ENGINE-008: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-008.md` (Run report; COMPLETE)
-- ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-V0-3-HUMAN-REVIEW-001.md`
-- ASSESSMENT-ENGINE-007: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-007.md`
-- ASSESSMENT-ENGINE-006: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-006.md`
-- ASSESSMENT-ENGINE-005: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-005.md`
-- ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-003.md`
-- ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-002.md`
-- ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-HELDOUT-HUMAN-REVIEW-001.md`
-- BROWSER-ISOLATION-STUDY-001: `docs/RUNS/2026-10-09-BROWSER-ISOLATION-STUDY-001.md`
-- DESIGN-AUDIT-FOLLOWUP-001: `docs/RUNS/2026-10-09-DESIGN-AUDIT-FOLLOWUP-001.md`
-- ASSESSMENT-ENGINE-004: `docs/RUNS/2026-10-09-ASSESSMENT-ENGINE-004.md`
-- ASSESSMENT-ENGINE-HEBREW-REVIEW-001: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-HEBREW-REVIEW-001.md`
-- ASSESSMENT-ENGINE-003: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-003.md`
-- ASSESSMENT-ENGINE-002: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-002.md`
-- ASSESSMENT-ENGINE-NIGHT-001: `docs/RUNS/2026-10-08-ASSESSMENT-ENGINE-NIGHT-001.md`
-- Q3-A11Y-NIGHT-001: `docs/RUNS/2026-10-08-Q3-A11Y-NIGHT-001.md`
+- RUPPIN-PILOT-FOCUS-001: `docs/RUNS/2026-10-10-RUPPIN-PILOT-FOCUS-001.md` (Run report; COMPLETE)
+- Earlier Runs: see `docs/RUNS/**` and `git log`.

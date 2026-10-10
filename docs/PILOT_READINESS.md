@@ -22,6 +22,8 @@ The Pre-Pilot Run (`2026-09-23-PRE-PILOT`) stays formally open on Content only. 
 
 Run 009 (learner Progress + instructor Insights) is COMPLETE and was Production-verified on 2026-09-26 at `v0.1.0` (`8e137e6`; current release state: `docs/DEV_STATUS.md`, model: ADR-019). A verified Production baseline is **not** a pilot approval: the Content gate above is still open, and Run 009 is not a gate.
 
+Update 2026-10-10: the operational countdown to Pilot GO is `docs/MASTER_PILOT_COUNTDOWN.md`; the Ruppin content path (OQ-024 resolved) is `docs/RUPPIN_PILOT_CONTENT_INTAKE.md`. Gates above are unchanged.
+
 ## 2. Environment / Release Model
 
 UNLOCK is ONE application and ONE codebase; there is no separate pilot app. The pilot is the first controlled use of the same Production application, which remains the live app afterwards.

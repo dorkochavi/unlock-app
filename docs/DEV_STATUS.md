@@ -7,6 +7,10 @@ This file holds CURRENT state only. History lives in `docs/RUNS/**`; current exe
 deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN_QUESTIONS.md`; navigation in
 `docs/CONTEXT_MAP.md`.
 
+## Pilot Focus (2026-10-10)
+
+Execution is governed by `docs/MASTER_PILOT_COUNTDOWN.md`; Ruppin content path: `docs/RUPPIN_PILOT_CONTENT_INTAKE.md` (OQ-024 resolved). Assessment Engine frozen for Pilot (FUB-076 DESIGNED_PRE_REGISTERED, not implemented). FUB-068 decided (Option B), not implemented. Content gate: WAITING_FOR_RUPPIN.
+
 ## Repository / Release State
 
 - Git (`git log` / `git status`) is authoritative for the current local HEAD, branch, and ahead/behind. Those
