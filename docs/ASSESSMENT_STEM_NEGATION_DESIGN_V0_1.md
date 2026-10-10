@@ -79,7 +79,7 @@ Legacy synthetic contract rows (unit tests; no human ruling, predate the human p
 ### 1.4 What D1 establishes
 
 - The human-ruled set is 9 cases (2 true defects, 7 false positives). The linter is wrong on all 9: 7 FPs it emits (5 fresh in v0.4 plus HO3-005/058 which Run 008 silenced) and 2 defects it misses.
-- The TP side of the evidence is almost entirely MODEL-labeled and structurally homogeneous: all 13 non-pending observed negative-selection stems (12 model-expected, 1 unlabeled) share one surface frame (interrogative selector, optional partitive, negated predicate immediately after, or an exception slot). That homogeneity is a property of how the corpora were authored, so it limits what recall can be claimed.
+- The TP side of the evidence is almost entirely MODEL-labeled and structurally homogeneous: all 13 non-pending observed negative-selection stems (10 model-expected in v0.2-v0.4, 1 unlabeled, 2 v0.1 golden fixtures that are themselves tuned) share one surface frame (interrogative selector, optional partitive, negated predicate immediately after, or an exception slot). That homogeneity is a property of how the corpora were authored, so it limits what recall can be claimed.
 - Two OBSERVED cases whose current EMIT depends on an unreviewed label (HO4-012, golden PREFIX-01) are exactly where a structural design changes behavior. They are flagged, not ruled.
 
 ## 2. D2 - Current mechanism
@@ -121,7 +121,7 @@ Principle under test: "A negation token is not itself a defect. A deterministic 
 - **A. Interrogative-frame adjacency.** Emit iff a closed-class interrogative selector is followed, within K raw tokens, by a negation token. (Run 008's cue list replaced by a distance window.)
 - **B. Clause-aware.** Segment the stem into clauses (punctuation, subordinators) and emit iff a negation sits in the same clause as, and after, an interrogative selector.
 - **C. Hybrid structural frame with explicit semantic hand-off (RECOMMENDED).** Emit only for two high-confidence structural frames; everything else is deterministic-silent and owned by the semantic critic / instructor review.
-  - Frame 1 SELECTOR-NEGATED-PREDICATE: selector (first per sentence), a bounded noun-phrase span made of grammatical function material plus a small content budget, and then the negated predicate (or a ש-relative negation that attaches directly to the selected head). Coordination (`ו`+negation), a positive copula, a clause boundary, or an exceeded content budget block the frame.
+  - Frame 1 SELECTOR-NEGATED-PREDICATE: selector (first per sentence), a bounded noun-phrase span made of grammatical function material plus a small content budget, and then the negated predicate (or a ש-relative negation that attaches directly to the selected head). Coordination (`ו`+negation), a clause boundary, or an exceeded content budget block the frame.
   - Frame 2 EXCEPTION-SLOT: an exception marker whose exceptee is an anaphoric slot (`אחד`, `one`, `which`, end of clause), never a named exceptee.
 - **D. Option-set-aware.** The flaw exists when the key is the exception among distractors that satisfy a positive predicate. This is the true semantics behind the human rulings (062/015/063 are conjunctions, 052/005 are exceptions).
 - **E. Demote.** Remove deterministic ownership; the semantic critic / humans own all negative-stem detection.
@@ -147,7 +147,7 @@ C agreeing with all 9 is a consistency check against the principle I derived it 
 
 | Criterion | A | B | C | D | E |
 |---|---|---|---|---|---|
-| Recall on the 13 non-pending observed negative-selection stems (12 model-expected + 1 unlabeled; paper) | 7/13 at K=4 (the 5 English `Which of the following is NOT` stems have `NOT` as the 5th token, plus no exception frame); a single K cannot serve both languages | 13/13 | 13/13 | n/a | 0/13 |
+| Recall on the 13 non-pending observed negative-selection stems (10 model-expected + 1 unlabeled + 2 golden; paper) | 7/13 at K=4 (the 5 English `Which of the following is NOT` stems have `NOT` as the 5th token, plus no exception frame); a single K cannot serve both languages | 13/13 | 13/13 | n/a | 0/13 |
 | Recall risk on genuine negative stems outside the frame | high | low | medium (imperative, comma-interrupted, NP budget+1 are lost by design) | n/a | total |
 | Precision on the human FP shapes | fragile (distance coincidences) | fails 4 of 7 (relative/coordination invisible without POS) | handles all 7 by structural features | n/a | trivial |
 | Hebrew morphology robustness | full paradigm needed | full paradigm + clause punctuation (an authoring convention) | full paradigm; prefixes interpreted structurally (`ש` relative, `ו` coordinator) | semantic | n/a |
@@ -160,16 +160,16 @@ C agreeing with all 9 is a consistency check against the principle I derived it 
 ### 3.4 Can the principle be implemented deterministically? (the honest answer)
 
 - **Not fully.** "Negation governs selection" is a semantic relation between the stem and the option set (candidate D). Hebrew has no overt complementizer/relativizer distinction (`ש`), no overt coordinator/predicate distinction without POS (`ו`), and no verb lexicon is available. A deterministic rule can only approximate governance by STRUCTURE: where the negation sits relative to the interrogative selector and what lies between them.
-- **Partially, yes, for the dominant textbook frame.** Candidate C converts the principle into three checkable structural facts: (1) the negation is in predicate position directly after the selector's noun phrase, (2) no positive predicate, copula, coordinator or clause boundary intervenes, (3) the exceptee of an exception marker is an unnamed slot. These explain every human ruling with one mechanism each: 062/015/063/058 (coordination or copula block), 007/008 (negation does not follow a selector), HO3-005 (pronominal selector takes no content), 052/005/009 (adjacent negated predicate).
-- **It is not list-free, and this document does not pretend otherwise.** C needs closed-class GRAMMAR inventories: selectors, the negation paradigm, the Hebrew copula pronouns, partitive/deictic forms, the English auxiliary paradigm, subordinators, exception markers, anaphoric slots, plus four numeric budgets. What distinguishes this from the Run 008 cue list: (i) every inventory is a closed grammatical class enumerated by paradigm, with a paradigm-completeness contract row for every member (CT-H03a-h), not a set of content words grown from observed failures; (ii) no noun, verb or topical vocabulary appears anywhere; (iii) failure modes are bounded structural blind spots (section 4.4), not an open-ended treadmill; (iv) the budgets are explicit product constants subject to fresh validation. The residual risk is that the constants (N = 2, relative budget 1, `מי/מה` budget 0, English window 5) are tuned by grammar prior rather than data and could still be wrong; the observed data cannot discriminate N = 1 from N = 2 (only synthetic CT rows can, and I authored those).
-- **Where a structural rule cannot be right** (documented limits, not hidden): CT-H41 `איזה בעל חיים שאינו דג חי במים?` is a semantic twin of the human-CLEAN HO4-062 and the design stays silent only because of a relative budget; CT-E25 `Which code means it was not found?` is a content negation the frame cannot tell from a negated predicate without a lexical-verb test; CT-H36/H37 are genuine negative selections the frame deliberately misses.
+- **Partially, yes, for the dominant textbook frame.** Candidate C converts the principle into three checkable structural facts: (1) the negation is in predicate position directly after the selector's noun phrase, (2) no coordinator, clause boundary or over-budget material intervenes, (3) the exceptee of an exception marker is an unnamed slot. Each of the 9 human rulings is explained by one of these features (062/015/063/058: coordination or budget; 007/008: negation does not follow a selector; HO3-005: pronominal selector takes no content; 052/005/009: adjacent negated predicate). That explanation is partly by NOUN-PHRASE LENGTH, a budget rather than syntax: variants with a one-token head (CT-H45, CT-H46) have the same structure as HO3-005 and HO4-007 yet are predicted EMIT, and are recorded as LIMIT rows. "Structural" here means position and coordination, not parsed syntax.
+- **It is not list-free, and this document does not pretend otherwise.** C needs inventories of three honest kinds. PURE closed grammatical classes: selectors, the negation paradigm, the English auxiliaries and subordinators, exception markers. LEXEME SETS: the deictic `הבא*` forms and the anaphoric slots `אחד/אחת/one`. An ORTHOGRAPHIC PATTERN: the partitive `מה`+2 letters (it also matches `מהירות`, `מהנדס`, and does not match `מהם/מהן`). Plus four numeric budgets (`N = 2`, relative budget 1, pronoun budget 0, English window 8). What distinguishes this from the Run 008 cue list: (i) the classes are enumerated by paradigm with a paradigm-completeness contract row for every negation member (CT-H03a-h), not grown from observed failures; (ii) no noun, verb or topical vocabulary appears; (iii) the blind spots are enumerated in 4.4 (an enumeration is not a proof that it is complete; v0.5 must probe it); (iv) the budgets are explicit product constants. **The budgets are determined only by authored rows:** on the observed corpora and the 65 original rows, N = 1 breaks only the author-written CT-H05, N = 3 breaks only CT-H33 and CT-H37, a relative budget of 2 breaks nothing, and the pronoun budget 0 is pinned only by stems that contain a content token (HO3-005, CT-H24/H25). The relative budget in particular is untested by any observed datum.
+- **Where a structural rule cannot be right** (documented limits, not hidden): CT-H41 `איזה בעל חיים שאינו דג חי במים?` is a semantic twin of the human-CLEAN HO4-062 and the design stays silent only because of a relative budget, so it is PENDING_HUMAN (Q5) and semantic-owned; CT-H45/H46 are the same-structure twins of HO3-005/HO4-007 with a one-token head and are predicted EMIT (precision cost); CT-H42/H44 show that `ש` as a complementizer or free relative is not distinguishable from a relative by position; CT-E25 is a content negation the frame cannot tell from a negated predicate without a lexical-verb test; CT-H36/H37/E11 are genuine negative selections the frame deliberately misses.
 
 ### 3.5 Why the others lose
 
 - A: its two successes on HO4-015/062 are distance coincidences (K = 4 vs 5) and it fails HO3-005; it has no principled way to separate "negated predicate" from "negation somewhere nearby".
 - B: depends on punctuation, which is an authoring convention (the same confound already documented for FUB-075); fails 4 of 7 FPs because relative/coordinated negation inside ONE clause is invisible without POS.
 - D: the correct semantics, but not computable without understanding the options; it is the semantic critic's job (AE-021) and is recorded as the long-term owner of everything C does not cover.
-- E: loses 13/13 labeled TPs and the 2 human-confirmed defects for a problem that is structurally solvable on the dominant frame; kept as the explicit FALLBACK if v0.5 shows C fails its pre-registered precision test (section 7).
+- E: loses all 13 observed negative-selection stems (but those are MODEL-labeled or golden and share one homogeneous frame, so this is weak evidence) and the 2 human-confirmed defects, and leaves ZERO deterministic signal today because the semantic critic (AE-021) is unwired. On the human data alone E is not worse than C: the human set is 7 false positives against 2 defects, and E gets the 7 right. C is chosen for coverage of the dominant textbook frame at an acceptable, enumerated precision cost, not because the human data prove it better. It is kept as the explicit FALLBACK if v0.5 shows C fails its pre-registered precision test (section 7).
 
 ## 4. D5 - Decision and specification
 
@@ -177,7 +177,7 @@ C agreeing with all 9 is a consistency check against the principle I derived it 
 
 1. **FUB-076 cannot be solved fully deterministically.** The governing relation is semantic (candidate D). **It can be solved PARTIALLY and honestly by a structural rule.**
 2. **Chosen design: Candidate C**, a conservative hybrid. Deterministic ownership is reduced to two high-confidence structural frames (SELECTOR-NEGATED-PREDICATE and EXCEPTION-SLOT) in Hebrew and English. Every other negative-selection stem leaves deterministic ownership (no signal in this phase) and belongs to the semantic critic (AI OPTIONAL for detection) and to instructor/human review (severity and the final call).
-3. The Run 008 mechanism (token-level `SELECTION_CUES` list and the `ל`-initial contrast regex) is REMOVED by the design, not extended. No closed negation-token list, cue whitelist, or exception list is grown. The only inventories are closed grammatical classes (4.2), each with a paradigm-completeness contract row.
+3. The Run 008 mechanism (token-level `SELECTION_CUES` list and the `ל`-initial contrast regex) is REMOVED by the design, not extended. No closed negation-token list, cue whitelist, or exception list is grown. The only inventories are grammatical classes, lexeme sets and one orthographic pattern, labelled honestly in 4.2; the negation paradigm has a paradigm-completeness contract row for every member.
 4. Severity unchanged: WARNING, advisory only, never an ERROR. The rule stays unwired (integration remains NOT_READY).
 5. This decision is a DESIGN decision made inside Run scope. It is gated by the human decisions H1-H3 (section 8) before an implementation Run may start.
 
@@ -185,18 +185,17 @@ C agreeing with all 9 is a consistency check against the principle I derived it 
 
 Boundary-aware tokens: each token carries the break that precedes it: `NONE`, `CLAUSE` (`,` `;` `:` `(` `)` dash), or `SENTENCE` (`?` `!` and `.` followed by whitespace; decimals, `ד"ר`, acronyms must not split). A *segment* is a run of tokens with no CLAUSE or SENTENCE break; a *sentence* is a run with no SENTENCE break.
 
-Closed grammatical inventories:
+Inventories (class kind stated per row; comparison-normalized with the existing `norm()` so final letters fold):
 
 | Name | Members | Class |
 |---|---|---|
-| SEL_HE_DET (content budget 2) | `איזה איזו אילו איזהו` | interrogative determiners (exact token; prepositional fusions like `באיזה` are NOT selectors) |
+| SEL_HE_DET (content budget 2) | `איזה איזו אילו איזהו` | closed class: interrogative determiners (exact token; prepositional fusions like `באיזה` are NOT selectors) |
 | SEL_HE_PRON (content budget 0) | `מי מה` | interrogative pronouns |
 | NEG_PRED_HE | `אינו אינה אינם אינן` `איננו איננה איננם איננן` (copular), `לא` (verbal), `אין` (existential) | full negation paradigm; prefix analysis is exact: optional prefix in `{"", ש, ו, וש}` + a member |
-| COPULA_HE | `הוא היא הם הן` | positive predicate marker; blocks the frame |
-| PARTITIVE_HE | one token matching `מה` + 2 or more Hebrew letters, before any content token (`מהבאים`, `מהטענות`) | free (does not consume content budget) |
-| DEICTIC_HE | `הבא הבאה הבאים הבאות` | free |
+| PARTITIVE_HE (orthographic pattern) | one token matching `מה` + 2 or more Hebrew letters, before any content token (`מהבאים`, `מהטענות`) | free. Also matches `מהירות`, `מהנדס`; does NOT match `מהם/מהן` (they fold to a 1-letter remainder), so `מי מהם ...` is unsupported |
+| DEICTIC_HE (lexeme set) | `הבא הבאה הבאים הבאות` | free |
 | EXC_HE | `מלבד` (optional `ו/ש/וש` prefix), `חוץ` + a following token starting with `מ` (existing logic) | exception markers |
-| SLOT_HE | `אחד אחת` (after removing the attached `מ` of `חוץ מ-`), a SEL_HE token, or end of clause | anaphoric exceptee |
+| SLOT_HE (lexeme set) | `אחד אחת` (after removing the attached `מ` of `חוץ מ-`), a SEL_HE token, or end of clause | anaphoric exceptee |
 | SEL_EN | `which what who whom` | first one per sentence, only if it is the first token of its segment |
 | AUX_EN | `am is are was were be been being do does did have has had can could may might must shall should will would`; fused: any token ending in `n't`, and `cannot` | auxiliary paradigm |
 | NEG_EN | `not` | after AUX_EN |
@@ -204,7 +203,7 @@ Closed grammatical inventories:
 | EXC_EN | `except` | exception marker |
 | SLOT_EN | `one which what who`, or end of clause | anaphoric exceptee |
 
-Numeric constants (product defaults, to be pre-registered and validated, not tuned on observed data): `HE_NP_BUDGET = 2` content tokens for SEL_HE_DET; `HE_NP_BUDGET_PRON = 0`; `HE_RELATIVE_BUDGET = 1` (a ש-prefixed NEG must attach to a single head noun); `EN_WINDOW = 5` tokens after the selector.
+Numeric constants (product defaults, to be pre-registered and validated, not tuned on observed data): `HE_NP_BUDGET = 2` content tokens for SEL_HE_DET; `HE_NP_BUDGET_PRON = 0`; `HE_RELATIVE_BUDGET = 1` (a ש-prefixed NEG must attach to a single head noun); `EN_WINDOW = 8` tokens after the selector (widened from 5 after review: 5 silently dropped canonical stems such as `Which of the following statements about triangles is NOT true?`).
 
 ### 4.3 Algorithm (pseudocode; NOT implemented)
 
@@ -222,7 +221,6 @@ for each sentence S (token list with boundary info):
           if base in NEG_PRED_HE:
               if prefix in {"", ש} and (prefix != ש or content <= HE_RELATIVE_BUDGET): frames.add(SELECTOR_NEGATED_PREDICATE)
               break                               # a coordinated (ו / וש) negation never matches
-          if t in COPULA_HE: break
           if t matches PARTITIVE_HE and not partitive and content == 0: partitive = true; continue
           if t in DEICTIC_HE: continue
           content += 1 ; if content > budget: break
@@ -241,7 +239,7 @@ emit one STEM_NEGATIVE_WORDING WARNING iff frames is non-empty
 metrics.negationTermCount = len(frames)      # key kept; semantics change from "terms" to "frames" (documented)
 ```
 
-Mechanism-to-ruling map (INFERENCE): coordinated negation (`ו`/`וש` prefix) -> HO4-062, HO4-015, HO4-063, HO3-058, HO-073/item8; copula or budget block -> the same plus HO4-015/063; negation not after the selector -> HO4-007, HO4-008; pronoun selector with budget 0 -> HO3-005; paradigm completeness -> HO4-052, HO-063; adjacent negated predicate -> HO4-005, 009, HO-021 and the rest.
+Mechanism-to-ruling map (INFERENCE): coordinated negation (`ו`/`וש` prefix) -> HO4-062, HO4-015, HO4-063, HO3-058, HO-073/item8; the content budget alone blocks HO4-015/063/062 and HO-073/item8 (no positive-predicate token list is used; an earlier draft had a copula-pronoun block that no evidence needed and that cost colloquial stems such as CT-H13); negation not after the selector -> HO4-007, HO4-008; pronoun selector with budget 0 -> HO3-005; paradigm completeness -> HO4-052, HO-063; adjacent negated predicate -> HO4-005, 009, HO-021 and the rest.
 
 ### 4.4 Documented blind spots, costs and non-goals
 
@@ -251,11 +249,15 @@ Recall costs (genuine negative selection the frame will not catch; by design, to
 3. Prepositional selector fusions (`באיזה`, `מאיזה`), `מהו/מהי` frames, and negation in the options.
 4. Adnominal negation (`בלתי`, `ללא`, `בלא`) and scalar/absolute English (`least`, `never`): removed from the term set; decision H2.
 5. Only the first selector per sentence is evaluated.
+6. English noun phrases longer than `EN_WINDOW = 8` tokens before the auxiliary (CT-E11). Removing the copula block makes colloquial `איזו מהמדינות הבאות היא לא באירופה?` EMIT (CT-H13), which is intended.
+7. `מי מהם ...` (the partitive pattern does not match `מהם/מהן`).
 
 Precision costs (stems the frame will emit that a human may call fine):
 1. Short embedded English clauses (`CT-E25`).
-2. A negated predicate adjacent to a selector that a human reads as a conjunctive proposition when written as an adjacent relative (the `CT-H04` / `CT-H41` boundary is a budget, not a semantic fact).
-3. The partitive pattern treats any `מה`+2-letters token as free (`מהירות`), which only widens the budget by one token.
+2. A negated predicate adjacent to a selector that a human reads as a conjunctive proposition when written as an adjacent relative (the `CT-H04` / `CT-H41` boundary is a head-token budget, not a semantic fact); same-structure twins of HO3-005 and HO4-007 with a one-token head (CT-H45, CT-H46).
+3. `ש` as a complementizer or free relative (`איזה מהתלמידים אמר שלא למד?`, `מי שאינו מסכים ...`; CT-H42, CT-H44): position cannot tell it from a relative.
+4. Frame 2 has no selector requirement: a narrative exception with an anaphoric word (`כולם הגיעו מלבד אחד.`, CT-H47) emits.
+5. The partitive pattern treats any `מה`+2-letters token as free (`מהירות`), which only widens the budget by one token.
 
 Non-goals: STEM_DOUBLE_NEGATIVE (stays NOT_IMPLEMENTED); STEM_TOO_SHORT / FUB-075; any change to other rules, thresholds or the term lists of other codes; option-set semantics; a new issue code or INFO signal for "negation present but outside the frame" (a schema/UX decision outside this Run; precedent: the weak-tier absolute terms are silent).
 
@@ -303,9 +305,11 @@ These rows predate the human principle and encode token-level firing. None carri
 | `Which structure is the LEAST likely ...` (3 rows), `Which structure is never stored contiguously in memory?` | EMIT | silent | scalar/absolute not negation (H2) |
 | the remaining canonical rows (`Which of these is NOT ...`, `Which of these is correct EXCEPT one?`, `איזה מבנה לא/אינו/אין ...`, `כל המבנים מלבד/חוץ מאחד ...`, `מה אינו נכון?`, ...) | EMIT | EMIT | inside Frame 1 or 2 |
 
-### 5.3 NEW synthetic CONTRACT_TEST rows (65; newly authored; NOT fresh validation)
+### 5.3 NEW synthetic CONTRACT_TEST rows (73; newly authored; NOT fresh validation)
 
-Categories: EMIT = frame expected; SILENT = no frame expected; PENDING_HUMAN = design predicts SILENT but the stem is a genuine negative selection awaiting a human gate; LIMIT = documented known imperfection, pinned to the design-predicted behavior and explicitly NOT the desired semantics. "Deterministic ownership justified" = YES for EMIT and SILENT rows (the structural feature decides), NO for PENDING_HUMAN and LIMIT rows (semantic/human ownership). Evidence class for all: CONTRACT_TEST.
+Categories: EMIT = frame expected; SILENT = no frame expected; PENDING_HUMAN = design predicts SILENT but the stem needs a human gate (genuine negative selection outside the frames, or a semantic twin of a human-CLEAN case); LIMIT_RECALL_COST / LIMIT_PRECISION_COST = documented known imperfection, pinned to the design-predicted behavior and explicitly NOT the desired semantics. "Deterministic ownership justified" = YES for EMIT and SILENT rows (the structural feature decides; CT-H04 sits at a budget boundary, see its rationale), NO for PENDING_HUMAN and LIMIT rows (semantic/human ownership). Evidence class for all: CONTRACT_TEST.
+
+Amendment record: this table was first committed with 65 rows (SHA `4827096d...`). The independent review (Run Slice Z) led to: EN_WINDOW 5 -> 8 with CT-E10 and CT-E11; removal of the unevidenced copula block with CT-H13; CT-H41 moved from SILENT to PENDING_HUMAN (Q5); new LIMIT rows CT-H42, CT-H44, CT-H45, CT-H46, CT-H47; CT-H04 and CT-H33 rationale rewording. No implementation consumed the table before the amendment.
 
 | ID | Lang | Stem | Design-predicted | Structural determinant | Rationale | Current linter (measured) |
 |---|---|---|---|---|---|---|
@@ -319,7 +323,7 @@ Categories: EMIT = frame expected; SILENT = no frame expected; PENDING_HUMAN = d
 | CT-H03f | HE | `איזו מהמערכות הבאות איננה חלק מהגוף?` | EMIT | Paradigm: איננה (f.sg, long form) | Full-paradigm row | silent |
 | CT-H03g | HE | `אילו מהאיברים הבאים איננם חלק מהמערכת?` | EMIT | Paradigm: איננם (m.pl, long form) | Full-paradigm row | silent |
 | CT-H03h | HE | `אילו מהמערכות הבאות איננן חלק מהגוף?` | EMIT | Paradigm: איננן (f.pl, long form) | Full-paradigm row | silent |
-| CT-H04 | HE | `איזה יסוד שאינו מתכת נמצא בטבלה המחזורית?` | EMIT | SEL + 1 head noun + ש-relative NEG (relative attaches to the selected head) | Negation is the sole restrictor of the selected entity | EMIT |
+| CT-H04 | HE | `איזה יסוד שאינו מתכת נמצא בטבלה המחזורית?` | EMIT | SEL + 1 head noun + ש-relative NEG (relative attaches to the selected head) | Relative negation attached to the single head noun right after the selector (budget boundary with CT-H40/H41/H45/H46, see LIMIT rows) | EMIT |
 | CT-H05 | HE | `איזה בעל חיים לא חי במים?` | EMIT | SEL + 2-token NP (budget edge) + bare לא | NP budget upper edge; verbal negation of the selected entity | EMIT |
 | CT-H06 | HE | `מה אינו נכון לגבי תאים?` | EMIT | SEL=מה, budget 0, NEG immediately | Pronominal selector | EMIT |
 | CT-H07 | HE | `מי מהבאים אינו יונק?` | EMIT | SEL=מי + partitive + NEG | Pronominal selector with partitive | EMIT |
@@ -331,6 +335,8 @@ Categories: EMIT = frame expected; SILENT = no frame expected; PENDING_HUMAN = d
 | CT-H12 | HE | `כל היסודות הבאים הם מתכות מלבד אחד. איזה?` | EMIT | Exception marker מלבד + slot אחד | Exception frame | EMIT |
 | CT-H32a | HE | `איזה מבנה שלא נמצא בתא החי?` | EMIT | SEL + 1 head noun + ש-NEG | Relative שלא adjacent to the selected head | EMIT |
 | CT-H38 | HE | `איזו תופעה אינה מתרחשת בלילה?` | EMIT | SEL + 1 head noun + NEG | Verbal-predicate negation of the selected entity | EMIT |
+| CT-H13 | HE | `איזו מהמדינות הבאות היא לא באירופה?` | EMIT | SEL + partitive + deictic + one content token (colloquial copula היא) + bare לא | Colloquial negative selection; shows the cost of the removed copula block | EMIT |
+| CT-E10 | EN | `Which of the following statements about triangles is NOT true?` | EMIT | First AUX at token 7 after the selector, inside EN_WINDOW = 8 | Canonical long noun phrase (window edge, inside) | EMIT |
 | CT-E01 | EN | `Which of the following is NOT a renewable energy source?` | EMIT | Sentence-initial SEL; first AUX within window followed by NOT | Canonical | EMIT |
 | CT-E02 | EN | `Which planet does not have a moon?` | EMIT | SEL; AUX does + not | do-support negation | EMIT |
 | CT-E03 | EN | `What is NOT a function of the liver?` | EMIT | SEL what; AUX is + NOT | what-selector | EMIT |
@@ -351,13 +357,13 @@ Categories: EMIT = frame expected; SILENT = no frame expected; PENDING_HUMAN = d
 | CT-H28 | HE | `בחרו את הטענה הנכונה ביותר.` | SILENT | No negation | Selection cue without negation (control) | silent |
 | CT-H29 | HE | `החומר אינו מוליך חשמל. הסבירו מדוע.` | SILENT | No SEL | Negation without an interrogative/selection frame | EMIT |
 | CT-H32b | HE | `איזה מבנה ושלא נמצא בתא החי?` | SILENT | Prefix וש = coordination | Prefix-form pair with CT-H32a | EMIT |
-| CT-H33 | HE | `איזה אדם אמר שהמים לא רותחים?` | SILENT | Content budget exceeded before NEG | Negation inside a reported clause | EMIT |
+| CT-H33 | HE | `איזה אדם אמר שהמים לא רותחים?` | SILENT | Content budget exceeded before NEG | Content-budget block; this row does NOT exercise the ש path (see CT-H42) | EMIT |
 | CT-H34a | HE | `איזו תנועה לאומית החלה במאה התשע עשרה?` | SILENT | לאומית is not a NEG token (whole-token paradigm only) | Morphological lookalike | silent |
 | CT-H34b | HE | `איזה מבנה מלא נוזל נמצא בתא?` | SILENT | מלא is not a NEG token | Morphological lookalike | silent |
 | CT-H35 | HE | `איזה איבר מזרים דם? הוא אינו שריר רגיל.` | SILENT | NEG is in a different sentence from SEL | Sentence boundary | EMIT |
 | CT-H39 | HE | `כל הערים הבאות נמצאות בישראל חוץ מתל אביב.` | SILENT | Exception marker followed by a NAMED exceptee, not a slot | Content exception | EMIT |
 | CT-H40 | HE | `איזה מהמקרים הבאים מתאר גוף שאינו מקבל חמצן?` | SILENT | ש-relative allowed only with <= 1 content token; here 2 | Relative attaches to a non-selected NP | EMIT |
-| CT-H41 | HE | `איזה בעל חיים שאינו דג חי במים?` | SILENT | ש-relative with a 2-token head exceeds the relative budget | Semantic equivalent of HO4-062 (conjunctive proposition); design stays silent | EMIT |
+| CT-H41 | HE | `איזה בעל חיים שאינו דג חי במים?` | PENDING_HUMAN_H2 | ש-relative with a 2-token head exceeds the relative budget | Semantic twin of human-CLEAN HO4-062; design predicts SILENT only because of the relative budget (Q5); semantic ownership | EMIT |
 | CT-E20 | EN | `A body that is not acted on by any force will do what?` | SILENT | NEG precedes the selector | Relative negation on the given entity | EMIT |
 | CT-E21 | EN | `Which HTTP status code is returned when a page is not found?` | SILENT | First AUX after SEL is not followed by NOT; subordinator when | Embedded content negation | EMIT |
 | CT-E23 | EN | `Which gas, which is not flammable, is used to fill balloons?` | SILENT | Only the first SEL of a sentence is evaluated; boundary after the first segment | Relative which vs interrogative which | EMIT |
@@ -373,22 +379,28 @@ Categories: EMIT = frame expected; SILENT = no frame expected; PENDING_HUMAN = d
 | CT-E30 | EN | `Which structure is never stored contiguously in memory?` | PENDING_HUMAN_H2 | never is an absolute adverb, not predicate negation; excluded | Design predicts SILENT; overlaps the ABSOLUTE_TERM concept | EMIT |
 | CT-H36 | HE | `איזה מהמבנים הבאים, בניגוד לאחרים, אינו אברון?` | LIMIT_RECALL_COST | Parenthetical clause boundary inside the frame blocks it | Genuine negative selection; design predicts SILENT (accepted recall cost) | EMIT |
 | CT-H37 | HE | `איזה בעל חיים קטן אינו יונק?` | LIMIT_RECALL_COST | Three content tokens exceed the NP budget (2) | Genuine negative selection; design predicts SILENT (budget edge, accepted recall cost) | EMIT |
+| CT-E11 | EN | `Which of the following statements about the French Revolution is NOT correct?` | LIMIT_RECALL_COST | First AUX is the 9th token after the selector, outside EN_WINDOW = 8 | Genuine negative selection; design predicts SILENT (window edge, outside) | EMIT |
+| CT-H42 | HE | `איזה מהתלמידים אמר שלא למד?` | LIMIT_PRECISION_COST | ש is a complementizer here, but position (1 content token) cannot tell it from a relative | Reported-clause negation; design predicts EMIT | EMIT |
+| CT-H44 | HE | `מי שאינו מסכים עם הטענה צריך לבחור באיזה מהמשפטים?` | LIMIT_PRECISION_COST | מי + relative שאינו at budget 0 | Free relative (whoever), not a question about who is negated; design predicts EMIT | EMIT |
+| CT-H45 | HE | `איזה גוף שלא פועל עליו כוח ימשיך לנוע?` | LIMIT_PRECISION_COST | SEL + 1 head noun + ש-NEG (the HO3-005 shape with איזה) | Relative negation on the GIVEN entity; design predicts EMIT | EMIT |
+| CT-H46 | HE | `איזה ויטמין שאינו מסיס בשומן נמצא בתפוז?` | LIMIT_PRECISION_COST | SEL + 1 head noun + ש-NEG (the HO4-007 shape with one-token head, no commas) | Descriptive relative on the given entity; design predicts EMIT | EMIT |
+| CT-H47 | HE | `כולם הגיעו לשיעור מלבד אחד. מה גרם לכך?` | LIMIT_PRECISION_COST | Frame 2 has no selector requirement: narrative מלבד אחד | Content exception with an anaphoric word; design predicts EMIT | EMIT |
 | CT-E25 | EN | `Which code means it was not found?` | LIMIT_PRECISION_COST | No lexical-verb detection: AUX was is inside the window and followed by not | Content negation; design predicts EMIT (known precision cost) | EMIT |
 
 ### 5.4 Contract matrix summary
 
 | Category | Count | Deterministic ownership justified |
 |---|---|---|
-| EMIT (HE 22, EN 9) | 31 | yes |
-| SILENT (HE 18, EN 8) | 26 | yes |
-| PENDING_HUMAN (H1: 3, H2: 2) | 5 | no: semantic/human gate |
-| LIMIT (2 recall cost, 1 precision cost) | 3 | no: documented imperfection |
-| **NEW CONTRACT_TEST rows** | **65** | |
+| EMIT (HE 23, EN 10) | 33 | yes |
+| SILENT (HE 17, EN 8) | 25 | yes |
+| PENDING_HUMAN (H1: 3, H2: 3) | 6 | no: semantic/human gate |
+| LIMIT (3 recall cost, 6 precision cost) | 9 | no: documented imperfection |
+| **NEW CONTRACT_TEST rows** | **73** | |
 | OBSERVED regression rows (5.1) | 29 | per row |
 
-The unchanged linter disagrees with the design prediction on 27 of the 57 EMIT/SILENT rows: 8 rows it misses (the `איננ*` paradigm, `מי מהבאים שלא`, `isn't`, `cannot`) and 19 rows it emits (every coordinated, relative-on-given, embedded, late or non-question negation). `CONTRACT_TABLE_SHA256` over the table in 5.3, exactly as printed (header and rows, LF line endings, trailing newline): `4827096d561745cdd31b95248a2c700c004a032c5bc81474750ddba38e75a966`.
+The unchanged linter disagrees with the design prediction on 26 of the 58 EMIT/SILENT rows: 8 rows it misses (the `איננ*` paradigm, `מי מהבאים שלא`, `isn't`, `cannot`) and 18 rows it emits (every coordinated, relative-on-given, embedded, late or non-question negation). `CONTRACT_TABLE_SHA256` over the table in 5.3, exactly as printed (header and rows, LF line endings, trailing newline): `a16641cfe15f5c17d370ce61863c439968e80f31311b4c901124a768924ef901`.
 
-Pairs that carry the adversarial weight: H01/H20 (same token, selection vs factual); H32a/H32b (`שלא` vs `ושלא`); H04/H41/H40 (relative budget); H05/H37 (NP budget edge); H03a-h (full paradigm); H22/H21 vs HO3-058 (contrast vs exception, comma and no comma); E01/E21/E22/E26 (English `not` in the frame, embedded, far, coordinated); E23 (relative `which`); H11/H39 and E07/E24 (anaphoric vs named exceptee); H09/H35/E09 (sentence boundaries); H27/H33 (positive question that contains a negative fact / reported clause); H28 (selection cue without negation); H29/E32 (negation without a frame).
+Pairs that carry the adversarial weight: H01/H20 (same token, selection vs factual); H32a/H32b (`שלא` vs `ושלא`); H04/H41/H40 (relative budget); H05/H37 (NP budget edge); H03a-h (full paradigm); H22/H21 vs HO3-058 (contrast vs exception, comma and no comma); E01/E10/E11/E21/E22/E26 (English `not` in the frame, at the window edge inside and outside, embedded, far, coordinated); H45/H46 vs HO3-005/HO4-007 (same structure, one-token head); H42/H44 (complementizer and free relative `ש`); E23 (relative `which`); H11/H39 and E07/E24 (anaphoric vs named exceptee); H09/H35/E09 (sentence boundaries); H27/H33 (positive question that contains a negative fact / reported clause); H28 (selection cue without negation); H29/E32 (negation without a frame).
 
 ## 6. Implementation handoff (for a LATER Run; this Run does not start it)
 
@@ -411,8 +423,10 @@ Expected files to change in that Run: `src/domain/assessment/question-lint.ts`, 
 Proposed v0.5 pre-registration (requires Dor's approval, H3; these are product thresholds, not facts):
 - Composition: at least 23 CLEAN negation-bearing stems (>= 15 Hebrew, >= 8 English) covering relative, contrast, factual, late, embedded, coordinated, `שאינו/ואינו/ושלא/וש-` forms and the `איננ*` paradigm in non-selecting use; at least 16 genuine negative-selection stems (>= 8 Hebrew, >= 8 English) of which at least 8 sit OUTSIDE the frame (imperative, comma-interrupted, NP budget + 1, adnominal) to measure the accepted recall cost; at least 4 exception stems per language; NP-budget boundary stems at N, N+1 and relative-budget 1, 2.
 - Contamination: every v0.5 stem checked against all OBSERVED and CONTRACT rows; same-concept overlaps removed pre-freeze.
-- Success (proposed): at most 1 CLEAN negation stem warned; every in-frame genuine stem detected (paradigm complete); outside-frame misses are REPORTED, not failures.
-- Fallback trigger (proposed): 3 or more CLEAN negation stems warned out of the 23 means Candidate C is rejected and Candidate E (demote to semantic ownership, remove the warning from deterministic output) is designed next.
+- Success (proposed): at most 1 CLEAN negation stem warned out of at least 23. With 23 CLEAN stems this allowance cannot bound the false-positive rate tightly (one warning in 23 is a 95 percent upper bound near 20 percent); v0.5 is a gate against gross failure, not a precision estimate, and the report must say so. The in-frame genuine detection criterion (every paradigm form detected) is true by construction and is a regression check, not evidence; the informative measures are the CLEAN-warned count and the outside-frame miss count.
+- Fallback trigger (proposed): 3 or more CLEAN negation stems warned out of 23 means Candidate C is rejected and Candidate E (demote to semantic ownership, remove the warning from deterministic output) is designed next. Exactly 2 warned is INCONCLUSIVE: extend the CLEAN negation set to at least 46 fresh stems before deciding; do not tune on the 2.
+- Authorship and blindness (required): v0.5 stems must be authored and labeled by an author or process that has NOT read section 5 of this document or the contract file (the design leaks through the matrix), in the same way earlier held-out batches were separated by instruction; the report must state the separation honestly as instruction-based unless enforced.
+- The v0.5 composition must include English window-edge stems (8 and 9 tokens before the auxiliary), one-token-head relatives, `ש` complementizers and Frame 2 narrative exceptions, because the observed data do not constrain the budgets.
 
 No claim of validation is possible before v0.5.
 
@@ -421,7 +435,7 @@ No claim of validation is possible before v0.5.
 Required before the implementation Run (none is required to close this Run):
 
 - **H1 - Imperative-selection recall loss.** Accept that stems such as `בחרו את החיה שלא חיה במים` and `Select the answer that does not apply` stop warning (CT-H30, CT-H31, CT-E28; golden PREFIX-01; four legacy rows). Recommended: accept. Alternative (not recommended): a minimal imperative frame, which reintroduces a verb list and the Run 008 treadmill.
-- **H2 - Rulings on unreviewed shapes the design flips.** The design needs your view, not an assumed ruling: (Q1) HO4-012 `... means that the requested page was not found?`: negative-stem flaw or ordinary content? (Q2) `Which structure is never stored contiguously ...?` (CT-E30): negative wording or the absolute-term concept? (Q3) `... the LEAST likely ...` (CT-E29): keep deterministic as scalar-minimum selection, or semantic? (Q4) adnominal negation as the selection restrictor: `איזה חלק בלתי נחוץ ...`, `איזה מבנה ללא ממברנה ...`. (Q5) `איזה בעל חיים שאינו דג חי במים?` (CT-H41): same as HO4-062 (fine)? (Q6) `איזה בעל חיים קטן אינו יונק?` (CT-H37): do you want it caught (would imply a larger NP budget)? Q1-Q4 are needed; Q5-Q6 are confirmations of the design's predictions.
+- **H2 - Rulings on unreviewed shapes the design flips.** The design needs your view, not an assumed ruling: (Q1) HO4-012 `... means that the requested page was not found?`: negative-stem flaw or ordinary content? (Q2) `Which structure is never stored contiguously ...?` (CT-E30): negative wording or the absolute-term concept? (Q3) `... the LEAST likely ...` (CT-E29): keep deterministic as scalar-minimum selection, or semantic? (Q4) adnominal negation as the selection restrictor: `איזה חלק בלתי נחוץ ...`, `איזה מבנה ללא ממברנה ...`. (Q5) `איזה בעל חיים שאינו דג חי במים?` (CT-H41): same as HO4-062 (fine)? (Q6) `איזה בעל חיים קטן אינו יונק?` (CT-H37): do you want it caught (would imply a larger NP budget)? Q1-Q5 are needed (Q5 because CT-H41 is a semantic twin of HO4-062 and the design's silence there is only a budget); Q6 is optional.
 - **H3 - v0.5 acceptance and fallback.** Approve or amend the success and fallback criteria in section 7.
 
 ## 9. Canonical placement

@@ -1765,7 +1765,7 @@ Whole-utterance part: a human design decision plus a fresh held-out batch. Relat
 
 # FUB-076 — STEM_NEGATIVE_WORDING Defines "Negative Stem" as Any Negation Token
 
-**Status:** `DESIGNED_PRE_REGISTERED` (Run 2026-10-10-ASSESSMENT-ENGINE-010: structural design chosen and contract pre-registered; NOT implemented; the linter still has the Run 008 token-level behavior; human gates H1-H3 pending). Previously `REOPENED` (human-confirmed by HUMAN_ADJUDICATED_V0_4 on 2026-10-09).
+**Status:** `DESIGNED_PRE_REGISTERED` (Run 2026-10-10-ASSESSMENT-ENGINE-010: structural design chosen and contract pre-registered; NOT implemented; the linter still has the Run 008 token-level behavior; human gates H1-H3 pending). Independent review (general) ACCEPT_WITH_CORRECTIONS, corrections applied. Previously `REOPENED` (human-confirmed by HUMAN_ADJUDICATED_V0_4 on 2026-10-09).
 **Priority:** `MEDIUM`
 **Area:** `src/domain/assessment/question-lint.ts`, `text-normalize.ts`
 
@@ -1789,7 +1789,7 @@ Full record: `docs/ASSESSMENT_STEM_NEGATION_DESIGN_V0_1.md`. No change to `quest
 
 Decision: the governing relation ("negation controls which answer is selected") is semantic and CANNOT be implemented fully deterministically. Chosen design = Candidate C, a conservative hybrid: deterministic ownership only for two structural frames (SELECTOR-NEGATED-PREDICATE and EXCEPTION-SLOT, Hebrew and English); the Run 008 `SELECTION_CUES`/`CONTRAST_NEXT` mechanism is replaced, not extended; coordinated (`ו`/`וש`) negation, a positive copula, a clause boundary, an exceeded noun-phrase budget, or a negation before the selector block the frame; the full `אינ-`/`איננ-` paradigm, `לא`, `אין` and English auxiliary+`not`/`n't`/`cannot` are covered by paradigm, not by observed cases. Negative selection outside the frames (imperative, comma-interrupted, wide NP, adnominal `בלתי/ללא/בלא`, scalar `least`, absolute `never`) leaves deterministic ownership: AI OPTIONAL (detection) and HUMAN (severity), no new signal. Not list-free: the design uses closed grammatical inventories and four numeric budgets, stated plainly in the design document (section 3.4), with documented recall and precision costs (4.4).
 
-Pre-registered contract: 65 new CONTRACT_TEST rows (31 EMIT, 26 SILENT, 5 PENDING_HUMAN, 3 LIMIT; `CONTRACT_TABLE_SHA256` in the design document) plus 29 OBSERVED regression rows. Observed cases are regression only; CONTRACT_TEST rows are not validation; the paper agreement with the 9 human-ruled cases is not validation. Any implementation requires a NEW fresh held-out v0.5 evaluated afterwards. Fallback if v0.5 fails the proposed precision criteria: Candidate E (demote to semantic ownership).
+Pre-registered contract: 73 new CONTRACT_TEST rows (33 EMIT, 25 SILENT, 6 PENDING_HUMAN, 9 LIMIT (3 recall, 6 precision cost); `CONTRACT_TABLE_SHA256` in the design document) plus 29 OBSERVED regression rows. Observed cases are regression only; CONTRACT_TEST rows are not validation; the paper agreement with the 9 human-ruled cases is not validation. Any implementation requires a NEW fresh held-out v0.5 evaluated afterwards. Fallback if v0.5 fails the proposed precision criteria: Candidate E (demote to semantic ownership).
 
 Human gates before an implementation Run: H1 (accept recall loss for imperative-selection stems), H2 (rulings Q1-Q6 on unreviewed shapes the design flips, notably HO4-012), H3 (v0.5 acceptance and fallback criteria). FUB-075 and the other assessment FUBs are untouched.
 
