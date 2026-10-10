@@ -1,34 +1,36 @@
-# UNLOCK — Pilot FUB-068 Editor Safety
+# UNLOCK — Pilot Clean Slate Reset (Audit + Dry-Run)
 
-PLAN_VERSION: 048
-RUN_ID: 2026-10-10-PILOT-FUB-068-EDITOR-SAFETY-001
-START_HEAD: `588ec1e`
+PLAN_VERSION: 049
+RUN_ID: 2026-10-10-PILOT-CLEAN-SLATE-RESET-001
+START_HEAD: `0f18123`
 RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `c2fcb72`
-STATUS: **COMPLETE — STOP.** Small Pilot-safety product Run: Instructor Question Editor only.
+LAST_VERIFIED_HEAD: `0f18123`
+STATUS: **COMPLETE — STOP.** AUDIT + DRY-RUN ONLY. No hosted mutation, no delete/truncate, no Auth user deletion, no push.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**`.
 
 ## 1. Goal
 
-Implement the human-approved FUB-068 Option B so instructors cannot silently lose dirty Question Editor work through editor-controlled exits, and cannot silently publish a stale saved version while unsaved edits are visible.
+Produce an exact, reversible, human-approved Clean Slate reset plan and read-only dry-run inventory for the current hosted Pilot/Production data, while preserving one human-owned Instructor/Admin account.
 
 ## 2. Hard invariants
 
-- bounded to the Question Editor surface (`src/app/instructor/courses/[courseId]/questions/[questionId]/**`)
-- no localStorage / sessionStorage / autosave / draft recovery
-- no change to QuestionVersion model, Save/Publish semantics, learner behavior, import, Course lifecycle, schema, API contracts, dependencies
-- Publish while dirty: block + explicit Hebrew "Save first" feedback (no save-then-publish)
-- no real-browser claims without a real-browser test; no push
+- audit + dry-run only; destructive execution is a separate human-approved step after this Run
+- preserved account identifier is supplied by the human at execution time, never committed
+- no schema change, migration, seed redesign, or product code change (product change needed => PLAN_CONFLICT)
+- dry-run is the default; destructive mode must never be default
+- Auth cleanup, SQL cleanup, and storage cleanup are separate boundaries
+- no push
 
 ## 3. Slices
 
 | Slice | Scope | Status |
 |---|---|---|
-| S1 | Dirty guard (beforeunload, Back, Create Another) + dirty-Publish block + tests | DONE |
-| Z | Review, verify, reconcile docs, close, commit | DONE |
+| A1 | Schema / ownership / backup audit | DONE |
+| A2 | Dry-run inventory artifact + runbook | DONE |
+| Z | Review, verify, docs, close, commit | DONE |
 
 ## History
 
+- PILOT-CLEAN-SLATE-RESET-001: `docs/RUNS/2026-10-10-PILOT-CLEAN-SLATE-RESET-001.md` (COMPLETE)
 - PILOT-FUB-068-EDITOR-SAFETY-001: `docs/RUNS/2026-10-10-PILOT-FUB-068-EDITOR-SAFETY-001.md` (COMPLETE)
-- DEVOS-V1-3-ALIGNMENT-001: `docs/RUNS/2026-10-10-DEVOS-V1-3-ALIGNMENT-001.md` (COMPLETE)

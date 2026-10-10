@@ -68,7 +68,7 @@ External dependencies (all WAITING_FOR_RUPPIN): (1) real Ruppin source material;
 | QR/join link | HUMAN |
 | Privacy notice (ADR-021; operator presents until UI exists) | HUMAN |
 | Backup/operator checklist | HUMAN |
-| Production QA/test-data cleanup | HUMAN |
+| Production QA/test-data cleanup (Clean Slate reset: audit + dry-run prepared, `docs/PILOT_CLEAN_SLATE_RESET_RUNBOOK.md`; BLOCKED_PENDING_BACKUP, destructive step not executed) | HUMAN |
 
 ## P5 — GO / class launch
 | Item | Status |

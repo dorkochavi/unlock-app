@@ -9,6 +9,8 @@ deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN
 
 ## Pilot Focus (2026-10-10)
 
+Clean Slate reset (Run 2026-10-10-PILOT-CLEAN-SLATE-RESET-001): audit + read-only inventory (`scripts/pilot-clean-slate-inventory.sql`) + proposed reset in `docs/PILOT_CLEAN_SLATE_RESET_RUNBOOK.md`; NOT executed, BLOCKED_PENDING_BACKUP (no `pre-destructive` backup; last Production backup 2026-10-04), hosted inventory counts not yet taken (human-run). Evidence: PGlite only.
+
 Execution is governed by `docs/MASTER_PILOT_COUNTDOWN.md`; Ruppin content path: `docs/RUPPIN_PILOT_CONTENT_INTAKE.md` (OQ-024 resolved). Assessment Engine frozen for Pilot (FUB-076 DESIGNED_PRE_REGISTERED, not implemented). FUB-068 Option B implemented (unit evidence only; no browser run). Content gate: WAITING_FOR_RUPPIN.
 
 ## Repository / Release State
