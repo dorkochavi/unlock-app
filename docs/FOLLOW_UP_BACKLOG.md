@@ -1891,7 +1891,7 @@ Before the real Pilot.
 
 # FUB-068 — Question editor unsaved-edit navigation loss + Publish/dirty relationship (P2-03 + UX-01)
 
-**Status:** `DECIDED_PENDING_IMPLEMENTATION` — human chose Option B (Dor, 2026-10-10, Run 2026-10-10-RUPPIN-PILOT-FOCUS-001): `beforeunload` for supported browser exits; guard editor-controlled internal exits (Back, Create Another); when dirty, Publish must NOT silently publish the previously saved draft (require/save-first or make saved-vs-visible state explicit); NO localStorage/server autosave. NOT implemented.
+**Status:** `IMPLEMENTED_UNIT_VERIFIED` — Option B implemented in `c2fcb72` (Run 2026-10-10-PILOT-FUB-068-EDITOR-SAFETY-001): `beforeunload` only while dirty; `window.confirm` (Hebrew) on Back and Create Another when dirty; Publish while dirty makes no API call and shows a Hebrew save-first notice (no save-then-publish); no localStorage/sessionStorage/autosave. **Evidence: unit + source-wiring tests + independent review; NOT rendered or browser-tested.** Remaining boundary: browser back/forward, other links/nav, and mobile `beforeunload` are not guarded or proven; confirm in the P4 instructor walkthrough (FUB-058).
 **Priority:** `MEDIUM` (authoring work can be silently lost, but the surface is instructor-only and the data is re-typeable; no learner or persisted-data corruption)
 **Area:** `src/app/instructor/courses/[courseId]/questions/[questionId]/page.tsx`, `editor-logic.ts`
 

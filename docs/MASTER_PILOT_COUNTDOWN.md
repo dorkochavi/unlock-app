@@ -24,7 +24,8 @@ Statuses: `DONE` · `NOW` · `WAITING_FOR_RUPPIN` · `READY_AFTER_CONTENT` · `H
 |---|---|
 | Lock Ruppin V1 content-entry route (OQ-024) | DONE |
 | Freeze Assessment Engine for Pilot (FUB-076 not implemented) | DONE |
-| FUB-068 decision (Option B; implementation pending) | DONE |
+| FUB-068 decision (Option B) | DONE |
+| FUB-068 implementation (Question Editor unsaved-edit guard + dirty-Publish block; unit evidence only, no browser run) | DONE `c2fcb72` — real-browser check pending in the P4 instructor walkthrough |
 | Create intake protocol | DONE |
 | Identify exact external dependencies | DONE |
 
@@ -77,4 +78,4 @@ External dependencies (all WAITING_FOR_RUPPIN): (1) real Ruppin source material;
 | Pilot GO | GO_GATE |
 
 ## Deferred (post-Pilot, not in countdown)
-`DEFERRED_POST_PILOT`: FUB-076 implementation / v0.5 / H1-H3; in-product PDF/OCR/Google OAuth/AI generation/Material CMS (OQ-023, OQ-038). FUB-068 implementation is a small candidate that advances the P4 instructor walkthrough (human may schedule it; not a GO blocker).
+`DEFERRED_POST_PILOT`: FUB-076 implementation / v0.5 / H1-H3; in-product PDF/OCR/Google OAuth/AI generation/Material CMS (OQ-023, OQ-038). FUB-068 implementation is done (`c2fcb72`); its real-browser behavior is verified only in the P4 instructor walkthrough.

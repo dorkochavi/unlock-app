@@ -9,7 +9,7 @@ deferred work in `docs/FOLLOW_UP_BACKLOG.md`; unresolved decisions in `docs/OPEN
 
 ## Pilot Focus (2026-10-10)
 
-Execution is governed by `docs/MASTER_PILOT_COUNTDOWN.md`; Ruppin content path: `docs/RUPPIN_PILOT_CONTENT_INTAKE.md` (OQ-024 resolved). Assessment Engine frozen for Pilot (FUB-076 DESIGNED_PRE_REGISTERED, not implemented). FUB-068 decided (Option B), not implemented. Content gate: WAITING_FOR_RUPPIN.
+Execution is governed by `docs/MASTER_PILOT_COUNTDOWN.md`; Ruppin content path: `docs/RUPPIN_PILOT_CONTENT_INTAKE.md` (OQ-024 resolved). Assessment Engine frozen for Pilot (FUB-076 DESIGNED_PRE_REGISTERED, not implemented). FUB-068 Option B implemented (unit evidence only; no browser run). Content gate: WAITING_FOR_RUPPIN.
 
 ## Repository / Release State
 
@@ -218,7 +218,7 @@ reports; only still-open pointers remain:
 - Human decisions still open from the archived Pilot Readiness verification (`docs/RUNS/2026-09-26-SLICE-B-PILOT-READINESS-VERIFICATION.md`): Q2-B (valid-refresh-token behavior after natural session expiry unproven), Q3 (authenticated accessibility/RTL verification of login/join/Progress/instructor flows outstanding), Q4 (no authenticated Today timings), Q5 (Vercel failed-build behavior unknown), Q6a (`/login` is frameable; framing protection is a human DECISION).
 - FUB-044 (expired-session recovery; DEFERRED, not closed; owner `docs/FOLLOW_UP_BACKLOG.md`): learner and instructor 401 handling IMPLEMENTED + TESTED + Production happy-path smoke [HUMAN_REPORTED 2026-10-07] (`59f718f`, `70b2282`). Accepted V1 semantics: a 401 during learner Answer means the answer was not accepted and no Attempt exists; it is never auto-replayed and the learner answers again after re-authentication (Practice returns to the same Course/Topic scope; exact question not guaranteed). An Instructor mutation 401 shows an inline notice, keeps the page and unsaved draft mounted, opens sign-in in a new tab, no auto-replay or draft persistence; cross-tab draft preservation HUMAN VERIFIED on Production. NOT verified: a real expired-session 401 was never induced in Production, so the live notice transition is covered by unit tests/review only (node-only test env, no DOM test).
 - Isolated QA data (`QA-SliceB-*`) and other test data remain in the pre-pilot cleanup (`docs/PILOT_READINESS.md` item 12).
-- Decided, not implemented: FUB-068 Option B (unsaved-edit guard for the question editor; recorded 2026-10-10).
+- FUB-068 Option B IMPLEMENTED (`c2fcb72`, 2026-10-10): Question Editor `beforeunload` while dirty; confirm on Back and Create Another when dirty; Publish blocked while dirty with a Hebrew save-first notice; no local persistence. Evidence: unit + source-wiring + reviewer only; NOT browser-tested. Not guarded: browser back/forward, other links/nav on the page, mobile browsers where `beforeunload` is unreliable.
 - Pre-pilot: content gate, SMTP / Auth email capacity, earlier test-data cleanup (item 12) — `docs/PILOT_READINESS.md` §3.
 
 Current execution source: `docs/CHATGPT_PLAN.md`. Run history: `docs/RUNS/**`.
