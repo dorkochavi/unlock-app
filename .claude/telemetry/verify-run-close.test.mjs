@@ -584,6 +584,54 @@ test('Dormant: DEV_STATUS prose mentioning RUN_ID mid-line never triggers the RU
 });
 
 // ---------------------------------------------------------------------
+// V1.3: stale Slice attribution (WARN-only)
+// ---------------------------------------------------------------------
+function sliceTablePlan(runId, startHead, rows) {
+  return (
+    planFixture({ runId, startHead, runStatus: 'IN_PROGRESS' }) +
+    ['| Slice | Scope | Status |', '|---|---|---|', ...rows.map((r) => `| ${r} | x | DONE |`), ''].join('\n')
+  );
+}
+
+function writeSliceEvents(dir, runId, sliceIds) {
+  const rawDir = path.join(dir, 'scratch', 'telemetry', runId, 'raw');
+  fs.mkdirSync(rawDir, { recursive: true });
+  const lines = sliceIds.map((s) => JSON.stringify({ event: 'PostToolUse', slice_id: s }));
+  fs.writeFileSync(path.join(rawDir, 'ev.jsonl'), lines.join('\n') + '\n');
+}
+
+test('WARN: telemetry slice_id Z2 not declared by Plan slices 1, 2, Z (exit 0, never FAIL)', () => {
+  const runId = '2026-02-01-STALE-SLICE';
+  const dir = attributionFixture(2, runId);
+  const startHead = git(dir, ['rev-list', '--max-parents=0', 'HEAD']).trim();
+  writeDocs(dir, { devStatus: `# DEV_STATUS\n\nRUN_ID: ${runId}\n`, plan: sliceTablePlan(runId, startHead, ['1', '2', 'Z']) });
+  writeSliceEvents(dir, runId, ['1', 'Z2', 'Z2', null]);
+  const out = runVerifier(dir);
+  assert.equal(out.status, 0, out.stdout);
+  assert.match(out.stdout, /slice_id "Z2" \(2 event\(s\)\) is not declared/);
+  assert.doesNotMatch(out.stdout, /slice_id "1"/);
+});
+
+test('No stale-slice WARN: declared ids (incl. S1/1 equivalence, bold/backtick cells), no slice table, no slice_ids, no telemetry', () => {
+  const runId = '2026-02-01-STALE-OK';
+  const dir = attributionFixture(2, runId);
+  const startHead = git(dir, ['rev-list', '--max-parents=0', 'HEAD']).trim();
+  const write = (rows) =>
+    writeDocs(dir, { devStatus: `# DEV_STATUS\n\nRUN_ID: ${runId}\n`, plan: sliceTablePlan(runId, startHead, rows) });
+  write(['**D1**', '`D2`', 'Slice 3', '1', 'Z']);
+  writeSliceEvents(dir, runId, ['D1', 'd2', '3', 'S1', 'Z']);
+  assert.doesNotMatch(runVerifier(dir).stdout, /not declared by the current Plan/);
+  write([]); // no slice table rows -> silent even with odd ids
+  writeSliceEvents(dir, runId, ['Z2']);
+  assert.doesNotMatch(runVerifier(dir).stdout, /not declared by the current Plan/);
+  write(['1']);
+  writeSliceEvents(dir, runId, [null, null]); // no slice_ids
+  assert.doesNotMatch(runVerifier(dir).stdout, /not declared by the current Plan/);
+  fs.rmSync(path.join(dir, 'scratch'), { recursive: true, force: true }); // no telemetry at all
+  assert.doesNotMatch(runVerifier(dir).stdout, /not declared by the current Plan/);
+});
+
+// ---------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------
 console.log('');

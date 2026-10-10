@@ -17,6 +17,8 @@ At the start of substantial work:
 
 Do not use `docs/RUNS/**` as normal working context.
 
+Before searching for a DevOS tool, command, verifier, telemetry utility, checkpoint mechanism or workflow path, consult `docs/CLAUDE_CODE_OPERATING_GUIDE.md`.
+
 ## 2. Source Categories
 
 Use one home per fact:

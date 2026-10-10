@@ -36,6 +36,8 @@ Use `docs/CONTEXT_MAP.md` only as a GPS when needed.
 Load the smallest relevant ADR/rule/code/tests.
 Do not read historical Runs by default.
 
+Context shape (guidance, not a numeric budget): a focused Run/Slice should say up front which canonical owners it expects to read, whether any broad read is expected, whether subagents are expected, and which operations are likely to return large output. Files over ~300 lines default to targeted reads (ranges/searches) unless a full read is justified. Interpretation of efficiency signals: `docs/DEVOS_OBSERVABILITY.md`.
+
 ## 4. Confirm Scope
 
 Before editing, ensure the Slice can be implemented without inventing a missing product/architecture decision.
@@ -113,7 +115,7 @@ Git is the technical Slice history. Do not update Run Report/DEV_STATUS after ev
 ## 12. Temporary Continuity
 
 If another session must resume mid-Run, keep `scratch/development_checkpoint.md` small (roughly one screen):
-- Run/Slice;
+- Run/Slice (a `RUN_ID:` line matching the Plan plus one `CURRENT_SLICE:` line — telemetry attributes Slices only when both agree);
 - HEAD;
 - just completed;
 - blockers;

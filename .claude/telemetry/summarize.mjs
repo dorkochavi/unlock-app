@@ -310,6 +310,10 @@ function classifyCommand(commandClass) {
     return "GIT";
   }
 
+  if (commandClass.startsWith("nav:")) {
+    return "NAVIGATION";
+  }
+
   return "OTHER";
 }
 
@@ -326,6 +330,57 @@ function eventCommandClasses(event) {
   }
 
   return event.command_class ? [event.command_class] : [];
+}
+
+/**
+ * Privacy-safe response-size breakdown. Uses only numeric `response_chars`
+ * plus tool name / command class / slice id / success — never a body or a
+ * raw command. `by_command_class` attributes a call's whole size to its
+ * FIRST command class (no double counting for compound commands).
+ */
+function summarizeResponseSizes(toolEvents) {
+  const measured = toolEvents.filter((event) =>
+    Number.isFinite(event.response_chars),
+  );
+
+  const byTool = new Map();
+  const byClass = new Map();
+
+  for (const event of measured) {
+    const tool = event.tool_name ?? "UNKNOWN";
+
+    byTool.set(
+      tool,
+      (byTool.get(tool) ?? 0) + event.response_chars,
+    );
+
+    const first = eventCommandClasses(event)[0];
+
+    if (first) {
+      byClass.set(
+        first,
+        (byClass.get(first) ?? 0) + event.response_chars,
+      );
+    }
+  }
+
+  const top = [...measured]
+    .sort((a, b) => b.response_chars - a.response_chars)
+    .slice(0, 5)
+    .map((event) => ({
+      tool_name: event.tool_name ?? "UNKNOWN",
+      response_chars: event.response_chars,
+      command_class: eventCommandClasses(event)[0] ?? null,
+      slice_id: event.slice_id ?? null,
+      success: event.success !== false,
+    }));
+
+  return {
+    by_tool: mapToSortedObject(byTool),
+    by_command_class: mapToSortedObject(byClass),
+    max_single: max(measured.map((event) => event.response_chars)),
+    top,
+  };
 }
 
 function isHistoricalRunPath(filePath) {
@@ -893,6 +948,30 @@ function aggregate(runId, events, snapshots) {
         ),
     },
 
+    response_sizes: summarizeResponseSizes(toolEvents),
+
+    // Repository access, three SEPARATE evidence classes. Native reads and
+    // searches are exactly what the runtime reports via Read/Grep/Glob.
+    // Shell navigation is a conservative leading-command match (nav:*
+    // classes) on Bash/PowerShell calls; it is never promoted into native
+    // reads and carries no paths or command text.
+    repository_access: {
+      native_file_reads: reads.length,
+      native_searches: searches.length,
+      shell_navigation_calls: shellEvents.filter((event) =>
+        eventCommandClasses(event).some((c) =>
+          c.startsWith("nav:"),
+        ),
+      ).length,
+      shell_navigation_by_class: mapToSortedObject(
+        countByMulti(shellEvents, (event) =>
+          eventCommandClasses(event).filter((c) =>
+            c.startsWith("nav:"),
+          ),
+        ),
+      ),
+    },
+
     shell_activity: {
       total:
         shellEvents.length,
@@ -986,6 +1065,9 @@ function aggregate(runId, events, snapshots) {
     limitations: [
       "Telemetry records metadata, not file contents, prompts, or tool-response bodies.",
       "Grep/Glob discovery does not count as a substantive file read.",
+      "repository_access.native_* counts only what the runtime exposes via Read/Grep/Glob. shell_navigation_calls is a SEPARATE, conservative signal: Bash/PowerShell calls whose leading command is cat/head/tail/grep/rg/sed -n/Get-Content/Select-String (nav:* classes). It is not a file-read count, infers no file paths, and misses navigation hidden behind other wrappers (e.g. a piped or scripted read) — treat it as a lower bound.",
+      "Raw events collected before nav:* classes existed recorded shell navigation as shell:other, so shell_navigation_calls reads 0 for older Runs; this is 'not recorded', not 'none happened'. Historical raw data is not rewritten.",
+      "response_sizes holds numeric response_chars only (by tool, by first command class, max, top 5 metadata rows) — never bodies or raw commands. A Run with few calls can still have high tool_response_chars because a handful of large responses dominate; see response_sizes.top.",
       "Instruction-loading events depend on what Claude Code exposes; some project-instruction mechanisms may not emit equivalent events.",
       "Run duration may span multiple or overlapping sessions; summed session duration is not guaranteed to equal human elapsed Run time.",
       "Context misses and unnecessary rechecks require closeout judgment and are intentionally not inferred from raw events.",
@@ -1285,6 +1367,33 @@ function renderMarkdown(summary) {
     `- Tool failures: ${summary.tools.failures}`,
     `- Total recorded tool duration: ${formatDuration(summary.tools.total_duration_ms)}`,
     `- Tool response characters: ${summary.tools.total_response_chars}`,
+    `- Largest single tool response (chars): ${summary.response_sizes.max_single ?? "NOT AVAILABLE"}`,
+    ``,
+    `## Response Size Hotspots`,
+    ``,
+    `Characters, not tokens. Metadata only (no bodies, no raw commands).`,
+    ``,
+    `By tool:`,
+    "```json",
+    JSON.stringify(summary.response_sizes.by_tool, null, 2),
+    "```",
+    `By first command class (shell calls):`,
+    "```json",
+    JSON.stringify(summary.response_sizes.by_command_class, null, 2),
+    "```",
+    ``,
+    `| Top responses | chars | command class | slice | success |`,
+    `|---|---|---|---|---|`,
+    ...summary.response_sizes.top.map(
+      (row) =>
+        `| ${row.tool_name} | ${row.response_chars} | ${row.command_class ?? "-"} | ${row.slice_id ?? "-"} | ${row.success} |`,
+    ),
+    ``,
+    `## Repository Access (separate evidence classes)`,
+    ``,
+    `- Native file reads (Read): ${summary.repository_access.native_file_reads}`,
+    `- Native searches (Grep/Glob): ${summary.repository_access.native_searches}`,
+    `- Shell navigation calls (Bash/PowerShell cat/head/tail/grep/rg/sed -n/Get-Content/Select-String; lower bound, not file reads): ${summary.repository_access.shell_navigation_calls}`,
     ``,
     `## Subagents`,
     ``,

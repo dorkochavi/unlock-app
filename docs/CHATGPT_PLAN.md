@@ -1,41 +1,39 @@
-# UNLOCK — Ruppin Pilot focus: countdown + content intake protocol
+# UNLOCK — Development OS V1.3 alignment
 
-PLAN_VERSION: 046
-RUN_ID: 2026-10-10-RUPPIN-PILOT-FOCUS-001
-START_HEAD: `384b819`
-RUN_STATUS: COMPLETE
-LAST_VERIFIED_HEAD: `384b819`
-STATUS: **COMPLETE — STOP.** GOVERNANCE / PILOT-PREPARATION ONLY. No product implementation.
+PLAN_VERSION: 047
+RUN_ID: 2026-10-10-DEVOS-V1-3-ALIGNMENT-001
+START_HEAD: `1da8b51`
+RUN_STATUS: IN_PROGRESS
+LAST_VERIFIED_HEAD: `1da8b51`
+STATUS: **IN PROGRESS.** DEVOS DOCS + TELEMETRY TOOLING ONLY. No product implementation.
 
 This file is CURRENT EXECUTION ONLY. Historical plan bodies live in `docs/RUNS/**`.
 
 ## 1. Goal
 
-Create the canonical Pilot execution countdown and intake protocol, lock the first Ruppin content-entry path, freeze Assessment Engine expansion for Pilot, and record the approved FUB-068 direction.
+Fix four cross-Run DevOS problems: operational discovery miss, telemetry semantic gap (shell navigation vs native reads), output-cost blind spot (response-size hotspots), stale Slice attribution; compress HOT `DEV_STATUS` toward current truth; record context-shape practice.
 
 ## 2. Hard invariants
 
-- no source-code changes; no schema / dependency / API / UI changes
+- no product `src/**`, schema, dependency, API, UI, or Pilot-content change
 - no hosted mutation; no push / merge / deploy / tag
-- no Assessment Engine implementation; no new held-out batch
-- no broad backlog cleanup; no unrelated product work
+- telemetry stays privacy-minimal: no file contents, prompts, raw command bodies, tool-response bodies, secrets
+- telemetry absence/incompleteness never hard-FAILs the Run-close verifier
+- existing `docs/CLAUDE_CODE_OPERATING_GUIDE.md` is the Operational Discovery Index; no competing index
 
-## 3. Human-approved decisions (Dor, 2026-10-10)
-
-- **A. Ruppin Pilot V1 content entry:** the canonical entry is the EXISTING Instructor Authoring and/or Structured Import pipeline; Structured Import enters DRAFT_ONLY; every assessment question + answer key is human-reviewed before Publish; source prep may use external/manual/AI-assisted tooling; no in-product PDF/OCR/Google OAuth/AI provider/AI generator/Material CMS is required for Pilot GO. (OQ-024)
-- **B. Assessment Engine Pilot freeze:** current research suffices. FUB-076 stays DESIGNED_PRE_REGISTERED, NOT implemented; H1/H2/H3 unresolved; no v0.5. Promotion only on: decision to wire user-visible assessment lint, an observed real-content problem, or post-Pilot Assessment Engine work. Human Content QA gate is authoritative.
-- **C. FUB-068:** Option B (beforeunload + guard editor-controlled internal exits + Publish must not silently publish the saved draft while dirty; save-first or explicit saved-vs-visible state; no localStorage/server autosave). Decision recorded only; NOT implemented.
-
-## 4. Slices
+## 3. Slices
 
 | Slice | Scope | Status |
 |---|---|---|
-| 1 | `docs/MASTER_PILOT_COUNTDOWN.md` + `docs/RUPPIN_PILOT_CONTENT_INTAKE.md` | DONE |
-| 2 | Reconcile OQ-024, FUB-068, FUB-076, PILOT_READINESS, DEV_STATUS, Run report | DONE |
-| Z | Verify, commit, close | DONE |
+| D1 | Operational Discovery Index (Operating Guide) + CLAUDE.md pointer | DONE |
+| D2 | Telemetry semantics: shell-navigation metric + response-size breakdown | TODO |
+| D3 | Slice attribution: Run-bound CURRENT_SLICE + verifier WARN | TODO |
+| D4 | Replay against ASSESSMENT-ENGINE-010 and RUPPIN-PILOT-FOCUS-001 | TODO |
+| D5 | DEV_STATUS HOT-context audit/compression | TODO |
+| D6 | Context-shape practice recorded in owner | TODO |
+| Z | Review, verify, close, commit | TODO |
 
 ## History
 
-- ASSESSMENT-ENGINE-010: `docs/RUNS/2026-10-10-ASSESSMENT-ENGINE-010.md` (Run report; COMPLETE)
-- RUPPIN-PILOT-FOCUS-001: `docs/RUNS/2026-10-10-RUPPIN-PILOT-FOCUS-001.md` (Run report; COMPLETE)
-- Earlier Runs: see `docs/RUNS/**` and `git log`.
+- ASSESSMENT-ENGINE-010: `docs/RUNS/2026-10-10-ASSESSMENT-ENGINE-010.md` (COMPLETE)
+- RUPPIN-PILOT-FOCUS-001: `docs/RUNS/2026-10-10-RUPPIN-PILOT-FOCUS-001.md` (COMPLETE)

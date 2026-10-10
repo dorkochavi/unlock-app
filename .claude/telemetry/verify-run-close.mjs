@@ -50,6 +50,9 @@
  *   point at disposable temp-directory fixtures -- it never touches the
  *   real repository's git state.
  *
+ * Stale Slice attribution (WARN-only): telemetry slice_ids not declared by the
+ * current Plan slice table; see checkStaleSliceAttribution below.
+ *
  * Telemetry attribution sanity (WARN-only, deterministic, reads only
  * scratch/telemetry/**): see checkTelemetryAttribution below.
  *
@@ -342,6 +345,76 @@ function gitOutput(root, args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 }
 
+/**
+ * Slice ids declared by the Plan's slice table: the first cell of each body
+ * row of a markdown table whose header's first cell starts with "Slice".
+ * Cell decoration (`**`, backticks, a leading "Slice ") is stripped and only
+ * the first token kept. Returns [] when the Plan has no such table. Pure.
+ */
+export function planDeclaredSliceIds(content) {
+  if (!content) return [];
+  const ids = [];
+  let inTable = false;
+  for (const line of content.split(/\r?\n/)) {
+    const t = line.trim();
+    if (!t.startsWith('|')) {
+      inTable = false;
+      continue;
+    }
+    const first = t.split('|')[1]?.trim() ?? '';
+    if (/^[\s*`]*slice\b/i.test(first) && !inTable && /^[\s*`]*slice[\s*`]*$/i.test(first)) {
+      inTable = true;
+      continue;
+    }
+    if (!inTable || /^[-: ]+$/.test(first)) continue;
+    const id = first.replace(/[*`]/g, '').replace(/^slice\s+/i, '').trim().split(/\s+/)[0]?.replace(/[.:)]+$/, '');
+    if (id) ids.push(id);
+  }
+  return ids;
+}
+
+// "S1" and "1" name the same Slice; comparison is case-insensitive.
+function sliceKey(id) {
+  return String(id).toLowerCase().replace(/^s(?=\d)/, '');
+}
+
+/**
+ * WARN-only: telemetry slice_ids that the CURRENT Plan's slice table does not
+ * declare (e.g. a stale "Z2" from a prior Run's checkpoint when the Plan
+ * declares 1, 2, Z). Silent when the Plan has no slice table, there is no
+ * telemetry, or no event carries a slice_id -- absent telemetry is never a
+ * finding. Reads only scratch/telemetry/<RUN_ID>/raw.
+ */
+export function checkStaleSliceAttribution({ root, runId, plan }) {
+  const declared = new Set(planDeclaredSliceIds(plan).map(sliceKey));
+  if (declared.size === 0) return [];
+  const rawDir = path.join(root, 'scratch', 'telemetry', runId, 'raw');
+  let files;
+  try {
+    files = fs.readdirSync(rawDir).filter((f) => f.endsWith('.jsonl'));
+  } catch {
+    return [];
+  }
+  const observed = new Map();
+  for (const f of files) {
+    for (const line of (readFileSafe(path.join(rawDir, f)) ?? '').split(/\r?\n/)) {
+      if (!line.includes('"slice_id":"')) continue;
+      try {
+        const id = JSON.parse(line).slice_id;
+        if (typeof id === 'string' && id) observed.set(id, (observed.get(id) ?? 0) + 1);
+      } catch {
+        // ignore malformed lines
+      }
+    }
+  }
+  return [...observed]
+    .filter(([id]) => !declared.has(sliceKey(id)))
+    .map(
+      ([id, n]) =>
+        `Telemetry slice_id "${id}" (${n} event(s)) is not declared by the current Plan's slice table -- stale or mistyped CURRENT_SLICE in scratch/development_checkpoint.md? (checkpoint must carry this Run's RUN_ID).`
+    );
+}
+
 // WARN-only advisories for a COMPLETE Run whose report file exists.
 export function checkCompleteAdvisories({ root, runId, plan, reportPath, lastVerifiedHead }) {
   const warns = [];
@@ -435,6 +508,7 @@ export function runVerification({ root, preClose }) {
 
   warns.push(...checkTelemetryAttribution({ root, runId, startHead }));
   warns.push(...checkSliceAttributionGranularity({ root, runId }));
+  warns.push(...checkStaleSliceAttribution({ root, runId, plan }));
 
   if (runStatus === 'COMPLETE') {
     if (!lastVerifiedHead) {

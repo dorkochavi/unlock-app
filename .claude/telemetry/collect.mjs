@@ -123,13 +123,29 @@ function resolveRunId(projectRoot) {
  * `CURRENT_SLICE: E (telemetry hardening)` -> "E"). Read per event, like the
  * Plan RUN_ID, so a Slice change needs no commit and no restart. Absent file,
  * absent line, or a non-identifier value (e.g. "(none)") -> null.
+ *
+ * Run-bound: the checkpoint is only honored when its own `RUN_ID:` line
+ * matches the Run being recorded, so a new Run can never silently inherit a
+ * prior Run's Slice marker. No RUN_ID line, or a different one -> null
+ * (unattributed, never guessed). Opening a Run = writing its RUN_ID there.
  */
-function readSliceId(projectRoot) {
+function readSliceId(projectRoot, runId) {
   try {
     const contents = fs.readFileSync(
       path.join(projectRoot, "scratch", "development_checkpoint.md"),
       "utf8",
     );
+
+    const checkpointRun = contents.match(
+      /^RUN_ID:[ \t]*`?([^`\r\n]+?)`?[ \t]*$/m,
+    )?.[1];
+
+    if (
+      !checkpointRun ||
+      sanitizeSegment(checkpointRun, "UNASSIGNED") !== runId
+    ) {
+      return null;
+    }
 
     const match = contents.match(
       /^CURRENT_SLICE:[ \t]*(\S+)/m,
@@ -385,7 +401,56 @@ function classifySegment(segment) {
     return `yarn:${match[1]}`;
   }
 
+  const navigation = classifyNavigation(normalized);
+
+  if (navigation) {
+    return navigation;
+  }
+
   return "shell:other";
+}
+
+/**
+ * Conservative shell repository-navigation classes (`nav:*`): read/search
+ * commands issued through Bash/PowerShell, which the runtime does NOT report
+ * as native Read/Grep/Glob. Matches only the leading command word of a
+ * segment — no argument is parsed or stored, so no path or command body
+ * reaches telemetry. `sed` counts only as a printing form (`-n`/`--quiet`,
+ * not in-place). Anything uncertain falls through to `shell:other`.
+ */
+function classifyNavigation(normalized) {
+  const word = normalized.match(/^([A-Za-z][A-Za-z-]*)/)?.[1]?.toLowerCase();
+
+  switch (word) {
+    case "cat":
+    case "head":
+    case "tail":
+      return `nav:${word}`;
+
+    case "grep":
+    case "egrep":
+    case "fgrep":
+    case "rg":
+      return "nav:grep";
+
+    case "get-content":
+      return "nav:get-content";
+
+    case "select-string":
+      return "nav:select-string";
+
+    case "sed": {
+      const printing =
+        /\s(-[a-zA-Z]*n[a-zA-Z]*|--quiet|--silent)(\s|$)/.test(normalized);
+      const inPlace =
+        /\s(-[a-zA-Z]*i|--in-place)/.test(normalized);
+
+      return printing && !inPlace ? "nav:sed" : null;
+    }
+
+    default:
+      return null;
+  }
 }
 
 /**
@@ -511,7 +576,7 @@ function buildEvent(input, projectRoot, runId) {
   const base = buildBaseEvent(
     input,
     runId,
-    readSliceId(projectRoot),
+    readSliceId(projectRoot, runId),
   );
   const eventName = input.hook_event_name;
 

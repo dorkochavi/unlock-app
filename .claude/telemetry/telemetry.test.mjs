@@ -49,11 +49,11 @@ function setPlanRunId(root, runId) {
   );
 }
 
-function setSlice(root, line) {
+function setSlice(root, line, runId = 'RUN-A') {
   fs.mkdirSync(path.join(root, 'scratch'), { recursive: true });
   fs.writeFileSync(
     path.join(root, 'scratch', 'development_checkpoint.md'),
-    `# checkpoint\n\n${line}\n`,
+    `# checkpoint\n\n${runId === null ? '' : `RUN_ID: ${runId}\n`}${line}\n`,
   );
 }
 
@@ -268,6 +268,105 @@ test('summarize: slice_id present => compact per-slice table with unattributed c
   assert.equal(json.slices.unattributed_events, 1);
   assert.match(md, /\| A \| 2 \| 2 \| 2 \|/);
   assert.match(md, /Unattributed events \(no slice_id\): 1/);
+});
+
+// ---------------------------------------------------------------------
+// V1.3: Run-bound slice attribution, shell navigation, response sizes
+// ---------------------------------------------------------------------
+test('collect: stale CURRENT_SLICE from a different RUN_ID is NOT inherited', () => {
+  const root = mkRoot('RUN-NEW');
+  const p = { session_id: 's1', hook_event_name: 'SessionStart' };
+  setSlice(root, 'CURRENT_SLICE: Z2', 'RUN-OLD');
+  collect(root, p);
+  setSlice(root, 'CURRENT_SLICE: Z2', null); // no RUN_ID line at all
+  collect(root, p);
+  setSlice(root, 'CURRENT_SLICE: D1', 'RUN-NEW');
+  collect(root, p);
+  const ev = readEvents(root, 'RUN-NEW');
+  assert.deepEqual(ev.map((e) => e.slice_id), [null, null, 'D1']);
+});
+
+function bash(root, command) {
+  collect(root, {
+    session_id: 's1', hook_event_name: 'PostToolUse', tool_name: 'Bash',
+    tool_input: { command }, tool_response: 'x'.repeat(50),
+  });
+}
+
+test('collect: shell navigation commands get nav:* classes; non-navigation stays unpromoted', () => {
+  const root = mkRoot();
+  const cases = [
+    ['cat docs/a.md', 'nav:cat'],
+    ["sed -n '1,40p' docs/a.md", 'nav:sed'],
+    ['sed -i s/a/b/ f.txt', 'shell:other'],
+    ['sed s/a/b/ f.txt', 'shell:other'],
+    ["sed -n -i.bak 's/a/b/' f", 'shell:other'],
+    ['head -20 f | tail -5', 'nav:head'],
+    ['tail -n 5 f', 'nav:tail'],
+    ['grep -rn foo src', 'nav:grep'],
+    ['rg foo', 'nav:grep'],
+    ['Get-Content a.md', 'nav:get-content'],
+    ['Select-String -Path a.md -Pattern x', 'nav:select-string'],
+    ['catalog --list', 'shell:other'],
+    ['git status --short', 'git:status'],
+  ];
+  for (const [cmd] of cases) bash(root, cmd);
+  const ev = readEvents(root, 'RUN-A');
+  assert.deepEqual(ev.map((e) => e.command_class), cases.map((c) => c[1]));
+});
+
+test('collect: compound command records each nav class, never the command text', () => {
+  const root = mkRoot();
+  bash(root, 'cd secret-dir && cat TOP_SECRET_FILE.md; grep -n hunter2 x');
+  const ev = readEvents(root, 'RUN-A');
+  assert.deepEqual(ev[0].command_classes, ['shell:other', 'nav:cat', 'nav:grep']);
+  const raw = JSON.stringify(ev);
+  for (const leak of ['TOP_SECRET_FILE', 'hunter2', 'secret-dir']) {
+    assert.ok(!raw.includes(leak), 'leaked ' + leak);
+  }
+});
+
+test('summarize: repository_access keeps native reads/searches separate from shell navigation', () => {
+  const root = mkRoot();
+  const t = (o, n) => ({ ...base, event: 'PostToolUse', success: true, timestamp: ts(n), ...o });
+  writeRaw(root, 'RUN-NAV', [
+    t({ activity: 'FILE_READ', tool_name: 'Read', file_path: 'a.md', file_classification: 'COLD', response_chars: 5 }, 0),
+    t({ activity: 'SEARCH_GREP', tool_name: 'Grep', response_chars: 7 }, 1),
+    t({ activity: 'SHELL', tool_name: 'Bash', command_class: 'nav:cat', command_classes: ['nav:cat', 'nav:grep'], response_chars: 900 }, 2),
+    t({ activity: 'SHELL', tool_name: 'Bash', command_class: 'git:status', command_classes: ['git:status'], response_chars: 30 }, 3),
+    t({ activity: 'SHELL', tool_name: 'Bash', command_class: 'shell:other', command_classes: ['shell:other'], response_chars: 1 }, 4),
+  ]);
+  const { json, md } = summarize(root, 'RUN-NAV');
+  assert.equal(json.repository_access.native_file_reads, 1);
+  assert.equal(json.repository_access.native_searches, 1);
+  assert.equal(json.repository_access.shell_navigation_calls, 1);
+  assert.deepEqual(json.repository_access.shell_navigation_by_class, { 'nav:cat': 1, 'nav:grep': 1 });
+  assert.equal(json.shell_activity.by_category.NAVIGATION, 2);
+  assert.match(md, /Shell navigation calls .*: 1/);
+});
+
+test('summarize: response_sizes by tool/class, max, top-N metadata only; pre-nav raw data reads 0 navigation', () => {
+  const root = mkRoot();
+  const t = (o, n) => ({ ...base, event: 'PostToolUse', success: true, timestamp: ts(n), ...o });
+  const events = [];
+  for (let i = 0; i < 7; i++) {
+    events.push(t({ activity: 'SHELL', tool_name: 'Bash', command_class: 'shell:other', response_chars: 100 * (i + 1), command: 'RAW-CMD-BODY', tool_response: 'BODY' }, i));
+  }
+  events.push({ ...t({ activity: 'FILE_READ', tool_name: 'Read', file_path: 'a.md', file_classification: 'COLD', response_chars: 5000 }, 9), success: false });
+  writeRaw(root, 'RUN-SZ', events);
+  const { json, md } = summarize(root, 'RUN-SZ');
+  const rs = json.response_sizes;
+  assert.equal(rs.max_single, 5000);
+  assert.equal(rs.by_tool.Bash, 2800);
+  assert.equal(rs.by_tool.Read, 5000);
+  assert.equal(rs.by_command_class['shell:other'], 2800);
+  assert.equal(rs.top.length, 5);
+  assert.deepEqual(rs.top[0], { tool_name: 'Read', response_chars: 5000, command_class: null, slice_id: null, success: false });
+  assert.deepEqual(Object.keys(rs.top[1]).sort(), ['command_class', 'response_chars', 'slice_id', 'success', 'tool_name']);
+  assert.equal(json.repository_access.shell_navigation_calls, 0);
+  assert.ok(!JSON.stringify(json).includes('RAW-CMD-BODY'));
+  assert.ok(!md.includes('RAW-CMD-BODY'));
+  assert.match(md, /Response Size Hotspots/);
 });
 
 console.log('');

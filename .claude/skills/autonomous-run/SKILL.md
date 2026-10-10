@@ -295,7 +295,7 @@ sanity with the deterministic `.claude/telemetry/verify-run-close.mjs` (its attr
 the mechanism evidence compactly. Never dump raw telemetry into durable docs. Telemetry figures are
 runtime session/context measurements, not billed tokens; event semantics (subagent metrics, `slice_id`)
 are owned by `docs/DEVOS_OBSERVABILITY.md` §11. Slices are attributed via the `CURRENT_SLICE:` line of
-the §6 checkpoint (first token, e.g. `CURRENT_SLICE: C`) — keep it current when dispatching each Slice.
+the §6 checkpoint (first token, e.g. `CURRENT_SLICE: C`) — keep it current when dispatching each Slice. The checkpoint must also carry this Run's `RUN_ID:` line: telemetry ignores `CURRENT_SLICE` when the checkpoint `RUN_ID:` is missing or differs from the Plan `RUN_ID`, so a prior Run's Slice is never inherited.
 
 
 At Run close, a Run using this skill should report available evidence about the *mechanism itself*

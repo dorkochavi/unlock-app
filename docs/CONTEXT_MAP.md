@@ -33,7 +33,7 @@ Purpose: identify the **smallest authoritative context** for a task. This file p
 | Assessment linter fresh held-out evaluation v0.4 (FRESH_HELD_OUT_V0_4, model-authored and model-labeled, not human-approved, never pooled; frozen corpus `src/domain/assessment/golden/heldout-v0-4/**`, failure classification, 14-row human review queue, FUB routing) | `docs/ASSESSMENT_HELDOUT_V0_4.md` | COLD |
 | Learning Objectives and Assessment Blueprint design (v0.1; pure prototype in `src/domain/assessment/blueprint/`, unwired) | `docs/ASSESSMENT_BLUEPRINT_V0_1.md` | COLD |
 | Long Autonomous Run orchestration (Phase 0 identity, gates, recovery) | `.claude/skills/autonomous-run/SKILL.md` | COLD |
-| Human index of how DevOS pieces fit | `docs/CLAUDE_CODE_OPERATING_GUIDE.md` (index only; canonical owners win) | COLD |
+| Operational Discovery Index — DevOS commands, verifiers, telemetry utilities, checkpoint, workflow owners (consult before searching for them) | `docs/CLAUDE_CODE_OPERATING_GUIDE.md` (index only; canonical owners win) | COLD |
 | Browser isolation design (rendered audits with zero hosted contact; DRAFT, source-read only) | `docs/BROWSER_ISOLATION_DESIGN.md` | COLD |
 
 ## Task → Smallest Context

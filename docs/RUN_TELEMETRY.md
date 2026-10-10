@@ -181,6 +181,12 @@ Do not store the retrieved file content in telemetry.
 
 ---
 
+### Native reads vs shell navigation (evidence boundary)
+
+`FILE_READ` and `SEARCH_*` mean only what the runtime exposes through the Read / Grep / Glob tools. Repository content read through Bash/PowerShell (`cat`, `head`, `tail`, `sed -n`, `grep`/`rg`, `Get-Content`, `Select-String`) is classified `SHELL` and is reported SEPARATELY as `repository_access.shell_navigation_calls` (command classes `nav:*`, matched on the leading command word only). It is a lower bound, never promoted to a native read, and records no path or command text. Raw events collected before `nav:*` existed recorded such calls as `shell:other`, so older Runs read 0 — "not recorded", not "none happened".
+
+---
+
 # 7. Re-Reads
 
 A re-read is:
@@ -623,6 +629,10 @@ Do not call it tokens.
 Do not convert characters into an estimated token count and present that estimate as runtime usage.
 
 The runtime token fields remain the authoritative token source.
+
+## Breakdown (`response_sizes`)
+
+A Run with few calls can still have high `tool_response_chars` because a handful of large responses dominate. The summary therefore also reports, from numeric `response_chars` only: characters by tool name, characters by first command class (shell calls), the maximum single response, and the top 5 responses as metadata rows (`tool_name`, `response_chars`, `command_class`, `slice_id`, `success`). No body and no raw command is ever stored. Characters, not tokens.
 
 ---
 

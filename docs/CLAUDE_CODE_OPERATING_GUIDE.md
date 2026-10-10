@@ -1,11 +1,38 @@
 # UNLOCK — Claude Code Operating Guide
 
 Status: ACTIVE — human-facing field guide
-Load level: not preloaded by default; read when you want a map of how DevOS pieces fit together.
+Load level: not preloaded by default; consult BEFORE searching for any DevOS tool, command, verifier,
+telemetry utility, checkpoint mechanism or workflow path (`CLAUDE.md` §1).
 
-This is an **index**, not a policy owner. It points at canonical files instead of restating them.
+This is the canonical **Operational Discovery Index** — an index, not a policy owner. It points at
+canonical files instead of restating them.
 The single authoritative kernel is repo-root `CLAUDE.md`. When this guide and a canonical file
 disagree, the canonical file wins.
+
+## 0. Operational Discovery Index
+
+Look here first; do not search `package.json`, scripts, or the repository for these.
+
+| Need | Where |
+|---|---|
+| Current execution / Slice order | `docs/CHATGPT_PLAN.md` |
+| Current durable snapshot | `docs/DEV_STATUS.md` |
+| Context navigation | `docs/CONTEXT_MAP.md` |
+| Run / Slice workflow owner | `CLAUDE.md` §7, §12 |
+| Implement one Slice | `.claude/skills/implement-slice/SKILL.md` |
+| Long Autonomous Run | `.claude/skills/autonomous-run/SKILL.md` |
+| Verification selection / freshness | `.claude/rules/testing.md` |
+| Reviewer selection | `.claude/skills/review-commit/SKILL.md` |
+| Evidence / readiness gate | `.claude/skills/checkpoint/SKILL.md` |
+| Development checkpoint / `CURRENT_SLICE` | `scratch/development_checkpoint.md` (untracked; must carry this Run's `RUN_ID:` line or `CURRENT_SLICE` is ignored — see §6) |
+| Run-close verifier, before the close commit | `node .claude/telemetry/verify-run-close.mjs --pre-close` |
+| Run-close verifier, final (clean tree) | `node .claude/telemetry/verify-run-close.mjs` |
+| Telemetry summarizer | `node .claude/telemetry/summarize.mjs` |
+| Telemetry output | `scratch/telemetry/<RUN_ID>/summary.md`, `summary.json` (raw events under `raw/`) |
+| Context usage | `/context` (built-in command) |
+| Historical Runs | Git + `docs/RUNS/**` (RESTRICTED; not normal working context) |
+| Deferred work / open decisions | `docs/FOLLOW_UP_BACKLOG.md` / `docs/OPEN_QUESTIONS.md` |
+| Human-only boundaries | No push (`CLAUDE.md` §6); hosted Supabase/migration actions (`.claude/rules/postgres.md`); secrets (`.claude/rules/auth.md`) |
 
 ## 1. Where DevOS knowledge lives
 
@@ -72,6 +99,8 @@ script's own header comment for exact scope/behavior, and `docs/DEV_STATUS.md` /
 Local execution metadata is collected under `.claude/telemetry/` (`collect.mjs`, `summarize.mjs`,
 `statusline.mjs`, plus the Run-close verifier above). Telemetry is an observability layer, not
 working context — don't load it or narrate it during normal implementation (`CLAUDE.md` §15).
+
+Slice attribution: `scratch/development_checkpoint.md` (untracked) needs this Run's `RUN_ID:` line and one `CURRENT_SLICE:` line; a checkpoint left over from another Run is ignored, not inherited. Native reads/searches, shell navigation and response-size hotspots are separate summary sections (`docs/DEVOS_OBSERVABILITY.md` §11).
 
 When you do interpret telemetry, every efficiency signal is read beside its paired quality signal,
 and an observation moves through `MEASURE → INTERPRET → COMPARE → ACT`, landing on `KEEP` (no
